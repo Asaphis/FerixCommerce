@@ -1,0 +1,218 @@
+import Link from "next/link";
+import { Receipt, Search } from "lucide-react";
+import { requireAdmin } from "@/lib/data";
+import { listOrders } from "@/lib/api";
+import { FilterForm } from "@/components/ops/controls";
+import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Distribution } from "@/components/ops/marks";
+import { compact, dateShort, money, num, relative, titleCase } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+const FILTERS = [
+  { id: "all", label: "All" },
+  { id: "processing", label: "Awaiting action" },
+  { id: "shipped", label: "In transit" },
+  { id: "delivered", label: "Delivered" },
+  { id: "cancelled", label: "Cancelled" },
+];
+
+function statusTone(status: string) {
+  if (status === "delivered") return "mint" as const;
+  if (status === "shipped") return "signal" as const;
+  if (status === "cancelled") return "rose" as const;
+  return "amber" as const;
+}
+
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string; channel?: string; merchantId?: string; search?: string }>;
+}) {
+  const { status, channel, merchantId, search } = await searchParams;
+  const { session } = await requireAdmin();
+  const data = await listOrders(session, {
+    status: status ?? "all",
+    channel: channel ?? "all",
+    merchantId: merchantId ?? "all",
+    search,
+  });
+  const activeMerchant = data.merchants.find((m) => m.id === merchantId);
+
+  return (
+    <div className="grid gap-5">
+      <header>
+        <Eyebrow>Order oversight</Eyebrow>
+        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Platform orders</h1>
+        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
+          Every order as the merchant responsible for it sees it. A shopper buying from two sellers is one order
+          to the buyer and two fulfilment lines here — which is exactly how the stock and commission move.
+        </p>
+      </header>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Readout label="Orders in view" value={num(data.total)} sub={`${data.counts.all ?? 0} on the platform`} icon={<Receipt width={15} height={15} />} />
+        <Readout label="Value in view" value={money(data.gmv, { cents: false })} sub="Paid orders" tone="mint" />
+        <Readout label="Commission in view" value={money(data.commission, { cents: false })} sub="Retained by the platform" tone="violet" />
+        <Readout
+          label="Payment state"
+          value={`${data.counts.paid ?? 0} paid`}
+          sub={`${data.counts.refunded ?? 0} refunded`}
+          tone={(data.counts.refunded ?? 0) > 0 ? "amber" : "mint"}
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {FILTERS.map((filter) => (
+            <Link
+              key={filter.id}
+              href={filter.id === "all" ? "/orders" : `/orders?status=${filter.id}`}
+              className={cn(
+                "rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                (status ?? "all") === filter.id
+                  ? "border-signal/40 bg-signal/10 text-signal"
+                  : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
+              )}
+            >
+              {filter.label}
+              <span className="ml-2 opacity-70">{data.counts[filter.id] ?? 0}</span>
+            </Link>
+          ))}
+        </div>
+
+        <FilterForm action="/orders" className="flex flex-wrap items-center gap-2">
+          <label className="relative flex items-center">
+            <Search width={14} height={14} className="pointer-events-none absolute left-2.5 text-chalk-dim" />
+            <input
+              name="search"
+              defaultValue={search ?? ""}
+              placeholder="Order number, merchant or customer"
+              className="h-9 w-[250px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-signal/60"
+            />
+          </label>
+          <select
+            name="merchantId"
+            defaultValue={merchantId ?? "all"}
+            className="h-9 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-signal/60"
+            aria-label="Merchant"
+          >
+            <option value="all">Every merchant</option>
+            {data.merchants.map((merchant) => (
+              <option key={merchant.id} value={merchant.id}>
+                {merchant.name}
+              </option>
+            ))}
+          </select>
+          <select
+            name="channel"
+            defaultValue={channel ?? "all"}
+            className="h-9 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-signal/60"
+            aria-label="Channel"
+          >
+            <option value="all">Every channel</option>
+            <option value="marketplace">Marketplace</option>
+            <option value="store">Merchant store</option>
+          </select>
+        </FilterForm>
+      </div>
+
+      {activeMerchant ? (
+        <p className="flex flex-wrap items-center gap-2 rounded-[2px] border border-signal/40 bg-signal/10 px-3 py-2.5 font-mono text-[11px] text-signal">
+          Showing only {activeMerchant.name}.{" "}
+          <Link href="/orders" className="underline decoration-2 underline-offset-4">
+            Clear
+          </Link>
+        </p>
+      ) : null}
+
+      <div className="grid gap-3 lg:grid-cols-[1fr_280px]">
+        <div>
+          {data.orders.length ? (
+            <Panel flush>
+              <div className="overflow-x-auto p-5">
+                <table className="w-full min-w-[1000px] border-collapse text-left">
+                  <thead>
+                    <tr>
+                      {["Order", "Merchant", "Customer", "Channel", "Placed", "Payment", "Status", "Commission", "Total"].map((head) => (
+                        <th key={head} className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim">
+                          {head}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.orders.map((order) => (
+                      <tr key={`${order.id}-${order.merchantId}`} className="border-b border-hairline/60 last:border-0">
+                        <td className="py-3 pr-4">
+                          <p className="font-mono text-[12px] text-chalk">{order.number}</p>
+                          <p className="max-w-[170px] truncate text-[11px] text-chalk-dim">
+                            {order.items.map((item) => item.title).join(", ")}
+                          </p>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <Link href={`/merchants/${order.merchantId}`} className="text-[12.5px] text-chalk hover:text-signal">
+                            {order.merchantName}
+                          </Link>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <p className="text-[12.5px] text-chalk-dim">{order.customer.name}</p>
+                          <p className="font-mono text-[10px] text-chalk-dim/70">{order.customer.location}</p>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <Pill tone={order.channel === "marketplace" ? "violet" : "neutral"}>{order.channel}</Pill>
+                        </td>
+                        <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">
+                          {dateShort(order.placedAt)} · {relative(order.placedAt)}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <Pill tone={order.payment === "paid" ? "mint" : order.payment === "refunded" ? "rose" : "amber"}>
+                            {order.payment}
+                          </Pill>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill>
+                          {order.tracking ? (
+                            <p className="mt-1 font-mono text-[10px] text-chalk-dim">{order.carrier}</p>
+                          ) : null}
+                        </td>
+                        <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-violet">{money(order.commission)}</td>
+                        <td className="py-3 font-mono text-[12.5px] tabular-nums text-chalk">{money(order.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+          ) : (
+            <Empty title="No orders in this view" body="Clear the filters to see the platform's order flow again." />
+          )}
+        </div>
+
+        <div className="grid gap-3 lg:sticky lg:top-4 lg:self-start">
+          <Panel>
+            <PanelHead title="Pipeline" hint="In this view" />
+            <Distribution
+              rows={[
+                { label: "Awaiting action", value: data.counts.processing ?? 0, tone: "amber" },
+                { label: "In transit", value: data.counts.shipped ?? 0, tone: "signal" },
+                { label: "Delivered", value: data.counts.delivered ?? 0, tone: "mint" },
+                { label: "Cancelled", value: data.counts.cancelled ?? 0, tone: "rose" },
+              ]}
+            />
+          </Panel>
+
+          <Panel>
+            <PanelHead title="Reading this table" />
+            <p className="text-[12.5px] leading-relaxed text-chalk-dim">
+              Each row is one seller&apos;s part of an order. Commission is charged on marketplace sales only,
+              which is why merchant-store rows carry none.
+            </p>
+            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim/70">
+              {compact(data.gmv)} of paid value · {compact(data.commission)} retained
+            </p>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}

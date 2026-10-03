@@ -1,0 +1,236 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft, AlertTriangle, ExternalLink, MapPin, Percent, Store } from "lucide-react";
+import { requireAdmin } from "@/lib/data";
+import { getMerchant, ApiError } from "@/lib/api";
+import { MerchantForm } from "@/components/ops/merchant-form";
+import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Distribution, KeyValue } from "@/components/ops/marks";
+import { compact, dateLong, money, num, relative, titleCase } from "@/lib/format";
+
+function statusTone(status: string) {
+  if (status === "active") return "mint" as const;
+  if (status === "review") return "amber" as const;
+  return "rose" as const;
+}
+
+export default async function MerchantDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { session } = await requireAdmin();
+  let detail;
+  try {
+    detail = await getMerchant(session, id);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) notFound();
+    throw error;
+  }
+  const { merchant, about, summary, statuses, catalog, orders, commissionEarned } = detail;
+
+  return (
+    <div className="grid gap-5">
+      <div>
+        <Link
+          href="/merchants"
+          className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-chalk"
+        >
+          <ArrowLeft width={12} height={12} /> All merchants
+        </Link>
+      </div>
+
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <span
+            className="grid h-14 w-14 shrink-0 place-items-center rounded-[3px] font-display text-[20px] font-extrabold"
+            style={{ background: merchant.brand.accent, color: merchant.brand.accentInk }}
+          >
+            {merchant.name.slice(0, 1)}
+          </span>
+          <div>
+            <Eyebrow>Merchant</Eyebrow>
+            <h1 className="mt-1 font-display text-[23px] font-semibold text-chalk">{merchant.name}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Pill tone={statusTone(merchant.status)}>
+                {merchant.status === "active" ? <Store width={10} height={10} /> : <AlertTriangle width={10} height={10} />}
+                {merchant.status}
+              </Pill>
+              <Pill tone={merchant.verified ? "mint" : "neutral"}>
+                {merchant.verified ? "Verified" : "Not verified"}
+              </Pill>
+              <Pill tone={merchant.marketplaceEnabled ? "violet" : "neutral"}>
+                {merchant.marketplaceEnabled ? "Marketplace on" : "Marketplace off"}
+              </Pill>
+              <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">
+                <MapPin width={11} height={11} /> {merchant.location}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+            {merchant.customDomain ?? merchant.domain}
+          </p>
+          <p className="mt-1 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
+            {merchant.brand.template} template <ExternalLink width={10} height={10} />
+          </p>
+        </div>
+      </header>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Readout label="Gross merchandise value" value={money(summary.revenueTotal, { cents: false })} sub={`${money(summary.revenue30d, { cents: false })} in 30 days`} tone="mint" />
+        <Readout
+          label="Commission earned"
+          value={money(commissionEarned, { cents: false })}
+          sub={`at ${merchant.commissionPct}% · ${money(summary.commission30d, { cents: false })} in 30 days`}
+          icon={<Percent width={15} height={15} />}
+          tone="violet"
+        />
+        <Readout label="Orders" value={num(summary.ordersTotal)} sub={`Average ${money(summary.averageOrder, { cents: false })}`} />
+        <Readout
+          label="Catalogue"
+          value={num(catalog.length)}
+          sub={`${catalog.filter((p) => p.channels.marketplace).length} on the marketplace · ${compact(catalog.reduce((s, p) => s + p.sold30d, 0))} units sold`}
+        />
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-[1.35fr_1fr]">
+        <MerchantForm detail={detail} />
+
+        <div className="grid gap-3">
+          <Panel>
+            <PanelHead title="Order pipeline" hint="This merchant's orders, both channels" />
+            <Distribution
+              rows={[
+                { label: "Awaiting action", value: statuses.processing ?? 0, tone: "amber" },
+                { label: "In transit", value: statuses.shipped ?? 0, tone: "signal" },
+                { label: "Delivered", value: statuses.delivered ?? 0, tone: "mint" },
+                { label: "Cancelled", value: statuses.cancelled ?? 0, tone: "rose" },
+              ]}
+            />
+          </Panel>
+
+          <Panel>
+            <PanelHead title="Trading record" />
+            <ul className="grid gap-2.5 text-[12.5px]">
+              <KeyValue label="Trading since" value={dateLong(merchant.since)} />
+              <KeyValue label="Plan" value={merchant.plan} />
+              <KeyValue label="Response rate" value={`${merchant.responseRate}%`} />
+              <KeyValue label="Fulfilment rate" value={`${merchant.fulfilmentRate}%`} />
+              <KeyValue label="Rating" value={`${merchant.rating.toFixed(1)} · ${compact(merchant.reviewCount)} reviews`} />
+              <KeyValue label="Followers" value={compact(merchant.followers)} />
+            </ul>
+          </Panel>
+
+          <Panel>
+            <PanelHead title="About the store" />
+            <p className="text-[12.5px] leading-relaxed text-chalk-dim">{about}</p>
+          </Panel>
+        </div>
+      </div>
+
+      <Panel flush>
+        <div className="p-5 pb-3">
+          <PanelHead title="Catalogue" hint="One product record per item, per channel" />
+        </div>
+        {catalog.length ? (
+          <div className="overflow-x-auto px-5 pb-5">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead>
+                <tr>
+                  {["Product", "SKU", "Price", "Stock", "Sold 30d", "Channels", "Status"].map((head) => (
+                    <th key={head} className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim">
+                      {head}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {catalog.map((product) => (
+                  <tr key={product.id} className="border-b border-hairline/60 last:border-0">
+                    <td className="py-3 pr-4 text-[13px] text-chalk">{product.title}</td>
+                    <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">{product.sku}</td>
+                    <td className="py-3 pr-4 font-mono text-[12.5px] text-chalk">{money(product.price)}</td>
+                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim">{product.stock}</td>
+                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim">{num(product.sold30d)}</td>
+                    <td className="py-3 pr-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.channels.store ? <Pill tone="signal">Store</Pill> : null}
+                        {product.channels.marketplace ? <Pill tone="violet">Market</Pill> : null}
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <Pill tone={product.status === "active" ? "mint" : product.status === "draft" ? "amber" : "neutral"}>
+                        {product.status}
+                      </Pill>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="px-5 pb-5">
+            <Empty title="No products" body="This merchant has not listed anything yet." />
+          </div>
+        )}
+      </Panel>
+
+      <Panel flush>
+        <div className="p-5 pb-3">
+          <PanelHead title="Recent orders" hint="Fulfilment this merchant is responsible for" action={
+            <Link href={`/orders?merchantId=${merchant.id}`} className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
+              Filter the order view
+            </Link>
+          } />
+        </div>
+        {orders.length ? (
+          <div className="overflow-x-auto px-5 pb-5">
+            <table className="w-full min-w-[700px] border-collapse text-left">
+              <thead>
+                <tr>
+                  {["Order", "Customer", "Channel", "Placed", "Status", "Commission", "Total"].map((head) => (
+                    <th key={head} className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim">
+                      {head}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr key={order.id} className="border-b border-hairline/60 last:border-0">
+                    <td className="py-3 pr-4 font-mono text-[12px] text-chalk">{order.number}</td>
+                    <td className="py-3 pr-4 text-[12.5px] text-chalk-dim">{order.customer.name}</td>
+                    <td className="py-3 pr-4">
+                      <Pill tone={order.channel === "marketplace" ? "violet" : "neutral"}>{order.channel}</Pill>
+                    </td>
+                    <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">{relative(order.placedAt)}</td>
+                    <td className="py-3 pr-4">
+                      <Pill
+                        tone={
+                          order.fulfillment === "delivered"
+                            ? "mint"
+                            : order.fulfillment === "shipped"
+                              ? "signal"
+                              : order.fulfillment === "cancelled"
+                                ? "rose"
+                                : "amber"
+                        }
+                      >
+                        {titleCase(order.fulfillment)}
+                      </Pill>
+                    </td>
+                    <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-violet">{money(order.commission)}</td>
+                    <td className="py-3 font-mono text-[12.5px] tabular-nums text-chalk">{money(order.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="px-5 pb-5">
+            <Empty title="No orders yet" body="This merchant has not sold anything yet." />
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}
