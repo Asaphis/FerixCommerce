@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 620" width="1600" height="620" preserveAspectRatio="xMidYMid slice">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#081613"/><stop offset="0.5" stop-color="#12332c"/><stop offset="1" stop-color="#20534a"/></linearGradient>
+<radialGradient id="glow" cx="0.8" cy="0.35" r="0.6">
+<stop offset="0" stop-color="#1f4b43" stop-opacity="0.95"/><stop offset="1" stop-color="#1f4b43" stop-opacity="0"/></radialGradient>
+<pattern id="grid" width="52" height="52" patternUnits="userSpaceOnUse">
+<path d="M52 0H0V52" fill="none" stroke="#e9ecf1" stroke-opacity="0.06" stroke-width="1"/></pattern></defs>
+
+<rect width="1600" height="620" fill="url(#bg)"/>
+<rect width="1600" height="620" fill="url(#grid)"/>
+<rect width="1600" height="620" fill="url(#glow)"/>
+<g transform="translate(1010 140)">
+<polygon points="0,120 150,60 300,120 300,340 150,400 0,340" fill="#14332c" stroke="#c9f24d" stroke-opacity="0.35"/>
+<polygon points="0,120 150,180 300,120 150,60" fill="#1c443b" stroke="#c9f24d" stroke-opacity="0.45"/>
+<polygon points="150,180 150,400 300,340 300,120" fill="#0f2a24" stroke="#c9f24d" stroke-opacity="0.3"/>
+<line x1="150" y1="180" x2="150" y2="400" stroke="#c9f24d" stroke-opacity="0.5"/>
+<rect x="120" y="90" width="22" height="120" fill="#c9f24d" fill-opacity="0.5" transform="rotate(28 131 150)"/>
+</g>
+<path d="M120 480 C 480 380, 700 520, 1010 440 S 1440 380, 1560 300" fill="none" stroke="#c9f24d" stroke-opacity="0.5" stroke-width="2" stroke-dasharray="10 10"/>
+<circle cx="120" cy="480" r="7" fill="#c9f24d"/>
+<circle cx="1560" cy="300" r="7" fill="#c9f24d"/>
+<rect x="0" y="616" width="1600" height="4" fill="#c9f24d" fill-opacity="0.85"/>
+
+</svg>

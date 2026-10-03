@@ -1,0 +1,352 @@
+import Link from "next/link";
+import { ArrowRight, Check, Heart, MapPin, Minus, Plus, Trash2, Truck } from "lucide-react";
+import type { Category, Collection, Merchant, Product, Review } from "@/lib/api";
+import { Eyebrow, Plate, Price, Stars, StockNote, Pill } from "@/components/ferix/marks";
+import { AddToCartButton } from "@/components/ferix/add-to-cart";
+import {
+  addToCartAction,
+  removeLineAction,
+  saveForLaterAction,
+  setQtyAction,
+  toggleWishlistAction,
+} from "@/lib/actions";
+import { compact, dateShort, money } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+export function ProductCard({
+  product,
+  saved = false,
+  className,
+  showAdd = true,
+}: {
+  product: Product;
+  saved?: boolean;
+  className?: string;
+  showAdd?: boolean;
+}) {
+  const href = `/product/${product.slug}`;
+  return (
+    <article
+      className={cn(
+        "group relative flex flex-col overflow-hidden rounded-[3px] border border-line-warm bg-white transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25",
+        className,
+      )}
+    >
+      <Link href={href} className="relative block">
+        <Plate seed={product.slug} accent="#e4572e" className="aspect-[4/3] w-full rounded-none" />
+        <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
+          {product.discount ? <Pill tone="ember">−{product.discount}%</Pill> : null}
+          {product.stock <= 25 && product.stock > 0 ? <Pill tone="warn">Low stock</Pill> : null}
+          {product.stock <= 0 ? <Pill tone="danger">Sold out</Pill> : null}
+        </span>
+      </Link>
+
+      <div className="flex flex-1 flex-col p-3.5">
+        <Link href={`/store/${product.merchantSlug}`} className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
+          {product.merchantName}
+        </Link>
+        <Link href={href} className="mt-1.5 line-clamp-2 font-display text-[14.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember">
+          {product.title}
+        </Link>
+        <div className="mt-2 flex items-center gap-2">
+          <Stars value={product.rating} />
+          <span className="font-mono text-[10.5px] text-ink-soft">({compact(product.reviewCount)})</span>
+        </div>
+        <div className="mt-3 flex items-end justify-between gap-2">
+          <Price value={product.price} compareAt={product.compareAt} discount={product.discount} />
+        </div>
+        <div className="mt-1.5">
+          <StockNote stock={product.stock} />
+        </div>
+
+        {showAdd ? (
+          <div className="mt-3 flex items-center gap-1.5 border-t border-line-warm pt-3">
+            <form action={addToCartAction} className="flex-1">
+              <input type="hidden" name="productId" value={product.id} />
+              <AddToCartButton label="Add" disabled={product.stock <= 0} className="w-full py-2" />
+            </form>
+            <form action={toggleWishlistAction}>
+              <input type="hidden" name="productId" value={product.id} />
+              <input type="hidden" name="back" value="/browse" />
+              <button
+                type="submit"
+                aria-label={saved ? "Remove from saved" : "Save for later"}
+                className={cn(
+                  "grid h-9 w-9 cursor-pointer place-items-center rounded-[2px] border transition-colors",
+                  saved ? "border-ember/40 bg-ember/10 text-ember" : "border-line-warm text-ink-soft hover:border-ink/40 hover:text-ink",
+                )}
+              >
+                <Heart width={15} height={15} fill={saved ? "currentColor" : "none"} />
+              </button>
+            </form>
+          </div>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+export function ProductGrid({
+  products,
+  savedIds = [],
+  className,
+  columns = 4,
+}: {
+  products: Product[];
+  savedIds?: string[];
+  className?: string;
+  columns?: 3 | 4;
+}) {
+  return (
+    <div
+      className={cn(
+        "grid grid-cols-2 gap-x-3.5 gap-y-6",
+        columns === 4 ? "sm:grid-cols-3 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-3",
+        className,
+      )}
+    >
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} saved={savedIds.includes(product.id)} />
+      ))}
+    </div>
+  );
+}
+
+export function ProductRail({ products, savedIds = [] }: { products: Product[]; savedIds?: string[] }) {
+  return (
+    <div className="-mx-4 overflow-x-auto px-4 pb-2">
+      <div className="flex gap-3.5">
+        {products.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            saved={savedIds.includes(product.id)}
+            className="w-[220px] shrink-0"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function CategoryTile({ category }: { category: Category }) {
+  return (
+    <Link
+      href={`/browse?category=${category.slug}`}
+      className="group relative overflow-hidden rounded-[3px] border border-line-warm bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25"
+    >
+      <Plate seed={category.slug} accent="#e4572e" className="h-16 w-16 rounded-[3px]" />
+      <p className="mt-3.5 font-display text-[14.5px] font-semibold text-ink">{category.name}</p>
+      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-soft">{category.blurb}</p>
+      <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{category.count} listed</p>
+      <span className="absolute right-3 top-3 text-ink-soft transition-transform duration-300 group-hover:translate-x-0.5">
+        <ArrowRight width={14} height={14} />
+      </span>
+    </Link>
+  );
+}
+
+export function CollectionCard({ collection }: { collection: Collection }) {
+  return (
+    <Link
+      href={`/browse?collection=${collection.slug}`}
+      className="group relative overflow-hidden rounded-[3px] border border-line-warm bg-void p-5 transition-all duration-300 hover:-translate-y-0.5"
+    >
+      <Eyebrow className="text-lime">{collection.count} products</Eyebrow>
+      <p className="mt-2 font-display text-[18px] font-semibold text-chalk">{collection.name}</p>
+      <p className="mt-1.5 max-w-[34ch] text-[12.5px] leading-relaxed text-chalk-dim">{collection.blurb}</p>
+      <span className="mt-4 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk">
+        Shop the edit
+        <ArrowRight width={13} height={13} className="transition-transform group-hover:translate-x-0.5" />
+      </span>
+      <span
+        className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-30"
+        style={{ background: "radial-gradient(circle, #e4572e, transparent 70%)" }}
+      />
+    </Link>
+  );
+}
+
+export function StoreCard({ store }: { store: Merchant }) {
+  return (
+    <Link
+      href={`/store/${store.slug}`}
+      className="group relative overflow-hidden rounded-[3px] border border-line-warm bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className="grid h-11 w-11 place-items-center rounded-[2px] font-display text-[16px] font-extrabold"
+          style={{ background: store.brand.accent, color: store.brand.accentInk }}
+        >
+          {store.name.slice(0, 1)}
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{store.brand.template}</span>
+      </div>
+      <p className="mt-3.5 flex items-center gap-1.5 font-display text-[15.5px] font-semibold text-ink">
+        {store.name}
+        {store.verified ? (
+          <span className="grid h-4 w-4 place-items-center rounded-full bg-pine text-white">
+            <Check width={10} height={10} />
+          </span>
+        ) : null}
+      </p>
+      <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">{store.tagline}</p>
+      <p className="mt-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+        <MapPin width={11} height={11} />
+        {store.location}
+      </p>
+      <div className="mt-3.5 flex items-center justify-between border-t border-line-warm pt-3">
+        <span className="flex items-center gap-1.5">
+          <Stars value={store.rating} size={11} />
+          <span className="font-mono text-[10.5px] text-ink-soft">{store.rating.toFixed(1)}</span>
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+          {store.productCount} products
+        </span>
+      </div>
+      <span
+        className="absolute inset-x-0 bottom-0 h-[3px] scale-x-0 transition-transform duration-300 group-hover:scale-x-100"
+        style={{ background: store.brand.accent }}
+      />
+    </Link>
+  );
+}
+
+export function RatingBars({ breakdown, total, rating }: { breakdown: Record<string, number>; total: number; rating: number }) {
+  return (
+    <div className="grid gap-2.5 sm:grid-cols-[auto_1fr]">
+      <div className="sm:w-[130px]">
+        <p className="font-display text-[34px] font-extrabold leading-none text-ink">{rating.toFixed(1)}</p>
+        <Stars value={rating} size={13} className="mt-2" />
+        <p className="mt-1.5 font-mono text-[10.5px] text-ink-soft">{compact(total)} reviews</p>
+      </div>
+      <div className="space-y-1.5">
+        {[5, 4, 3, 2, 1].map((star) => {
+          const count = breakdown?.[String(star)] ?? 0;
+          const pct = total ? Math.round((count / total) * 100) : 0;
+          return (
+            <div key={star} className="flex items-center gap-2.5">
+              <span className="w-8 font-mono text-[10.5px] text-ink-soft">{star}★</span>
+              <span className="h-1.5 flex-1 overflow-hidden rounded-[1px] bg-bone-soft">
+                <span className="block h-full rounded-[1px] bg-ember" style={{ width: `${pct}%` }} />
+              </span>
+              <span className="w-10 text-right font-mono text-[10.5px] text-ink-soft">{pct}%</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function ReviewList({ reviews }: { reviews: Review[] }) {
+  if (!reviews.length)
+    return <p className="text-[13.5px] text-ink-soft">No reviews on this product yet.</p>;
+  return (
+    <ul className="divide-y divide-line-warm border-y border-line-warm">
+      {reviews.map((review) => (
+        <li key={review.id} className="py-4">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Stars value={review.rating} size={11} />
+            <p className="font-display text-[14px] font-semibold text-ink">{review.title}</p>
+            {review.verified ? <Pill tone="success">Verified buyer</Pill> : null}
+          </div>
+          <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">{review.body}</p>
+          <p className="mt-2 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">
+            {review.author} · {dateShort(review.date)} · {review.helpful} found this helpful
+          </p>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function QtyStepper({ lineKey, qty }: { lineKey: string; qty: number }) {
+  return (
+    <div className="inline-flex items-center rounded-[2px] border border-line-warm bg-white">
+      <form action={setQtyAction}>
+        <input type="hidden" name="key" value={lineKey} />
+        <input type="hidden" name="qty" value={qty - 1} />
+        <button
+          type="submit"
+          aria-label="Decrease quantity"
+          className="grid h-9 w-9 cursor-pointer place-items-center text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
+        >
+          <Minus width={13} height={13} />
+        </button>
+      </form>
+      <span className="w-9 text-center font-mono text-[13px] tabular-nums text-ink">{qty}</span>
+      <form action={setQtyAction}>
+        <input type="hidden" name="key" value={lineKey} />
+        <input type="hidden" name="qty" value={qty + 1} />
+        <button
+          type="submit"
+          aria-label="Increase quantity"
+          className="grid h-9 w-9 cursor-pointer place-items-center text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
+        >
+          <Plus width={13} height={13} />
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export function CartLineRow({ line }: { line: { key: string; product: Product; variant: string | null; qty: number; lineTotal: number } }) {
+  return (
+    <li className="flex gap-4 py-4">
+      <Link href={`/product/${line.product.slug}`} className="shrink-0">
+        <Plate seed={line.product.slug} className="h-24 w-24 rounded-[3px]" />
+      </Link>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{line.product.merchantName}</p>
+            <Link href={`/product/${line.product.slug}`} className="mt-0.5 block font-display text-[15px] font-semibold text-ink hover:text-ember">
+              {line.product.title}
+            </Link>
+            {line.variant ? <p className="mt-1 font-mono text-[10.5px] text-ink-soft">{line.variant}</p> : null}
+          </div>
+          <p className="font-mono text-[14px] font-semibold text-ink">{money(line.lineTotal)}</p>
+        </div>
+        <div className="mt-auto flex flex-wrap items-center gap-3 pt-3">
+          <QtyStepper lineKey={line.key} qty={line.qty} />
+          <form action={saveForLaterAction}>
+            <input type="hidden" name="key" value={line.key} />
+            <button type="submit" className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
+              <Heart width={12} height={12} /> Save for later
+            </button>
+          </form>
+          <form action={removeLineAction}>
+            <input type="hidden" name="key" value={line.key} />
+            <button type="submit" className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
+              <Trash2 width={12} height={12} /> Remove
+            </button>
+          </form>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+export function TrustStrip() {
+  return (
+    <section className="border-y border-line-warm bg-bone-soft/60">
+      <div className="mx-auto grid max-w-[1240px] gap-6 px-4 py-8 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { title: "Delivery in 2-5 days", body: "Tracked across seven countries" },
+          { title: "Buyer protection", body: "Refunded if it never arrives" },
+          { title: "30-day returns", body: "Free on orders above $120" },
+          { title: "Merchant support", body: "Answered by the seller, not a bot" },
+        ].map((item) => (
+          <div key={item.title} className="flex items-start gap-3">
+            <Truck width={19} height={19} strokeWidth={1.5} className="mt-0.5 shrink-0 text-ember" />
+            <div>
+              <p className="font-display text-[14px] font-semibold text-ink">{item.title}</p>
+              <p className="mt-0.5 text-[12.5px] text-ink-soft">{item.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
