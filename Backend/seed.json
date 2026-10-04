@@ -1,0 +1,3688 @@
+{
+  "categories": [
+    {
+      "slug": "electronics",
+      "name": "Electronics",
+      "glyph": "Cpu",
+      "blurb": "Everyday tech that earns its place"
+    },
+    {
+      "slug": "audio",
+      "name": "Audio",
+      "glyph": "Headphones",
+      "blurb": "Headphones, speakers and studio gear"
+    },
+    {
+      "slug": "computing",
+      "name": "Computing",
+      "glyph": "Laptop",
+      "blurb": "Laptops, keyboards and desks"
+    },
+    {
+      "slug": "gaming",
+      "name": "Gaming",
+      "glyph": "Gamepad2",
+      "blurb": "Controllers, monitors and precision gear"
+    },
+    {
+      "slug": "phones",
+      "name": "Phones",
+      "glyph": "Smartphone",
+      "blurb": "Handsets, cases and charging"
+    },
+    {
+      "slug": "fashion",
+      "name": "Fashion",
+      "glyph": "Shirt",
+      "blurb": "Tailoring, knitwear and footwear"
+    },
+    {
+      "slug": "home",
+      "name": "Home",
+      "glyph": "Sofa",
+      "blurb": "Furniture, lighting and textiles"
+    },
+    {
+      "slug": "beauty",
+      "name": "Beauty",
+      "glyph": "Sparkles",
+      "blurb": "Skincare and everyday rituals"
+    },
+    {
+      "slug": "sports",
+      "name": "Sports",
+      "glyph": "Dumbbell",
+      "blurb": "Training and recovery"
+    },
+    {
+      "slug": "pantry",
+      "name": "Pantry",
+      "glyph": "ShoppingBasket",
+      "blurb": "Coffee, oils and store-cupboard staples"
+    }
+  ],
+  "collections": [
+    {
+      "slug": "autumn-edit",
+      "name": "The Autumn Edit",
+      "blurb": "Warm layers, lighting and slow mornings"
+    },
+    {
+      "slug": "work-from-anywhere",
+      "name": "Work From Anywhere",
+      "blurb": "Desk kit that travels"
+    },
+    {
+      "slug": "audio-upgrade",
+      "name": "Audio Upgrade",
+      "blurb": "Everything that plays"
+    },
+    {
+      "slug": "gift-guide",
+      "name": "Gift Guide",
+      "blurb": "Highly rated, easy to give"
+    },
+    {
+      "slug": "under-100",
+      "name": "Under $100",
+      "blurb": "Small things, real quality"
+    }
+  ],
+  "merchants": [
+    {
+      "id": "abc-electronics",
+      "slug": "abc-electronics",
+      "name": "ABC Electronics",
+      "tagline": "Computing, audio and everyday tech that lasts",
+      "about": "ABC Electronics has supplied Lagos with dependable hardware since 2023. Every unit is bench-tested before it ships, and the support line is answered by the people who pack the boxes.",
+      "domain": "abc.ferixas.com",
+      "customDomain": "abcelectronics.com",
+      "plan": "Scale",
+      "status": "active",
+      "verified": true,
+      "location": "Lagos, Nigeria",
+      "since": "2023-04-11",
+      "rating": 4.7,
+      "reviewCount": 1284,
+      "followers": 8420,
+      "commissionPct": 8.0,
+      "balance": 18422.4,
+      "pendingPayout": 2310.8,
+      "marketplaceEnabled": true,
+      "responseRate": 97,
+      "fulfilmentRate": 98,
+      "brand": {
+        "template": "FERRUM",
+        "canvas": "#f5f2ec",
+        "surface": "#ffffff",
+        "ink": "#14110e",
+        "muted": "#6b635a",
+        "accent": "#e4572e",
+        "accentInk": "#ffffff",
+        "displayFont": "Bricolage Grotesque",
+        "radius": 3,
+        "hero": "split"
+      }
+    },
+    {
+      "id": "aurasound",
+      "slug": "aurasound",
+      "name": "AuraSound Audio",
+      "tagline": "Tuned by ear in Cape Town",
+      "about": "AuraSound builds audio for people who listen closely. Drivers are measured in-house and every model is tuned against a reference pair before release.",
+      "domain": "aurasound.ferixas.com",
+      "customDomain": "aurasound.co.za",
+      "plan": "Growth",
+      "status": "active",
+      "verified": true,
+      "location": "Cape Town, South Africa",
+      "since": "2023-09-02",
+      "rating": 4.8,
+      "reviewCount": 902,
+      "followers": 12140,
+      "commissionPct": 7.5,
+      "balance": 24180.1,
+      "pendingPayout": 4180.0,
+      "marketplaceEnabled": true,
+      "responseRate": 98,
+      "fulfilmentRate": 99,
+      "brand": {
+        "template": "GRID",
+        "canvas": "#0b0d11",
+        "surface": "#131821",
+        "ink": "#e9ecf1",
+        "muted": "#8b95a6",
+        "accent": "#2f6f8f",
+        "accentInk": "#ffffff",
+        "displayFont": "Bricolage Grotesque",
+        "radius": 3,
+        "hero": "banner"
+      }
+    },
+    {
+      "id": "nova-fashion",
+      "slug": "nova-fashion",
+      "name": "Nova Fashion",
+      "tagline": "Quiet tailoring, made to be worn",
+      "about": "Nova Fashion cuts small runs in Accra. Natural fibres, generous seams and a repair service on everything they sell.",
+      "domain": "nova.ferixas.com",
+      "customDomain": null,
+      "plan": "Growth",
+      "status": "active",
+      "verified": true,
+      "location": "Accra, Ghana",
+      "since": "2024-01-19",
+      "rating": 4.6,
+      "reviewCount": 640,
+      "followers": 6180,
+      "commissionPct": 9.0,
+      "balance": 9310.6,
+      "pendingPayout": 1420.3,
+      "marketplaceEnabled": true,
+      "responseRate": 94,
+      "fulfilmentRate": 96,
+      "brand": {
+        "template": "ATELIER",
+        "canvas": "#f5f2ec",
+        "surface": "#ebe6dc",
+        "ink": "#14110e",
+        "muted": "#6b635a",
+        "accent": "#6b4a5c",
+        "accentInk": "#ffffff",
+        "displayFont": "Bricolage Grotesque",
+        "radius": 0,
+        "hero": "centered"
+      }
+    },
+    {
+      "id": "sahel-supply",
+      "slug": "sahel-supply",
+      "name": "Sahel Supply",
+      "tagline": "Store-cupboard staples done properly",
+      "about": "Sahel Supply works directly with growers across the Sahel. Single-origin lots, cold-pressed oils and spice blends milled to order.",
+      "domain": "sahel.ferixas.com",
+      "customDomain": null,
+      "plan": "Starter",
+      "status": "active",
+      "verified": true,
+      "location": "Kano, Nigeria",
+      "since": "2024-03-08",
+      "rating": 4.9,
+      "reviewCount": 512,
+      "followers": 5320,
+      "commissionPct": 10.0,
+      "balance": 6120.9,
+      "pendingPayout": 880.4,
+      "marketplaceEnabled": true,
+      "responseRate": 96,
+      "fulfilmentRate": 97,
+      "brand": {
+        "template": "HEARTH",
+        "canvas": "#f5f2ec",
+        "surface": "#ffffff",
+        "ink": "#14110e",
+        "muted": "#6b635a",
+        "accent": "#1f4b43",
+        "accentInk": "#ffffff",
+        "displayFont": "Bricolage Grotesque",
+        "radius": 6,
+        "hero": "split"
+      }
+    },
+    {
+      "id": "lumen-home",
+      "slug": "lumen-home",
+      "name": "Lumen Home",
+      "tagline": "Light, linen and stoneware",
+      "about": "Lumen Home makes domestic objects in Nairobi with a long life in mind. Replaceable parts, honest materials, no seasonal churn.",
+      "domain": "lumen.ferixas.com",
+      "customDomain": null,
+      "plan": "Growth",
+      "status": "active",
+      "verified": true,
+      "location": "Nairobi, Kenya",
+      "since": "2023-11-27",
+      "rating": 4.7,
+      "reviewCount": 388,
+      "followers": 4110,
+      "commissionPct": 9.5,
+      "balance": 7840.2,
+      "pendingPayout": 990.7,
+      "marketplaceEnabled": true,
+      "responseRate": 95,
+      "fulfilmentRate": 95,
+      "brand": {
+        "template": "HEARTH",
+        "canvas": "#ebe6dc",
+        "surface": "#ffffff",
+        "ink": "#14110e",
+        "muted": "#6b635a",
+        "accent": "#c9a24d",
+        "accentInk": "#14110e",
+        "displayFont": "Bricolage Grotesque",
+        "radius": 8,
+        "hero": "centered"
+      }
+    },
+    {
+      "id": "pixel-gaming",
+      "slug": "pixel-gaming",
+      "name": "PixelForge Gaming",
+      "tagline": "Precision gear for long sessions",
+      "about": "PixelForge tests every switch, sensor and panel before it goes on sale. Built for people who notice the difference.",
+      "domain": "pixelforge.ferixas.com",
+      "customDomain": null,
+      "plan": "Growth",
+      "status": "active",
+      "verified": true,
+      "location": "Lagos, Nigeria",
+      "since": "2024-02-14",
+      "rating": 4.6,
+      "reviewCount": 456,
+      "followers": 6880,
+      "commissionPct": 8.5,
+      "balance": 11260.5,
+      "pendingPayout": 1730.9,
+      "marketplaceEnabled": true,
+      "responseRate": 93,
+      "fulfilmentRate": 96,
+      "brand": {
+        "template": "CIRCUIT",
+        "canvas": "#0b0d11",
+        "surface": "#131821",
+        "ink": "#e9ecf1",
+        "muted": "#8b95a6",
+        "accent": "#c9f24d",
+        "accentInk": "#0b0d11",
+        "displayFont": "Bricolage Grotesque",
+        "radius": 2,
+        "hero": "split"
+      }
+    },
+    {
+      "id": "verdant-beauty",
+      "slug": "verdant-beauty",
+      "name": "Verdant Beauty",
+      "tagline": "Short ingredient lists that work",
+      "about": "Verdant Beauty formulates in Abuja with clinically studied actives and no filler. Batch dates are printed on every bottle.",
+      "domain": "verdant.ferixas.com",
+      "customDomain": null,
+      "plan": "Starter",
+      "status": "active",
+      "verified": true,
+      "location": "Abuja, Nigeria",
+      "since": "2024-05-06",
+      "rating": 4.8,
+      "reviewCount": 274,
+      "followers": 3640,
+      "commissionPct": 11.0,
+      "balance": 4380.3,
+      "pendingPayout": 640.1,
+      "marketplaceEnabled": true,
+      "responseRate": 92,
+      "fulfilmentRate": 94,
+      "brand": {
+        "template": "ATELIER",
+        "canvas": "#f5f2ec",
+        "surface": "#ebe6dc",
+        "ink": "#14110e",
+        "muted": "#6b635a",
+        "accent": "#2f6f8f",
+        "accentInk": "#ffffff",
+        "displayFont": "Bricolage Grotesque",
+        "radius": 4,
+        "hero": "centered"
+      }
+    },
+    {
+      "id": "ferixas-official",
+      "slug": "ferixas-official",
+      "name": "Ferixas Official Store",
+      "tagline": "Sold by the platform, on the same terms as everyone else",
+      "about": "The platform sells its own hardware through exactly the same catalogue, the same channels and the same checkout as every other tenant. Nothing special-cased, nothing privileged.",
+      "domain": "ferixas.com",
+      "customDomain": null,
+      "plan": "Platform",
+      "status": "active",
+      "verified": true,
+      "location": "Lagos, Nigeria",
+      "since": "2023-01-04",
+      "rating": 4.5,
+      "reviewCount": 986,
+      "followers": 15420,
+      "commissionPct": 0.0,
+      "balance": 0.0,
+      "pendingPayout": 0.0,
+      "marketplaceEnabled": true,
+      "responseRate": 99,
+      "fulfilmentRate": 99,
+      "brand": {
+        "template": "FERRUM",
+        "canvas": "#f5f2ec",
+        "surface": "#ffffff",
+        "ink": "#14110e",
+        "muted": "#6b635a",
+        "accent": "#c9a24d",
+        "accentInk": "#14110e",
+        "displayFont": "Bricolage Grotesque",
+        "radius": 3,
+        "hero": "banner"
+      }
+    }
+  ],
+  "products": [
+    {
+      "id": "prd_aurasound-pro-anc-headphones",
+      "slug": "aurasound-pro-anc-headphones",
+      "title": "AuraSound Pro ANC Headphones",
+      "merchantId": "aurasound",
+      "merchantName": "AuraSound Audio",
+      "merchantSlug": "aurasound",
+      "category": "audio",
+      "collections": [
+        "audio-upgrade",
+        "gift-guide"
+      ],
+      "description": "AuraSound Pro ANC Headphones by AuraSound Audio. Headphones, speakers and studio gear. Dispatched from Cape Town, South Africa within one working day.",
+      "bullets": [
+        "Tuned in-house against a reference pair",
+        "Up to 40 hours of playback",
+        "Memory-foam tips in three sizes",
+        "Two-year warranty"
+      ],
+      "price": 249.0,
+      "compareAt": 299.0,
+      "discount": 17,
+      "cost": 154.38,
+      "sku": "AUR-PRO-ANC",
+      "stock": 42,
+      "lowStockAt": 25,
+      "rating": 4.8,
+      "reviewCount": 412,
+      "ratingBreakdown": {
+        "5": 323,
+        "4": 47,
+        "3": 25,
+        "2": 10,
+        "1": 6
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Bone"
+          ]
+        }
+      ],
+      "plates": 1,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "AuraSound Pro ANC Headphones | Ferixas",
+        "description": "AuraSound Pro ANC Headphones",
+        "handle": "aurasound-pro-anc-headphones"
+      },
+      "tags": [
+        "audio",
+        "aurasound",
+        "sale"
+      ],
+      "createdAt": "2026-09-28T08:39:05.031399+00:00",
+      "sold30d": 318,
+      "views30d": 9120
+    },
+    {
+      "id": "prd_aurasound-studio-monitor-pair",
+      "slug": "aurasound-studio-monitor-pair",
+      "title": "AuraSound Studio Monitor Pair",
+      "merchantId": "aurasound",
+      "merchantName": "AuraSound Audio",
+      "merchantSlug": "aurasound",
+      "category": "audio",
+      "collections": [
+        "audio-upgrade",
+        "gift-guide"
+      ],
+      "description": "AuraSound Studio Monitor Pair by AuraSound Audio. Headphones, speakers and studio gear. Dispatched from Cape Town, South Africa within one working day.",
+      "bullets": [
+        "Tuned in-house against a reference pair",
+        "Up to 40 hours of playback",
+        "Memory-foam tips in three sizes",
+        "Two-year warranty"
+      ],
+      "price": 389.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 241.18,
+      "sku": "AUR-STM-PR",
+      "stock": 18,
+      "lowStockAt": 25,
+      "rating": 4.9,
+      "reviewCount": 96,
+      "ratingBreakdown": {
+        "5": 79,
+        "4": 8,
+        "3": 6,
+        "2": 2,
+        "1": 1
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Bone"
+          ]
+        }
+      ],
+      "plates": 2,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "AuraSound Studio Monitor Pair | Ferixas",
+        "description": "AuraSound Studio Monitor Pair",
+        "handle": "aurasound-studio-monitor-pair"
+      },
+      "tags": [
+        "audio",
+        "aurasound",
+        "new"
+      ],
+      "createdAt": "2026-09-25T08:39:05.031437+00:00",
+      "sold30d": 74,
+      "views30d": 2140
+    },
+    {
+      "id": "prd_aurasound-go-mini-speaker",
+      "slug": "aurasound-go-mini-speaker",
+      "title": "AuraSound Go Mini Speaker",
+      "merchantId": "aurasound",
+      "merchantName": "AuraSound Audio",
+      "merchantSlug": "aurasound",
+      "category": "audio",
+      "collections": [
+        "under-100",
+        "audio-upgrade"
+      ],
+      "description": "AuraSound Go Mini Speaker by AuraSound Audio. Headphones, speakers and studio gear. Dispatched from Cape Town, South Africa within one working day.",
+      "bullets": [
+        "Tuned in-house against a reference pair",
+        "Up to 40 hours of playback",
+        "Memory-foam tips in three sizes",
+        "Two-year warranty"
+      ],
+      "price": 59.0,
+      "compareAt": 79.0,
+      "discount": 25,
+      "cost": 36.58,
+      "sku": "AUR-GO-MINI",
+      "stock": 140,
+      "lowStockAt": 25,
+      "rating": 4.5,
+      "reviewCount": 268,
+      "ratingBreakdown": {
+        "5": 182,
+        "4": 59,
+        "3": 16,
+        "2": 7,
+        "1": 4
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Bone"
+          ]
+        }
+      ],
+      "plates": 3,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "AuraSound Go Mini Speaker | Ferixas",
+        "description": "AuraSound Go Mini Speaker",
+        "handle": "aurasound-go-mini-speaker"
+      },
+      "tags": [
+        "audio",
+        "aurasound",
+        "sale"
+      ],
+      "createdAt": "2026-09-22T08:39:05.031454+00:00",
+      "sold30d": 612,
+      "views30d": 15380
+    },
+    {
+      "id": "prd_abc-ultrabook-14-pro",
+      "slug": "abc-ultrabook-14-pro",
+      "title": "ABC Ultrabook 14 Pro",
+      "merchantId": "abc-electronics",
+      "merchantName": "ABC Electronics",
+      "merchantSlug": "abc-electronics",
+      "category": "computing",
+      "collections": [
+        "work-from-anywhere",
+        "gift-guide"
+      ],
+      "description": "ABC Ultrabook 14 Pro by ABC Electronics. Laptops, keyboards and desks. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Machined aluminium chassis",
+        "Rated for 12 hours of real work",
+        "Silent under sustained load",
+        "Three-year warranty"
+      ],
+      "price": 1299.0,
+      "compareAt": 1449.0,
+      "discount": 10,
+      "cost": 805.38,
+      "sku": "ABC-UB14-PRO",
+      "stock": 23,
+      "lowStockAt": 25,
+      "rating": 4.7,
+      "reviewCount": 182,
+      "ratingBreakdown": {
+        "5": 137,
+        "4": 27,
+        "3": 11,
+        "2": 5,
+        "1": 3
+      },
+      "variants": [
+        {
+          "name": "Storage",
+          "values": [
+            "512GB",
+            "1TB"
+          ]
+        },
+        {
+          "name": "Memory",
+          "values": [
+            "16GB",
+            "32GB"
+          ]
+        }
+      ],
+      "plates": 4,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "ABC Ultrabook 14 Pro | Ferixas",
+        "description": "ABC Ultrabook 14 Pro",
+        "handle": "abc-ultrabook-14-pro"
+      },
+      "tags": [
+        "abc-electronics",
+        "computing",
+        "sale"
+      ],
+      "createdAt": "2026-09-19T08:39:05.031466+00:00",
+      "sold30d": 96,
+      "views30d": 7420
+    },
+    {
+      "id": "prd_abc-mechanical-keyboard-k87",
+      "slug": "abc-mechanical-keyboard-k87",
+      "title": "ABC Mechanical Keyboard K87",
+      "merchantId": "abc-electronics",
+      "merchantName": "ABC Electronics",
+      "merchantSlug": "abc-electronics",
+      "category": "computing",
+      "collections": [
+        "work-from-anywhere",
+        "gift-guide"
+      ],
+      "description": "ABC Mechanical Keyboard K87 by ABC Electronics. Laptops, keyboards and desks. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Machined aluminium chassis",
+        "Rated for 12 hours of real work",
+        "Silent under sustained load",
+        "Three-year warranty"
+      ],
+      "price": 129.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 79.98,
+      "sku": "ABC-K87",
+      "stock": 64,
+      "lowStockAt": 25,
+      "rating": 4.6,
+      "reviewCount": 240,
+      "ratingBreakdown": {
+        "5": 172,
+        "4": 44,
+        "3": 14,
+        "2": 6,
+        "1": 4
+      },
+      "variants": [
+        {
+          "name": "Storage",
+          "values": [
+            "512GB",
+            "1TB"
+          ]
+        },
+        {
+          "name": "Memory",
+          "values": [
+            "16GB",
+            "32GB"
+          ]
+        }
+      ],
+      "plates": 1,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "ABC Mechanical Keyboard K87 | Ferixas",
+        "description": "ABC Mechanical Keyboard K87",
+        "handle": "abc-mechanical-keyboard-k87"
+      },
+      "tags": [
+        "abc-electronics",
+        "computing",
+        "new"
+      ],
+      "createdAt": "2026-09-16T08:39:05.031477+00:00",
+      "sold30d": 410,
+      "views30d": 11240
+    },
+    {
+      "id": "prd_abc-4k-webcam-studio",
+      "slug": "abc-4k-webcam-studio",
+      "title": "ABC 4K Webcam Studio",
+      "merchantId": "abc-electronics",
+      "merchantName": "ABC Electronics",
+      "merchantSlug": "abc-electronics",
+      "category": "electronics",
+      "collections": [
+        "work-from-anywhere"
+      ],
+      "description": "ABC 4K Webcam Studio by ABC Electronics. Everyday tech that earns its place. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Bench-tested before dispatch",
+        "Works with USB-C and USB-A",
+        "Compact enough for a laptop bag",
+        "Two-year warranty"
+      ],
+      "price": 119.0,
+      "compareAt": 139.0,
+      "discount": 14,
+      "cost": 73.78,
+      "sku": "ABC-CAM-4K",
+      "stock": 88,
+      "lowStockAt": 25,
+      "rating": 4.4,
+      "reviewCount": 150,
+      "ratingBreakdown": {
+        "5": 97,
+        "4": 38,
+        "3": 9,
+        "2": 4,
+        "1": 2
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Chalk"
+          ]
+        }
+      ],
+      "plates": 2,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "ABC 4K Webcam Studio | Ferixas",
+        "description": "ABC 4K Webcam Studio",
+        "handle": "abc-4k-webcam-studio"
+      },
+      "tags": [
+        "abc-electronics",
+        "electronics",
+        "sale"
+      ],
+      "createdAt": "2026-09-13T08:39:05.031487+00:00",
+      "sold30d": 286,
+      "views30d": 8010
+    },
+    {
+      "id": "prd_abc-noise-cancelling-earbuds",
+      "slug": "abc-noise-cancelling-earbuds",
+      "title": "ABC Noise-Cancelling Earbuds",
+      "merchantId": "abc-electronics",
+      "merchantName": "ABC Electronics",
+      "merchantSlug": "abc-electronics",
+      "category": "audio",
+      "collections": [
+        "under-100",
+        "audio-upgrade"
+      ],
+      "description": "ABC Noise-Cancelling Earbuds by ABC Electronics. Headphones, speakers and studio gear. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Tuned in-house against a reference pair",
+        "Up to 40 hours of playback",
+        "Memory-foam tips in three sizes",
+        "Two-year warranty"
+      ],
+      "price": 89.0,
+      "compareAt": 109.0,
+      "discount": 18,
+      "cost": 55.18,
+      "sku": "ABC-NC-BUD",
+      "stock": 210,
+      "lowStockAt": 25,
+      "rating": 4.3,
+      "reviewCount": 520,
+      "ratingBreakdown": {
+        "5": 317,
+        "4": 151,
+        "3": 31,
+        "2": 13,
+        "1": 8
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Bone"
+          ]
+        }
+      ],
+      "plates": 3,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "ABC Noise-Cancelling Earbuds | Ferixas",
+        "description": "ABC Noise-Cancelling Earbuds",
+        "handle": "abc-noise-cancelling-earbuds"
+      },
+      "tags": [
+        "abc-electronics",
+        "audio",
+        "sale"
+      ],
+      "createdAt": "2026-09-10T08:39:05.031497+00:00",
+      "sold30d": 940,
+      "views30d": 21100
+    },
+    {
+      "id": "prd_abc-smart-thermostat-h1",
+      "slug": "abc-smart-thermostat-h1",
+      "title": "ABC Smart Thermostat H1",
+      "merchantId": "abc-electronics",
+      "merchantName": "ABC Electronics",
+      "merchantSlug": "abc-electronics",
+      "category": "home",
+      "collections": [
+        "autumn-edit"
+      ],
+      "description": "ABC Smart Thermostat H1 by ABC Electronics. Furniture, lighting and textiles. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Replaceable parts, not disposable",
+        "Made from honest materials",
+        "Wipe-clean surface",
+        "Five-year warranty"
+      ],
+      "price": 179.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 110.98,
+      "sku": "ABC-THRM-H1",
+      "stock": 37,
+      "lowStockAt": 25,
+      "rating": 4.5,
+      "reviewCount": 88,
+      "ratingBreakdown": {
+        "5": 60,
+        "4": 19,
+        "3": 5,
+        "2": 2,
+        "1": 1
+      },
+      "variants": [
+        {
+          "name": "Finish",
+          "values": [
+            "Natural",
+            "Charcoal"
+          ]
+        }
+      ],
+      "plates": 4,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "ABC Smart Thermostat H1 | Ferixas",
+        "description": "ABC Smart Thermostat H1",
+        "handle": "abc-smart-thermostat-h1"
+      },
+      "tags": [
+        "abc-electronics",
+        "home",
+        "new"
+      ],
+      "createdAt": "2026-09-07T08:39:05.031506+00:00",
+      "sold30d": 142,
+      "views30d": 3980
+    },
+    {
+      "id": "prd_abc-usb-c-dock-12",
+      "slug": "abc-usb-c-dock-12",
+      "title": "ABC USB-C Dock 12",
+      "merchantId": "abc-electronics",
+      "merchantName": "ABC Electronics",
+      "merchantSlug": "abc-electronics",
+      "category": "computing",
+      "collections": [
+        "work-from-anywhere"
+      ],
+      "description": "ABC USB-C Dock 12 by ABC Electronics. Laptops, keyboards and desks. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Machined aluminium chassis",
+        "Rated for 12 hours of real work",
+        "Silent under sustained load",
+        "Three-year warranty"
+      ],
+      "price": 159.0,
+      "compareAt": 189.0,
+      "discount": 16,
+      "cost": 98.58,
+      "sku": "ABC-DOCK-12",
+      "stock": 54,
+      "lowStockAt": 25,
+      "rating": 4.5,
+      "reviewCount": 176,
+      "ratingBreakdown": {
+        "5": 120,
+        "4": 39,
+        "3": 11,
+        "2": 4,
+        "1": 3
+      },
+      "variants": [
+        {
+          "name": "Storage",
+          "values": [
+            "512GB",
+            "1TB"
+          ]
+        },
+        {
+          "name": "Memory",
+          "values": [
+            "16GB",
+            "32GB"
+          ]
+        }
+      ],
+      "plates": 1,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "ABC USB-C Dock 12 | Ferixas",
+        "description": "ABC USB-C Dock 12",
+        "handle": "abc-usb-c-dock-12"
+      },
+      "tags": [
+        "abc-electronics",
+        "computing",
+        "sale"
+      ],
+      "createdAt": "2026-09-04T08:39:05.031516+00:00",
+      "sold30d": 232,
+      "views30d": 6410
+    },
+    {
+      "id": "prd_nova-linen-overshirt",
+      "slug": "nova-linen-overshirt",
+      "title": "Nova Linen Overshirt",
+      "merchantId": "nova-fashion",
+      "merchantName": "Nova Fashion",
+      "merchantSlug": "nova-fashion",
+      "category": "fashion",
+      "collections": [
+        "under-100",
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Nova Linen Overshirt by Nova Fashion. Tailoring, knitwear and footwear. Dispatched from Accra, Ghana within one working day.",
+      "bullets": [
+        "Natural fibre, no blends",
+        "Generous seams for alteration",
+        "Free repairs for two years",
+        "Pre-washed, true to size"
+      ],
+      "price": 96.0,
+      "compareAt": 120.0,
+      "discount": 20,
+      "cost": 59.52,
+      "sku": "NOV-LIN-OVR",
+      "stock": 54,
+      "lowStockAt": 25,
+      "rating": 4.7,
+      "reviewCount": 164,
+      "ratingBreakdown": {
+        "5": 123,
+        "4": 25,
+        "3": 10,
+        "2": 4,
+        "1": 2
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        {
+          "name": "Colour",
+          "values": [
+            "Bone",
+            "Ink"
+          ]
+        }
+      ],
+      "plates": 2,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Nova Linen Overshirt | Ferixas",
+        "description": "Nova Linen Overshirt",
+        "handle": "nova-linen-overshirt"
+      },
+      "tags": [
+        "fashion",
+        "nova-fashion",
+        "sale"
+      ],
+      "createdAt": "2026-09-01T08:39:05.031526+00:00",
+      "sold30d": 238,
+      "views30d": 6240
+    },
+    {
+      "id": "prd_nova-tailored-wool-coat",
+      "slug": "nova-tailored-wool-coat",
+      "title": "Nova Tailored Wool Coat",
+      "merchantId": "nova-fashion",
+      "merchantName": "Nova Fashion",
+      "merchantSlug": "nova-fashion",
+      "category": "fashion",
+      "collections": [
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Nova Tailored Wool Coat by Nova Fashion. Tailoring, knitwear and footwear. Dispatched from Accra, Ghana within one working day.",
+      "bullets": [
+        "Natural fibre, no blends",
+        "Generous seams for alteration",
+        "Free repairs for two years",
+        "Pre-washed, true to size"
+      ],
+      "price": 289.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 179.18,
+      "sku": "NOV-WOOL-CT",
+      "stock": 21,
+      "lowStockAt": 25,
+      "rating": 4.8,
+      "reviewCount": 74,
+      "ratingBreakdown": {
+        "5": 58,
+        "4": 9,
+        "3": 4,
+        "2": 2,
+        "1": 1
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        {
+          "name": "Colour",
+          "values": [
+            "Bone",
+            "Ink"
+          ]
+        }
+      ],
+      "plates": 3,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Nova Tailored Wool Coat | Ferixas",
+        "description": "Nova Tailored Wool Coat",
+        "handle": "nova-tailored-wool-coat"
+      },
+      "tags": [
+        "fashion",
+        "new",
+        "nova-fashion"
+      ],
+      "createdAt": "2026-08-29T08:39:05.031535+00:00",
+      "sold30d": 62,
+      "views30d": 2980
+    },
+    {
+      "id": "prd_nova-everyday-sneaker",
+      "slug": "nova-everyday-sneaker",
+      "title": "Nova Everyday Sneaker",
+      "merchantId": "nova-fashion",
+      "merchantName": "Nova Fashion",
+      "merchantSlug": "nova-fashion",
+      "category": "fashion",
+      "collections": [
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Nova Everyday Sneaker by Nova Fashion. Tailoring, knitwear and footwear. Dispatched from Accra, Ghana within one working day.",
+      "bullets": [
+        "Natural fibre, no blends",
+        "Generous seams for alteration",
+        "Free repairs for two years",
+        "Pre-washed, true to size"
+      ],
+      "price": 118.0,
+      "compareAt": 145.0,
+      "discount": 19,
+      "cost": 73.16,
+      "sku": "NOV-SNK-EV",
+      "stock": 132,
+      "lowStockAt": 25,
+      "rating": 4.6,
+      "reviewCount": 392,
+      "ratingBreakdown": {
+        "5": 280,
+        "4": 73,
+        "3": 24,
+        "2": 10,
+        "1": 6
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        {
+          "name": "Colour",
+          "values": [
+            "Bone",
+            "Ink"
+          ]
+        }
+      ],
+      "plates": 4,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Nova Everyday Sneaker | Ferixas",
+        "description": "Nova Everyday Sneaker",
+        "handle": "nova-everyday-sneaker"
+      },
+      "tags": [
+        "fashion",
+        "nova-fashion",
+        "sale"
+      ],
+      "createdAt": "2026-08-26T08:39:05.031543+00:00",
+      "sold30d": 566,
+      "views30d": 14280
+    },
+    {
+      "id": "prd_nova-silk-scarf",
+      "slug": "nova-silk-scarf",
+      "title": "Nova Silk Scarf",
+      "merchantId": "nova-fashion",
+      "merchantName": "Nova Fashion",
+      "merchantSlug": "nova-fashion",
+      "category": "fashion",
+      "collections": [
+        "under-100",
+        "autumn-edit"
+      ],
+      "description": "Nova Silk Scarf by Nova Fashion. Tailoring, knitwear and footwear. Dispatched from Accra, Ghana within one working day.",
+      "bullets": [
+        "Natural fibre, no blends",
+        "Generous seams for alteration",
+        "Free repairs for two years",
+        "Pre-washed, true to size"
+      ],
+      "price": 48.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 29.76,
+      "sku": "NOV-SLK-SCF",
+      "stock": 88,
+      "lowStockAt": 25,
+      "rating": 4.4,
+      "reviewCount": 120,
+      "ratingBreakdown": {
+        "5": 77,
+        "4": 31,
+        "3": 7,
+        "2": 3,
+        "1": 2
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        {
+          "name": "Colour",
+          "values": [
+            "Bone",
+            "Ink"
+          ]
+        }
+      ],
+      "plates": 1,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Nova Silk Scarf | Ferixas",
+        "description": "Nova Silk Scarf",
+        "handle": "nova-silk-scarf"
+      },
+      "tags": [
+        "fashion",
+        "new",
+        "nova-fashion"
+      ],
+      "createdAt": "2026-08-23T08:39:05.031552+00:00",
+      "sold30d": 190,
+      "views30d": 4120
+    },
+    {
+      "id": "prd_nova-cotton-tee-heavy",
+      "slug": "nova-cotton-tee-heavy",
+      "title": "Nova Heavy Cotton Tee",
+      "merchantId": "nova-fashion",
+      "merchantName": "Nova Fashion",
+      "merchantSlug": "nova-fashion",
+      "category": "fashion",
+      "collections": [
+        "under-100",
+        "autumn-edit"
+      ],
+      "description": "Nova Heavy Cotton Tee by Nova Fashion. Tailoring, knitwear and footwear. Dispatched from Accra, Ghana within one working day.",
+      "bullets": [
+        "Natural fibre, no blends",
+        "Generous seams for alteration",
+        "Free repairs for two years",
+        "Pre-washed, true to size"
+      ],
+      "price": 38.0,
+      "compareAt": 45.0,
+      "discount": 16,
+      "cost": 23.56,
+      "sku": "NOV-TEE-HV",
+      "stock": 210,
+      "lowStockAt": 25,
+      "rating": 4.5,
+      "reviewCount": 480,
+      "ratingBreakdown": {
+        "5": 326,
+        "4": 106,
+        "3": 29,
+        "2": 12,
+        "1": 7
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        },
+        {
+          "name": "Colour",
+          "values": [
+            "Bone",
+            "Ink"
+          ]
+        }
+      ],
+      "plates": 2,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Nova Heavy Cotton Tee | Ferixas",
+        "description": "Nova Heavy Cotton Tee",
+        "handle": "nova-cotton-tee-heavy"
+      },
+      "tags": [
+        "fashion",
+        "nova-fashion",
+        "sale"
+      ],
+      "createdAt": "2026-08-20T08:39:05.031561+00:00",
+      "sold30d": 890,
+      "views30d": 20400
+    },
+    {
+      "id": "prd_sahel-cold-pressed-oil-trio",
+      "slug": "sahel-cold-pressed-oil-trio",
+      "title": "Sahel Cold-Pressed Oil Trio",
+      "merchantId": "sahel-supply",
+      "merchantName": "Sahel Supply",
+      "merchantSlug": "sahel-supply",
+      "category": "pantry",
+      "collections": [
+        "under-100",
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Sahel Cold-Pressed Oil Trio by Sahel Supply. Coffee, oils and store-cupboard staples. Dispatched from Kano, Nigeria within one working day.",
+      "bullets": [
+        "Sourced directly from growers",
+        "Milled or pressed to order",
+        "Recyclable packaging",
+        "Best-before 18 months"
+      ],
+      "price": 42.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 26.04,
+      "sku": "SAH-OIL-TRIO",
+      "stock": 180,
+      "lowStockAt": 25,
+      "rating": 4.9,
+      "reviewCount": 310,
+      "ratingBreakdown": {
+        "5": 254,
+        "4": 25,
+        "3": 19,
+        "2": 8,
+        "1": 5
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "250g",
+            "500g",
+            "1kg"
+          ]
+        }
+      ],
+      "plates": 3,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Sahel Cold-Pressed Oil Trio | Ferixas",
+        "description": "Sahel Cold-Pressed Oil Trio",
+        "handle": "sahel-cold-pressed-oil-trio"
+      },
+      "tags": [
+        "new",
+        "pantry",
+        "sahel-supply"
+      ],
+      "createdAt": "2026-08-17T08:39:05.031571+00:00",
+      "sold30d": 705,
+      "views30d": 16900
+    },
+    {
+      "id": "prd_sahel-single-origin-coffee",
+      "slug": "sahel-single-origin-coffee",
+      "title": "Sahel Single-Origin Coffee",
+      "merchantId": "sahel-supply",
+      "merchantName": "Sahel Supply",
+      "merchantSlug": "sahel-supply",
+      "category": "pantry",
+      "collections": [
+        "under-100",
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Sahel Single-Origin Coffee by Sahel Supply. Coffee, oils and store-cupboard staples. Dispatched from Kano, Nigeria within one working day.",
+      "bullets": [
+        "Sourced directly from growers",
+        "Milled or pressed to order",
+        "Recyclable packaging",
+        "Best-before 18 months"
+      ],
+      "price": 24.0,
+      "compareAt": 29.0,
+      "discount": 17,
+      "cost": 14.88,
+      "sku": "SAH-COF-1KG",
+      "stock": 260,
+      "lowStockAt": 25,
+      "rating": 4.8,
+      "reviewCount": 470,
+      "ratingBreakdown": {
+        "5": 369,
+        "4": 54,
+        "3": 28,
+        "2": 12,
+        "1": 7
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "250g",
+            "500g",
+            "1kg"
+          ]
+        }
+      ],
+      "plates": 4,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Sahel Single-Origin Coffee | Ferixas",
+        "description": "Sahel Single-Origin Coffee",
+        "handle": "sahel-single-origin-coffee"
+      },
+      "tags": [
+        "pantry",
+        "sahel-supply",
+        "sale"
+      ],
+      "createdAt": "2026-08-14T08:39:05.031580+00:00",
+      "sold30d": 1120,
+      "views30d": 24800
+    },
+    {
+      "id": "prd_sahel-spice-cellar-set",
+      "slug": "sahel-spice-cellar-set",
+      "title": "Sahel Spice Cellar Set",
+      "merchantId": "sahel-supply",
+      "merchantName": "Sahel Supply",
+      "merchantSlug": "sahel-supply",
+      "category": "pantry",
+      "collections": [
+        "under-100",
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Sahel Spice Cellar Set by Sahel Supply. Coffee, oils and store-cupboard staples. Dispatched from Kano, Nigeria within one working day.",
+      "bullets": [
+        "Sourced directly from growers",
+        "Milled or pressed to order",
+        "Recyclable packaging",
+        "Best-before 18 months"
+      ],
+      "price": 58.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 35.96,
+      "sku": "SAH-SPC-SET",
+      "stock": 74,
+      "lowStockAt": 25,
+      "rating": 4.7,
+      "reviewCount": 164,
+      "ratingBreakdown": {
+        "5": 123,
+        "4": 25,
+        "3": 10,
+        "2": 4,
+        "1": 2
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "250g",
+            "500g",
+            "1kg"
+          ]
+        }
+      ],
+      "plates": 1,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Sahel Spice Cellar Set | Ferixas",
+        "description": "Sahel Spice Cellar Set",
+        "handle": "sahel-spice-cellar-set"
+      },
+      "tags": [
+        "new",
+        "pantry",
+        "sahel-supply"
+      ],
+      "createdAt": "2026-08-11T08:39:05.031590+00:00",
+      "sold30d": 206,
+      "views30d": 5320
+    },
+    {
+      "id": "prd_sahel-wild-honey-raw",
+      "slug": "sahel-wild-honey-raw",
+      "title": "Sahel Raw Wild Honey",
+      "merchantId": "sahel-supply",
+      "merchantName": "Sahel Supply",
+      "merchantSlug": "sahel-supply",
+      "category": "pantry",
+      "collections": [
+        "under-100",
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Sahel Raw Wild Honey by Sahel Supply. Coffee, oils and store-cupboard staples. Dispatched from Kano, Nigeria within one working day.",
+      "bullets": [
+        "Sourced directly from growers",
+        "Milled or pressed to order",
+        "Recyclable packaging",
+        "Best-before 18 months"
+      ],
+      "price": 32.0,
+      "compareAt": 38.0,
+      "discount": 16,
+      "cost": 19.84,
+      "sku": "SAH-HNY-RAW",
+      "stock": 140,
+      "lowStockAt": 25,
+      "rating": 4.8,
+      "reviewCount": 240,
+      "ratingBreakdown": {
+        "5": 188,
+        "4": 28,
+        "3": 14,
+        "2": 6,
+        "1": 4
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "250g",
+            "500g",
+            "1kg"
+          ]
+        }
+      ],
+      "plates": 2,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Sahel Raw Wild Honey | Ferixas",
+        "description": "Sahel Raw Wild Honey",
+        "handle": "sahel-wild-honey-raw"
+      },
+      "tags": [
+        "pantry",
+        "sahel-supply",
+        "sale"
+      ],
+      "createdAt": "2026-08-08T08:39:05.031599+00:00",
+      "sold30d": 480,
+      "views30d": 11800
+    },
+    {
+      "id": "prd_lumen-woven-floor-lamp",
+      "slug": "lumen-woven-floor-lamp",
+      "title": "Lumen Woven Floor Lamp",
+      "merchantId": "lumen-home",
+      "merchantName": "Lumen Home",
+      "merchantSlug": "lumen-home",
+      "category": "home",
+      "collections": [
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Lumen Woven Floor Lamp by Lumen Home. Furniture, lighting and textiles. Dispatched from Nairobi, Kenya within one working day.",
+      "bullets": [
+        "Replaceable parts, not disposable",
+        "Made from honest materials",
+        "Wipe-clean surface",
+        "Five-year warranty"
+      ],
+      "price": 229.0,
+      "compareAt": 279.0,
+      "discount": 18,
+      "cost": 141.98,
+      "sku": "LUM-FLR-WV",
+      "stock": 26,
+      "lowStockAt": 25,
+      "rating": 4.6,
+      "reviewCount": 98,
+      "ratingBreakdown": {
+        "5": 70,
+        "4": 18,
+        "3": 6,
+        "2": 2,
+        "1": 1
+      },
+      "variants": [
+        {
+          "name": "Finish",
+          "values": [
+            "Natural",
+            "Charcoal"
+          ]
+        }
+      ],
+      "plates": 3,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Lumen Woven Floor Lamp | Ferixas",
+        "description": "Lumen Woven Floor Lamp",
+        "handle": "lumen-woven-floor-lamp"
+      },
+      "tags": [
+        "home",
+        "lumen-home",
+        "sale"
+      ],
+      "createdAt": "2026-08-05T08:39:05.031617+00:00",
+      "sold30d": 132,
+      "views30d": 4280
+    },
+    {
+      "id": "prd_lumen-stoneware-dinner-set",
+      "slug": "lumen-stoneware-dinner-set",
+      "title": "Lumen Stoneware Dinner Set",
+      "merchantId": "lumen-home",
+      "merchantName": "Lumen Home",
+      "merchantSlug": "lumen-home",
+      "category": "home",
+      "collections": [
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Lumen Stoneware Dinner Set by Lumen Home. Furniture, lighting and textiles. Dispatched from Nairobi, Kenya within one working day.",
+      "bullets": [
+        "Replaceable parts, not disposable",
+        "Made from honest materials",
+        "Wipe-clean surface",
+        "Five-year warranty"
+      ],
+      "price": 148.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 91.76,
+      "sku": "LUM-DIN-ST",
+      "stock": 48,
+      "lowStockAt": 25,
+      "rating": 4.7,
+      "reviewCount": 142,
+      "ratingBreakdown": {
+        "5": 107,
+        "4": 21,
+        "3": 9,
+        "2": 4,
+        "1": 2
+      },
+      "variants": [
+        {
+          "name": "Finish",
+          "values": [
+            "Natural",
+            "Charcoal"
+          ]
+        }
+      ],
+      "plates": 4,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Lumen Stoneware Dinner Set | Ferixas",
+        "description": "Lumen Stoneware Dinner Set",
+        "handle": "lumen-stoneware-dinner-set"
+      },
+      "tags": [
+        "home",
+        "lumen-home",
+        "new"
+      ],
+      "createdAt": "2026-08-02T08:39:05.031626+00:00",
+      "sold30d": 221,
+      "views30d": 6180
+    },
+    {
+      "id": "prd_lumen-linen-bedding-king",
+      "slug": "lumen-linen-bedding-king",
+      "title": "Lumen Linen Bedding King",
+      "merchantId": "lumen-home",
+      "merchantName": "Lumen Home",
+      "merchantSlug": "lumen-home",
+      "category": "home",
+      "collections": [
+        "autumn-edit",
+        "gift-guide"
+      ],
+      "description": "Lumen Linen Bedding King by Lumen Home. Furniture, lighting and textiles. Dispatched from Nairobi, Kenya within one working day.",
+      "bullets": [
+        "Replaceable parts, not disposable",
+        "Made from honest materials",
+        "Wipe-clean surface",
+        "Five-year warranty"
+      ],
+      "price": 319.0,
+      "compareAt": 369.0,
+      "discount": 14,
+      "cost": 197.78,
+      "sku": "LUM-BED-K",
+      "stock": 19,
+      "lowStockAt": 25,
+      "rating": 4.8,
+      "reviewCount": 88,
+      "ratingBreakdown": {
+        "5": 69,
+        "4": 10,
+        "3": 5,
+        "2": 2,
+        "1": 1
+      },
+      "variants": [
+        {
+          "name": "Finish",
+          "values": [
+            "Natural",
+            "Charcoal"
+          ]
+        }
+      ],
+      "plates": 1,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Lumen Linen Bedding King | Ferixas",
+        "description": "Lumen Linen Bedding King",
+        "handle": "lumen-linen-bedding-king"
+      },
+      "tags": [
+        "home",
+        "lumen-home",
+        "sale"
+      ],
+      "createdAt": "2026-07-30T08:39:05.031635+00:00",
+      "sold30d": 54,
+      "views30d": 2040
+    },
+    {
+      "id": "prd_pixelforge-precision-mouse",
+      "slug": "pixelforge-precision-mouse",
+      "title": "PixelForge Precision Mouse",
+      "merchantId": "pixel-gaming",
+      "merchantName": "PixelForge Gaming",
+      "merchantSlug": "pixel-gaming",
+      "category": "gaming",
+      "collections": [
+        "under-100",
+        "gift-guide"
+      ],
+      "description": "PixelForge Precision Mouse by PixelForge Gaming. Controllers, monitors and precision gear. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Tested over 500 hours of play",
+        "Low-latency wired or wireless",
+        "Replaceable switches and pads",
+        "Two-year warranty"
+      ],
+      "price": 79.0,
+      "compareAt": 99.0,
+      "discount": 20,
+      "cost": 48.98,
+      "sku": "PXF-MSE-PR",
+      "stock": 118,
+      "lowStockAt": 25,
+      "rating": 4.6,
+      "reviewCount": 264,
+      "ratingBreakdown": {
+        "5": 189,
+        "4": 49,
+        "3": 16,
+        "2": 7,
+        "1": 4
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Void",
+            "Lime"
+          ]
+        }
+      ],
+      "plates": 2,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "PixelForge Precision Mouse | Ferixas",
+        "description": "PixelForge Precision Mouse",
+        "handle": "pixelforge-precision-mouse"
+      },
+      "tags": [
+        "gaming",
+        "pixel-gaming",
+        "sale"
+      ],
+      "createdAt": "2026-07-27T08:39:05.031644+00:00",
+      "sold30d": 470,
+      "views30d": 13840
+    },
+    {
+      "id": "prd_pixelforge-240hz-monitor",
+      "slug": "pixelforge-240hz-monitor",
+      "title": "PixelForge 240Hz Monitor",
+      "merchantId": "pixel-gaming",
+      "merchantName": "PixelForge Gaming",
+      "merchantSlug": "pixel-gaming",
+      "category": "gaming",
+      "collections": [
+        "gift-guide"
+      ],
+      "description": "PixelForge 240Hz Monitor by PixelForge Gaming. Controllers, monitors and precision gear. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Tested over 500 hours of play",
+        "Low-latency wired or wireless",
+        "Replaceable switches and pads",
+        "Two-year warranty"
+      ],
+      "price": 449.0,
+      "compareAt": 499.0,
+      "discount": 10,
+      "cost": 278.38,
+      "sku": "PXF-MON-240",
+      "stock": 31,
+      "lowStockAt": 25,
+      "rating": 4.7,
+      "reviewCount": 120,
+      "ratingBreakdown": {
+        "5": 90,
+        "4": 18,
+        "3": 7,
+        "2": 3,
+        "1": 2
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Void",
+            "Lime"
+          ]
+        }
+      ],
+      "plates": 3,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "PixelForge 240Hz Monitor | Ferixas",
+        "description": "PixelForge 240Hz Monitor",
+        "handle": "pixelforge-240hz-monitor"
+      },
+      "tags": [
+        "gaming",
+        "pixel-gaming",
+        "sale"
+      ],
+      "createdAt": "2026-07-24T08:39:05.031794+00:00",
+      "sold30d": 158,
+      "views30d": 5620
+    },
+    {
+      "id": "prd_pixelforge-elite-controller",
+      "slug": "pixelforge-elite-controller",
+      "title": "PixelForge Elite Controller",
+      "merchantId": "pixel-gaming",
+      "merchantName": "PixelForge Gaming",
+      "merchantSlug": "pixel-gaming",
+      "category": "gaming",
+      "collections": [],
+      "description": "PixelForge Elite Controller by PixelForge Gaming. Controllers, monitors and precision gear. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Tested over 500 hours of play",
+        "Low-latency wired or wireless",
+        "Replaceable switches and pads",
+        "Two-year warranty"
+      ],
+      "price": 149.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 92.38,
+      "sku": "PXF-CTL-EL",
+      "stock": 72,
+      "lowStockAt": 25,
+      "rating": 4.5,
+      "reviewCount": 186,
+      "ratingBreakdown": {
+        "5": 126,
+        "4": 41,
+        "3": 11,
+        "2": 5,
+        "1": 3
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Void",
+            "Lime"
+          ]
+        }
+      ],
+      "plates": 4,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "PixelForge Elite Controller | Ferixas",
+        "description": "PixelForge Elite Controller",
+        "handle": "pixelforge-elite-controller"
+      },
+      "tags": [
+        "gaming",
+        "new",
+        "pixel-gaming"
+      ],
+      "createdAt": "2026-07-21T08:39:05.031806+00:00",
+      "sold30d": 340,
+      "views30d": 9840
+    },
+    {
+      "id": "prd_pixelforge-headset-pro",
+      "slug": "pixelforge-headset-pro",
+      "title": "PixelForge Pro Headset",
+      "merchantId": "pixel-gaming",
+      "merchantName": "PixelForge Gaming",
+      "merchantSlug": "pixel-gaming",
+      "category": "gaming",
+      "collections": [],
+      "description": "PixelForge Pro Headset by PixelForge Gaming. Controllers, monitors and precision gear. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Tested over 500 hours of play",
+        "Low-latency wired or wireless",
+        "Replaceable switches and pads",
+        "Two-year warranty"
+      ],
+      "price": 119.0,
+      "compareAt": 139.0,
+      "discount": 14,
+      "cost": 73.78,
+      "sku": "PXF-HST-PRO",
+      "stock": 94,
+      "lowStockAt": 25,
+      "rating": 4.4,
+      "reviewCount": 210,
+      "ratingBreakdown": {
+        "5": 135,
+        "4": 54,
+        "3": 13,
+        "2": 5,
+        "1": 3
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Void",
+            "Lime"
+          ]
+        }
+      ],
+      "plates": 1,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "PixelForge Pro Headset | Ferixas",
+        "description": "PixelForge Pro Headset",
+        "handle": "pixelforge-headset-pro"
+      },
+      "tags": [
+        "gaming",
+        "pixel-gaming",
+        "sale"
+      ],
+      "createdAt": "2026-07-18T08:39:05.031816+00:00",
+      "sold30d": 396,
+      "views30d": 10720
+    },
+    {
+      "id": "prd_verdant-vitamin-c-serum",
+      "slug": "verdant-vitamin-c-serum",
+      "title": "Verdant Vitamin C Serum",
+      "merchantId": "verdant-beauty",
+      "merchantName": "Verdant Beauty",
+      "merchantSlug": "verdant-beauty",
+      "category": "beauty",
+      "collections": [
+        "under-100",
+        "gift-guide"
+      ],
+      "description": "Verdant Vitamin C Serum by Verdant Beauty. Skincare and everyday rituals. Dispatched from Abuja, Nigeria within one working day.",
+      "bullets": [
+        "Short ingredient list",
+        "Clinically studied actives",
+        "Batch date printed on the bottle",
+        "Dermatologist tested"
+      ],
+      "price": 38.0,
+      "compareAt": 46.0,
+      "discount": 17,
+      "cost": 23.56,
+      "sku": "VER-SER-C",
+      "stock": 240,
+      "lowStockAt": 25,
+      "rating": 4.8,
+      "reviewCount": 410,
+      "ratingBreakdown": {
+        "5": 322,
+        "4": 47,
+        "3": 25,
+        "2": 10,
+        "1": 6
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "30ml",
+            "50ml"
+          ]
+        }
+      ],
+      "plates": 2,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Verdant Vitamin C Serum | Ferixas",
+        "description": "Verdant Vitamin C Serum",
+        "handle": "verdant-vitamin-c-serum"
+      },
+      "tags": [
+        "beauty",
+        "sale",
+        "verdant-beauty"
+      ],
+      "createdAt": "2026-07-15T08:39:05.031827+00:00",
+      "sold30d": 880,
+      "views30d": 19200
+    },
+    {
+      "id": "prd_verdant-clay-mask-duo",
+      "slug": "verdant-clay-mask-duo",
+      "title": "Verdant Clay Mask Duo",
+      "merchantId": "verdant-beauty",
+      "merchantName": "Verdant Beauty",
+      "merchantSlug": "verdant-beauty",
+      "category": "beauty",
+      "collections": [
+        "under-100",
+        "gift-guide"
+      ],
+      "description": "Verdant Clay Mask Duo by Verdant Beauty. Skincare and everyday rituals. Dispatched from Abuja, Nigeria within one working day.",
+      "bullets": [
+        "Short ingredient list",
+        "Clinically studied actives",
+        "Batch date printed on the bottle",
+        "Dermatologist tested"
+      ],
+      "price": 32.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 19.84,
+      "sku": "VER-MSK-DUO",
+      "stock": 196,
+      "lowStockAt": 25,
+      "rating": 4.6,
+      "reviewCount": 220,
+      "ratingBreakdown": {
+        "5": 157,
+        "4": 41,
+        "3": 13,
+        "2": 6,
+        "1": 3
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "30ml",
+            "50ml"
+          ]
+        }
+      ],
+      "plates": 3,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Verdant Clay Mask Duo | Ferixas",
+        "description": "Verdant Clay Mask Duo",
+        "handle": "verdant-clay-mask-duo"
+      },
+      "tags": [
+        "beauty",
+        "new",
+        "verdant-beauty"
+      ],
+      "createdAt": "2026-07-12T08:39:05.031837+00:00",
+      "sold30d": 520,
+      "views30d": 12400
+    },
+    {
+      "id": "prd_verdant-barrier-cream",
+      "slug": "verdant-barrier-cream",
+      "title": "Verdant Barrier Cream",
+      "merchantId": "verdant-beauty",
+      "merchantName": "Verdant Beauty",
+      "merchantSlug": "verdant-beauty",
+      "category": "beauty",
+      "collections": [
+        "under-100",
+        "gift-guide"
+      ],
+      "description": "Verdant Barrier Cream by Verdant Beauty. Skincare and everyday rituals. Dispatched from Abuja, Nigeria within one working day.",
+      "bullets": [
+        "Short ingredient list",
+        "Clinically studied actives",
+        "Batch date printed on the bottle",
+        "Dermatologist tested"
+      ],
+      "price": 44.0,
+      "compareAt": 52.0,
+      "discount": 15,
+      "cost": 27.28,
+      "sku": "VER-CRM-BAR",
+      "stock": 168,
+      "lowStockAt": 25,
+      "rating": 4.7,
+      "reviewCount": 296,
+      "ratingBreakdown": {
+        "5": 222,
+        "4": 44,
+        "3": 18,
+        "2": 7,
+        "1": 4
+      },
+      "variants": [
+        {
+          "name": "Size",
+          "values": [
+            "30ml",
+            "50ml"
+          ]
+        }
+      ],
+      "plates": 4,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Verdant Barrier Cream | Ferixas",
+        "description": "Verdant Barrier Cream",
+        "handle": "verdant-barrier-cream"
+      },
+      "tags": [
+        "beauty",
+        "sale",
+        "verdant-beauty"
+      ],
+      "createdAt": "2026-07-09T08:39:05.031846+00:00",
+      "sold30d": 610,
+      "views30d": 14600
+    },
+    {
+      "id": "prd_ferixas-power-bank-20k",
+      "slug": "ferixas-power-bank-20k",
+      "title": "Ferixas 20K Power Bank",
+      "merchantId": "ferixas-official",
+      "merchantName": "Ferixas Official Store",
+      "merchantSlug": "ferixas-official",
+      "category": "electronics",
+      "collections": [
+        "under-100",
+        "work-from-anywhere"
+      ],
+      "description": "Ferixas 20K Power Bank by Ferixas Official Store. Everyday tech that earns its place. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Bench-tested before dispatch",
+        "Works with USB-C and USB-A",
+        "Compact enough for a laptop bag",
+        "Two-year warranty"
+      ],
+      "price": 69.0,
+      "compareAt": 84.0,
+      "discount": 18,
+      "cost": 42.78,
+      "sku": "FRX-PWR-20K",
+      "stock": 320,
+      "lowStockAt": 25,
+      "rating": 4.5,
+      "reviewCount": 300,
+      "ratingBreakdown": {
+        "5": 204,
+        "4": 66,
+        "3": 18,
+        "2": 8,
+        "1": 4
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Chalk"
+          ]
+        }
+      ],
+      "plates": 1,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Ferixas 20K Power Bank | Ferixas",
+        "description": "Ferixas 20K Power Bank",
+        "handle": "ferixas-power-bank-20k"
+      },
+      "tags": [
+        "electronics",
+        "ferixas-official",
+        "sale"
+      ],
+      "createdAt": "2026-07-06T08:39:05.031855+00:00",
+      "sold30d": 760,
+      "views30d": 18600
+    },
+    {
+      "id": "prd_ferixas-usb-c-hub-8",
+      "slug": "ferixas-usb-c-hub-8",
+      "title": "Ferixas 8-in-1 USB-C Hub",
+      "merchantId": "ferixas-official",
+      "merchantName": "Ferixas Official Store",
+      "merchantSlug": "ferixas-official",
+      "category": "electronics",
+      "collections": [
+        "under-100",
+        "work-from-anywhere",
+        "gift-guide"
+      ],
+      "description": "Ferixas 8-in-1 USB-C Hub by Ferixas Official Store. Everyday tech that earns its place. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Bench-tested before dispatch",
+        "Works with USB-C and USB-A",
+        "Compact enough for a laptop bag",
+        "Two-year warranty"
+      ],
+      "price": 89.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 55.18,
+      "sku": "FRX-HUB-8",
+      "stock": 150,
+      "lowStockAt": 25,
+      "rating": 4.6,
+      "reviewCount": 240,
+      "ratingBreakdown": {
+        "5": 172,
+        "4": 44,
+        "3": 14,
+        "2": 6,
+        "1": 4
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Chalk"
+          ]
+        }
+      ],
+      "plates": 2,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Ferixas 8-in-1 USB-C Hub | Ferixas",
+        "description": "Ferixas 8-in-1 USB-C Hub",
+        "handle": "ferixas-usb-c-hub-8"
+      },
+      "tags": [
+        "electronics",
+        "ferixas-official",
+        "new"
+      ],
+      "createdAt": "2026-07-03T08:39:05.031864+00:00",
+      "sold30d": 430,
+      "views30d": 11240
+    },
+    {
+      "id": "prd_ferixas-travel-adapter",
+      "slug": "ferixas-travel-adapter",
+      "title": "Ferixas Universal Travel Adapter",
+      "merchantId": "ferixas-official",
+      "merchantName": "Ferixas Official Store",
+      "merchantSlug": "ferixas-official",
+      "category": "electronics",
+      "collections": [
+        "under-100",
+        "work-from-anywhere"
+      ],
+      "description": "Ferixas Universal Travel Adapter by Ferixas Official Store. Everyday tech that earns its place. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Bench-tested before dispatch",
+        "Works with USB-C and USB-A",
+        "Compact enough for a laptop bag",
+        "Two-year warranty"
+      ],
+      "price": 34.0,
+      "compareAt": 42.0,
+      "discount": 19,
+      "cost": 21.08,
+      "sku": "FRX-ADP-UNI",
+      "stock": 410,
+      "lowStockAt": 25,
+      "rating": 4.4,
+      "reviewCount": 410,
+      "ratingBreakdown": {
+        "5": 264,
+        "4": 105,
+        "3": 25,
+        "2": 10,
+        "1": 6
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Chalk"
+          ]
+        }
+      ],
+      "plates": 3,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Ferixas Universal Travel Adapter | Ferixas",
+        "description": "Ferixas Universal Travel Adapter",
+        "handle": "ferixas-travel-adapter"
+      },
+      "tags": [
+        "electronics",
+        "ferixas-official",
+        "sale"
+      ],
+      "createdAt": "2026-06-30T08:39:05.031873+00:00",
+      "sold30d": 1080,
+      "views30d": 26400
+    },
+    {
+      "id": "prd_ferixas-cable-set-braided",
+      "slug": "ferixas-cable-set-braided",
+      "title": "Ferixas Braided Cable Set",
+      "merchantId": "ferixas-official",
+      "merchantName": "Ferixas Official Store",
+      "merchantSlug": "ferixas-official",
+      "category": "electronics",
+      "collections": [
+        "under-100",
+        "work-from-anywhere"
+      ],
+      "description": "Ferixas Braided Cable Set by Ferixas Official Store. Everyday tech that earns its place. Dispatched from Lagos, Nigeria within one working day.",
+      "bullets": [
+        "Bench-tested before dispatch",
+        "Works with USB-C and USB-A",
+        "Compact enough for a laptop bag",
+        "Two-year warranty"
+      ],
+      "price": 29.0,
+      "compareAt": null,
+      "discount": null,
+      "cost": 17.98,
+      "sku": "FRX-CBL-SET",
+      "stock": 520,
+      "lowStockAt": 25,
+      "rating": 4.5,
+      "reviewCount": 520,
+      "ratingBreakdown": {
+        "5": 354,
+        "4": 114,
+        "3": 31,
+        "2": 13,
+        "1": 8
+      },
+      "variants": [
+        {
+          "name": "Colour",
+          "values": [
+            "Ink",
+            "Chalk"
+          ]
+        }
+      ],
+      "plates": 4,
+      "status": "active",
+      "channels": {
+        "store": true,
+        "marketplace": true
+      },
+      "seo": {
+        "title": "Ferixas Braided Cable Set | Ferixas",
+        "description": "Ferixas Braided Cable Set",
+        "handle": "ferixas-cable-set-braided"
+      },
+      "tags": [
+        "electronics",
+        "ferixas-official",
+        "new"
+      ],
+      "createdAt": "2026-06-27T08:39:05.031882+00:00",
+      "sold30d": 1340,
+      "views30d": 31200
+    }
+  ],
+  "banners": [
+    {
+      "id": "bnr_launch",
+      "kind": "image",
+      "eyebrow": "Autumn on Ferixas",
+      "headline": "Seven merchants.\nOne cart. One checkout.",
+      "body": "Audio, tailoring, home, gaming and pantry goods \u2014 bought together from seven independent stores, delivered separately.",
+      "ctaLabel": "Shop the marketplace",
+      "ctaHref": "/browse",
+      "secondaryLabel": "Meet the stores",
+      "secondaryHref": "/stores",
+      "accent": "#e4572e",
+      "hue": 18,
+      "mediaUrl": "/banners/autumn.svg",
+      "posterNote": "Marketplace hero artwork",
+      "duration": 7000,
+      "active": true,
+      "order": 0,
+      "audience": "All shoppers",
+      "startsAt": "2026-09-23T08:00:00+00:00",
+      "endsAt": "2026-10-23T23:00:00+00:00",
+      "impressions": 486210,
+      "clicks": 31480,
+      "overlay": {
+        "enabled": true,
+        "align": "left",
+        "vertical": "middle",
+        "scrim": 58,
+        "tone": "light",
+        "width": 40,
+        "showText": true,
+        "showButtons": true
+      }
+    },
+    {
+      "id": "bnr_audio",
+      "kind": "video",
+      "eyebrow": "Product spotlight",
+      "headline": "AuraSound Pro ANC",
+      "body": "Forty hours of battery, tuned by ear. Now $249 across every store that stocks it.",
+      "ctaLabel": "View the product",
+      "ctaHref": "/product/aurasound-pro-anc-headphones",
+      "secondaryLabel": "More audio",
+      "secondaryHref": "/browse?category=audio",
+      "accent": "#2f6f8f",
+      "hue": 202,
+      "mediaUrl": "/banners/audio.svg",
+      "posterNote": "Product spotlight artwork",
+      "duration": 9000,
+      "active": true,
+      "order": 1,
+      "audience": "Audio buyers",
+      "startsAt": "2026-09-28T08:00:00+00:00",
+      "endsAt": "2026-10-12T23:00:00+00:00",
+      "impressions": 291440,
+      "clicks": 22810,
+      "overlay": {
+        "enabled": true,
+        "align": "left",
+        "vertical": "middle",
+        "scrim": 54,
+        "tone": "light",
+        "width": 36,
+        "showText": true,
+        "showButtons": true
+      }
+    },
+    {
+      "id": "bnr_delivery",
+      "kind": "image",
+      "eyebrow": "Delivery",
+      "headline": "Free delivery over $120",
+      "body": "Tracked across seven countries, dispatched within one working day by the seller who packs it.",
+      "ctaLabel": "Start shopping",
+      "ctaHref": "/browse?sort=best",
+      "secondaryLabel": "Delivery and returns",
+      "secondaryHref": "/account/orders",
+      "accent": "#1f4b43",
+      "hue": 168,
+      "mediaUrl": "/banners/delivery.svg",
+      "posterNote": "Platform message artwork",
+      "duration": 6000,
+      "active": true,
+      "order": 2,
+      "audience": "All shoppers",
+      "startsAt": "2026-09-02T08:00:00+00:00",
+      "endsAt": "2026-11-01T23:00:00+00:00",
+      "impressions": 512900,
+      "clicks": 18940,
+      "overlay": {
+        "enabled": true,
+        "align": "center",
+        "vertical": "middle",
+        "scrim": 58,
+        "tone": "light",
+        "width": 34,
+        "showText": true,
+        "showButtons": true
+      }
+    },
+    {
+      "id": "bnr_official",
+      "kind": "video",
+      "eyebrow": "Ferixas Official Store",
+      "headline": "Built by the platform",
+      "body": "Hardware and essentials sold by Ferixas through the same catalogue, channels and checkout as every other merchant.",
+      "ctaLabel": "Open the official store",
+      "ctaHref": "/store/ferixas-official",
+      "secondaryLabel": "How the platform works",
+      "secondaryHref": "/stores",
+      "accent": "#c9a24d",
+      "hue": 42,
+      "mediaUrl": "/banners/official.svg",
+      "posterNote": "Brand film poster",
+      "duration": 8000,
+      "active": true,
+      "order": 3,
+      "audience": "All shoppers",
+      "startsAt": "2026-09-30T08:00:00+00:00",
+      "endsAt": "2026-10-30T23:00:00+00:00",
+      "impressions": 158320,
+      "clicks": 9410,
+      "overlay": {
+        "enabled": true,
+        "align": "left",
+        "vertical": "bottom",
+        "scrim": 68,
+        "tone": "light",
+        "width": 40,
+        "showText": true,
+        "showButtons": true
+      }
+    }
+  ],
+  "shipping_options": [
+    {
+      "id": "standard",
+      "label": "Standard delivery",
+      "eta": "2-5 working days",
+      "price": 6.5
+    },
+    {
+      "id": "express",
+      "label": "Express delivery",
+      "eta": "1-2 working days",
+      "price": 14.0
+    },
+    {
+      "id": "pickup",
+      "label": "Collect from seller",
+      "eta": "Ready in 24 hours",
+      "price": 0.0
+    }
+  ],
+  "payment_methods": [
+    {
+      "id": "card",
+      "label": "Card ending 4242",
+      "detail": "Visa \u00b7 saved"
+    },
+    {
+      "id": "wallet",
+      "label": "Ferixas wallet",
+      "detail": "Balance applied at checkout"
+    },
+    {
+      "id": "transfer",
+      "label": "Bank transfer",
+      "detail": "Order ships once cleared"
+    }
+  ],
+  "reviews": {
+    "prd_aurasound-pro-anc-headphones": [
+      {
+        "id": "rev_aurasound-pro-anc-headphones_0",
+        "productId": "prd_aurasound-pro-anc-headphones",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.031898+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_aurasound-pro-anc-headphones_1",
+        "productId": "prd_aurasound-pro-anc-headphones",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.031905+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_aurasound-pro-anc-headphones_2",
+        "productId": "prd_aurasound-pro-anc-headphones",
+        "author": "Chidi Nwosu",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-04T08:39:05.031910+00:00",
+        "helpful": 18,
+        "verified": true
+      },
+      {
+        "id": "rev_aurasound-pro-anc-headphones_3",
+        "productId": "prd_aurasound-pro-anc-headphones",
+        "author": "Amara Obi",
+        "rating": 5,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-08-24T08:39:05.031913+00:00",
+        "helpful": 25,
+        "verified": true
+      }
+    ],
+    "prd_aurasound-studio-monitor-pair": [
+      {
+        "id": "rev_aurasound-studio-monitor-pair_0",
+        "productId": "prd_aurasound-studio-monitor-pair",
+        "author": "Kofi Mensah",
+        "rating": 5,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-26T08:39:05.031918+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_aurasound-studio-monitor-pair_1",
+        "productId": "prd_aurasound-studio-monitor-pair",
+        "author": "Fatima Bello",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-15T08:39:05.031921+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_aurasound-go-mini-speaker": [
+      {
+        "id": "rev_aurasound-go-mini-speaker_0",
+        "productId": "prd_aurasound-go-mini-speaker",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.031926+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_aurasound-go-mini-speaker_1",
+        "productId": "prd_aurasound-go-mini-speaker",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.031930+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_abc-ultrabook-14-pro": [
+      {
+        "id": "rev_abc-ultrabook-14-pro_0",
+        "productId": "prd_abc-ultrabook-14-pro",
+        "author": "Chidi Nwosu",
+        "rating": 5,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-26T08:39:05.031933+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-ultrabook-14-pro_1",
+        "productId": "prd_abc-ultrabook-14-pro",
+        "author": "Amara Obi",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-15T08:39:05.031936+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_abc-mechanical-keyboard-k87": [
+      {
+        "id": "rev_abc-mechanical-keyboard-k87_0",
+        "productId": "prd_abc-mechanical-keyboard-k87",
+        "author": "Fatima Bello",
+        "rating": 5,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-26T08:39:05.031939+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-mechanical-keyboard-k87_1",
+        "productId": "prd_abc-mechanical-keyboard-k87",
+        "author": "Tunde Balogun",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-15T08:39:05.031942+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_abc-4k-webcam-studio": [
+      {
+        "id": "rev_abc-4k-webcam-studio_0",
+        "productId": "prd_abc-4k-webcam-studio",
+        "author": "Chidi Nwosu",
+        "rating": 5,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-26T08:39:05.031946+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-4k-webcam-studio_1",
+        "productId": "prd_abc-4k-webcam-studio",
+        "author": "Amara Obi",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-15T08:39:05.031949+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_abc-noise-cancelling-earbuds": [
+      {
+        "id": "rev_abc-noise-cancelling-earbuds_0",
+        "productId": "prd_abc-noise-cancelling-earbuds",
+        "author": "Chidi Nwosu",
+        "rating": 5,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-26T08:39:05.031953+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-noise-cancelling-earbuds_1",
+        "productId": "prd_abc-noise-cancelling-earbuds",
+        "author": "Amara Obi",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-15T08:39:05.031957+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-noise-cancelling-earbuds_2",
+        "productId": "prd_abc-noise-cancelling-earbuds",
+        "author": "Kofi Mensah",
+        "rating": 4,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-04T08:39:05.031961+00:00",
+        "helpful": 18,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-noise-cancelling-earbuds_3",
+        "productId": "prd_abc-noise-cancelling-earbuds",
+        "author": "Fatima Bello",
+        "rating": 5,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-08-24T08:39:05.031965+00:00",
+        "helpful": 25,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-noise-cancelling-earbuds_4",
+        "productId": "prd_abc-noise-cancelling-earbuds",
+        "author": "Tunde Balogun",
+        "rating": 4,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-08-13T08:39:05.031970+00:00",
+        "helpful": 9,
+        "verified": true
+      }
+    ],
+    "prd_abc-smart-thermostat-h1": [
+      {
+        "id": "rev_abc-smart-thermostat-h1_0",
+        "productId": "prd_abc-smart-thermostat-h1",
+        "author": "Fatima Bello",
+        "rating": 5,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-26T08:39:05.031975+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-smart-thermostat-h1_1",
+        "productId": "prd_abc-smart-thermostat-h1",
+        "author": "Tunde Balogun",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-15T08:39:05.031979+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_abc-usb-c-dock-12": [
+      {
+        "id": "rev_abc-usb-c-dock-12_0",
+        "productId": "prd_abc-usb-c-dock-12",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-26T08:39:05.031984+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_abc-usb-c-dock-12_1",
+        "productId": "prd_abc-usb-c-dock-12",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-15T08:39:05.031989+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_nova-linen-overshirt": [
+      {
+        "id": "rev_nova-linen-overshirt_0",
+        "productId": "prd_nova-linen-overshirt",
+        "author": "Chidi Nwosu",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.031995+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-linen-overshirt_1",
+        "productId": "prd_nova-linen-overshirt",
+        "author": "Amara Obi",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.031999+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_nova-tailored-wool-coat": [
+      {
+        "id": "rev_nova-tailored-wool-coat_0",
+        "productId": "prd_nova-tailored-wool-coat",
+        "author": "Lerato Dube",
+        "rating": 5,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-26T08:39:05.032004+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-tailored-wool-coat_1",
+        "productId": "prd_nova-tailored-wool-coat",
+        "author": "Naledi Molefe",
+        "rating": 4,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-15T08:39:05.032008+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_nova-everyday-sneaker": [
+      {
+        "id": "rev_nova-everyday-sneaker_0",
+        "productId": "prd_nova-everyday-sneaker",
+        "author": "Amara Obi",
+        "rating": 5,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-26T08:39:05.032014+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-everyday-sneaker_1",
+        "productId": "prd_nova-everyday-sneaker",
+        "author": "Kofi Mensah",
+        "rating": 4,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-15T08:39:05.032018+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-everyday-sneaker_2",
+        "productId": "prd_nova-everyday-sneaker",
+        "author": "Fatima Bello",
+        "rating": 4,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-04T08:39:05.032022+00:00",
+        "helpful": 18,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-everyday-sneaker_3",
+        "productId": "prd_nova-everyday-sneaker",
+        "author": "Tunde Balogun",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-08-24T08:39:05.032027+00:00",
+        "helpful": 25,
+        "verified": true
+      }
+    ],
+    "prd_nova-silk-scarf": [
+      {
+        "id": "rev_nova-silk-scarf_0",
+        "productId": "prd_nova-silk-scarf",
+        "author": "Tunde Balogun",
+        "rating": 5,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-26T08:39:05.032034+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-silk-scarf_1",
+        "productId": "prd_nova-silk-scarf",
+        "author": "Lerato Dube",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-15T08:39:05.032038+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_nova-cotton-tee-heavy": [
+      {
+        "id": "rev_nova-cotton-tee-heavy_0",
+        "productId": "prd_nova-cotton-tee-heavy",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.032044+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-cotton-tee-heavy_1",
+        "productId": "prd_nova-cotton-tee-heavy",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.032049+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-cotton-tee-heavy_2",
+        "productId": "prd_nova-cotton-tee-heavy",
+        "author": "Chidi Nwosu",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-04T08:39:05.032054+00:00",
+        "helpful": 18,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-cotton-tee-heavy_3",
+        "productId": "prd_nova-cotton-tee-heavy",
+        "author": "Amara Obi",
+        "rating": 5,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-08-24T08:39:05.032059+00:00",
+        "helpful": 25,
+        "verified": true
+      },
+      {
+        "id": "rev_nova-cotton-tee-heavy_4",
+        "productId": "prd_nova-cotton-tee-heavy",
+        "author": "Kofi Mensah",
+        "rating": 4,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-08-13T08:39:05.032064+00:00",
+        "helpful": 9,
+        "verified": true
+      }
+    ],
+    "prd_sahel-cold-pressed-oil-trio": [
+      {
+        "id": "rev_sahel-cold-pressed-oil-trio_0",
+        "productId": "prd_sahel-cold-pressed-oil-trio",
+        "author": "Chidi Nwosu",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.032069+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_sahel-cold-pressed-oil-trio_1",
+        "productId": "prd_sahel-cold-pressed-oil-trio",
+        "author": "Amara Obi",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.032073+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_sahel-cold-pressed-oil-trio_2",
+        "productId": "prd_sahel-cold-pressed-oil-trio",
+        "author": "Kofi Mensah",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-04T08:39:05.032078+00:00",
+        "helpful": 18,
+        "verified": true
+      }
+    ],
+    "prd_sahel-single-origin-coffee": [
+      {
+        "id": "rev_sahel-single-origin-coffee_0",
+        "productId": "prd_sahel-single-origin-coffee",
+        "author": "Kofi Mensah",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.032084+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_sahel-single-origin-coffee_1",
+        "productId": "prd_sahel-single-origin-coffee",
+        "author": "Fatima Bello",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.032088+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_sahel-single-origin-coffee_2",
+        "productId": "prd_sahel-single-origin-coffee",
+        "author": "Tunde Balogun",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-04T08:39:05.032093+00:00",
+        "helpful": 18,
+        "verified": true
+      },
+      {
+        "id": "rev_sahel-single-origin-coffee_3",
+        "productId": "prd_sahel-single-origin-coffee",
+        "author": "Lerato Dube",
+        "rating": 5,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-08-24T08:39:05.032097+00:00",
+        "helpful": 25,
+        "verified": true
+      },
+      {
+        "id": "rev_sahel-single-origin-coffee_4",
+        "productId": "prd_sahel-single-origin-coffee",
+        "author": "Naledi Molefe",
+        "rating": 4,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-08-13T08:39:05.032101+00:00",
+        "helpful": 9,
+        "verified": true
+      }
+    ],
+    "prd_sahel-spice-cellar-set": [
+      {
+        "id": "rev_sahel-spice-cellar-set_0",
+        "productId": "prd_sahel-spice-cellar-set",
+        "author": "Tunde Balogun",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.032107+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_sahel-spice-cellar-set_1",
+        "productId": "prd_sahel-spice-cellar-set",
+        "author": "Lerato Dube",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.032111+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_sahel-wild-honey-raw": [
+      {
+        "id": "rev_sahel-wild-honey-raw_0",
+        "productId": "prd_sahel-wild-honey-raw",
+        "author": "Tunde Balogun",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.032116+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_sahel-wild-honey-raw_1",
+        "productId": "prd_sahel-wild-honey-raw",
+        "author": "Lerato Dube",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.032121+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_lumen-woven-floor-lamp": [
+      {
+        "id": "rev_lumen-woven-floor-lamp_0",
+        "productId": "prd_lumen-woven-floor-lamp",
+        "author": "Amara Obi",
+        "rating": 5,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-26T08:39:05.032125+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_lumen-woven-floor-lamp_1",
+        "productId": "prd_lumen-woven-floor-lamp",
+        "author": "Kofi Mensah",
+        "rating": 4,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-15T08:39:05.032130+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_lumen-stoneware-dinner-set": [
+      {
+        "id": "rev_lumen-stoneware-dinner-set_0",
+        "productId": "prd_lumen-stoneware-dinner-set",
+        "author": "Tunde Balogun",
+        "rating": 5,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-26T08:39:05.032134+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_lumen-stoneware-dinner-set_1",
+        "productId": "prd_lumen-stoneware-dinner-set",
+        "author": "Lerato Dube",
+        "rating": 4,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-15T08:39:05.032137+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_lumen-linen-bedding-king": [
+      {
+        "id": "rev_lumen-linen-bedding-king_0",
+        "productId": "prd_lumen-linen-bedding-king",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.032140+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_lumen-linen-bedding-king_1",
+        "productId": "prd_lumen-linen-bedding-king",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.032143+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_pixelforge-precision-mouse": [
+      {
+        "id": "rev_pixelforge-precision-mouse_0",
+        "productId": "prd_pixelforge-precision-mouse",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-26T08:39:05.032147+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_pixelforge-precision-mouse_1",
+        "productId": "prd_pixelforge-precision-mouse",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-15T08:39:05.032150+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_pixelforge-240hz-monitor": [
+      {
+        "id": "rev_pixelforge-240hz-monitor_0",
+        "productId": "prd_pixelforge-240hz-monitor",
+        "author": "Tunde Balogun",
+        "rating": 5,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-26T08:39:05.032153+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_pixelforge-240hz-monitor_1",
+        "productId": "prd_pixelforge-240hz-monitor",
+        "author": "Lerato Dube",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-15T08:39:05.032156+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_pixelforge-elite-controller": [
+      {
+        "id": "rev_pixelforge-elite-controller_0",
+        "productId": "prd_pixelforge-elite-controller",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-26T08:39:05.032159+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_pixelforge-elite-controller_1",
+        "productId": "prd_pixelforge-elite-controller",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-15T08:39:05.032162+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_pixelforge-headset-pro": [
+      {
+        "id": "rev_pixelforge-headset-pro_0",
+        "productId": "prd_pixelforge-headset-pro",
+        "author": "Tunde Balogun",
+        "rating": 5,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-26T08:39:05.032165+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_pixelforge-headset-pro_1",
+        "productId": "prd_pixelforge-headset-pro",
+        "author": "Lerato Dube",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-15T08:39:05.032168+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_verdant-vitamin-c-serum": [
+      {
+        "id": "rev_verdant-vitamin-c-serum_0",
+        "productId": "prd_verdant-vitamin-c-serum",
+        "author": "Zainab Yusuf",
+        "rating": 5,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-26T08:39:05.032171+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_verdant-vitamin-c-serum_1",
+        "productId": "prd_verdant-vitamin-c-serum",
+        "author": "Chidi Nwosu",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-15T08:39:05.032174+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_verdant-vitamin-c-serum_2",
+        "productId": "prd_verdant-vitamin-c-serum",
+        "author": "Amara Obi",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-04T08:39:05.032176+00:00",
+        "helpful": 18,
+        "verified": true
+      },
+      {
+        "id": "rev_verdant-vitamin-c-serum_3",
+        "productId": "prd_verdant-vitamin-c-serum",
+        "author": "Kofi Mensah",
+        "rating": 5,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-08-24T08:39:05.032179+00:00",
+        "helpful": 25,
+        "verified": true
+      }
+    ],
+    "prd_verdant-clay-mask-duo": [
+      {
+        "id": "rev_verdant-clay-mask-duo_0",
+        "productId": "prd_verdant-clay-mask-duo",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-26T08:39:05.032182+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_verdant-clay-mask-duo_1",
+        "productId": "prd_verdant-clay-mask-duo",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-15T08:39:05.032185+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_verdant-barrier-cream": [
+      {
+        "id": "rev_verdant-barrier-cream_0",
+        "productId": "prd_verdant-barrier-cream",
+        "author": "Lerato Dube",
+        "rating": 5,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-26T08:39:05.032189+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_verdant-barrier-cream_1",
+        "productId": "prd_verdant-barrier-cream",
+        "author": "Naledi Molefe",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-15T08:39:05.032191+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_verdant-barrier-cream_2",
+        "productId": "prd_verdant-barrier-cream",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-04T08:39:05.032194+00:00",
+        "helpful": 18,
+        "verified": true
+      }
+    ],
+    "prd_ferixas-power-bank-20k": [
+      {
+        "id": "rev_ferixas-power-bank-20k_0",
+        "productId": "prd_ferixas-power-bank-20k",
+        "author": "Tunde Balogun",
+        "rating": 5,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-26T08:39:05.032197+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-power-bank-20k_1",
+        "productId": "prd_ferixas-power-bank-20k",
+        "author": "Lerato Dube",
+        "rating": 4,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-15T08:39:05.032200+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-power-bank-20k_2",
+        "productId": "prd_ferixas-power-bank-20k",
+        "author": "Naledi Molefe",
+        "rating": 4,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-04T08:39:05.032202+00:00",
+        "helpful": 18,
+        "verified": true
+      }
+    ],
+    "prd_ferixas-usb-c-hub-8": [
+      {
+        "id": "rev_ferixas-usb-c-hub-8_0",
+        "productId": "prd_ferixas-usb-c-hub-8",
+        "author": "Amara Obi",
+        "rating": 5,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-26T08:39:05.032205+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-usb-c-hub-8_1",
+        "productId": "prd_ferixas-usb-c-hub-8",
+        "author": "Kofi Mensah",
+        "rating": 4,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-15T08:39:05.032208+00:00",
+        "helpful": 11,
+        "verified": true
+      }
+    ],
+    "prd_ferixas-travel-adapter": [
+      {
+        "id": "rev_ferixas-travel-adapter_0",
+        "productId": "prd_ferixas-travel-adapter",
+        "author": "Naledi Molefe",
+        "rating": 5,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-09-26T08:39:05.032211+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-travel-adapter_1",
+        "productId": "prd_ferixas-travel-adapter",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-09-15T08:39:05.032214+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-travel-adapter_2",
+        "productId": "prd_ferixas-travel-adapter",
+        "author": "Chidi Nwosu",
+        "rating": 4,
+        "title": "Solid, small niggle",
+        "body": "Does everything it claims. The manual is thin, the product is not.",
+        "date": "2026-09-04T08:39:05.032217+00:00",
+        "helpful": 18,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-travel-adapter_3",
+        "productId": "prd_ferixas-travel-adapter",
+        "author": "Amara Obi",
+        "rating": 5,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-08-24T08:39:05.032220+00:00",
+        "helpful": 25,
+        "verified": true
+      }
+    ],
+    "prd_ferixas-cable-set-braided": [
+      {
+        "id": "rev_ferixas-cable-set-braided_0",
+        "productId": "prd_ferixas-cable-set-braided",
+        "author": "Lerato Dube",
+        "rating": 5,
+        "title": "Second one I have bought",
+        "body": "Bought one for the office and one for home. Consistent both times.",
+        "date": "2026-09-26T08:39:05.032223+00:00",
+        "helpful": 4,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-cable-set-braided_1",
+        "productId": "prd_ferixas-cable-set-braided",
+        "author": "Naledi Molefe",
+        "rating": 4,
+        "title": "Great after a few weeks",
+        "body": "Daily use for a month now with no complaints at all.",
+        "date": "2026-09-15T08:39:05.032226+00:00",
+        "helpful": 11,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-cable-set-braided_2",
+        "productId": "prd_ferixas-cable-set-braided",
+        "author": "Zainab Yusuf",
+        "rating": 4,
+        "title": "Exactly as described",
+        "body": "Arrived two days early and packed properly. No notes.",
+        "date": "2026-09-04T08:39:05.032229+00:00",
+        "helpful": 18,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-cable-set-braided_3",
+        "productId": "prd_ferixas-cable-set-braided",
+        "author": "Chidi Nwosu",
+        "rating": 5,
+        "title": "Worth the money",
+        "body": "I hesitated at the price and I would buy it again tomorrow.",
+        "date": "2026-08-24T08:39:05.032231+00:00",
+        "helpful": 25,
+        "verified": true
+      },
+      {
+        "id": "rev_ferixas-cable-set-braided_4",
+        "productId": "prd_ferixas-cable-set-braided",
+        "author": "Amara Obi",
+        "rating": 4,
+        "title": "Better in person",
+        "body": "Photographs do not do it justice. Build quality is obvious.",
+        "date": "2026-08-13T08:39:05.032234+00:00",
+        "helpful": 9,
+        "verified": true
+      }
+    ]
+  }
+}

@@ -25,11 +25,15 @@ export async function currentUser(): Promise<api.AccountUser | null> {
 /** Sends anyone who is not signed in to the sign-in page. */
 export async function requireAccount(): Promise<api.Account> {
   const creds = await readCredentials();
+  // No cookie at all: this is a signed-out visitor, whatever the backend is
+  // doing, so send them straight to sign-in.
   if (!creds.session) redirect("/login");
   try {
     return await api.getAccount(creds);
   } catch (error) {
     if (error instanceof api.ApiError && error.status === 401) redirect("/login");
+    // Anything else — including an unreachable backend — is surfaced to the
+    // account error boundary, which explains it without losing the shopper.
     throw error;
   }
 }

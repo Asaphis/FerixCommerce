@@ -280,6 +280,15 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * True when the backend itself is the problem — it never answered (status 0) or
+ * it answered with a server fault. The UI shows a "come back shortly" notice for
+ * these and reserves "sign in again" for a real 401.
+ */
+export function isServiceDown(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 0 || error.status >= 500);
+}
+
 type Creds = { session?: string | null; cartId?: string | null };
 type Params = Record<string, string | number | boolean | undefined | null>;
 
@@ -305,12 +314,19 @@ async function call<T>(
     if (method === "GET") url.searchParams.set("cartId", opts.creds.cartId);
   }
 
-  const response = await fetch(url.toString(), {
-    method,
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${KEY}` },
-    body: method === "GET" ? undefined : JSON.stringify(payload),
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      method,
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${KEY}` },
+      body: method === "GET" ? undefined : JSON.stringify(payload),
+      cache: "no-store",
+    });
+  } catch {
+    // A refused connection, a DNS failure or a timeout: the store's service is
+    // unreachable. Status 0 marks it as an infrastructure fault, not a 4xx.
+    throw new ApiError(0, "The store service could not be reached.");
+  }
 
   if (!response.ok) {
     let detail = `Request failed (${response.status})`;

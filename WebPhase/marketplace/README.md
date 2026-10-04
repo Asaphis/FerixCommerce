@@ -14,10 +14,11 @@ same platform backend:
 Every screen and every action goes through `lib/api.ts`. Nothing in the UI holds
 its own data — there is no mock or placeholder data anywhere in this app.
 
-The backend currently pointing at this app is a **simulated commerce API**
-(`ferix_backend_mock_1efc4bd3`) that answers the same requests, at the same
-addresses, with the same shapes of data that the production backend will. The
-app cannot tell the difference.
+The repository now includes the production API in `../../Backend`. It uses Neon
+PostgreSQL for persistent state and keeps the same route contract as the
+original simulator. The sandbox preview may still point at the local mock while
+the Neon service is being deployed; the app cannot tell the difference once the
+route contract is online.
 
 To switch to the production backend, change one value:
 
