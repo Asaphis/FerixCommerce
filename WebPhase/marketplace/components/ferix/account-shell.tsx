@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, LogOut, ShoppingBag } from "lucide-react";
 import type { Account } from "@/lib/api";
 import { AccountChips, AccountSidebar, type AccountCounts } from "@/components/ferix/account-nav";
 import { signOutAction } from "@/lib/actions";
@@ -54,6 +55,13 @@ export function AccountShell({
             <LogOut width={15} height={15} />
           </button>
         </form>
+        <Link
+          href="/"
+          aria-label="Shop marketplace"
+          className="grid h-9 w-9 place-items-center rounded-[2px] border border-line-warm bg-white text-ink-soft transition-colors hover:text-ember"
+        >
+          <ShoppingBag width={15} height={15} />
+        </Link>
       </section>
 
       <div className="lg:hidden">
@@ -82,6 +90,13 @@ export function AccountShell({
                 </div>
               </div>
             </div>
+            <Link
+              href="/"
+              className="flex items-center justify-center gap-2 rounded-[3px] border border-line-warm bg-white px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
+            >
+              <ArrowLeft width={14} height={14} />
+              Shop marketplace
+            </Link>
             <AccountSidebar counts={counts} />
           </div>
         </aside>
