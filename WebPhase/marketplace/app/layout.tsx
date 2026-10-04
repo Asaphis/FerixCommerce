@@ -1,8 +1,11 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import "./globals.css";
-import { FerixHeader, FerixFooter } from "@/components/ferix/chrome";
+import { FerixFooter, FerixHeader } from "@/components/ferix/chrome";
+import { FerixMobileNav } from "@/components/ferix/mobile-nav";
+import { headerState } from "@/lib/data";
+import { getCategories } from "@/lib/api";
 
 const display = localFont({
   src: [{ path: "./fonts/bricolage-grotesque.woff2", weight: "200 800", style: "normal" }],
@@ -36,14 +39,28 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.svg" },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+/** `viewportFit: cover` is what makes the bottom tab bar respect the iPhone home indicator. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f5f2ec",
+};
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const [{ user, cartCount }, categoryFeed] = await Promise.all([
+    headerState().catch(() => ({ user: null, cartCount: 0 })),
+    getCategories().catch(() => ({ categories: [] })),
+  ]);
+
   return (
     <html lang="en">
       <body className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}>
         <div className="flex min-h-screen flex-col">
-          <FerixHeader />
+          <FerixHeader user={user} cartCount={cartCount} categories={categoryFeed.categories} />
           <main className="flex-1">{children}</main>
           <FerixFooter />
+          <FerixMobileNav cartCount={cartCount} signedIn={Boolean(user)} />
         </div>
         <Toaster position="top-center" />
       </body>

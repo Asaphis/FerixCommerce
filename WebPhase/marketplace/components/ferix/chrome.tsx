@@ -1,51 +1,76 @@
 import Link from "next/link";
-import { ShoppingBag, Search, User2, Heart, Store, Truck, RotateCcw, ShieldCheck, Twitter, Instagram } from "lucide-react";
+import {
+  Bell,
+  Heart,
+  Instagram,
+  RotateCcw,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  Store,
+  Truck,
+  Twitter,
+  User2,
+} from "lucide-react";
+import type { AccountUser, Category } from "@/lib/api";
 import { FerixMark } from "@/components/ferix/marks";
-import { headerState } from "@/lib/data";
-import { getCategories } from "@/lib/api";
+import { FerixMobileMenu } from "@/components/ferix/mobile-menu";
 
-export async function FerixHeader() {
-  const [{ user, cartCount }, categoryFeed] = await Promise.all([
-    headerState(),
-    getCategories().catch(() => ({ categories: [] })),
-  ]);
-  const categories = categoryFeed.categories;
-
+/**
+ * The shared marketplace chrome.
+ *
+ * Desktop keeps the full header: announcement strip, search, account actions and
+ * a department strip. Below 1024px that whole thing collapses to a single 56px
+ * bar — menu, logo, search, cart — because navigation belongs in the bottom tab
+ * bar (`FerixMobileNav`), not stacked at the top of the screen.
+ */
+export function FerixHeader({
+  user,
+  cartCount,
+  categories,
+}: {
+  user: AccountUser | null;
+  cartCount: number;
+  categories: Category[];
+}) {
   return (
     <header className="sticky top-0 z-40 border-b border-line-warm bg-bone/95 backdrop-blur-md">
-      <div className="border-b border-line-warm bg-void">
-        <div className="mx-auto flex max-w-[1240px] items-center gap-4 px-4 py-1.5">
+      <div className="hidden border-b border-line-warm bg-void lg:block">
+        <div className="mx-auto flex max-w-[1240px] items-center gap-4 px-6 py-1.5">
           <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-chalk-dim">
             Free delivery over $120 · Tracked across seven countries
           </p>
           <Link
             href="/stores"
-            className="ml-auto hidden font-mono text-[9.5px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-lime sm:inline"
+            className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-lime"
           >
             {user ? `Signed in as ${user.name.split(" ")[0]}` : "Sell on Ferixas"}
           </Link>
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-4 py-3">
-        <Link href="/" className="flex shrink-0 items-center gap-2">
+      <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-2 px-4 lg:h-auto lg:gap-3 lg:px-6 lg:py-3">
+        <FerixMobileMenu categories={categories} user={user} />
+
+        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Ferixas home">
           <FerixMark />
-          <span className="hidden font-display text-[15px] font-extrabold tracking-[0.16em] text-ink sm:inline">
+          <span className="hidden font-display text-[15px] font-extrabold tracking-[0.16em] text-ink lg:inline">
             FERIXAS
           </span>
         </Link>
 
-        <form action="/search" className="relative flex min-w-0 flex-1 items-center">
+        <form action="/search" className="relative ml-4 hidden min-w-0 flex-1 items-center lg:flex">
           <Search width={15} height={15} className="pointer-events-none absolute left-3 text-ink-soft" />
           <input
             type="search"
             name="q"
             placeholder="Search products, stores and categories"
+            aria-label="Search products, stores and categories"
             className="h-10 w-full rounded-[2px] border border-line-warm bg-white pl-9 pr-3 text-[13.5px] text-ink outline-none transition-colors placeholder:text-ink-soft/70 focus:border-ink"
           />
         </form>
 
-        <nav className="flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <Link
             href="/stores"
             className="hidden items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:inline-flex"
@@ -54,32 +79,52 @@ export async function FerixHeader() {
             Stores
           </Link>
           <Link
-            href={user ? "/account/wishlist" : "/login"}
-            className="inline-flex items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
+            href={user ? "/account/wishlist" : "/login?return=/account/wishlist"}
+            className="hidden items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:inline-flex"
           >
             <Heart width={14} height={14} />
-            <span className="hidden sm:inline">Saved</span>
+            Wishlist
+          </Link>
+          <Link
+            href={user ? "/account/notifications" : "/login?return=/account/notifications"}
+            aria-label="Notifications"
+            className="hidden items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:inline-flex"
+          >
+            <Bell width={14} height={14} />
+            Alerts
           </Link>
           <Link
             href={user ? "/account" : "/login"}
-            className="inline-flex items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
+            className="hidden items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:inline-flex"
           >
             <User2 width={14} height={14} />
-            <span className="hidden sm:inline">{user ? user.avatarInitials : "Sign in"}</span>
+            {user ? user.avatarInitials : "Sign in"}
           </Link>
+
+          <Link
+            href="/search"
+            aria-label="Search"
+            className="grid h-10 w-10 place-items-center rounded-[2px] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:hidden"
+          >
+            <Search width={20} height={20} />
+          </Link>
+
           <Link
             href="/cart"
+            aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`}
             className="inline-flex items-center gap-2 rounded-[2px] bg-ink px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
           >
             <ShoppingBag width={14} height={14} />
-            Cart
-            <span className="rounded-[2px] bg-lime px-1.5 py-[1px] font-semibold text-void tabular-nums">{cartCount}</span>
+            <span className="hidden lg:inline">Cart</span>
+            <span className="rounded-[2px] bg-lime px-1.5 py-[1px] font-semibold tabular-nums text-void">
+              {cartCount > 99 ? "99+" : cartCount}
+            </span>
           </Link>
-        </nav>
+        </div>
       </div>
 
-      <div className="border-t border-line-warm">
-        <div className="mx-auto flex max-w-[1240px] items-center gap-1 overflow-x-auto px-4 py-2">
+      <div className="hidden border-t border-line-warm lg:block">
+        <div className="mx-auto flex max-w-[1240px] items-center gap-1 overflow-x-auto px-6 py-2">
           <Link
             href="/browse"
             className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-bone-soft"
@@ -89,12 +134,18 @@ export async function FerixHeader() {
           {categories.map((category) => (
             <Link
               key={category.slug}
-              href={`/browse?category=${category.slug}`}
+              href={`/category/${category.slug}`}
               className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
             >
               {category.name}
             </Link>
           ))}
+          <Link
+            href="/collections"
+            className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
+          >
+            Collections
+          </Link>
         </div>
       </div>
     </header>
@@ -104,8 +155,8 @@ export async function FerixHeader() {
 export function FerixFooter() {
   return (
     <footer className="mt-16 border-t border-hairline bg-void">
-      <div className="mx-auto max-w-[1240px] px-4 py-12">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto max-w-[1240px] px-4 py-12 lg:px-6">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="flex items-center gap-2">
               <FerixMark />
@@ -130,21 +181,24 @@ export function FerixFooter() {
             links={[
               { label: "All departments", href: "/browse" },
               { label: "Merchant stores", href: "/stores" },
+              { label: "Collections", href: "/collections" },
               { label: "New arrivals", href: "/browse?sort=new" },
               { label: "Best selling", href: "/browse?sort=best" },
-              { label: "Under $100", href: "/browse?collection=under-100" },
             ]}
           />
+
           <FooterColumn
             title="Your account"
             links={[
               { label: "Sign in", href: "/login" },
               { label: "Create an account", href: "/register" },
               { label: "Orders", href: "/account/orders" },
-              { label: "Saved items", href: "/account/wishlist" },
+              { label: "Wishlist", href: "/account/wishlist" },
+              { label: "Track an order", href: "/track-order" },
               { label: "Addresses", href: "/account/addresses" },
             ]}
           />
+
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">Buying on Ferixas</p>
             <ul className="mt-4 space-y-3">
@@ -162,6 +216,22 @@ export function FerixFooter() {
                 </li>
               ))}
             </ul>
+            <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
+              {[
+                { label: "Help", href: "/help" },
+                { label: "FAQ", href: "/faq" },
+                { label: "Contact", href: "/contact" },
+                { label: "Returns", href: "/returns" },
+              ].map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-lime"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -169,9 +239,22 @@ export function FerixFooter() {
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
             © {new Date().getFullYear()} Ferixas Commerce
           </p>
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
-            Payment and delivery handled once at checkout
-          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {[
+              { label: "About", href: "/about" },
+              { label: "Terms", href: "/terms" },
+              { label: "Privacy", href: "/privacy" },
+              { label: "Shipping", href: "/shipping-policy" },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-lime"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

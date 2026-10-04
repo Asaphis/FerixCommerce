@@ -100,7 +100,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <form action={addToCartAction} className="mt-5 grid gap-4">
             <input type="hidden" name="productId" value={product.id} />
             {product.variants.length ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {product.variants.map((variant) => (
                   <label key={variant.name} className="block">
                     <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-soft">{variant.name}</span>

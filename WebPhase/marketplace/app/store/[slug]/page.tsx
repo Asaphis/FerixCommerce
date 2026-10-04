@@ -80,12 +80,12 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
       </section>
 
       <section className="mx-auto max-w-[1240px] px-4 py-8">
-        <div className="grid gap-6 border-b border-line-warm pb-8 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid grid-cols-1 gap-6 border-b border-line-warm pb-8 lg:grid-cols-[1.4fr_1fr]">
           <div>
             <Eyebrow>About the store</Eyebrow>
             <p className="mt-2.5 max-w-[70ch] text-[14px] leading-relaxed text-ink-soft">{about}</p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
               { label: "Response rate", value: `${responseRate}%` },
               { label: "Fulfilment rate", value: `${fulfilmentRate}%` },

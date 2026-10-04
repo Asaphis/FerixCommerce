@@ -18,6 +18,30 @@ function refreshAll() {
   revalidatePath("/", "layout");
 }
 
+/**
+ * Where to land after signing in. Only same-site paths are honoured, so a
+ * crafted `return` value can never bounce a shopper to another domain.
+ */
+function safeReturn(formData: FormData, fallback: string): string {
+  const raw = String(formData.get("return") ?? "").trim();
+  if (!raw.startsWith("/") || raw.startsWith("//")) return fallback;
+  return raw;
+}
+
+/**
+ * Phone numbers are collected as a dialling code plus the local number, so what
+ * reaches the backend is always "+234 803 411 2290". The code field is a
+ * datalist, so a shopper can pick a suggestion or type their own.
+ */
+function combinePhone(formData: FormData): string {
+  const number = String(formData.get("phone") ?? "").trim();
+  if (!number) return "";
+  const raw = String(formData.get("dial") ?? "").trim();
+  if (!raw) return number;
+  const digits = raw.replace(/\D/g, "");
+  return digits ? `+${digits} ${number}`.replace(/\s+/g, " ") : number;
+}
+
 // ── Accounts ───────────────────────────────────────────────────────────
 
 export async function registerAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -38,7 +62,7 @@ export async function registerAction(_prev: FormState, formData: FormData): Prom
   await writeSession(result.token);
   await writeCartId(result.cartId);
   refreshAll();
-  redirect("/account");
+  redirect(safeReturn(formData, "/account"));
 }
 
 export async function loginAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -56,7 +80,7 @@ export async function loginAction(_prev: FormState, formData: FormData): Promise
   await writeSession(result.token);
   await writeCartId(result.cartId);
   refreshAll();
-  redirect("/account");
+  redirect(safeReturn(formData, "/account"));
 }
 
 export async function signOutAction(): Promise<void> {
@@ -158,7 +182,7 @@ export async function saveAddressAction(_prev: FormState, formData: FormData): P
   const body = {
     label: String(formData.get("label") ?? "Home") || "Home",
     name: String(formData.get("name") ?? "").trim(),
-    phone: String(formData.get("phone") ?? "").trim(),
+    phone: combinePhone(formData),
     line1: String(formData.get("line1") ?? "").trim(),
     line2: String(formData.get("line2") ?? "").trim() || null,
     city: String(formData.get("city") ?? "").trim(),
@@ -241,7 +265,7 @@ export async function saveSettingsAction(_prev: FormState, formData: FormData): 
     await api.updateSettings(
       {
         name,
-        phone: String(formData.get("phone") ?? "").trim(),
+        phone: combinePhone(formData),
         language: String(formData.get("language") ?? "English"),
         currency: String(formData.get("currency") ?? "USD"),
         marketingEmails: formData.get("marketingEmails") === "on",
@@ -256,6 +280,47 @@ export async function saveSettingsAction(_prev: FormState, formData: FormData): 
   }
   refreshAll();
   return { message: "Settings saved." };
+}
+
+/**
+ * The backend PATCH merges only the fields it receives, so each form sends just
+ * its own fields — saving a profile change can never reset notification choices.
+ */
+export async function saveProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const creds = await readCredentials();
+  if (!creds.session) redirect("/login");
+  const name = String(formData.get("name") ?? "").trim();
+  const phone = combinePhone(formData);
+  if (name.length < 2) return { error: "Enter your full name." };
+  try {
+    await api.updateSettings({ name, phone }, creds);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not save your details." };
+  }
+  refreshAll();
+  return { message: "Profile updated." };
+}
+
+export async function savePreferencesAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const creds = await readCredentials();
+  if (!creds.session) redirect("/login");
+  try {
+    await api.updateSettings(
+      {
+        language: String(formData.get("language") ?? "English"),
+        currency: String(formData.get("currency") ?? "USD"),
+        marketingEmails: formData.get("marketingEmails") === "on",
+        orderEmails: formData.get("orderEmails") === "on",
+        smsUpdates: formData.get("smsUpdates") === "on",
+        profilePublic: formData.get("profilePublic") === "on",
+      },
+      creds,
+    );
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not save your preferences." };
+  }
+  refreshAll();
+  return { message: "Preferences saved." };
 }
 
 // ── Checkout ───────────────────────────────────────────────────────────
@@ -280,5 +345,5 @@ export async function placeOrderAction(_prev: FormState, formData: FormData): Pr
     return { error: error instanceof api.ApiError ? error.message : "We could not place that order." };
   }
   refreshAll();
-  redirect(`/order/${order.order.id}`);
+  redirect(`/account/orders/${order.order.id}?placed=1`);
 }

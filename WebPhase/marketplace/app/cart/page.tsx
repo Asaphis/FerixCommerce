@@ -27,7 +27,7 @@ export default async function CartPage() {
         title={`${cart.count} item${cart.count === 1 ? "" : "s"} from ${cart.merchants.length} seller${cart.merchants.length === 1 ? "" : "s"}`}
       />
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">
           {cart.merchants.map((group) => (
             <section key={group.merchant.id} className="rounded-[3px] border border-line-warm bg-white">

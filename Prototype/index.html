@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ferixas — Account dashboard prototype</title>
+<style>
+  @font-face { font-family: "IBM Plex Mono"; src: url("./assets/fonts/ibm-plex-mono-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+  @font-face { font-family: "Archivo"; src: url("./assets/fonts/archivo.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+  @font-face { font-family: "Bricolage Grotesque"; src: url("./assets/fonts/bricolage-grotesque.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #0b0d11;
+    color: #e9ecf1;
+    font-family: Archivo, ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .display { font-family: "Bricolage Grotesque", Georgia, serif; }
+
+  /* ---------- control bar ---------- */
+  header {
+    position: fixed; inset: 0 0 auto 0; height: 58px; z-index: 20;
+    display: flex; align-items: center; gap: 14px; padding: 0 16px;
+    background: #131821; border-bottom: 1px solid #242c39;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; font-family: "Bricolage Grotesque", serif; font-weight: 800; letter-spacing: .16em; font-size: 13px; }
+  .brand svg { width: 22px; height: 22px; }
+  .seg { display: flex; gap: 4px; background: #0b0d11; border: 1px solid #242c39; border-radius: 3px; padding: 3px; }
+  .seg button {
+    font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    background: transparent; color: #8b95a6; border: 0; border-radius: 2px; padding: 7px 11px; cursor: pointer; white-space: nowrap;
+  }
+  .seg button:hover { color: #e9ecf1; }
+  .seg button[aria-pressed="true"] { background: #c9f24d; color: #0b0d11; font-weight: 600; }
+  .size { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .14em; color: #8b95a6; }
+  .spacer { flex: 1; }
+  .ghost {
+    font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    background: transparent; color: #8b95a6; border: 1px solid #242c39; border-radius: 3px; padding: 8px 11px; cursor: pointer;
+  }
+  .ghost:hover { color: #e9ecf1; border-color: #4a5568; }
+  .ghost[aria-pressed="true"] { background: #e4572e; border-color: #e4572e; color: #fff; }
+
+  /* ---------- stage ---------- */
+  .stage { position: fixed; inset: 58px 0 0 0; overflow: hidden; display: grid; place-items: center; padding: 22px; }
+  #frameWrap { position: relative; transition: width .18s ease, height .18s ease; }
+  #frame {
+    width: 100%; height: 100%; border: 0; background: #f5f2ec; display: block;
+    border-radius: 6px; box-shadow: 0 24px 70px rgba(0,0,0,.55);
+  }
+  #frameWrap.device { padding: 11px; background: #1b1f27; border: 1px solid #2d3542; border-radius: 44px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  #frameWrap.device #frame { border-radius: 34px; }
+  #frameWrap.tablet { border-radius: 30px; padding: 12px; }
+  #frameWrap.tablet #frame { border-radius: 20px; }
+  .notch {
+    position: absolute; top: 19px; left: 50%; transform: translateX(-50%);
+    width: 96px; height: 5px; border-radius: 99px; background: #2d3542; display: none;
+  }
+  #frameWrap.device .notch { display: block; }
+
+  /* ---------- notes panel ---------- */
+  #notes {
+    position: fixed; top: 58px; right: 0; bottom: 0; width: min(430px, 92vw); z-index: 30;
+    background: #131821; border-left: 1px solid #242c39; padding: 22px 22px 40px; overflow-y: auto;
+    transform: translateX(102%); transition: transform .22s ease;
+  }
+  #notes.open { transform: none; }
+  #notes h2 { font-family: "Bricolage Grotesque", serif; font-size: 19px; margin: 0 0 4px; }
+  #notes p.lede { margin: 0 0 20px; color: #8b95a6; font-size: 12.5px; line-height: 1.6; }
+  #notes h3 { font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: #c9f24d; margin: 22px 0 8px; }
+  #notes ul { margin: 0; padding-left: 16px; }
+  #notes li { font-size: 13px; line-height: 1.6; color: #d7dce4; margin-bottom: 7px; }
+  #notes li b { color: #fff; font-weight: 600; }
+  #notes li code { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: #f2937a; }
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .legend span { font-family: "IBM Plex Mono", monospace; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; border: 1px solid #242c39; padding: 5px 8px; border-radius: 2px; color: #8b95a6; }
+  @media (max-width: 720px) {
+    .brand span, .size, #notesBtn { display: none; }
+    header { gap: 8px; padding: 0 10px; }
+    .seg button { padding: 7px 8px; font-size: 9.5px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#14110e"/><path d="M9 23V9h13v4h-8v2.4h6.6v3.9H14V23z" fill="#e4572e"/></svg>
+    <span>FERIXAS</span>
+  </div>
+
+  <div class="seg" role="group" aria-label="Preview width">
+    <button data-device="mobile" aria-pressed="true">Mobile 390</button>
+    <button data-device="tablet" aria-pressed="false">Tablet 834</button>
+    <button data-device="laptop" aria-pressed="false">Desktop 1280</button>
+    <button data-device="full" aria-pressed="false">Full</button>
+  </div>
+
+  <span class="size" id="sizeLabel">390 × 844</span>
+  <div class="spacer"></div>
+  <button class="ghost" id="notesBtn" aria-pressed="false">Why this works</button>
+</header>
+
+<div class="stage">
+  <div id="frameWrap" class="device">
+    <span class="notch"></span>
+    <iframe id="frame" src="./dashboard.html" title="Ferixas account dashboard prototype"></iframe>
+  </div>
+</div>
+
+<aside id="notes">
+  <h2>What changed and why</h2>
+  <p class="lede">Account dashboard for the customer app. Same brand language (bone / ink / ember, sharp 2–3px corners, mono micro-labels) — but rebuilt around what a shopper actually opens their account for.</p>
+
+  <h3>1 · Tracking first</h3>
+  <ul>
+    <li>The old page opened with a greeting and four equal stat tiles. <b>The open order is now the hero</b>: status, 4-step progress, ETA, carrier, contents, “Track package”.</li>
+    <li>Baymard's self-service benchmark finds <b>order tracking is the single most-requested account feature</b>, and it should stay inside the site — not be pushed to a courier page. Tracking and courier detail live on-page.</li>
+  </ul>
+
+  <h3>2 · Mobile = bottom tab bar</h3>
+  <ul>
+    <li>Header drops from three stacked rows to <b>one 56px bar</b> (mark + screen title + search + alerts). The old header nav is gone on small screens.</li>
+    <li>Navigation moves to a <b>5-item bottom tab bar</b> — Home, Browse, Cart, Orders, Account — in the thumb zone, with an ember indicator on the active tab and the cart badge always visible.</li>
+    <li>Account sections (Orders, Saved, Addresses, Reviews, Payment, Settings) become a <b>sticky chip strip</b> instead of a wrapped button wall.</li>
+    <li>Content gets <code>pb-28</code> so the tab bar never covers the last row, plus <code>env(safe-area-inset-bottom)</code> for iPhone home-bar devices.</li>
+  </ul>
+
+  <h3>3 · Less content, smaller voice</h3>
+  <ul>
+    <li>Killed the <b>title + paragraph pairs</b>. A section now has one heading, and every supporting line is a <b>9.5–12.5px mono micro-label</b>.</li>
+    <li>Order rows abbreviate to <b>“Merino wool overshirt +1 more · 2 Oct”</b> — the full item list is one tap away in the expanded row.</li>
+    <li>Four address cards, a 3-line spend footnote and a duplicated “Saved items” section were replaced by <b>one 3-cell details strip</b>: ships to · payment · returns.</li>
+  </ul>
+
+  <h3>4 · Every account path on the dashboard</h3>
+  <ul>
+    <li>Desktop gets a sticky sidebar listing <b>all seven account areas with live counts</b>; mobile reaches the same list through the chip strip.</li>
+    <li>Baymard: 52% of users navigate to account features from the dashboard, and 78% of sites fail to expose them all. Returns, help and payment are now first-class entries.</li>
+  </ul>
+
+  <h3>5 · Responsive by construction</h3>
+  <ul>
+    <li><b>&lt;640</b> single column, 2×2 stat grid, horizontal scroll rails (snap), tab bar.</li>
+    <li><b>640–1023</b> two-column card grids, chip strip retained, tab bar retained.</li>
+    <li><b>≥1024</b> 232px sticky sidebar + content, 4-up stats, 4-up saved grid, hero splits into order / parcel columns.</li>
+  </ul>
+
+  <h3>Things you can click</h3>
+  <div class="legend">
+    <span>Tap an order row → expands</span>
+    <span>+ button → cart badge</span>
+    <span>Heart → saved count</span>
+    <span>Tab bar → active state</span>
+  </div>
+
+  <h3>Porting note</h3>
+  <ul>
+    <li>Markup is Tailwind utility classes with the same token names as <code>app/globals.css</code>, so blocks drop into <code>app/account/page.tsx</code> with the data already in <code>Account</code> (user, orders, activeOrders, wishlist, addresses, stats).</li>
+  </ul>
+</aside>
+
+<script>
+  const wrap = document.getElementById("frameWrap");
+  const frame = document.getElementById("frame");
+  const sizeLabel = document.getElementById("sizeLabel");
+  const stage = document.querySelector(".stage");
+
+  const DEVICES = {
+    mobile: { w: 390, h: 844, cls: "device" },
+    tablet: { w: 834, h: 1112, cls: "device tablet" },
+    laptop: { w: 1280, h: 800, cls: "" },
+    full:   { w: null, h: null, cls: "full" },
+  };
+
+  function apply(key) {
+    const d = DEVICES[key];
+    document.querySelectorAll("[data-device]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.device === key)));
+
+    wrap.className = d.cls;
+
+    if (key === "full") {
+      wrap.style.width = "100%";
+      wrap.style.height = "100%";
+      wrap.style.transform = "none";
+      sizeLabel.textContent = "fluid";
+      return;
+    }
+
+    const pad = key === "laptop" ? 0 : 22;
+    const availW = stage.clientWidth - pad;
+    const availH = stage.clientHeight - pad;
+    // the frame's own padding must not eat into the simulated viewport,
+    // otherwise the iframe would be narrower than the device we claim to show
+    const cs = getComputedStyle(wrap);
+    const px = (v) => parseFloat(v) || 0;
+    const insetX = px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth);
+    const insetY = px(cs.paddingTop) + px(cs.paddingBottom) + px(cs.borderTopWidth) + px(cs.borderBottomWidth);
+    const outerW = d.w + insetX;
+    const outerH = d.h + insetY;
+    const scale = Math.min(1, availW / outerW, availH / outerH);
+
+    wrap.style.width = outerW + "px";
+    wrap.style.height = outerH + "px";
+    wrap.style.transform = "scale(" + scale.toFixed(4) + ")";
+    sizeLabel.textContent = d.w + " × " + d.h + (scale < 1 ? "  ·  " + Math.round(scale * 100) + "%" : "");
+  }
+
+  document.querySelectorAll("[data-device]").forEach((btn) => {
+    btn.addEventListener("click", () => apply(btn.dataset.device));
+  });
+
+  // notes panel
+  const notes = document.getElementById("notes");
+  const notesBtn = document.getElementById("notesBtn");
+  notesBtn.addEventListener("click", () => {
+    const open = notes.classList.toggle("open");
+    notesBtn.setAttribute("aria-pressed", String(open));
+  });
+
+  window.addEventListener("resize", () => {
+    const active = document.querySelector("[data-device][aria-pressed='true']").dataset.device;
+    apply(active);
+  });
+
+  apply("mobile");
+
+  // reload the inner prototype on demand (double-click the stage)
+  stage.addEventListener("dblclick", () => frame.contentWindow.location.reload());
+</script>
+</body>
+</html>

@@ -2,9 +2,9 @@ import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { requireAccount } from "@/lib/data";
 import { deleteReviewAction } from "@/lib/actions";
-import { AccountNav } from "@/components/ferix/account-nav";
+import { AccountShell } from "@/components/ferix/account-shell";
 import { ReviewForm } from "@/components/ferix/forms";
-import { Eyebrow, Pill, Stars } from "@/components/ferix/marks";
+import { Pill, Stars } from "@/components/ferix/marks";
 import { dateShort } from "@/lib/format";
 
 export default async function ReviewsPage() {
@@ -12,19 +12,13 @@ export default async function ReviewsPage() {
   const { reviews } = account;
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 py-8">
-      <Eyebrow>Your account</Eyebrow>
-      <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">Your reviews</h1>
-      <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
-        Everything you have written, ready to edit or remove. Reviews are attached to your account, not the browser.
-      </p>
-
-      <div className="mt-6">
-        <AccountNav />
-      </div>
-
+    <AccountShell
+      account={account}
+      title="Your reviews"
+      description="Everything you have written, ready to edit or remove. Reviews are attached to your account, not the browser."
+    >
       {reviews.length ? (
-        <div className="mt-8 space-y-3">
+        <div className="space-y-3">
           {reviews.map((review) => (
             <section key={review.id} className="rounded-[3px] border border-line-warm bg-white p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -73,7 +67,7 @@ export default async function ReviewsPage() {
           ))}
         </div>
       ) : (
-        <div className="mt-8 rounded-[3px] border border-dashed border-line-warm px-6 py-12 text-center">
+        <div className="rounded-[3px] border border-dashed border-line-warm px-6 py-12 text-center">
           <p className="font-display text-[16px] font-semibold text-ink">No reviews yet</p>
           <p className="mx-auto mt-2 max-w-[48ch] text-[13.5px] text-ink-soft">
             Open any product you have bought and use the review form at the bottom of the page. It will appear here
@@ -87,6 +81,6 @@ export default async function ReviewsPage() {
           </Link>
         </div>
       )}
-    </div>
+    </AccountShell>
   );
 }

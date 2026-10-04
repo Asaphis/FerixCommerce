@@ -1,7 +1,7 @@
 import { Check, Plus, Star, Trash2 } from "lucide-react";
 import { requireAccount } from "@/lib/data";
 import { deleteAddressAction, setDefaultAddressAction } from "@/lib/actions";
-import { AccountNav } from "@/components/ferix/account-nav";
+import { AccountShell } from "@/components/ferix/account-shell";
 import { AddressForm } from "@/components/ferix/forms";
 import { Eyebrow, Pill } from "@/components/ferix/marks";
 
@@ -10,18 +10,12 @@ export default async function AddressesPage() {
   const { addresses } = account;
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 py-8">
-      <Eyebrow>Your account</Eyebrow>
-      <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">Delivery addresses</h1>
-      <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
-        Saved addresses are offered at checkout. The default one is selected for you automatically.
-      </p>
-
-      <div className="mt-6">
-        <AccountNav />
-      </div>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_1fr]">
+    <AccountShell
+      account={account}
+      title="Delivery addresses"
+      description="Saved addresses are offered at checkout. The default one is selected for you automatically."
+    >
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_1fr]">
         <div className="space-y-3">
           {addresses.length ? (
             addresses.map((address) => (
@@ -101,6 +95,6 @@ export default async function AddressesPage() {
       <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
         {addresses.length} address{addresses.length === 1 ? "" : "es"} on file · used at checkout on every store
       </p>
-    </div>
+    </AccountShell>
   );
 }

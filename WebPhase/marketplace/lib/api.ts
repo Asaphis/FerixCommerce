@@ -236,6 +236,8 @@ export type AccountUser = {
   phone: string;
   avatarInitials: string;
   createdAt: string;
+  /** Shopper tier reported by the store's backend, e.g. "vip". */
+  segment?: string;
   settings: Record<string, unknown>;
 };
 

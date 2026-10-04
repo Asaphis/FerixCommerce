@@ -9,6 +9,8 @@ import {
   loginAction,
   registerAction,
   saveAddressAction,
+  savePreferencesAction,
+  saveProfileAction,
   saveReviewAction,
   saveSettingsAction,
   placeOrderAction,
@@ -27,6 +29,49 @@ function Field({ title, children }: { title: string; children: React.ReactNode }
       <span className={label}>{title}</span>
       <div className="mt-1.5">{children}</div>
     </label>
+  );
+}
+
+/**
+ * Dialling codes offered as suggestions. Only the code itself is shown — never
+ * a country abbreviation — and because this is a datalist a shopper can type a
+ * code that is not listed.
+ */
+const DIAL_CODES = ["+234", "+233", "+254", "+27", "+20", "+44", "+1", "+33", "+49", "+34", "+971", "+91", "+86"];
+
+function PhoneField({ defaultValue }: { defaultValue?: string }) {
+  const raw = (defaultValue ?? "").trim();
+  const match = raw.match(/^\+(\d{1,4})\s*(.*)$/);
+  const dial = match ? `+${match[1]}` : "+234";
+  const number = match ? match[2] : raw;
+
+  return (
+    <Field title="Phone">
+      <div className="flex gap-2">
+        <input
+          name="dial"
+          list="ferix-dial-codes"
+          defaultValue={dial}
+          inputMode="tel"
+          aria-label="Country dialling code"
+          className={cn(field, "w-[86px] shrink-0 px-2 text-center font-mono")}
+        />
+        <input
+          name="phone"
+          defaultValue={number}
+          inputMode="tel"
+          autoComplete="tel-national"
+          placeholder="803 411 2290"
+          aria-label="Phone number"
+          className={cn(field, "min-w-0 flex-1")}
+        />
+      </div>
+      <datalist id="ferix-dial-codes">
+        {DIAL_CODES.map((code) => (
+          <option key={code} value={code} />
+        ))}
+      </datalist>
+    </Field>
   );
 }
 
@@ -55,7 +100,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   );
 
   return (
-    <form action={action} className="grid gap-4">
+    <form action={action} className="grid grid-cols-1 gap-4">
       {mode === "register" ? (
         <Field title="Full name">
           <input name="name" className={field} placeholder="Ada Bello" autoComplete="name" required />
@@ -100,9 +145,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 export function AddressForm({ address }: { address?: Address }) {
   const [state, action] = useActionState<FormState, FormData>(saveAddressAction, {});
   return (
-    <form action={action} className="grid gap-4">
+    <form action={action} className="grid grid-cols-1 gap-4">
       {address ? <input type="hidden" name="id" value={address.id} /> : null}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field title="Label">
           <input name="label" defaultValue={address?.label ?? "Home"} className={field} />
         </Field>
@@ -110,7 +155,7 @@ export function AddressForm({ address }: { address?: Address }) {
           <input name="name" defaultValue={address?.name ?? ""} className={field} required />
         </Field>
         <Field title="Phone">
-          <input name="phone" defaultValue={address?.phone ?? ""} className={field} />
+          <PhoneField defaultValue={address?.phone} />
         </Field>
         <Field title="Street address">
           <input name="line1" defaultValue={address?.line1 ?? ""} className={field} required />
@@ -144,7 +189,7 @@ export function AddressForm({ address }: { address?: Address }) {
 export function ReviewForm({ productId, review }: { productId?: string; review?: Review }) {
   const [state, action] = useActionState<FormState, FormData>(saveReviewAction, {});
   return (
-    <form action={action} className="grid gap-4">
+    <form action={action} className="grid grid-cols-1 gap-4">
       {review ? <input type="hidden" name="id" value={review.id} /> : null}
       {productId ? <input type="hidden" name="productId" value={productId} /> : null}
       <Field title="Rating">
@@ -184,13 +229,13 @@ export function SettingsForm({ user, settings }: { user: AccountUser; settings: 
   ];
 
   return (
-    <form action={action} className="grid gap-6">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <form action={action} className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field title="Full name">
           <input name="name" defaultValue={user.name} className={field} required />
         </Field>
         <Field title="Phone">
-          <input name="phone" defaultValue={user.phone} className={field} />
+          <PhoneField defaultValue={user.phone} />
         </Field>
         <Field title="Email address">
           <input value={user.email} readOnly className={cn(field, "bg-bone-soft text-ink-soft")} />
@@ -243,7 +288,7 @@ export function ShippingPicker({
       method="get"
       action="/checkout"
       onChange={() => ref.current?.requestSubmit()}
-      className="grid gap-2"
+      className="grid grid-cols-1 gap-2"
     >
       {addressId ? <input type="hidden" name="address" value={addressId} /> : null}
       {options.map((option) => (
@@ -292,7 +337,7 @@ export function PlaceOrderForm({
 }) {
   const [state, action] = useActionState<FormState, FormData>(placeOrderAction, {});
   return (
-    <form action={action} className="grid gap-4">
+    <form action={action} className="grid grid-cols-1 gap-4">
       <input type="hidden" name="shippingMethod" value={shippingMethod} />
       <Field title="Deliver to">
         <select name="addressId" defaultValue={defaultAddressId} className={field} required>
@@ -320,6 +365,111 @@ export function PlaceOrderForm({
       <p className="text-center font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
         Items are shipped separately by each seller
       </p>
+    </form>
+  );
+}
+
+export function ProfileForm({ user }: { user: AccountUser }) {
+  const [state, action] = useActionState<FormState, FormData>(saveProfileAction, {});
+  return (
+    <form action={action} className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field title="Full name">
+          <input name="name" defaultValue={user.name} className={field} autoComplete="name" required />
+        </Field>
+        <Field title="Phone">
+          <PhoneField defaultValue={user.phone} />
+        </Field>
+      </div>
+      <Field title="Email address">
+        <input value={user.email} readOnly className={cn(field, "bg-bone-soft text-ink-soft")} />
+      </Field>
+      <p className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-soft">
+        Your email is how you sign in and cannot be changed here
+      </p>
+      <Notice state={state} />
+      <SubmitButton className="w-fit">Save profile</SubmitButton>
+    </form>
+  );
+}
+
+export function PreferencesForm({ settings }: { settings: Record<string, unknown> }) {
+  const [state, action] = useActionState<FormState, FormData>(savePreferencesAction, {});
+  const toggles: { name: string; title: string; body: string; on: boolean }[] = [
+    {
+      name: "orderEmails",
+      title: "Order updates by email",
+      body: "Confirmation, dispatch and delivery",
+      on: Boolean(settings.orderEmails),
+    },
+    {
+      name: "marketingEmails",
+      title: "Offers and new arrivals",
+      body: "At most twice a month",
+      on: Boolean(settings.marketingEmails),
+    },
+    {
+      name: "smsUpdates",
+      title: "Delivery updates by SMS",
+      body: "Only when the carrier is close",
+      on: Boolean(settings.smsUpdates),
+    },
+    {
+      name: "profilePublic",
+      title: "Show my name on reviews",
+      body: "Off posts your reviews anonymously",
+      on: Boolean(settings.profilePublic),
+    },
+  ];
+
+  return (
+    <form action={action} className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field title="Language">
+          <select name="language" defaultValue={String(settings.language ?? "English")} className={field}>
+            {["English", "Français", "Português", "Yorùbá", "Hausa"].map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field title="Currency">
+          <select name="currency" defaultValue={String(settings.currency ?? "USD")} className={field}>
+            {["USD", "NGN", "GBP", "EUR", "ZAR"].map((code) => (
+              <option key={code} value={code}>
+                {code}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+
+      <div className="rounded-[3px] border border-line-warm bg-white p-4">
+        <p className={label}>Messages and privacy</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {toggles.map((item) => (
+            <label
+              key={item.name}
+              className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-line-warm p-3 transition-colors hover:border-ink/25"
+            >
+              <input
+                type="checkbox"
+                name={item.name}
+                defaultChecked={item.on}
+                className="mt-[3px] h-4 w-4 accent-[#e4572e]"
+              />
+              <span>
+                <span className="block text-[13px] font-medium text-ink">{item.title}</span>
+                <span className="block text-[12px] text-ink-soft">{item.body}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <Notice state={state} />
+      <SubmitButton className="w-fit">Save preferences</SubmitButton>
     </form>
   );
 }

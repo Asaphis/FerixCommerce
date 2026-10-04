@@ -214,7 +214,7 @@ export function StoreCard({ store }: { store: Merchant }) {
 
 export function RatingBars({ breakdown, total, rating }: { breakdown: Record<string, number>; total: number; rating: number }) {
   return (
-    <div className="grid gap-2.5 sm:grid-cols-[auto_1fr]">
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[auto_1fr]">
       <div className="sm:w-[130px]">
         <p className="font-display text-[34px] font-extrabold leading-none text-ink">{rating.toFixed(1)}</p>
         <Stars value={rating} size={13} className="mt-2" />
