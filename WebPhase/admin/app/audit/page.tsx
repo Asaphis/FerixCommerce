@@ -60,10 +60,10 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse text-left">
+          <div className="md:overflow-x-auto">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[900px]">
               <thead>
-                <tr className="border-b border-hairline">
+                <tr className="hidden border-b border-hairline md:table-row">
                   {["When", "Actor", "Action", "Target", "Detail"].map((head) => (
                     <th key={head} className="px-4 py-3 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">
                       {head}
@@ -73,19 +73,30 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
               </thead>
               <tbody>
                 {filtered.map((event) => (
-                  <tr key={event.id} className="border-b border-hairline last:border-0 hover:bg-panel-2">
-                    <td className="px-4 py-3 font-mono text-[11.5px] whitespace-nowrap text-chalk-dim">
-                      {new Date(event.at).toLocaleString("en-GB")}
+                  <tr
+                    key={event.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3 last:border-0 hover:bg-panel-2 md:table-row md:px-0 md:py-0"
+                  >
+                    <td className="w-full min-w-0 px-0 py-0 md:w-auto md:px-4 md:py-3">
+                      <p className="font-mono text-[11.5px] text-chalk-dim">{new Date(event.at).toLocaleString("en-GB")}</p>
+                      <p className="mt-0.5 font-mono text-[12px] text-chalk md:hidden">
+                        {titleCase(event.action.replace(/\./g, " "))}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[10.5px] text-chalk-dim md:hidden">
+                        {event.actorType} {event.actorId}
+                      </p>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 md:table-cell">
                       <div className="flex flex-wrap items-center gap-2">
                         <Pill tone={event.actorType === "admin" ? "violet" : "mint"}>{event.actorType}</Pill>
                         <span className="font-mono text-[11.5px] text-chalk-dim">{event.actorId}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-chalk">{titleCase(event.action.replace(/\./g, " "))}</td>
-                    <td className="px-4 py-3 font-mono text-[11.5px] text-chalk-dim">{event.target || "—"}</td>
-                    <td className="px-4 py-3 text-[12.5px] text-chalk-dim">{event.detail || "—"}</td>
+                    <td className="hidden px-4 py-3 font-mono text-[12px] text-chalk md:table-cell">
+                      {titleCase(event.action.replace(/\./g, " "))}
+                    </td>
+                    <td className="hidden px-4 py-3 font-mono text-[11.5px] text-chalk-dim md:table-cell">{event.target || "—"}</td>
+                    <td className="hidden px-4 py-3 text-[12.5px] text-chalk-dim md:table-cell">{event.detail || "—"}</td>
                   </tr>
                 ))}
               </tbody>

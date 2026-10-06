@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   Boxes,
@@ -9,6 +10,7 @@ import {
   History,
   LayoutDashboard,
   Megaphone,
+  Menu,
   Palette,
   Receipt,
   Settings2,
@@ -16,73 +18,72 @@ import {
   Store,
   Users,
   Wallet,
+  X,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NAV_GROUPS, MOBILE_PRIMARY, isActivePath, type NavItem } from "@/components/ops/nav-data";
 
-const GROUPS: { label: string; links: { href: string; label: string; Icon: typeof LayoutDashboard }[] }[] = [
-  {
-    label: "Platform",
-    links: [
-      { href: "/", label: "Overview", Icon: LayoutDashboard },
-      { href: "/analytics", label: "Analytics", Icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Marketplace",
-    links: [
-      { href: "/cms", label: "CMS", Icon: Palette },
-      { href: "/catalog", label: "Catalogue", Icon: Boxes },
-      { href: "/promotions", label: "Promotions", Icon: Megaphone },
-    ],
-  },
-  {
-    label: "Commerce",
-    links: [
-      { href: "/orders", label: "Orders", Icon: Receipt },
-      { href: "/payments", label: "Payments", Icon: CreditCard },
-      { href: "/payouts", label: "Payouts", Icon: Wallet },
-    ],
-  },
-  {
-    label: "People",
-    links: [
-      { href: "/merchants", label: "Merchants", Icon: Store },
-      { href: "/users", label: "Customers", Icon: Users },
-    ],
-  },
-  {
-    label: "Control",
-    links: [
-      { href: "/team", label: "Team & roles", Icon: ShieldCheck },
-      { href: "/audit", label: "Audit log", Icon: History },
-      { href: "/settings", label: "Settings", Icon: Settings2 },
-    ],
-  },
-];
+/** Icons are the only React-bound part of the nav, so they live here. */
+const ICONS: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  chart: BarChart3,
+  palette: Palette,
+  boxes: Boxes,
+  megaphone: Megaphone,
+  receipt: Receipt,
+  card: CreditCard,
+  wallet: Wallet,
+  store: Store,
+  users: Users,
+  shield: ShieldCheck,
+  history: History,
+  settings: Settings2,
+};
 
-export function OpsNav() {
+function iconFor(link: NavItem): LucideIcon {
+  return ICONS[link.icon] ?? LayoutDashboard;
+}
+
+function SoonTag() {
+  return (
+    <span className="rounded-[2px] border border-hairline px-1 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-chalk-dim">
+      Soon
+    </span>
+  );
+}
+
+const FOCUS_RING =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-panel";
+
+/** Grouped sidebar. Rendered at 1280px and up. */
+export function OpsSidebar() {
   const pathname = usePathname();
   return (
-    <nav aria-label="Platform console" className="hidden gap-4 overflow-x-auto px-3 pb-3 lg:flex lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-4">
-      {GROUPS.map((group) => (
-        <div key={group.label} className="flex shrink-0 gap-1 lg:block lg:shrink lg:pb-3">
-          <p className="hidden px-3 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-chalk-dim/60 lg:block">
+    <nav aria-label="Platform console" className="flex flex-col gap-4 px-3 pb-4">
+      {NAV_GROUPS.map((group) => (
+        <div key={group.label}>
+          <p className="px-3 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-chalk-dim/60">
             {group.label}
           </p>
-          <div className="flex gap-1 lg:flex-col">
-            {group.links.map(({ href, label, Icon }) => {
-              const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          <div className="flex flex-col gap-0.5">
+            {group.items.map((item) => {
+              const Icon = iconFor(item);
+              const active = isActivePath(pathname, item.href);
               return (
                 <Link
-                  key={href}
-                  href={href}
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
-                    "inline-flex shrink-0 items-center gap-2.5 rounded-[2px] px-3 py-2 text-[12.5px] transition-colors",
+                    "flex min-h-[44px] items-center gap-2.5 rounded-[2px] px-3 text-[12.5px] transition-colors",
+                    FOCUS_RING,
                     active ? "bg-panel-2 text-signal" : "text-chalk-dim hover:bg-panel-2 hover:text-chalk",
                   )}
                 >
-                  <Icon width={15} height={15} />
-                  {label}
+                  <Icon width={16} height={16} className="shrink-0" />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  {item.soon ? <SoonTag /> : null}
                 </Link>
               );
             })}
@@ -93,35 +94,197 @@ export function OpsNav() {
   );
 }
 
-const MOBILE_LINKS = [
-  { href: "/", label: "Overview", Icon: LayoutDashboard },
-  { href: "/merchants", label: "Merchants", Icon: Store },
-  { href: "/catalog", label: "Catalogue", Icon: Boxes },
-  { href: "/orders", label: "Orders", Icon: Receipt },
-  { href: "/settings", label: "Settings", Icon: Settings2 },
-];
-
-export function MobileBottomNav() {
+/** Icon rail. Rendered from 768px until the sidebar takes over at 1280px. */
+export function OpsRail() {
   const pathname = usePathname();
   return (
-    <>
-      <div aria-hidden="true" className="h-[76px] lg:hidden" />
-      <nav aria-label="Admin primary navigation" className="fixed inset-x-0 bottom-0 z-50 border-t border-hairline bg-panel/95 backdrop-blur-md lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <ul className="mx-auto grid max-w-[560px] grid-cols-5">
-          {MOBILE_LINKS.map(({ href, label, Icon }) => {
-            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+    <nav aria-label="Platform console" className="flex flex-col gap-1 px-2 py-1">
+      {NAV_GROUPS.map((group, index) => (
+        <div
+          key={group.label}
+          className={cn("flex flex-col gap-1", index > 0 && "mt-2 border-t border-hairline pt-2")}
+        >
+          {group.items.map((item) => {
+            const Icon = iconFor(item);
+            const active = isActivePath(pathname, item.href);
             return (
-              <li key={href}>
-                <Link href={href} aria-current={active ? "page" : undefined} className={cn("relative flex min-h-[58px] flex-col items-center justify-center gap-1 px-1 py-2 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors", active ? "text-signal" : "text-chalk-dim hover:text-chalk")}>
-                  <span className={cn("absolute inset-x-3 top-0 h-[2px] rounded-full bg-signal", active ? "opacity-100" : "opacity-0")} />
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "grid h-11 w-11 place-items-center rounded-[2px] transition-colors",
+                  FOCUS_RING,
+                  active ? "bg-panel-2 text-signal" : "text-chalk-dim hover:bg-panel-2 hover:text-chalk",
+                )}
+              >
+                <Icon width={18} height={18} />
+                <span className="sr-only">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+/** Phone bottom bar plus the "More" drawer. Rendered below 768px. */
+export function OpsBottomNav() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+
+  const all = NAV_GROUPS.flatMap((group) => group.items);
+  const items = MOBILE_PRIMARY.map((href) => all.find((item) => item.href === href)).filter(
+    (item): item is NavItem => Boolean(item),
+  );
+  const moreActive = !items.some((item) => isActivePath(pathname, item.href));
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  return (
+    <>
+      <div aria-hidden="true" className="h-[72px] md:hidden" />
+      <nav
+        aria-label="Admin primary navigation"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-hairline bg-panel/95 backdrop-blur-md md:hidden"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <ul className="mx-auto grid max-w-[560px] grid-cols-5">
+          {items.map((item) => {
+            const Icon = iconFor(item);
+            const active = isActivePath(pathname, item.href);
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "relative flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal",
+                    active ? "text-signal" : "text-chalk-dim hover:text-chalk",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute inset-x-3 top-0 h-[2px] rounded-full bg-signal",
+                      active ? "opacity-100" : "opacity-0",
+                    )}
+                  />
                   <Icon width={19} height={19} strokeWidth={active ? 2.3 : 1.8} />
-                  {label}
+                  {item.label}
                 </Link>
               </li>
             );
           })}
+          <li>
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-haspopup="dialog"
+              aria-expanded={open}
+              className={cn(
+                "relative flex min-h-[56px] w-full flex-col items-center justify-center gap-1 px-1 py-2 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal",
+                moreActive ? "text-signal" : "text-chalk-dim hover:text-chalk",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute inset-x-3 top-0 h-[2px] rounded-full bg-signal",
+                  moreActive ? "opacity-100" : "opacity-0",
+                )}
+              />
+              <Menu width={19} height={19} strokeWidth={moreActive ? 2.3 : 1.8} />
+              More
+            </button>
+          </li>
         </ul>
       </nav>
+      {open ? <MoreDrawer onClose={() => setOpen(false)} /> : null}
     </>
+  );
+}
+
+/** Every destination, grouped, for the phone drawer. */
+function MoreDrawer({ onClose }: { onClose: () => void }) {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-modal="true" aria-label="All destinations">
+      <button
+        type="button"
+        aria-label="Close navigation"
+        onClick={onClose}
+        className="absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm"
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[4px] border-t border-hairline bg-panel px-4 pb-6 pt-3"
+        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">All destinations</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className={cn(
+              "grid h-11 w-11 place-items-center rounded-[2px] text-chalk-dim hover:bg-panel-2 hover:text-chalk",
+              FOCUS_RING,
+            )}
+          >
+            <X width={18} height={18} />
+          </button>
+        </div>
+        <div className="flex flex-col gap-4">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="px-1 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-chalk-dim/60">
+                {group.label}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {group.items.map((item) => {
+                  const Icon = iconFor(item);
+                  const active = isActivePath(pathname, item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={onClose}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex min-h-[48px] items-center gap-3 rounded-[2px] px-3 text-[13.5px] transition-colors",
+                        FOCUS_RING,
+                        active ? "bg-panel-2 text-signal" : "text-chalk-dim hover:bg-panel-2 hover:text-chalk",
+                      )}
+                    >
+                      <Icon width={17} height={17} className="shrink-0" />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      {item.soon ? <SoonTag /> : null}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }

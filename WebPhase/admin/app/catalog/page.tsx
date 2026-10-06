@@ -91,10 +91,10 @@ export default async function CatalogPage({
         <Empty title="No products match" body="Clear the filters, or upload the first Ferixas Official product." />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse text-left">
+          <div className="md:overflow-x-auto">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[900px]">
               <thead>
-                <tr className="border-b border-hairline">
+                <tr className="hidden border-b border-hairline md:table-row">
                   {["Product", "Owner", "Price", "Stock", "Channels", "Status", ""].map((head) => (
                     <th key={head} className="px-4 py-3 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">
                       {head}
@@ -104,8 +104,11 @@ export default async function CatalogPage({
               </thead>
               <tbody>
                 {data.products.map((product) => (
-                  <tr key={product.id} className="border-b border-hairline last:border-0 hover:bg-panel-2">
-                    <td className="px-4 py-3">
+                  <tr
+                    key={product.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3 last:border-0 hover:bg-panel-2 md:table-row md:px-0 md:py-0"
+                  >
+                    <td className="w-full min-w-0 px-0 py-0 md:w-auto md:px-4 md:py-3">
                       <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -126,7 +129,7 @@ export default async function CatalogPage({
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 md:table-cell">
                       <span className="inline-flex items-center gap-1.5 text-[12.5px] text-chalk-dim">
                         <Store width={13} height={13} />
                         {product.merchantName}
@@ -139,7 +142,7 @@ export default async function CatalogPage({
                       ) : null}
                     </td>
                     <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-chalk-dim">{num(product.stock)}</td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 md:table-cell">
                       <div className="flex flex-wrap gap-1.5">
                         {product.channels.store ? <Pill tone="mint">store</Pill> : null}
                         {product.channels.marketplace ? <Pill tone="signal">marketplace</Pill> : null}

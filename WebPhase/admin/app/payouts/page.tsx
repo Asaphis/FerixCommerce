@@ -45,10 +45,10 @@ export default async function PayoutsPage() {
         <Empty title="Nothing to pay out yet" body="Payout periods appear once a merchant has taken orders." />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] border-collapse text-left">
+          <div className="md:overflow-x-auto">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[960px]">
               <thead>
-                <tr className="border-b border-hairline">
+                <tr className="hidden border-b border-hairline md:table-row">
                   {["Merchant", "Period", "Orders", "Gross", "Commission", "Net payable", "Method", "Status", ""].map((head) => (
                     <th key={head} className="px-4 py-3 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">
                       {head}
@@ -58,18 +58,34 @@ export default async function PayoutsPage() {
               </thead>
               <tbody>
                 {data.payouts.map((payout) => (
-                  <tr key={payout.id} className="border-b border-hairline last:border-0 hover:bg-panel-2">
-                    <td className="px-4 py-3 text-[12.5px] text-chalk">{payout.merchantName}</td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-chalk-dim">{payout.period}</td>
-                    <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-chalk-dim">{num(payout.orders)}</td>
-                    <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-chalk-dim">{money(payout.gross)}</td>
-                    <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-violet">{money(payout.commission)}</td>
-                    <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-chalk">{money(payout.net)}</td>
-                    <td className="px-4 py-3 text-[12.5px] text-chalk-dim">{payout.method}</td>
-                    <td className="px-4 py-3">
+                  <tr
+                    key={payout.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3 last:border-0 hover:bg-panel-2 md:table-row md:px-0 md:py-0"
+                  >
+                    <td className="w-full min-w-0 px-0 py-0 md:w-auto md:px-4 md:py-3">
+                      <p className="text-[12.5px] text-chalk">{payout.merchantName}</p>
+                      <p className="font-mono text-[11px] text-chalk-dim">
+                        {payout.period} · {payout.method}
+                      </p>
+                    </td>
+                    <td className="hidden px-4 py-3 font-mono text-[12px] text-chalk-dim md:table-cell">{payout.period}</td>
+                    <td className="hidden px-4 py-3 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
+                      {num(payout.orders)}
+                    </td>
+                    <td className="px-0 py-0 font-mono text-[12.5px] tabular-nums text-chalk-dim md:px-4 md:py-3">
+                      {money(payout.gross)}
+                    </td>
+                    <td className="hidden px-4 py-3 font-mono text-[12.5px] tabular-nums text-violet md:table-cell">
+                      {money(payout.commission)}
+                    </td>
+                    <td className="px-0 py-0 font-mono text-[12.5px] tabular-nums text-chalk md:px-4 md:py-3">
+                      {money(payout.net)}
+                    </td>
+                    <td className="hidden px-4 py-3 text-[12.5px] text-chalk-dim md:table-cell">{payout.method}</td>
+                    <td className="px-0 py-0 md:px-4 md:py-3">
                       <Pill tone={STATUS_TONE[payout.status] ?? "neutral"}>{payout.status}</Pill>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="ml-auto px-0 py-0 md:ml-0 md:px-4 md:py-3">
                       <form action={updatePayoutAction} className="flex gap-2">
                         <input type="hidden" name="id" value={payout.id} />
                         <input type="hidden" name="status" value={payout.status === "paid" ? "pending" : "paid"} />

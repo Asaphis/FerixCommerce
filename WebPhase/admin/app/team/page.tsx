@@ -30,10 +30,10 @@ export default async function TeamPage() {
         {staff.length === 0 ? (
           <Empty title="No accounts listed" body="Add the first team member below." />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-left">
+          <div className="md:overflow-x-auto">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[720px]">
               <thead>
-                <tr className="border-b border-hairline">
+                <tr className="hidden border-b border-hairline md:table-row">
                   {["Name", "Email", "Role", "Permissions", "Added", ""].map((head) => (
                     <th key={head} className="px-4 py-3 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">
                       {head}
@@ -43,19 +43,25 @@ export default async function TeamPage() {
               </thead>
               <tbody>
                 {staff.map((member) => (
-                  <tr key={member.id} className="border-b border-hairline last:border-0 hover:bg-panel-2">
-                    <td className="px-4 py-3 text-[12.5px] text-chalk">{member.name}</td>
-                    <td className="px-4 py-3 font-mono text-[12px] text-chalk-dim">{member.email}</td>
-                    <td className="px-4 py-3">
+                  <tr
+                    key={member.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3 last:border-0 hover:bg-panel-2 md:table-row md:px-0 md:py-0"
+                  >
+                    <td className="w-full min-w-0 px-0 py-0 md:w-auto md:px-4 md:py-3">
+                      <p className="text-[12.5px] text-chalk">{member.name}</p>
+                      <p className="font-mono text-[11px] text-chalk-dim">{member.email}</p>
+                    </td>
+                    <td className="hidden px-4 py-3 font-mono text-[12px] text-chalk-dim md:table-cell">{member.email}</td>
+                    <td className="px-0 py-0 md:px-4 md:py-3">
                       <Pill tone={member.role === "owner" ? "violet" : member.role === "admin" ? "signal" : "neutral"}>
                         {member.role}
                       </Pill>
                     </td>
-                    <td className="px-4 py-3 font-mono text-[11.5px] text-chalk-dim">
+                    <td className="hidden px-4 py-3 font-mono text-[11.5px] text-chalk-dim md:table-cell">
                       {member.permissions.length ? `${member.permissions.length} granted` : "none"}
                     </td>
-                    <td className="px-4 py-3 font-mono text-[11.5px] text-chalk-dim">{dateLong(member.createdAt)}</td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 font-mono text-[11.5px] text-chalk-dim md:table-cell">{dateLong(member.createdAt)}</td>
+                    <td className="ml-auto px-0 py-0 md:ml-0 md:px-4 md:py-3">
                       {member.email === admin.email ? (
                         <span className="font-mono text-[10.5px] text-chalk-dim">you</span>
                       ) : (

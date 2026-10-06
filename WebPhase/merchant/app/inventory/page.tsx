@@ -77,10 +77,10 @@ export default async function InventoryPage({
 
       {rows.length ? (
         <Panel flush>
-          <div className="overflow-x-auto p-5">
-            <table className="w-full min-w-[900px] border-collapse text-left">
+          <div className="p-5 md:overflow-x-auto">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[900px]">
               <thead>
-                <tr>
+                <tr className="hidden md:table-row">
                   {["Product", "SKU", "On hand", "Reserved", "Available", "Sold 30d", "State", "Adjust"].map((head) => (
                     <th
                       key={head}
@@ -93,29 +93,36 @@ export default async function InventoryPage({
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className="border-b border-hairline/60 last:border-0 align-top">
-                    <td className="py-3 pr-4">
+                  <tr
+                    key={row.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0 md:align-top"
+                  >
+                    <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
                       <div className="flex items-center gap-3">
-                        <Thumb seed={row.slug} className="h-9 w-9" />
+                        <Thumb seed={row.slug} className="h-9 w-9 shrink-0" />
                         <Link
                           href={`/products/${row.slug}`}
-                          className="max-w-[220px] truncate text-[13px] font-medium text-chalk hover:text-lime"
+                          className="truncate text-[13px] font-medium text-chalk hover:text-lime md:max-w-[220px]"
                         >
                           {row.title}
                         </Link>
                       </div>
                     </td>
-                    <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">{row.sku}</td>
-                    <td className="py-3 pr-4 font-mono text-[13px] tabular-nums text-chalk">{row.stock}</td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim">{row.reserved}</td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk">{row.available}</td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim">{num(row.sold30d)}</td>
-                    <td className="py-3 pr-4">
+                    <td className="hidden py-3 pr-4 font-mono text-[11.5px] text-chalk-dim md:table-cell">{row.sku}</td>
+                    <td className="py-0 font-mono text-[13px] tabular-nums text-chalk md:py-3 md:pr-4">{row.stock}</td>
+                    <td className="hidden py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
+                      {row.reserved}
+                    </td>
+                    <td className="py-0 font-mono text-[12.5px] tabular-nums text-chalk md:py-3 md:pr-4">{row.available}</td>
+                    <td className="hidden py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
+                      {num(row.sold30d)}
+                    </td>
+                    <td className="py-0 md:py-3 md:pr-4">
                       <Pill tone={row.state === "out" ? "danger" : row.state === "low" ? "warn" : "success"}>
                         {row.state === "out" ? "Out" : row.state === "low" ? "Low" : "Healthy"}
                       </Pill>
                     </td>
-                    <td className="py-3">
+                    <td className="ml-auto py-0 md:py-3">
                       <StockAdjust productId={row.id} title={row.title} />
                     </td>
                   </tr>
@@ -132,21 +139,12 @@ export default async function InventoryPage({
       )}
 
       <Panel>
-        <PanelHead title="How stock moves" hint="What changes the counts you see here" />
-        <ul className="grid gap-3 text-[12.5px] leading-relaxed text-chalk-dim sm:grid-cols-3">
-          <li className="rounded-[2px] border border-hairline p-3">
-            <span className="block text-chalk">A sale</span>
-            Reduces on-hand stock once the order is placed on either channel.
-          </li>
-          <li className="rounded-[2px] border border-hairline p-3">
-            <span className="block text-chalk">An open order</span>
-            Shows as reserved until you mark it shipped, so you do not oversell.
-          </li>
-          <li className="rounded-[2px] border border-hairline p-3">
-            <span className="block text-chalk">A manual adjustment</span>
-            Adds or removes units with a reason, recorded against your account.
-          </li>
-        </ul>
+        <PanelHead title="How stock moves" />
+        <p className="text-[12.5px] leading-relaxed text-chalk-dim">
+          A sale reduces on-hand stock. An open order shows as reserved until you mark it shipped, so you do
+          not oversell. A manual adjustment adds or removes units with a reason, recorded against your
+          account.
+        </p>
       </Panel>
     </div>
   );

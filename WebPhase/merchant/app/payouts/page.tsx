@@ -55,10 +55,10 @@ export default async function PayoutsPage() {
         <div className="p-5 pb-3">
           <PanelHead title="Payout history" hint="Most recent period first" />
         </div>
-        <div className="overflow-x-auto px-5 pb-5">
-          <table className="w-full min-w-[820px] border-collapse text-left">
+        <div className="p-5 md:overflow-x-auto">
+          <table className="w-full min-w-0 border-collapse text-left md:min-w-[820px]">
             <thead>
-              <tr>
+              <tr className="hidden md:table-row">
                 {["Period", "Orders", "Gross", "Commission", "Net", "Status", "Settled"].map((head) => (
                   <th
                     key={head}
@@ -71,31 +71,38 @@ export default async function PayoutsPage() {
             </thead>
             <tbody>
               {data.payouts.map((payout) => (
-                <tr key={payout.id} className="border-b border-hairline/60 last:border-0">
-                  <td className="py-3 pr-4">
+                <tr
+                  key={payout.id}
+                  className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0"
+                >
+                  <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
                     <p className="font-mono text-[11.5px] text-chalk">{payout.period}</p>
                     <p className="font-mono text-[10px] text-chalk-dim">{payout.id}</p>
                   </td>
-                  <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim">{num(payout.orders)}</td>
-                  <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk">
+                  <td className="hidden py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
+                    {num(payout.orders)}
+                  </td>
+                  <td className="py-0 font-mono text-[12.5px] tabular-nums text-chalk md:py-3 md:pr-4">
                     {money(payout.gross, { cents: false })}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="hidden py-3 pr-4 md:table-cell">
                     <span className="inline-flex items-center gap-1 font-mono text-[12.5px] tabular-nums text-ember-soft">
                       <ArrowDownRight width={12} height={12} />
                       {money(payout.commission, { cents: false })}
                     </span>
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-0 md:py-3 md:pr-4">
                     <span className="inline-flex items-center gap-1 font-mono text-[12.5px] font-semibold tabular-nums text-lime">
                       <ArrowUpRight width={12} height={12} />
                       {money(payout.net, { cents: false })}
                     </span>
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="py-0 md:py-3 md:pr-4">
                     <Pill tone={payout.status === "paid" ? "success" : "warn"}>{payout.status}</Pill>
                   </td>
-                  <td className={cn("py-3 font-mono text-[11.5px] text-chalk-dim")}>{payout.date}</td>
+                  <td className={cn("ml-auto py-0 font-mono text-[11.5px] text-chalk-dim md:table-cell md:py-3")}>
+                    {payout.date}
+                  </td>
                 </tr>
               ))}
             </tbody>

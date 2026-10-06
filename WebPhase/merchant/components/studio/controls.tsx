@@ -91,14 +91,28 @@ export function FilterForm({
   action: string;
 }) {
   const ref = React.useRef<HTMLFormElement>(null);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onSubmit = React.useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      // Text inputs wait for a pause in typing; selects and checkboxes fire at
+      // once, so choosing a filter still feels immediate.
+      const target = event.target as HTMLElement;
+      const isText = target instanceof HTMLInputElement && target.type === "search";
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => form.requestSubmit(), isText ? 350 : 0);
+    },
+    [],
+  );
+
+  React.useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
   return (
-    <form
-      ref={ref}
-      action={action}
-      method="get"
-      onChange={() => ref.current?.requestSubmit()}
-      className={className}
-    >
+    <form ref={ref} action={action} method="get" onSubmit={onSubmit} className={className}>
       {children}
       <noscript>
         <button type="submit" className="rounded-[2px] border border-hairline px-3 py-2 text-[12px] text-chalk">

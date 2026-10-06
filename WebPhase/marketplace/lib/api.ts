@@ -9,7 +9,11 @@
 
 const KEY = process.env.CODEWORDS_API_KEY ?? "";
 
-export const apiBase = process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "";
+// Falls back to the local FastAPI service so a fresh clone installs, builds and
+// renders without any environment setup. Point FERIX_API_BASE at the deployed
+// API in production.
+export const apiBase =
+  process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "http://127.0.0.1:8000";
 
 export type Brand = {
   template: string;
@@ -377,7 +381,7 @@ export const getStore = (slug: string) =>
     responseRate: number;
     fulfilmentRate: number;
     products: Product[];
-    categories: Category[];
+    categories: { slug: string; name: string; count: number }[];
     stats: { products: number; rating: number; reviewCount: number; followers: number };
   }>("GET", "catalog/store", { params: { slug } });
 

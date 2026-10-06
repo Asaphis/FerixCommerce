@@ -214,10 +214,10 @@ export default async function OverviewPage() {
         </div>
 
         {recentOrders.length ? (
-          <div className="overflow-x-auto px-5 pb-5">
-            <table className="w-full min-w-[880px] border-collapse text-left">
+          <div className="px-5 pb-5 md:overflow-x-auto">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[880px]">
               <thead>
-                <tr>
+                <tr className="hidden md:table-row">
                   {["Order", "Merchant", "Customer", "Channel", "Placed", "Status", "Commission", "Total"].map((head) => (
                     <th
                       key={head}
@@ -230,15 +230,23 @@ export default async function OverviewPage() {
               </thead>
               <tbody>
                 {recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b border-hairline/60 last:border-0">
-                    <td className="py-3 pr-4 font-mono text-[12px] text-chalk">{order.number}</td>
-                    <td className="py-3 pr-4">
+                  <tr
+                    key={order.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0"
+                  >
+                    <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
+                      <p className="font-mono text-[12px] text-chalk">{order.number}</p>
+                      <p className="mt-0.5 text-[11.5px] text-chalk-dim md:hidden">
+                        {order.merchantName} · {order.customer.name} · {order.channel}
+                      </p>
+                    </td>
+                    <td className="hidden py-3 pr-4 md:table-cell">
                       <Link href={`/merchants/${order.merchantId}`} className="text-[12.5px] text-chalk hover:text-signal">
                         {order.merchantName}
                       </Link>
                     </td>
-                    <td className="py-3 pr-4 text-[12.5px] text-chalk-dim">{order.customer.name}</td>
-                    <td className="py-3 pr-4">
+                    <td className="hidden py-3 pr-4 text-[12.5px] text-chalk-dim md:table-cell">{order.customer.name}</td>
+                    <td className="hidden py-3 pr-4 md:table-cell">
                       <Pill tone={order.channel === "marketplace" ? "violet" : "neutral"}>{order.channel}</Pill>
                     </td>
                     <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">
@@ -247,7 +255,7 @@ export default async function OverviewPage() {
                     <td className="py-3 pr-4">
                       <Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill>
                     </td>
-                    <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-violet">{money(order.commission)}</td>
+                    <td className="hidden py-3 pr-4 font-mono text-[12px] tabular-nums text-violet md:table-cell">{money(order.commission)}</td>
                     <td className="py-3 font-mono text-[12.5px] tabular-nums text-chalk">{money(order.total)}</td>
                   </tr>
                 ))}

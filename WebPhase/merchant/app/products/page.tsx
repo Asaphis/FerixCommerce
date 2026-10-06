@@ -116,10 +116,10 @@ export default async function ProductsPage({
 
       {data.items.length ? (
         <Panel flush>
-          <div className="overflow-x-auto p-5">
-            <table className="w-full min-w-[860px] border-collapse text-left">
+          <div className="p-5 md:overflow-x-auto">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[860px]">
               <thead>
-                <tr>
+                <tr className="hidden md:table-row">
                   {["Product", "SKU", "Price", "Stock", "Sold 30d", "Channels", "Status", ""].map((head) => (
                     <th
                       key={head}
@@ -132,14 +132,17 @@ export default async function ProductsPage({
               </thead>
               <tbody>
                 {data.items.map((product) => (
-                  <tr key={product.id} className="border-b border-hairline/60 last:border-0">
-                    <td className="py-3 pr-4">
+                  <tr
+                    key={product.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0"
+                  >
+                    <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
                       <div className="flex items-center gap-3">
-                        <Thumb seed={product.slug} className="h-10 w-10" />
+                        <Thumb seed={product.slug} className="h-10 w-10 shrink-0" />
                         <div className="min-w-0">
                           <Link
                             href={`/products/${product.slug}`}
-                            className="block max-w-[260px] truncate text-[13px] font-medium text-chalk hover:text-lime"
+                            className="block truncate text-[13px] font-medium text-chalk hover:text-lime md:max-w-[260px]"
                           >
                             {product.title}
                           </Link>
@@ -149,8 +152,8 @@ export default async function ProductsPage({
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">{product.sku}</td>
-                    <td className="py-3 pr-4">
+                    <td className="hidden py-3 pr-4 font-mono text-[11.5px] text-chalk-dim md:table-cell">{product.sku}</td>
+                    <td className="py-0 md:py-3 md:pr-4">
                       <span className="font-mono text-[12.5px] text-chalk">{money(product.price)}</span>
                       {product.compareAt ? (
                         <span className="ml-2 font-mono text-[11px] text-chalk-dim line-through">
@@ -158,7 +161,7 @@ export default async function ProductsPage({
                         </span>
                       ) : null}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-0 md:py-3 md:pr-4">
                       <span
                         className={cn(
                           "font-mono text-[12.5px] tabular-nums",
@@ -168,10 +171,10 @@ export default async function ProductsPage({
                         {product.stock}
                       </span>
                     </td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim">
+                    <td className="hidden py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
                       {num(product.sold30d)}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-0 md:py-3 md:pr-4">
                       <div className="flex flex-wrap gap-1.5">
                         {product.channels.store ? <Pill tone="lime">Store</Pill> : null}
                         {product.channels.marketplace ? <Pill tone="info">Market</Pill> : null}
@@ -180,17 +183,17 @@ export default async function ProductsPage({
                         ) : null}
                       </div>
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-0 md:py-3 md:pr-4">
                       <Pill
                         tone={product.status === "active" ? "success" : product.status === "draft" ? "warn" : "neutral"}
                       >
                         {product.status}
                       </Pill>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="ml-auto py-0 text-right md:py-3">
                       <Link
                         href={`/products/${product.slug}`}
-                        className="font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                        className="inline-flex min-h-[44px] items-center font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
                       >
                         Edit
                       </Link>

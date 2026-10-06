@@ -241,7 +241,8 @@ def products(search: Optional[str] = None, category: Optional[str] = None, colle
              rating: Optional[float] = None, inStock: Optional[bool] = None, onSale: Optional[bool] = None,
              sort: str = "relevance", page: int = 1, perPage: int = 24):
     with SessionLocal() as db:
-        items = decorate(db, product_rows(db))
+        catalogue = decorate(db, product_rows(db))
+        items = list(catalogue)
         q = (search or "").lower()
         if q:
             items = [p for p in items if q in json.dumps(p).lower()]
@@ -278,8 +279,16 @@ def products(search: Optional[str] = None, category: Optional[str] = None, colle
             "items": items[start:start + per_page], "total": total, "page": page,
             "perPage": per_page, "pages": max(1, (total + per_page - 1) // per_page),
             "facets": {
-                "categories": sorted({p.get("category") for p in items if p.get("category")}),
-                "stores": sorted({p.get("merchantName") for p in items if p.get("merchantName")}),
+                "categories": [
+                    {"slug": c["slug"], "name": c.get("name", c["slug"]),
+                     "count": sum(1 for p in catalogue if p.get("category") == c["slug"])}
+                    for c in sorted(category_rows(db), key=lambda c: c.get("position", 0))
+                ],
+                "stores": [
+                    {"slug": m["slug"], "name": m.get("name", m["slug"]),
+                     "count": sum(1 for p in catalogue if p.get("merchantId") == m["id"])}
+                    for m in sorted(merchant_rows(db), key=lambda m: m.get("name", ""))
+                ],
                 "priceBuckets": [],
             },
         }
@@ -402,7 +411,12 @@ def store(slug: str):
             "responseRate": merchant.get("responseRate", 0),
             "fulfilmentRate": merchant.get("fulfilmentRate", 0),
             "products": owned,
-            "categories": sorted({p.get("category") for p in owned if p.get("category")}),
+            "categories": [
+                {"slug": c["slug"], "name": c.get("name", c["slug"]),
+                 "count": sum(1 for p in owned if p.get("category") == c["slug"])}
+                for c in sorted(category_rows(db), key=lambda c: c.get("position", 0))
+                if any(p.get("category") == c["slug"] for p in owned)
+            ],
             "content": (doc.data if doc and doc.status == "published" else None),
             "stats": {"products": len(owned), "rating": merchant.get("rating", 0),
                       "reviewCount": merchant.get("reviewCount", 0), "followers": merchant.get("followers", 0)},
@@ -551,6 +565,19 @@ def save_for_later(p: CartKeyIn, session: Optional[str] = Header(None, alias="X-
 
 # ── Account ────────────────────────────────────────────────────────────────
 
+def user_reviews(db, user_id: str) -> list[dict]:
+    """Every review a shopper has written, each carrying its product for the UI."""
+    by_id = {p["id"]: p for p in product_rows(db)}
+    rows_out = []
+    for r in db.scalars(select(Review).where(Review.user_id == user_id)).all():
+        data = dict(r.data or {})
+        data["id"] = r.id
+        data["productId"] = r.product_id
+        data["product"] = by_id.get(r.product_id)
+        rows_out.append(data)
+    return rows_out
+
+
 @app.get("/account")
 def account(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
@@ -562,27 +589,32 @@ def account(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         wishlist = [by_id[x] for x in (wish.product_ids if wish else []) if x in by_id]
         rows = [o.data for o in orders]
         spent = round(sum(o.get("total", 0) for o in rows), 2)
+        reviews = user_reviews(db, user.id)
         return {
             "user": public_user(user), "orders": rows[:5],
             "activeOrders": sum(o.get("fulfillment") not in {"delivered", "cancelled"} for o in rows),
-            "wishlist": wishlist, "addresses": [a.data for a in addresses], "reviews": [], "follows": [],
+            "wishlist": wishlist, "addresses": [a.data for a in addresses],
+            "reviews": reviews, "follows": [],
             "stats": {"orderCount": len(rows), "spent": spent,
                       "averageOrder": round(spent / len(rows), 2) if rows else 0,
                       "wishlistCount": len(wishlist), "addressCount": len(addresses),
-                      "reviewCount": 0, "since": iso(user.created_at)},
+                      "reviewCount": len(reviews), "since": iso(user.created_at)},
         }
 
 
 @app.get("/account/orders")
-def account_orders(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+def account_orders(status: Optional[str] = None, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         user = require_user(db, session)
-        rows = [o.data for o in db.scalars(select(Order).where(Order.user_id == user.id).order_by(Order.placed_at.desc())).all()]
+        everything = [o.data for o in db.scalars(select(Order).where(Order.user_id == user.id).order_by(Order.placed_at.desc())).all()]
+        rows = everything
+        if status and status != "all":
+            rows = [o for o in everything if o.get("fulfillment") == status]
         return {"orders": rows, "counts": {
-            "all": len(rows),
-            "processing": sum(o.get("fulfillment") == "processing" for o in rows),
-            "shipped": sum(o.get("fulfillment") == "shipped" for o in rows),
-            "delivered": sum(o.get("fulfillment") == "delivered" for o in rows)}}
+            "all": len(everything),
+            "processing": sum(o.get("fulfillment") == "processing" for o in everything),
+            "shipped": sum(o.get("fulfillment") == "shipped" for o in everything),
+            "delivered": sum(o.get("fulfillment") == "delivered" for o in everything)}}
 
 
 @app.get("/account/orders/detail")
@@ -593,7 +625,15 @@ def order_detail(orderId: str, session: Optional[str] = Header(None, alias="X-Fe
                     if o.id == orderId or (o.data or {}).get("number") == orderId), None)
         if not row:
             raise HTTPException(404, "We could not find that order")
-        return {"order": row.data, "merchants": []}
+        order = row.data or {}
+        by_id = {p["id"]: p for p in product_rows(db)}
+        seen: list[str] = []
+        for item in order.get("items", []):
+            found = by_id.get(item.get("productId"))
+            if found and found.get("merchantId") and found["merchantId"] not in seen:
+                seen.append(found["merchantId"])
+        merchants = [store_card(db, m) for m in (find_merchant(db, mid) for mid in seen) if m]
+        return {"order": order, "merchants": merchants}
 
 
 @app.post("/account/orders/reorder")
@@ -706,7 +746,7 @@ def toggle_wishlist(p: ProductIn, session: Optional[str] = Header(None, alias="X
 def reviews(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         user = require_user(db, session)
-        return {"reviews": [r.data for r in db.scalars(select(Review).where(Review.user_id == user.id)).all()]}
+        return {"reviews": user_reviews(db, user.id)}
 
 
 @app.post("/account/reviews")
@@ -716,7 +756,7 @@ def add_review(p: ReviewIn, session: Optional[str] = Header(None, alias="X-Ferix
         data = {**p.model_dump(), "id": "rev_" + uuid.uuid4().hex[:10], "date": iso(now()), "verified": True, "helpful": 0}
         db.add(Review(id=data["id"], user_id=user.id, product_id=p.productId, data=data))
         db.commit()
-        return {"reviews": [r.data for r in db.scalars(select(Review).where(Review.user_id == user.id)).all()]}
+        return {"reviews": user_reviews(db, user.id)}
 
 
 @app.patch("/account/reviews")
@@ -728,7 +768,7 @@ def update_review(p: ReviewPatchIn, session: Optional[str] = Header(None, alias=
             raise HTTPException(404, "That review is not on your account")
         row.data = {**row.data, **p.model_dump(exclude_none=True), "date": iso(now())}
         db.commit()
-        return {"reviews": [r.data for r in db.scalars(select(Review).where(Review.user_id == user.id)).all()]}
+        return {"reviews": user_reviews(db, user.id)}
 
 
 @app.delete("/account/reviews")
@@ -739,7 +779,7 @@ def delete_review(p: IdIn, session: Optional[str] = Header(None, alias="X-Ferix-
         if row and row.user_id == user.id:
             db.delete(row)
             db.commit()
-        return {"reviews": [r.data for r in db.scalars(select(Review).where(Review.user_id == user.id)).all()]}
+        return {"reviews": user_reviews(db, user.id)}
 
 
 # ── Checkout ───────────────────────────────────────────────────────────────

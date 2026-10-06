@@ -649,19 +649,25 @@ def cart_payload(db: Session, cart: Optional[Cart]) -> dict:
                 "variant": raw.get("variant"), "qty": raw["qty"],
                 "unitPrice": product["price"],
                 "lineTotal": round(product["price"] * raw["qty"], 2),
+                "inStock": (product.get("stock") or 0) > 0,
             }
             lines.append(item)
             grouped.setdefault(product["merchantId"], []).append(item)
 
     subtotal = round(sum(line["lineTotal"] for line in lines), 2)
+    free_shipping = subtotal >= FREE_SHIPPING_OVER
     groups = []
     for merchant_id, items in grouped.items():
         merchant = find_merchant(db, merchant_id)
+        card = store_card(db, merchant) if merchant else {"id": merchant_id}
+        for item in items:
+            item["merchant"] = card
         groups.append({
-            "merchant": store_card(db, merchant) if merchant else {"id": merchant_id},
+            "merchant": card,
             "items": items,
             "subtotal": round(sum(item["lineTotal"] for item in items), 2),
-            "shipping": 0.0 if subtotal >= FREE_SHIPPING_OVER else 6.5,
+            "shipping": 0.0 if free_shipping else 6.5,
+            "freeShipping": free_shipping,
         })
     shipping = 0.0 if subtotal >= FREE_SHIPPING_OVER else sum(g["shipping"] for g in groups)
     tax = round(subtotal * TAX_RATE, 2)

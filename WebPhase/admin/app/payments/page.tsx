@@ -56,10 +56,10 @@ export default async function PaymentsPage() {
         <Empty title="No transactions yet" body="Orders placed on the storefront appear here with their commission." />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left">
+          <div className="md:overflow-x-auto">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[980px]">
               <thead>
-                <tr className="border-b border-hairline">
+                <tr className="hidden border-b border-hairline md:table-row">
                   {["Order", "Placed", "Merchant", "Customer", "Channel", "Method", "Amount", "Commission", "Status"].map((head) => (
                     <th key={head} className="px-4 py-3 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">
                       {head}
@@ -69,22 +69,35 @@ export default async function PaymentsPage() {
               </thead>
               <tbody>
                 {data.transactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b border-hairline last:border-0 hover:bg-panel-2">
-                    <td className="px-4 py-3 font-mono text-[12px] text-chalk">{transaction.number}</td>
-                    <td className="px-4 py-3 font-mono text-[11.5px] text-chalk-dim">
+                  <tr
+                    key={transaction.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3 last:border-0 hover:bg-panel-2 md:table-row md:px-0 md:py-0"
+                  >
+                    <td className="w-full min-w-0 px-0 py-0 md:w-auto md:px-4 md:py-3">
+                      <p className="font-mono text-[12px] text-chalk">{transaction.number}</p>
+                      <p className="font-mono text-[11px] text-chalk-dim">
+                        {transaction.merchantName} · {transaction.customer}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[10.5px] text-chalk-dim md:hidden">
+                        {transaction.channel} · {transaction.method}
+                      </p>
+                    </td>
+                    <td className="hidden px-4 py-3 font-mono text-[11.5px] text-chalk-dim md:table-cell">
                       {new Date(transaction.placedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                     </td>
-                    <td className="px-4 py-3 text-[12.5px] text-chalk-dim">{transaction.merchantName}</td>
-                    <td className="px-4 py-3 text-[12.5px] text-chalk-dim">{transaction.customer}</td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 text-[12.5px] text-chalk-dim md:table-cell">{transaction.merchantName}</td>
+                    <td className="hidden px-4 py-3 text-[12.5px] text-chalk-dim md:table-cell">{transaction.customer}</td>
+                    <td className="hidden px-4 py-3 md:table-cell">
                       <Pill tone={transaction.channel === "store" ? "mint" : "signal"}>{transaction.channel}</Pill>
                     </td>
-                    <td className="px-4 py-3 text-[12.5px] text-chalk-dim">{transaction.method}</td>
-                    <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-chalk">{money(transaction.amount)}</td>
-                    <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-violet">
+                    <td className="hidden px-4 py-3 text-[12.5px] text-chalk-dim md:table-cell">{transaction.method}</td>
+                    <td className="px-0 py-0 font-mono text-[12.5px] tabular-nums text-chalk md:px-4 md:py-3">
+                      {money(transaction.amount)}
+                    </td>
+                    <td className="px-0 py-0 font-mono text-[12.5px] tabular-nums text-violet md:px-4 md:py-3">
                       {money(transaction.commission)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="ml-auto px-0 py-0 md:ml-0 md:px-4 md:py-3">
                       <Pill tone={STATUS_TONE[transaction.status] ?? "neutral"}>{transaction.status}</Pill>
                     </td>
                   </tr>

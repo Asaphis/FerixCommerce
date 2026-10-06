@@ -81,9 +81,9 @@ export default async function CustomersPage({
       {data.customers.length ? (
         <Panel flush>
           <div className="overflow-x-auto p-5">
-            <table className="w-full min-w-[820px] border-collapse text-left">
+            <table className="w-full min-w-0 border-collapse text-left md:min-w-[820px]">
               <thead>
-                <tr>
+                <tr className="hidden md:table-row">
                   {["Customer", "Location", "Orders", "Spent", "Average", "Last order", "Segment", ""].map((head) => (
                     <th
                       key={head}
@@ -96,29 +96,34 @@ export default async function CustomersPage({
               </thead>
               <tbody>
                 {data.customers.map((customer) => (
-                  <tr key={customer.id} className="border-b border-hairline/60 last:border-0">
-                    <td className="py-3 pr-4">
-                      <p className="text-[13px] font-medium text-chalk">{customer.name}</p>
-                      <p className="font-mono text-[10.5px] text-chalk-dim">{customer.email}</p>
+                  <tr
+                    key={customer.id}
+                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0"
+                  >
+                    <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
+                      <p className="truncate text-[13px] font-medium text-chalk">{customer.name}</p>
+                      <p className="truncate font-mono text-[10.5px] text-chalk-dim">{customer.email}</p>
                     </td>
-                    <td className="py-3 pr-4 text-[12.5px] text-chalk-dim">{customer.location}</td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk">{customer.orders}</td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk">
+                    <td className="hidden py-3 pr-4 text-[12.5px] text-chalk-dim md:table-cell">{customer.location}</td>
+                    <td className="py-0 font-mono text-[12.5px] tabular-nums text-chalk md:py-3 md:pr-4">
+                      {customer.orders} orders
+                    </td>
+                    <td className="py-0 font-mono text-[12.5px] tabular-nums text-chalk md:py-3 md:pr-4">
                       {money(customer.spent ?? 0, { cents: false })}
                     </td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim">
+                    <td className="hidden py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
                       {money(customer.averageOrder ?? 0, { cents: false })}
                     </td>
-                    <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">
+                    <td className="hidden py-3 pr-4 font-mono text-[11.5px] text-chalk-dim md:table-cell">
                       {customer.lastOrderAt ? relative(customer.lastOrderAt) : "—"}
                     </td>
-                    <td className="py-3 pr-4">
+                    <td className="py-0 md:py-3 md:pr-4">
                       <Pill tone={segmentTone(customer.segment)}>{customer.segment}</Pill>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="ml-auto py-0 text-right md:py-3">
                       <Link
                         href={`/customers/${customer.id}`}
-                        className="font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                        className="inline-flex min-h-[44px] items-center font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
                       >
                         Open
                       </Link>
@@ -134,10 +139,9 @@ export default async function CustomersPage({
       )}
 
       <Panel>
-        <PanelHead title="Where customers come from" hint="Built from real orders on this backend" />
+        <PanelHead title="Where customers come from" />
         <p className="text-[12.5px] leading-relaxed text-chalk-dim">
           Customer records are derived from orders, so this list is always in step with your order queue.
-          Marketplace buyers appear here alongside the shoppers who bought directly from your store.
         </p>
       </Panel>
     </div>
