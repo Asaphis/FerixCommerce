@@ -183,3 +183,135 @@ export async function saveSettingsAction(_prev: FormState, formData: FormData): 
   refresh("/settings");
   return { message: "Store settings saved." };
 }
+
+// ── Storefront (Store Design) ──────────────────────────────────────────
+
+export async function saveStorefrontAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+
+  const linkCount = Number(formData.get("navCount") ?? 0);
+  const navigation: { label: string; href: string }[] = [];
+  for (let index = 0; index < linkCount; index += 1) {
+    const label = String(formData.get(`navLabel.${index}`) ?? "").trim();
+    const href = String(formData.get(`navHref.${index}`) ?? "").trim();
+    if (!label && !href) continue;
+    if (!label) return { error: "Every navigation link needs a label." };
+    if (!href) return { error: `Add a link for “${label}”.` };
+    navigation.push({ label, href });
+  }
+
+  const sectionCount = Number(formData.get("sectionCount") ?? 0);
+  const sections: Record<string, unknown>[] = [];
+  for (let index = 0; index < sectionCount; index += 1) {
+    const id = String(formData.get(`sectionId.${index}`) ?? "");
+    if (!id) continue;
+    sections.push({
+      id,
+      type: String(formData.get(`sectionType.${index}`) ?? "section"),
+      title: String(formData.get(`sectionTitle.${index}`) ?? "").trim(),
+      subtitle: String(formData.get(`sectionSubtitle.${index}`) ?? "").trim(),
+      position: Number(formData.get(`sectionPosition.${index}`) ?? index + 1),
+      visible: formData.get(`sectionVisible.${index}`) === "on",
+    });
+  }
+
+  try {
+    await api.saveStorefront(session, { navigation, sections });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not save your storefront." };
+  }
+  refresh("/store-design");
+  return { message: "Storefront content saved. Publish when you want shoppers to see it." };
+}
+
+export async function publishStorefrontAction(_prev: FormState, _formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  try {
+    await api.publishStorefront(session);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not publish your storefront." };
+  }
+  refresh("/store-design");
+  return { message: "Storefront published. Shoppers now see this version." };
+}
+
+// ── Media library ──────────────────────────────────────────────────────
+
+export async function addMediaAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const url = String(formData.get("url") ?? "").trim();
+  if (!/^https?:\/\/\S+$/i.test(url)) return { error: "Paste a full URL starting with http:// or https://." };
+  const kind = String(formData.get("kind") ?? "image");
+  try {
+    await api.addMedia(session, {
+      url,
+      kind,
+      alt: String(formData.get("alt") ?? "").trim(),
+      folder: String(formData.get("folder") ?? "store").trim() || "store",
+    });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not add that asset." };
+  }
+  refresh("/media");
+  return { message: "Asset added to your library." };
+}
+
+export async function removeMediaAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "Which asset?" };
+  try {
+    await api.removeMedia(session, id);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not remove that asset." };
+  }
+  refresh("/media");
+  return { message: "Asset removed from your library." };
+}
+
+// ── Promotions ─────────────────────────────────────────────────────────
+
+export async function createPromotionAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2) return { error: "Give the promotion a name." };
+
+  const productIds = formData.getAll("itemProduct").map((value) => String(value));
+  const prices = formData.getAll("itemPrice").map((value) => String(value));
+  const limits = formData.getAll("itemLimit").map((value) => String(value));
+  const items = productIds
+    .map((productId, index) => ({
+      productId,
+      salePrice: Number(prices[index] ?? 0),
+      quantityLimit: Number(limits[index] ?? 0),
+    }))
+    .filter((item) => item.productId);
+
+  if (!items.length) return { error: "Add at least one product to the promotion." };
+  if (items.some((item) => !Number.isFinite(item.salePrice) || item.salePrice < 0)) {
+    return { error: "Sale prices cannot be negative." };
+  }
+
+  const startsAt = String(formData.get("startsAt") ?? "").trim();
+  const endsAt = String(formData.get("endsAt") ?? "").trim();
+  try {
+    await api.createPromotion(session, {
+      name,
+      headline: String(formData.get("headline") ?? "").trim(),
+      bannerUrl: String(formData.get("bannerUrl") ?? "").trim(),
+      startsAt: startsAt || null,
+      endsAt: endsAt || null,
+      status: String(formData.get("status") ?? "draft"),
+      items,
+    });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not create that promotion." };
+  }
+  refresh("/promotions");
+  return { message: "Promotion created. Your product records are unchanged." };
+}

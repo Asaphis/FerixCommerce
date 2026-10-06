@@ -14,6 +14,21 @@ export default async function HomePage() {
     <>
       <PromoBanner banners={home.banners} />
 
+      {home.flashSale && home.flashSale.products.length > 0 ? (
+        <section className="mx-auto max-w-[1240px] px-4 pt-12">
+          <SectionHead
+            eyebrow="Ends soon"
+            title={home.flashSale.headline || home.flashSale.name}
+            action={
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ember">
+                Closes {new Date(home.flashSale.endsAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+              </span>
+            }
+          />
+          <ProductRail products={home.flashSale.products} savedIds={saved} />
+        </section>
+      ) : null}
+
       <section className="mx-auto max-w-[1240px] px-4 py-12">
         <SectionHead
           eyebrow="Departments"

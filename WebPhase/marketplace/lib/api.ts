@@ -105,6 +105,15 @@ export type Banner = {
 
 export type HomeFeed = {
   banners: Banner[];
+  content: { sections?: { id: string; type: string; title?: string; subtitle?: string; ctaLabel?: string; ctaHref?: string; position: number; visible: boolean }[] };
+  flashSale: {
+    id: string;
+    name: string;
+    headline: string;
+    endsAt: string;
+    bannerUrl: string;
+    products: Product[];
+  } | null;
   categories: Category[];
   collections: Collection[];
   featured: Product[];

@@ -1,0 +1,168 @@
+import Link from "next/link";
+import { ArrowLeft, Plus } from "lucide-react";
+import { requireAdmin } from "@/lib/data";
+import { listCategories } from "@/lib/api";
+import { Field, SubmitButton, inputClass } from "@/components/ops/controls";
+import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { deleteCategoryAction, saveCategoryAction } from "@/lib/ops-actions";
+import { num } from "@/lib/format";
+
+function Switches({
+  defaults,
+}: {
+  defaults: { showInNav: boolean; showAsTile: boolean; showAsText: boolean; visible: boolean };
+}) {
+  const rows = [
+    { name: "showInNav", label: "Show in the header menu", value: defaults.showInNav },
+    { name: "showAsTile", label: "Show as an image tile", value: defaults.showAsTile },
+    { name: "showAsText", label: "Show as a text-only link", value: defaults.showAsText },
+    { name: "visible", label: "Visible to shoppers", value: defaults.visible },
+  ];
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {rows.map((row) => (
+        <label key={row.name} className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
+          <input type="checkbox" name={row.name} defaultChecked={row.value} className="size-4 accent-signal" />
+          {row.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+export default async function CategoriesPage() {
+  const { session } = await requireAdmin();
+  const { categories } = await listCategories(session);
+
+  return (
+    <div className="grid gap-5">
+      <header>
+        <Link
+          href="/cms"
+          className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
+        >
+          <ArrowLeft width={13} height={13} />
+          Content
+        </Link>
+        <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Departments</h1>
+        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
+          Departments organise the catalogue. A department with an image and the tile switch on appears in the
+          homepage grid; one with only the text switch appears as a plain link. Position sets the order everywhere.
+        </p>
+      </header>
+
+      {categories.length === 0 ? (
+        <Empty title="No departments yet" body="Add the first department below." />
+      ) : (
+        <div className="grid gap-3">
+          {categories.map((category) => (
+            <Panel key={category.slug} className="grid gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="h-14 w-14 shrink-0 rounded-[2px] border border-hairline object-cover"
+                  />
+                  <div className="min-w-0">
+                    <p className="font-display text-[14px] font-semibold text-chalk">{category.name}</p>
+                    <p className="mt-0.5 font-mono text-[10.5px] text-chalk-dim">
+                      /{category.slug} · {num(category.count)} products
+                    </p>
+                    <p className="mt-1 max-w-[60ch] text-[12px] text-chalk-dim">{category.blurb || "No description"}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {category.showAsTile ? <Pill tone="signal">tile</Pill> : null}
+                  {category.showAsText ? <Pill tone="violet">text</Pill> : null}
+                  {category.showInNav ? <Pill tone="mint">menu</Pill> : null}
+                  <Pill tone={category.visible ? "mint" : "neutral"}>{category.visible ? "visible" : "hidden"}</Pill>
+                  <Pill>#{category.position}</Pill>
+                </div>
+              </div>
+
+              <details className="rounded-[2px] border border-hairline bg-panel-2">
+                <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+                  Edit department
+                </summary>
+                <form action={saveCategoryAction} className="grid gap-3 border-t border-hairline p-4">
+                  <input type="hidden" name="slug" value={category.slug} />
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <Field title="Name">
+                      <input name="name" defaultValue={category.name} className={inputClass} />
+                    </Field>
+                    <Field title="Icon glyph">
+                      <input name="glyph" defaultValue={category.glyph} className={inputClass} />
+                    </Field>
+                    <Field title="Position">
+                      <input name="position" type="number" min={0} defaultValue={category.position} className={inputClass} />
+                    </Field>
+                    <Field title="Image URL">
+                      <input name="image" defaultValue={category.image} className={inputClass} />
+                    </Field>
+                    <Field title="Short description">
+                      <input name="blurb" defaultValue={category.blurb} className={inputClass} />
+                    </Field>
+                  </div>
+                  <Switches
+                    defaults={{
+                      showInNav: category.showInNav,
+                      showAsTile: category.showAsTile,
+                      showAsText: category.showAsText,
+                      visible: category.visible,
+                    }}
+                  />
+                  <div>
+                    <SubmitButton variant="outline" pendingLabel="Saving">
+                      Save changes
+                    </SubmitButton>
+                  </div>
+                </form>
+                <form action={deleteCategoryAction} className="border-t border-hairline px-4 py-3">
+                  <input type="hidden" name="slug" value={category.slug} />
+                  <SubmitButton variant="danger" pendingLabel="Removing">
+                    Delete department
+                  </SubmitButton>
+                </form>
+              </details>
+            </Panel>
+          ))}
+        </div>
+      )}
+
+      <Panel>
+        <PanelHead title="New department" hint="The slug is generated from the name if you leave it blank." />
+        <form action={saveCategoryAction} className="grid gap-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Field title="Name">
+              <input name="name" placeholder="Outdoor living" className={inputClass} />
+            </Field>
+            <Field title="Slug">
+              <input name="slug" placeholder="outdoor-living" className={inputClass} />
+            </Field>
+            <Field title="Icon glyph">
+              <input name="glyph" defaultValue="Tag" className={inputClass} />
+            </Field>
+            <Field title="Position">
+              <input name="position" type="number" min={0} defaultValue={categories.length + 1} className={inputClass} />
+            </Field>
+            <Field title="Image URL">
+              <input name="image" placeholder="https://" className={inputClass} />
+            </Field>
+            <Field title="Short description">
+              <input name="blurb" placeholder="One short line." className={inputClass} />
+            </Field>
+          </div>
+          <Switches defaults={{ showInNav: true, showAsTile: true, showAsText: false, visible: true }} />
+          <div>
+            <SubmitButton pendingLabel="Creating">
+              <Plus width={14} height={14} />
+              Create department
+            </SubmitButton>
+          </div>
+        </form>
+      </Panel>
+    </div>
+  );
+}

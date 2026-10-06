@@ -398,3 +398,95 @@ export const getSettings = (session: string | null) =>
 
 export const updateSettings = (session: string | null, body: Record<string, unknown>) =>
   call<{ settings: Settings }>("PATCH", "merchant/settings", { body, session });
+
+// ── Storefront (Store Design) ──────────────────────────────────────────
+
+export type StorefrontSection = {
+  id: string;
+  type: string;
+  title?: string;
+  subtitle?: string;
+  position: number;
+  visible: boolean;
+};
+
+export type StorefrontDocument = {
+  id: string;
+  ownerType: string;
+  ownerId: string;
+  documentType: string;
+  title: string;
+  status: string;
+  data: {
+    theme?: Record<string, unknown>;
+    navigation?: { label: string; href: string }[];
+    sections?: StorefrontSection[];
+    pages?: { slug: string; title: string; body: string }[];
+  };
+  updatedAt: string;
+  updatedBy: string;
+  designEngine: string;
+};
+
+export const getStorefront = (session: string | null) =>
+  call<{ document: StorefrontDocument; designEngine: string; message: string }>("GET", "merchant/storefront", {
+    session,
+  });
+
+export const saveStorefront = (session: string | null, body: Record<string, unknown>) =>
+  call<{ document: StorefrontDocument }>("PATCH", "merchant/storefront", { body, session });
+
+export const publishStorefront = (session: string | null) =>
+  call<{ document: StorefrontDocument }>("POST", "merchant/storefront/publish", { session });
+
+// ── Media library ──────────────────────────────────────────────────────
+
+export type MerchantMedia = {
+  id: string;
+  kind: string;
+  url: string;
+  alt: string;
+  folder: string;
+  createdAt: string;
+};
+
+export const listMedia = (session: string | null) =>
+  call<{ assets: MerchantMedia[]; storage: string }>("GET", "merchant/media", { session });
+
+export const addMedia = (session: string | null, body: Record<string, unknown>) =>
+  call<{ asset: MerchantMedia }>("POST", "merchant/media", { body, session });
+
+export const removeMedia = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "merchant/media", { body: { id }, session });
+
+// ── Promotions ─────────────────────────────────────────────────────────
+
+export type MerchantSaleItem = {
+  id: string;
+  productId: string;
+  salePrice: number;
+  quantityLimit: number;
+  soldQuantity: number;
+  title: string;
+};
+
+export type MerchantSale = {
+  id: string;
+  name: string;
+  headline: string;
+  bannerUrl: string;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  items: MerchantSaleItem[];
+};
+
+export const listPromotions = (session: string | null) =>
+  call<{ sales: MerchantSale[]; products: { id: string; title: string; price: number; slug: string }[] }>(
+    "GET",
+    "merchant/promotions",
+    { session },
+  );
+
+export const createPromotion = (session: string | null, body: Record<string, unknown>) =>
+  call<{ sale: { id: string; name: string; status: string } }>("POST", "merchant/promotions", { body, session });

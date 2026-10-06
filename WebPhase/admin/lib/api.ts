@@ -319,3 +319,325 @@ export const getSettings = (session: string | null) => call<SettingsPayload>("GE
 
 export const updateSettings = (session: string | null, body: Record<string, unknown>) =>
   call<{ settings: Settings }>("PATCH", "admin/settings", { body, session });
+
+// ── Catalogue ──────────────────────────────────────────────────────────
+
+export type CatalogRow = {
+  id: string;
+  slug: string;
+  title: string;
+  sku: string;
+  price: number;
+  compareAt: number | null;
+  stock: number;
+  status: string;
+  category: string;
+  merchantId: string;
+  merchantName: string;
+  image: string;
+  channels: { store: boolean; marketplace: boolean };
+  featured: boolean;
+  collections: string[];
+  sold30d: number;
+  updatedAt: string;
+};
+
+export type CatalogList = {
+  products: CatalogRow[];
+  total: number;
+  counts: Record<string, number>;
+  categories: string[];
+  collections: { slug: string; name: string }[];
+};
+
+export const listCatalog = (session: string | null, params: Params = {}) =>
+  call<CatalogList>("GET", "admin/catalog/products", { params, session });
+
+export const createCatalogProduct = (session: string | null, body: Record<string, unknown>) =>
+  call<{ product: Record<string, unknown> }>("POST", "admin/catalog/product", { body, session });
+
+export const updateCatalogProduct = (session: string | null, body: Record<string, unknown>) =>
+  call<{ product: Record<string, unknown> }>("PATCH", "admin/catalog/product", { body, session });
+
+export const deleteCatalogProduct = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "admin/catalog/product", { body: { id }, session });
+
+// ── Categories and collections ─────────────────────────────────────────
+
+export type AdminCategory = {
+  id: string;
+  slug: string;
+  name: string;
+  blurb: string;
+  glyph: string;
+  image: string;
+  count: number;
+  showInNav: boolean;
+  showAsTile: boolean;
+  showAsText: boolean;
+  visible: boolean;
+  position: number;
+};
+
+export type AdminCollection = {
+  id: string;
+  slug: string;
+  name: string;
+  blurb: string;
+  image: string;
+  count: number;
+  visible: boolean;
+  position: number;
+};
+
+export const listCategories = (session: string | null) =>
+  call<{ categories: AdminCategory[] }>("GET", "admin/catalog/categories", { session });
+
+export const saveCategory = (session: string | null, body: Record<string, unknown>) =>
+  call<{ category: AdminCategory }>("POST", "admin/catalog/category", { body, session });
+
+export const deleteCategory = (session: string | null, slug: string) =>
+  call<{ removed: string }>("DELETE", "admin/catalog/category", { body: { slug }, session });
+
+export const listCollections = (session: string | null) =>
+  call<{ collections: AdminCollection[] }>("GET", "admin/catalog/collections", { session });
+
+export const saveCollection = (session: string | null, body: Record<string, unknown>) =>
+  call<{ collection: AdminCollection }>("POST", "admin/catalog/collection", { body, session });
+
+export const deleteCollection = (session: string | null, slug: string) =>
+  call<{ removed: string }>("DELETE", "admin/catalog/collection", { body: { slug }, session });
+
+// ── CMS: banners ───────────────────────────────────────────────────────
+
+export type Banner = {
+  id: string;
+  kind: string;
+  eyebrow: string;
+  headline: string;
+  body: string;
+  ctaLabel: string;
+  ctaHref: string;
+  secondaryLabel: string | null;
+  secondaryHref: string | null;
+  mediaUrl: string;
+  image: string;
+  videoUrl: string | null;
+  accent: string;
+  audience: string;
+  active: boolean;
+  position: number;
+  status: string;
+};
+
+export const listBanners = (session: string | null) =>
+  call<{ banners: Banner[] }>("GET", "admin/cms/banners", { session });
+
+export const saveBanner = (session: string | null, body: Record<string, unknown>) =>
+  call<{ banner: Banner }>("POST", "admin/cms/banner", { body, session });
+
+export const deleteBanner = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "admin/cms/banner", { body: { id }, session });
+
+// ── CMS: documents ─────────────────────────────────────────────────────
+
+export type ContentSection = {
+  id: string;
+  type: string;
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  position: number;
+  visible: boolean;
+};
+
+export type ContentDocument = {
+  id: string;
+  ownerType: string;
+  ownerId: string;
+  documentType: string;
+  title: string;
+  status: string;
+  data: { sections?: ContentSection[]; [key: string]: unknown };
+  updatedAt: string;
+  updatedBy: string;
+};
+
+export type ContentVersion = {
+  id: string;
+  version: number;
+  status: string;
+  note: string;
+  createdBy: string;
+  createdAt: string;
+};
+
+export const listDocuments = (session: string | null) =>
+  call<{ documents: ContentDocument[] }>("GET", "admin/cms/documents", { session });
+
+export const getDocument = (session: string | null, id: string) =>
+  call<{ document: ContentDocument; versions: ContentVersion[] }>("GET", "admin/cms/document", {
+    params: { id },
+    session,
+  });
+
+export const saveDocument = (session: string | null, body: Record<string, unknown>) =>
+  call<{ document: ContentDocument }>("PATCH", "admin/cms/document", { body, session });
+
+export const publishDocument = (session: string | null, id: string) =>
+  call<{ document: ContentDocument }>("POST", "admin/cms/document/publish", { body: { id }, session });
+
+export const restoreDocumentVersion = (session: string | null, versionId: string) =>
+  call<{ document: ContentDocument }>("POST", "admin/cms/document/restore", { body: { versionId }, session });
+
+// ── Media library ──────────────────────────────────────────────────────
+
+export type MediaAsset = {
+  id: string;
+  kind: string;
+  url: string;
+  alt: string;
+  folder: string;
+  width: number;
+  height: number;
+  createdAt: string;
+};
+
+export const listMedia = (session: string | null) =>
+  call<{ assets: MediaAsset[]; storage: string }>("GET", "admin/media", { session });
+
+export const addMedia = (session: string | null, body: Record<string, unknown>) =>
+  call<{ asset: MediaAsset }>("POST", "admin/media", { body, session });
+
+export const removeMedia = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "admin/media", { body: { id }, session });
+
+// ── Promotions ─────────────────────────────────────────────────────────
+
+export type SaleItem = {
+  id: string;
+  productId: string;
+  merchantId: string;
+  salePrice: number;
+  quantityLimit: number;
+  soldQuantity: number;
+  title: string;
+};
+
+export type Sale = {
+  id: string;
+  name: string;
+  headline: string;
+  bannerUrl: string;
+  startsAt: string;
+  endsAt: string;
+  status: string;
+  ownerType: string;
+  ownerId: string;
+  items: SaleItem[];
+};
+
+export const listPromotions = (session: string | null) =>
+  call<{ sales: Sale[]; products: { id: string; title: string; price: number; merchantName: string }[] }>(
+    "GET",
+    "admin/promotions",
+    { session },
+  );
+
+export const savePromotion = (session: string | null, body: Record<string, unknown>) =>
+  call<{ sale: Sale }>("POST", "admin/promotions", { body, session });
+
+export const deletePromotion = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "admin/promotions", { body: { id }, session });
+
+// ── Payments and payouts ───────────────────────────────────────────────
+
+export type Transaction = {
+  id: string;
+  orderId: string;
+  number: string;
+  placedAt: string;
+  merchantId: string;
+  merchantName: string;
+  customer: string;
+  amount: number;
+  commission: number;
+  channel: string;
+  status: string;
+  method: string;
+};
+
+export type Payments = {
+  transactions: Transaction[];
+  totals: {
+    gross: number;
+    commission: number;
+    merchantNet: number;
+    refunds: number;
+    net: number;
+    authorized: number;
+    settled: number;
+  };
+  provider: string;
+  message: string;
+};
+
+export const getPayments = (session: string | null) => call<Payments>("GET", "admin/payments", { session });
+
+export type AdminPayout = {
+  id: string;
+  merchantId: string;
+  merchantName: string;
+  period: string;
+  orders: number;
+  gross: number;
+  commission: number;
+  net: number;
+  status: string;
+  date: string;
+  method: string;
+};
+
+export const listPayouts = (session: string | null) =>
+  call<{ payouts: AdminPayout[]; totals: Record<string, number>; message: string }>("GET", "admin/payouts", {
+    session,
+  });
+
+export const updatePayout = (session: string | null, body: Record<string, unknown>) =>
+  call<{ payout: { id: string; status: string } }>("PATCH", "admin/payouts", { body, session });
+
+// ── Team and audit ─────────────────────────────────────────────────────
+
+export type StaffMember = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  permissions: string[];
+  createdAt: string;
+};
+
+export const listStaff = (session: string | null) =>
+  call<{ staff: StaffMember[]; roles: { role: string; permissions: string[] }[] }>("GET", "admin/staff", {
+    session,
+  });
+
+export const saveStaff = (session: string | null, body: Record<string, unknown>) =>
+  call<{ staff: StaffMember }>("POST", "admin/staff", { body, session });
+
+export const deleteStaff = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "admin/staff", { body: { id }, session });
+
+export type AuditEvent = {
+  id: string;
+  actorType: string;
+  actorId: string;
+  action: string;
+  target: string;
+  detail: string;
+  at: string;
+};
+
+export const getAudit = (session: string | null, limit = 120) =>
+  call<{ events: AuditEvent[] }>("GET", "admin/audit", { params: { limit }, session });
