@@ -198,7 +198,7 @@ export function FerixMobileMenu({ categories, user }: { categories: Category[]; 
                 {ACCOUNT_LINKS.map(({ href, label, Icon }) => (
                   <li key={href}>
                     <Link
-                      href={user ? href : "/login"}
+                      href={user ? href : `/login?return=${encodeURIComponent(href)}`}
                       className="flex items-center gap-3 rounded-[2px] px-2 py-2.5 text-[13.5px] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
                     >
                       <Icon width={16} height={16} className="shrink-0" />

@@ -19,6 +19,7 @@ from datetime import timedelta
 from typing import Optional
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
@@ -30,11 +31,12 @@ from core import (
     collections as collection_rows, decorate, find_merchant, find_product, get_user,
     hash_password, iso, line_key, merchants as merchant_rows, now, product_rows,
     public_user, put_row, require_user, sale_status, seed, store_card,
-    verify_password, Base, engine, banners as banner_rows,
+    verify_password, Base, engine, banners as banner_rows, UPLOAD_ROOT, sync_pending_media,
 )
 
 from routers import admin as admin_router
 from routers import merchant as merchant_router
+from notifications import order_confirmation, welcome
 
 # ── Request models ─────────────────────────────────────────────────────────
 
@@ -144,6 +146,7 @@ class CheckoutIn(BaseModel):
 # ── App ────────────────────────────────────────────────────────────────────
 
 app = FastAPI(title="Ferixas Commerce API", version="3.0.0")
+app.mount("/media", StaticFiles(directory=str(UPLOAD_ROOT)), name="media")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
@@ -192,6 +195,7 @@ def startup():
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         seed(db)
+        sync_pending_media(db)
 
 
 # ── Service ────────────────────────────────────────────────────────────────
@@ -213,7 +217,7 @@ def health():
         db.execute(select(Catalog.key).limit(1))
         return {
             "ok": True, "database": "ok",
-            "storage": "cloudinary-configured" if os.getenv("CLOUDINARY_URL") else "pending-configuration",
+            "storage": "cloudinary-configured" if os.getenv("CLOUDINARY_URL") else "local-mvp",
             "mail": "resend-configured" if os.getenv("RESEND_API_KEY") else "pending-configuration",
             "payments": "configured" if os.getenv("PAYMENT_PROVIDER_KEY") else "pending-configuration",
         }
@@ -433,6 +437,7 @@ def register(p: RegisterIn, x_cart: Optional[str] = Header(None, alias="X-Ferix-
         token = secrets.token_urlsafe(32)
         db.add(SessionToken(token=token, user_id=user.id, expires_at=now() + timedelta(days=SESSION_DAYS)))
         db.commit()
+        welcome(to=user.email, name=user.name)
         return {"token": token, "user": public_user(user), "cartId": x_cart or "cart_" + uuid.uuid4().hex[:12]}
 
 
@@ -817,6 +822,8 @@ def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
 
         cart.lines = []
         db.commit()
+        if (user.settings or {}).get("orderEmails", True):
+            order_confirmation(to=user.email, name=user.name, number=order["number"], total=order["total"])
         return {"order": order}
 
 

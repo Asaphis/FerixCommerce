@@ -19,8 +19,8 @@ The first boot creates the tables and imports `seed.json`. It is idempotent: it 
 ## Production services to create
 
 1. **Neon**: create a PostgreSQL project and copy its pooled connection string into `DATABASE_URL`. Keep `sslmode=require`.
-2. **Cloudinary**: create a cloud and set `CLOUDINARY_URL`. Product images and future merchant uploads should use Cloudinary URLs; binaries should not be stored in Neon.
-3. **Resend**: verify the Ferixas sending domain, create an API key, and set `RESEND_API_KEY` and `RESEND_FROM`. Use it for verification, password reset, order confirmation and shipping emails.
+2. **Cloudinary**: create a cloud and set `CLOUDINARY_URL`. Uploads use Cloudinary first; local disk is an MVP fallback and automatically syncs pending assets when Cloudinary becomes available.
+3. **Resend**: verify the Ferixas sending domain, create an API key, and set `RESEND_API_KEY`, `RESEND_FROM`, and `PUBLIC_APP_URL`. Registration, order confirmation, and fulfillment-status notifications use this adapter.
 4. **API hosting**: deploy this folder to Render, Railway, Fly.io, or a container service. Set the environment variables in the host dashboard and expose HTTPS.
 5. Point the frontend `FERIX_API_BASE` to the deployed API URL.
 
@@ -29,7 +29,7 @@ The first boot creates the tables and imports `seed.json`. It is idempotent: it 
 - Seeded catalogue content is clearly demo catalogue content and is only used to populate the storefront.
 - There are no fake merchant payouts, payment captures, email deliveries, or upload records.
 - Payment capture is not enabled yet; checkout records remain `pending` until a payment provider is selected and configured.
-- Media upload endpoints and merchant/admin systems are intentionally not represented as complete until their workflows are defined.
+- Media upload endpoints support Cloudinary-first uploads, hosted URLs, local MVP fallback, and automatic retry/synchronization.
 - Empty real user areas return empty arrays, not invented orders, addresses or reviews.
 
 ## Health checks

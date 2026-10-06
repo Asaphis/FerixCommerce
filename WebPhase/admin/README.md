@@ -50,6 +50,6 @@ systems cannot cross over.
 ## Environment
 
 ```
-FERIX_API_BASE=https://runtime.codewords.ai/run/ferix_backend_mock_1efc4bd3
-CODEWORDS_API_KEY=<your CodeWords key>
+FERIX_API_BASE=http://127.0.0.1:8000
+CODEWORDS_API_KEY=
 ```

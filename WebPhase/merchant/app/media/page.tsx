@@ -8,7 +8,7 @@ import { dateShort, relative } from "@/lib/format";
 export default async function MediaPage() {
   const { session } = await requireMerchant();
   const data = await listMedia(session);
-  const configured = data.storage === "cloudinary";
+  const configured = data.storage === "cloudinary" || data.storage === "local";
 
   return (
     <div className="grid gap-5">
@@ -20,13 +20,13 @@ export default async function MediaPage() {
             Images and video for your products and your storefront, held against your seller account.
           </p>
         </div>
-        <Pill tone={configured ? "success" : "warn"}>{data.storage}</Pill>
+        <Pill tone={configured ? "success" : "warn"}>{data.storage === "cloudinary" ? "cloudinary connected" : "local MVP storage"}</Pill>
       </header>
 
       {!configured ? (
         <p className="rounded-[2px] border border-sand/35 bg-sand/10 px-3.5 py-3 text-[12.5px] leading-relaxed text-sand">
-          Cloudinary credentials are not set yet, so direct uploads are off — pasting an image or video URL
-          still works.
+          Files upload to the backend's local media store for this MVP. Add Cloudinary later for durable,
+          CDN-backed production storage; external image and video URLs remain supported.
         </p>
       ) : null}
 
@@ -93,7 +93,7 @@ export default async function MediaPage() {
           )}
 
           <p className="flex items-center gap-2 border-t border-hairline px-5 py-3.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim/70">
-            <ImageOff width={11} height={11} /> Uploads from your device arrive with the storage provider
+            <ImageOff width={11} height={11} /> Local uploads are available now; Cloudinary is an optional production adapter
           </p>
         </Panel>
       </div>

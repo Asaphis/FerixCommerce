@@ -12,7 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { FerixasMark } from "@/components/studio/marks";
-import { SideNav } from "@/components/studio/nav";
+import { MobileBottomNav, SideNav } from "@/components/studio/nav";
 import { currentMerchant } from "@/lib/data";
 
 export async function StudioShell({ children }: { children: ReactNode }) {
@@ -58,6 +58,7 @@ export async function StudioShell({ children }: { children: ReactNode }) {
       <main className="min-w-0 flex-1 lg:ml-[228px]">
         <div className="mx-auto max-w-[1180px] px-4 py-6">{children}</div>
       </main>
+      <MobileBottomNav />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { OpsMark, Operator } from "@/components/ops/marks";
-import { OpsNav } from "@/components/ops/nav";
+import { MobileBottomNav, OpsNav } from "@/components/ops/nav";
 import { currentAdmin } from "@/lib/data";
 
 export async function OpsShell({ children }: { children: ReactNode }) {
@@ -46,6 +46,7 @@ export async function OpsShell({ children }: { children: ReactNode }) {
       <main className="min-w-0 flex-1 lg:ml-[230px]">
         <div className="mx-auto max-w-[1200px] px-4 py-6">{children}</div>
       </main>
+      <MobileBottomNav />
     </div>
   );
 }

@@ -8,7 +8,8 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Body, Header, HTTPException, Query
+from fastapi import APIRouter, Body, File, Form, Header, HTTPException, Query, Request, UploadFile
+from notifications import order_status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -18,7 +19,7 @@ from core import (
     audit, aware, collections as all_collections, find_category, find_merchant, find_product,
     hash_password, iso, issue_staff_session, merchants as all_merchants, new_id, now,
     permissions_for, placeholder, products as all_products, put_row, require_permission,
-    require_staff, rows_of, verify_password,
+    require_staff, rows_of, sync_pending_media, upload_media_blob, verify_password, media_json,
 )
 
 router = APIRouter(prefix="/merchant", tags=["merchant"])
@@ -643,6 +644,9 @@ def set_status(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
                                        kind="sale", amount=round(data.get("total", 0), 2), note="Order delivered"))
                 audit(db, "merchant", staff.email, "order.status", data.get("number", row.id), payload.fulfillment)
                 db.commit()
+                customer = db.get(User, row.user_id)
+                if customer and (customer.settings or {}).get("orderEmails", True):
+                    order_status(to=customer.email, name=customer.name, number=data.get("number", row.id), status=payload.fulfillment)
                 return {"order": _merchant_order(db, row, merchant["id"])}
         raise HTTPException(404, "Order not found")
 
@@ -852,8 +856,9 @@ def update_settings(session: Optional[str] = Header(None, alias="X-Ferix-Session
 def media(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        sync_pending_media(db)
         from core import media_for
-        return {"assets": media_for(db, "merchant", staff.subject_id), "storage": "cloudinary" if __import__("os").getenv("CLOUDINARY_URL") else "pending-configuration"}
+        return {"assets": media_for(db, "merchant", staff.subject_id), "storage": "cloudinary" if __import__("os").getenv("CLOUDINARY_URL") else "local"}
 
 
 @router.post("/media")
@@ -869,6 +874,35 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
         db.commit()
         from core import media_json
         return {"asset": media_json(asset)}
+
+
+@router.post("/media/upload")
+async def upload_media(
+    request: Request,
+    session: Optional[str] = Query(None),
+    file: UploadFile = File(...),
+    kind: str = Form("image"),
+    alt: str = Form(""),
+    folder: str = Form("store"),
+):
+    """Local-disk upload fallback for MVP deployments without Cloudinary."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "merchant")
+        content = await file.read()
+        if not content or len(content) > 20 * 1024 * 1024:
+            raise HTTPException(400, "Upload must be between 1 byte and 20 MB")
+        url, public_id, storage = upload_media_blob(content, file.filename or "asset", kind)
+        if url.startswith("/"):
+            url = f"{str(request.base_url).rstrip('/')}{url}"
+        asset = MediaAsset(
+            id=new_id("med"), owner_type="merchant", owner_id=staff.subject_id,
+            kind=kind if kind in {"image", "video"} else "image", url=url,
+            public_id=public_id, alt=alt[:300], folder=folder[:80], bytes=len(content),
+        )
+        db.add(asset)
+        audit(db, "merchant", staff.email, "media.upload", folder, public_id)
+        db.commit()
+        return {"asset": media_json(asset), "storage": storage}
 
 
 @router.delete("/media")

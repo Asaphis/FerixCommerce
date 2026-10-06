@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Body, Header, HTTPException, Query
+from fastapi import APIRouter, Body, File, Form, Header, HTTPException, Query, Request, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -18,7 +18,7 @@ from core import (
     audit, collections as all_collections, categories as all_categories, find_merchant,
     find_product, iso, issue_staff_session, media_json, merchants as all_merchants,
     new_id, now, permissions_for, placeholder, products as all_products, put_row, drop_row,
-    require_permission, require_staff, rows_of, verify_password,
+    require_permission, require_staff, rows_of, sync_pending_media, upload_media_blob, verify_password,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -1004,10 +1004,11 @@ def cms_restore(session: Optional[str] = Header(None, alias="X-Ferix-Session"), 
 def media(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         require_staff(db, session, "admin")
+        sync_pending_media(db)
         rows = db.scalars(select(MediaAsset).where(MediaAsset.owner_type == "platform").order_by(MediaAsset.created_at.desc())).all()
         import os
         return {"assets": [media_json(m) for m in rows],
-                "storage": "cloudinary" if os.getenv("CLOUDINARY_URL") else "pending-configuration"}
+                "storage": "cloudinary" if os.getenv("CLOUDINARY_URL") else "local"}
 
 
 @router.post("/media")
@@ -1022,6 +1023,36 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
         audit(db, "admin", staff.email, "media.add", payload.folder, payload.url[:120])
         db.commit()
         return {"asset": media_json(asset)}
+
+
+@router.post("/media/upload")
+async def upload_media(
+    request: Request,
+    session: Optional[str] = Query(None),
+    file: UploadFile = File(...),
+    kind: str = Form("image"),
+    alt: str = Form(""),
+    folder: str = Form("platform"),
+):
+    """Local-disk upload fallback for MVP deployments without Cloudinary."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "media.manage")
+        content = await file.read()
+        if not content or len(content) > 20 * 1024 * 1024:
+            raise HTTPException(400, "Upload must be between 1 byte and 20 MB")
+        url, public_id, storage = upload_media_blob(content, file.filename or "asset", kind)
+        if url.startswith("/"):
+            url = f"{str(request.base_url).rstrip('/')}{url}"
+        asset = MediaAsset(
+            id=new_id("med"), owner_type="platform", owner_id="platform",
+            kind=kind if kind in {"image", "video"} else "image", url=url,
+            public_id=public_id, alt=alt[:300], folder=folder[:80], bytes=len(content),
+        )
+        db.add(asset)
+        audit(db, "admin", staff.email, "media.upload", folder, public_id)
+        db.commit()
+        return {"asset": media_json(asset), "storage": storage}
 
 
 @router.delete("/media")

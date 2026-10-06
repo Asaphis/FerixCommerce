@@ -1,10 +1,8 @@
 // Environment the console expects at runtime.
 //
-//   FERIX_API_BASE=https://runtime.codewords.ai/run/ferix_backend_mock_1efc4bd3
-//   CODEWORDS_API_KEY=<your CodeWords key>
+//   FERIX_API_BASE=http://127.0.0.1:8000
 //
-// FERIX_API_SERVICE is an alternative to FERIX_API_BASE: give it a service id and the
-// client builds the URL from CODEWORDS_RUNTIME_URI.
+// FERIX_API_BASE is the only API endpoint setting; change it per environment.
 
-export const REQUIRED_ENV = ["CODEWORDS_API_KEY", "CODEWORDS_RUNTIME_URI"] as const;
-export const OPTIONAL_ENV = ["FERIX_API_BASE", "FERIX_API_SERVICE"] as const;
+export const REQUIRED_ENV = ["FERIX_API_BASE"] as const;
+export const OPTIONAL_ENV = ["CODEWORDS_API_KEY"] as const;

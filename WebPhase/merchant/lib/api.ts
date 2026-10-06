@@ -1,15 +1,14 @@
 /**
  * The seller app's only door to the outside world.
  *
- * Every screen and every action goes through here. Point FERIX_API_BASE (or
- * FERIX_API_SERVICE) at the live commerce backend and the whole app follows.
+ * Every screen and every action goes through here. Point FERIX_API_BASE at
+ * the live commerce backend and the whole app follows. Local development uses
+ * the real FastAPI service on port 8000 rather than the retired mock runtime.
  */
 
-const RUNTIME = process.env.CODEWORDS_RUNTIME_URI ?? "https://runtime.codewords.ai";
 const KEY = process.env.CODEWORDS_API_KEY ?? "";
-const SERVICE = process.env.FERIX_API_SERVICE ?? "ferix_backend_mock_1efc4bd3";
 
-export const apiBase = process.env.FERIX_API_BASE ?? `${RUNTIME}/run/${SERVICE}`;
+export const apiBase = process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "";
 
 export type Brand = {
   template: string;
@@ -455,6 +454,23 @@ export const listMedia = (session: string | null) =>
 
 export const addMedia = (session: string | null, body: Record<string, unknown>) =>
   call<{ asset: MerchantMedia }>("POST", "merchant/media", { body, session });
+
+export async function uploadMedia(session: string, file: File, metadata: { kind: string; alt: string; folder: string }) {
+  const url = new URL(`${apiBase}/merchant/media/upload`);
+  url.searchParams.set("session", session);
+  const form = new FormData();
+  form.append("file", file);
+  form.append("kind", metadata.kind);
+  form.append("alt", metadata.alt);
+  form.append("folder", metadata.folder);
+  const response = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${KEY}` }, body: form, cache: "no-store" });
+  if (!response.ok) {
+    let detail = `Request failed (${response.status})`;
+    try { detail = ((await response.json()) as { detail?: string }).detail ?? detail; } catch {}
+    throw new ApiError(response.status, detail);
+  }
+  return (await response.json()) as { asset: MerchantMedia; storage: string };
+}
 
 export const removeMedia = (session: string | null, id: string) =>
   call<{ removed: string }>("DELETE", "merchant/media", { body: { id }, session });

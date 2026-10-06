@@ -9,7 +9,11 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import secrets
+import time
+import urllib.parse
+import urllib.request
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -37,6 +41,94 @@ ROOT = Path(__file__).resolve().parent
 SEED_PATH = ROOT / "seed.json"
 DEMO_PASSWORD = "Ferixas123"
 PLACEHOLDER = "https://picsum.photos/seed/{seed}/900/900"
+UPLOAD_ROOT = ROOT / "uploads" if "ROOT" in globals() else Path(__file__).resolve().parent / "uploads"
+UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
+
+def save_upload(content: bytes, original_name: str) -> str:
+    """Persist an MVP upload locally and return its public filename."""
+    suffix = Path(original_name or "asset").suffix.lower()
+    suffix = suffix if re.fullmatch(r"\.[a-z0-9]{1,8}", suffix) else ".bin"
+    filename = f"{uuid.uuid4().hex}{suffix}"
+    (UPLOAD_ROOT / filename).write_bytes(content)
+    return filename
+
+def upload_media_blob(content: bytes, original_name: str, kind: str = "image") -> tuple[str, str, str]:
+    """Upload to Cloudinary when configured, otherwise use local MVP storage."""
+    cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
+    if cloudinary_url.startswith("cloudinary://"):
+        try:
+            parsed = urllib.parse.urlparse(cloudinary_url)
+            cloud_name = parsed.hostname or ""
+            api_key = urllib.parse.unquote(parsed.username or "")
+            api_secret = urllib.parse.unquote(parsed.password or "")
+            if cloud_name and api_key and api_secret:
+                timestamp = int(time.time())
+                public_id = f"ferixas/{uuid.uuid4().hex}"
+                signature_base = f"public_id={public_id}&timestamp={timestamp}{api_secret}"
+                signature = hashlib.sha1(signature_base.encode()).hexdigest()
+                boundary = f"----ferixas{uuid.uuid4().hex}"
+                resource = "video" if kind == "video" else "image"
+                fields = {
+                    "api_key": api_key,
+                    "timestamp": str(timestamp),
+                    "public_id": public_id,
+                    "signature": signature,
+                }
+                parts: list[bytes] = []
+                for key, value in fields.items():
+                    parts.extend([
+                        f"--{boundary}\r\n".encode(),
+                        f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode(),
+                        str(value).encode(), b"\r\n",
+                    ])
+                suffix = Path(original_name or "asset").suffix or (".mp4" if kind == "video" else ".jpg")
+                parts.extend([
+                    f"--{boundary}\r\n".encode(),
+                    f'Content-Disposition: form-data; name="file"; filename="asset{suffix}"\r\n'.encode(),
+                    f"Content-Type: {('video/mp4' if kind == 'video' else 'application/octet-stream')}\r\n\r\n".encode(),
+                    content, b"\r\n", f"--{boundary}--\r\n".encode(),
+                ])
+                request = urllib.request.Request(
+                    f"https://api.cloudinary.com/v1_1/{cloud_name}/{resource}/upload",
+                    data=b"".join(parts),
+                    headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    payload = json.loads(response.read().decode())
+                secure_url = payload.get("secure_url") or payload.get("url")
+                if secure_url:
+                    return secure_url, str(payload.get("public_id") or public_id), "cloudinary"
+        except Exception:
+            # A provider outage should not make the MVP unusable; local storage is the fallback.
+            pass
+    filename = save_upload(content, original_name)
+    return f"/media/{filename}", filename, "local"
+
+def sync_pending_media(db: Session) -> int:
+    """Back up fallback uploads to Cloudinary as soon as credentials work again."""
+    if not os.getenv("CLOUDINARY_URL", "").startswith("cloudinary://"):
+        return 0
+    synced = 0
+    for asset in db.scalars(select(MediaAsset)).all():
+        if "/media/" not in (asset.url or ""):
+            continue
+        filename = asset.public_id or Path(urllib.parse.urlparse(asset.url).path).name
+        source = UPLOAD_ROOT / filename
+        if not source.exists():
+            continue
+        try:
+            url, public_id, storage = upload_media_blob(source.read_bytes(), filename, asset.kind)
+            if storage == "cloudinary":
+                asset.url = url
+                asset.public_id = public_id
+                db.add(asset)
+                synced += 1
+        except Exception:
+            continue
+    if synced:
+        db.commit()
+    return synced
 
 # ── Models ─────────────────────────────────────────────────────────────────
 

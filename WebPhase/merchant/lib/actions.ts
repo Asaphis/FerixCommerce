@@ -243,15 +243,19 @@ export async function addMediaAction(_prev: FormState, formData: FormData): Prom
   const session = await readSession();
   if (!session) redirect("/login");
   const url = String(formData.get("url") ?? "").trim();
-  if (!/^https?:\/\/\S+$/i.test(url)) return { error: "Paste a full URL starting with http:// or https://." };
+  const file = formData.get("file");
   const kind = String(formData.get("kind") ?? "image");
+  const alt = String(formData.get("alt") ?? "").trim();
+  const folder = String(formData.get("folder") ?? "store").trim() || "store";
+  if (!(file instanceof File && file.size > 0) && !/^https?:\/\/\S+$/i.test(url)) {
+    return { error: "Choose an image/video file or paste a full http:// or https:// URL." };
+  }
   try {
-    await api.addMedia(session, {
-      url,
-      kind,
-      alt: String(formData.get("alt") ?? "").trim(),
-      folder: String(formData.get("folder") ?? "store").trim() || "store",
-    });
+    if (file instanceof File && file.size > 0) {
+      await api.uploadMedia(session, file, { kind, alt, folder });
+    } else {
+      await api.addMedia(session, { url, kind, alt, folder });
+    }
   } catch (error) {
     return { error: error instanceof api.ApiError ? error.message : "We could not add that asset." };
   }

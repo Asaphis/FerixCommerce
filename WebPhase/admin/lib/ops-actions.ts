@@ -211,14 +211,17 @@ export async function addMediaAction(form: FormData): Promise<void> {
   const session = await readSession();
   if (!session) redirect("/login");
   const url = str(form, "url");
-  if (!url) return;
+  const file = form.get("file");
+  const kind = str(form, "kind", "image");
+  const alt = str(form, "alt");
+  const folder = str(form, "folder", "platform");
+  if (!(file instanceof File && file.size > 0) && !url) return;
   try {
-    await api.addMedia(session, {
-      url,
-      kind: str(form, "kind", "image"),
-      alt: str(form, "alt"),
-      folder: str(form, "folder", "platform"),
-    });
+    if (file instanceof File && file.size > 0) {
+      await api.uploadMedia(session, file, { kind, alt, folder });
+    } else {
+      await api.addMedia(session, { url, kind, alt, folder });
+    }
   } catch {
     return;
   }

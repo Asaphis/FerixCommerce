@@ -13,15 +13,14 @@ The merchant workspace. One of three separate systems on the same platform backe
 Every screen and every action goes through `lib/api.ts`. Nothing in the UI holds its own
 data — there is no mock or placeholder data anywhere in this app.
 
-The backend is the shared commerce API (`ferix_backend_mock_1efc4bd3`), the same one the
-customer system uses. It answers the same requests, at the same addresses, with the same
-shapes of data that the production backend will.
+The backend is the shared FastAPI commerce API, the same one the customer system uses.
+It answers the same requests, at the same addresses, with the same shapes of data across
+local and production environments.
 
 To point at the production backend, change one value:
 
 ```
-FERIX_API_SERVICE=<service id>      # or
-FERIX_API_BASE=https://<host>
+FERIX_API_BASE=http://127.0.0.1:8000
 ```
 
 ## Routes

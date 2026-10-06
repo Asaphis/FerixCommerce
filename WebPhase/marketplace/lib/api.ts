@@ -2,15 +2,14 @@
  * The customer app's only door to the outside world.
  *
  * Every screen and every action goes through here, so nothing in the UI ever
- * holds its own data. Point FERIX_API_SERVICE (or FERIX_API_BASE) at the live
- * commerce backend and the whole app follows without a code change.
+ * holds its own data. Point FERIX_API_BASE at the live commerce backend and
+ * the whole app follows without a code change. Local development uses the
+ * real FastAPI service on port 8000 rather than the retired mock runtime.
  */
 
-const RUNTIME = process.env.CODEWORDS_RUNTIME_URI ?? "https://runtime.codewords.ai";
 const KEY = process.env.CODEWORDS_API_KEY ?? "";
-const SERVICE = process.env.FERIX_API_SERVICE ?? "ferix_backend_mock_1efc4bd3";
 
-export const apiBase = process.env.FERIX_API_BASE ?? `${RUNTIME}/run/${SERVICE}`;
+export const apiBase = process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "";
 
 export type Brand = {
   template: string;

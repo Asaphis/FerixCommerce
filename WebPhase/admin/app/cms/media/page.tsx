@@ -27,26 +27,29 @@ export default async function MediaPage() {
             One library for banners, department tiles, collection covers and editorial imagery.
           </p>
         </div>
-        <Pill tone={storage === "cloudinary" ? "mint" : "amber"}>
-          {storage === "cloudinary" ? "cloudinary connected" : "storage pending"}
+        <Pill tone={storage === "cloudinary" || storage === "local" ? "mint" : "amber"}>
+          {storage === "cloudinary" ? "cloudinary connected" : "local MVP storage"}
         </Pill>
       </header>
 
       {storage !== "cloudinary" ? (
         <Panel className="border-amber/30 bg-amber/5">
           <p className="text-[13px] leading-relaxed text-chalk">
-            Cloudinary credentials are not set on the backend yet, so direct uploads are switched off. Pasting an
-            image or video URL below works today and keeps the CMS fully usable.
+            Uploads use Cloudinary first because it is configured for this environment. If Cloudinary is temporarily
+            unavailable, the MVP falls back to local storage so the CMS remains usable.
           </p>
         </Panel>
       ) : null}
 
       <Panel>
-        <PanelHead title="Add media" hint="Paste a hosted URL. Alt text keeps the storefront accessible." />
-        <form action={addMediaAction} className="grid gap-3">
+        <PanelHead title="Add media" hint="Upload a file or paste a hosted URL. Alt text keeps the storefront accessible." />
+        <form action={addMediaAction} encType="multipart/form-data" className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Field title="Media URL">
               <input name="url" placeholder="https://" className={inputClass} />
+            </Field>
+            <Field title="Upload from device">
+              <input name="file" type="file" accept="image/*,video/*" className={inputClass} />
             </Field>
             <Field title="Alt text">
               <input name="alt" placeholder="What the image shows" className={inputClass} />
@@ -71,7 +74,7 @@ export default async function MediaPage() {
       </Panel>
 
       {assets.length === 0 ? (
-        <Empty title="The library is empty" body="Add the first asset above. Banners, tiles and collections can all point at it." />
+        <Empty title="The library is empty" body="Upload a file or add a hosted URL above. Banners, tiles and collections can all point at it." />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {assets.map((asset) => (
@@ -98,7 +101,7 @@ export default async function MediaPage() {
       )}
 
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
-        {assets.length} asset{assets.length === 1 ? "" : "s"} in the platform library
+        {assets.length} asset{assets.length === 1 ? "" : "s"} in the platform library · Cloudinary-first uploads enabled
       </p>
     </div>
   );

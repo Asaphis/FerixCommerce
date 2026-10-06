@@ -1,21 +1,23 @@
 "use client";
 
 import { useActionState } from "react";
-import { Link2, Trash2 } from "lucide-react";
+import { Trash2, Upload } from "lucide-react";
 import { SubmitButton } from "@/components/studio/controls";
 import { Field, Notice, inputClass, selectClass } from "@/components/studio/forms";
 import { Panel, PanelHead } from "@/components/studio/bits";
 import { addMediaAction, removeMediaAction, type FormState } from "@/lib/actions";
 
-/** Pasting a URL is the only way in until the storage provider is configured. */
 export function MediaForm() {
   const [state, action] = useActionState<FormState, FormData>(addMediaAction, {});
 
   return (
-    <form action={action} className="grid gap-3">
+    <form action={action} encType="multipart/form-data" className="grid gap-3">
       <Panel>
-        <PanelHead title="Add media" hint="Link an image or video that is already online" />
+        <PanelHead title="Add media" hint="Upload a file or link an asset that is already online" />
         <div className="grid gap-4">
+          <Field title="Upload from device">
+            <input name="file" type="file" accept="image/*,video/*" className={inputClass} />
+          </Field>
           <Field title="Asset URL">
             <input
               name="url"
@@ -41,8 +43,8 @@ export function MediaForm() {
           </div>
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          <SubmitButton pendingLabel="Adding">
-            <Link2 width={13} height={13} /> Add to library
+            <SubmitButton pendingLabel="Adding">
+            <Upload width={13} height={13} /> Upload or add link
           </SubmitButton>
           <Notice state={state} />
         </div>
