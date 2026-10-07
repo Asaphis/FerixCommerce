@@ -20,7 +20,7 @@ export default async function CollectionsPage() {
       </p>
 
       {feed.collections.length ? (
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
           {feed.collections.map((collection) => (
             <CollectionCard key={collection.slug} collection={collection} />
           ))}

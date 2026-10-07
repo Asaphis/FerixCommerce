@@ -37,7 +37,7 @@ export default async function InventoryPage({
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile label="SKUs" value={num(data.totals.skus)} sub="Active catalogue lines" />
         <StatTile label="Units on hand" value={num(data.totals.units)} sub={`${num(data.totals.reserved)} reserved for open orders`} accent="azure" />
         <StatTile

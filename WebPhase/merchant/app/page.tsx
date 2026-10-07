@@ -58,7 +58,7 @@ export default async function DashboardPage() {
         </form>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile
           label="Revenue · 30 days"
           value={money(summary.revenue30d, { cents: false })}

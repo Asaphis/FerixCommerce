@@ -76,7 +76,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
         </div>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Gross merchandise value" value={money(summary.revenueTotal, { cents: false })} sub={`${money(summary.revenue30d, { cents: false })} in 30 days`} tone="mint" />
         <Readout
           label="Commission earned"

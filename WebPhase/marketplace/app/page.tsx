@@ -52,7 +52,7 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-[1240px] px-4 pb-12">
         <SectionHead eyebrow="Curated" title="Collections put together this season" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
           {home.collections.slice(0, 3).map((collection) => (
             <CollectionCard key={collection.slug} collection={collection} />
           ))}
@@ -134,7 +134,7 @@ export default async function HomePage() {
               </Link>
             }
           />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
             {home.stores.map((store) => (
               <StoreCard key={store.id} store={store} />
             ))}

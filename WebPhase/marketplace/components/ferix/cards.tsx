@@ -29,7 +29,7 @@ export function ProductCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-[3px] border border-line-warm bg-white transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25",
+        "group relative flex flex-col overflow-hidden rounded-[2px] rounded-tr-[9px] border border-line-warm bg-white transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25",
         className,
       )}
     >
@@ -39,7 +39,7 @@ export function ProductCard({
           accent="#e4572e"
           src={assetUrl(product.images?.[0])}
           alt={product.title}
-          className="aspect-[4/3] w-full rounded-none"
+          className="aspect-[3/2] w-full rounded-none sm:aspect-[4/3]"
         />
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
           {product.discount ? <Pill tone="ember">−{product.discount}%</Pill> : null}
@@ -48,23 +48,25 @@ export function ProductCard({
         </span>
       </Link>
 
-      <div className="flex flex-1 flex-col p-3.5">
+      <div className="flex flex-1 flex-col p-2.5 sm:p-3.5">
         <Link href={`/store/${product.merchantSlug}`} className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
           {product.merchantName}
         </Link>
         <Link href={href} className="mt-1.5 line-clamp-2 font-display text-[14.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember">
           {product.title}
         </Link>
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 hidden items-center gap-2 sm:flex">
           <Stars value={product.rating} />
           <span className="font-mono text-[10.5px] text-ink-soft">({compact(product.reviewCount)})</span>
         </div>
         <div className="mt-3 flex items-end justify-between gap-2">
           <Price value={product.price} compareAt={product.compareAt} discount={product.discount} />
         </div>
-        <div className="mt-1.5">
-          <StockNote stock={product.stock} />
-        </div>
+        {product.stock > 0 && product.stock <= 25 ? (
+          <div className="mt-1.5">
+            <StockNote stock={product.stock} />
+          </div>
+        ) : null}
 
         {showAdd ? (
           <div className="mt-3 flex items-center gap-1.5 border-t border-line-warm pt-3">
@@ -107,7 +109,7 @@ export function ProductGrid({
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-x-3.5 gap-y-6",
+        "grid grid-cols-2 gap-x-2.5 gap-y-4 sm:gap-x-3.5 sm:gap-y-6",
         columns === 4 ? "sm:grid-cols-3 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-3",
         className,
       )}
@@ -140,19 +142,21 @@ export function CategoryTile({ category }: { category: Category }) {
   return (
     <Link
       href={`/browse?category=${category.slug}`}
-      className="group relative overflow-hidden rounded-[3px] border border-line-warm bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25"
+      className="group relative flex min-h-[72px] items-center gap-2.5 overflow-hidden rounded-[2px] rounded-tr-[9px] border border-line-warm bg-white p-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25 sm:block sm:p-4"
     >
       <Plate
         seed={category.slug}
         accent="#e4572e"
         src={assetUrl(category.image)}
         alt={category.name}
-        className="h-16 w-16 rounded-[3px]"
+        className="h-10 w-10 shrink-0 rounded-[2px] sm:h-16 sm:w-16"
       />
-      <p className="mt-3.5 font-display text-[14.5px] font-semibold text-ink">{category.name}</p>
-      <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-soft">{category.blurb}</p>
-      <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{category.count} listed</p>
-      <span className="absolute right-3 top-3 text-ink-soft transition-transform duration-300 group-hover:translate-x-0.5">
+      <span className="min-w-0 flex-1 sm:block">
+        <p className="truncate font-display text-[12.5px] font-semibold text-ink sm:mt-3.5 sm:text-[14.5px]">{category.name}</p>
+        <p className="mt-0.5 hidden line-clamp-2 text-[12px] leading-relaxed text-ink-soft sm:block">{category.blurb}</p>
+        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft sm:mt-2.5 sm:text-[10px] sm:tracking-[0.14em]">{category.count} listed</p>
+      </span>
+      <span className="absolute right-3 top-3 hidden text-ink-soft transition-transform duration-300 group-hover:translate-x-0.5 sm:block">
         <ArrowRight width={14} height={14} />
       </span>
     </Link>
@@ -163,12 +167,12 @@ export function CollectionCard({ collection }: { collection: Collection }) {
   return (
     <Link
       href={`/browse?collection=${collection.slug}`}
-      className="group relative overflow-hidden rounded-[3px] border border-line-warm bg-void p-5 transition-all duration-300 hover:-translate-y-0.5"
+      className="group relative overflow-hidden rounded-[2px] rounded-tr-[9px] border border-line-warm bg-void p-3 transition-all duration-300 hover:-translate-y-0.5 sm:p-5"
     >
-      <Eyebrow className="text-lime">{collection.count} products</Eyebrow>
-      <p className="mt-2 font-display text-[18px] font-semibold text-chalk">{collection.name}</p>
-      <p className="mt-1.5 max-w-[34ch] text-[12.5px] leading-relaxed text-chalk-dim">{collection.blurb}</p>
-      <span className="mt-4 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk">
+      <Eyebrow className="text-[9px] text-lime sm:text-[10px]">{collection.count} products</Eyebrow>
+      <p className="mt-1 truncate font-display text-[14px] font-semibold text-chalk sm:mt-2 sm:text-[18px]">{collection.name}</p>
+      <p className="mt-1.5 hidden max-w-[34ch] text-[12.5px] leading-relaxed text-chalk-dim sm:block">{collection.blurb}</p>
+      <span className="mt-2 inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-chalk sm:mt-4 sm:gap-2 sm:text-[10px] sm:tracking-[0.14em]">
         Shop the edit
         <ArrowRight width={13} height={13} className="transition-transform group-hover:translate-x-0.5" />
       </span>
@@ -184,7 +188,7 @@ export function StoreCard({ store }: { store: Merchant }) {
   return (
     <Link
       href={`/store/${store.slug}`}
-      className="group relative overflow-hidden rounded-[3px] border border-line-warm bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25"
+      className="group relative overflow-hidden rounded-[2px] rounded-tr-[9px] border border-line-warm bg-white p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25 sm:p-4"
     >
       <div className="flex items-start justify-between gap-3">
         {store.logo ? (
@@ -193,19 +197,19 @@ export function StoreCard({ store }: { store: Merchant }) {
             src={assetUrl(store.logo) ?? ""}
             alt={store.name}
             loading="lazy"
-            className="h-11 w-11 shrink-0 rounded-[2px] object-cover"
+            className="h-9 w-9 shrink-0 rounded-[2px] object-cover sm:h-11 sm:w-11"
           />
         ) : (
           <span
-            className="grid h-11 w-11 place-items-center rounded-[2px] font-display text-[16px] font-extrabold"
+            className="grid h-9 w-9 place-items-center rounded-[2px] font-display text-[14px] font-extrabold sm:h-11 sm:w-11 sm:text-[16px]"
             style={{ background: store.brand.accent, color: store.brand.accentInk }}
           >
             {store.name.slice(0, 1)}
           </span>
         )}
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{store.brand.template}</span>
+        <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft sm:block">{store.brand.template}</span>
       </div>
-      <p className="mt-3.5 flex items-center gap-1.5 font-display text-[15.5px] font-semibold text-ink">
+      <p className="mt-2 flex items-center gap-1.5 truncate font-display text-[13px] font-semibold text-ink sm:mt-3.5 sm:text-[15.5px]">
         {store.name}
         {store.verified ? (
           <span className="grid h-4 w-4 place-items-center rounded-full bg-pine text-white">
@@ -213,12 +217,12 @@ export function StoreCard({ store }: { store: Merchant }) {
           </span>
         ) : null}
       </p>
-      <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">{store.tagline}</p>
-      <p className="mt-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+      <p className="mt-1.5 hidden line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft sm:block">{store.tagline}</p>
+      <p className="mt-2 hidden items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft sm:flex">
         <MapPin width={11} height={11} />
         {store.location}
       </p>
-      <div className="mt-3.5 flex items-center justify-between border-t border-line-warm pt-3">
+      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-line-warm pt-2.5 sm:mt-3.5 sm:pt-3">
         <span className="flex items-center gap-1.5">
           <Stars value={store.rating} size={11} />
           <span className="font-mono text-[10.5px] text-ink-soft">{store.rating.toFixed(1)}</span>

@@ -52,7 +52,7 @@ export default async function CatalogPage({
         </Link>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Products" value={num(data.total)} sub={`${data.counts.active ?? 0} active`} icon={<Boxes width={15} height={15} />} />
         <Readout label="Ferixas Official" value={num(official)} sub="Owned by the platform" tone="violet" />
         <Readout label="Seller listings" value={num(seller)} sub="From merchants" tone="mint" />
@@ -61,7 +61,7 @@ export default async function CatalogPage({
 
       <Panel>
         <PanelHead title="Filters" hint="Owner separates platform stock from merchant stock." />
-        <FilterForm action="/catalog" className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <FilterForm action="/catalog" className="grid grid-cols-2 gap-2.5 md:gap-3 xl:grid-cols-4">
           <label className="relative block">
             <Search width={14} height={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-chalk-dim" />
             <input name="search" defaultValue={search ?? ""} placeholder="Title or SKU" className={`${inputClass} pl-9`} />

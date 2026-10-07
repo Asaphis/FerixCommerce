@@ -46,7 +46,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </Pill>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile label="Orders" value={String(customer.orders ?? orders.length)} sub="With your store" />
         <StatTile label="Total spent" value={money(customer.spent ?? 0, { cents: false })} sub="Paid orders only" accent="lime" />
         <StatTile label="Average order" value={money(customer.averageOrder ?? 0, { cents: false })} sub="Across their orders" accent="azure" />

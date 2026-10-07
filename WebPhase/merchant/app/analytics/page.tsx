@@ -56,7 +56,7 @@ export default async function AnalyticsPage({
         </div>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile
           label={`Revenue · ${range} days`}
           value={money(totalRevenue, { cents: false })}

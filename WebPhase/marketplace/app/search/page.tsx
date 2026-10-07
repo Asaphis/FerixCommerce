@@ -65,7 +65,7 @@ export default async function SearchPage({
           {results.stores.length ? (
             <section className="mt-12">
               <Eyebrow>Matching stores</Eyebrow>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-3 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
                 {results.stores.map((store) => (
                   <StoreCard key={store.id} store={store} />
                 ))}
