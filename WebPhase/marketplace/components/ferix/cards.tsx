@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Check, Heart, MapPin, Minus, Plus, Trash2, Truck } from "lucide-react";
 import type { Category, Collection, Merchant, Product, Review } from "@/lib/api";
+import { assetUrl } from "@/lib/api";
 import { Eyebrow, Plate, Price, Stars, StockNote, Pill } from "@/components/ferix/marks";
 import { AddToCartButton } from "@/components/ferix/add-to-cart";
 import {
@@ -33,7 +34,13 @@ export function ProductCard({
       )}
     >
       <Link href={href} className="relative block">
-        <Plate seed={product.slug} accent="#e4572e" className="aspect-[4/3] w-full rounded-none" />
+        <Plate
+          seed={product.slug}
+          accent="#e4572e"
+          src={assetUrl(product.images?.[0])}
+          alt={product.title}
+          className="aspect-[4/3] w-full rounded-none"
+        />
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
           {product.discount ? <Pill tone="ember">−{product.discount}%</Pill> : null}
           {product.stock <= 25 && product.stock > 0 ? <Pill tone="warn">Low stock</Pill> : null}
@@ -135,7 +142,13 @@ export function CategoryTile({ category }: { category: Category }) {
       href={`/browse?category=${category.slug}`}
       className="group relative overflow-hidden rounded-[3px] border border-line-warm bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25"
     >
-      <Plate seed={category.slug} accent="#e4572e" className="h-16 w-16 rounded-[3px]" />
+      <Plate
+        seed={category.slug}
+        accent="#e4572e"
+        src={assetUrl(category.image)}
+        alt={category.name}
+        className="h-16 w-16 rounded-[3px]"
+      />
       <p className="mt-3.5 font-display text-[14.5px] font-semibold text-ink">{category.name}</p>
       <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-ink-soft">{category.blurb}</p>
       <p className="mt-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{category.count} listed</p>
@@ -174,12 +187,22 @@ export function StoreCard({ store }: { store: Merchant }) {
       className="group relative overflow-hidden rounded-[3px] border border-line-warm bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25"
     >
       <div className="flex items-start justify-between gap-3">
-        <span
-          className="grid h-11 w-11 place-items-center rounded-[2px] font-display text-[16px] font-extrabold"
-          style={{ background: store.brand.accent, color: store.brand.accentInk }}
-        >
-          {store.name.slice(0, 1)}
-        </span>
+        {store.logo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={assetUrl(store.logo) ?? ""}
+            alt={store.name}
+            loading="lazy"
+            className="h-11 w-11 shrink-0 rounded-[2px] object-cover"
+          />
+        ) : (
+          <span
+            className="grid h-11 w-11 place-items-center rounded-[2px] font-display text-[16px] font-extrabold"
+            style={{ background: store.brand.accent, color: store.brand.accentInk }}
+          >
+            {store.name.slice(0, 1)}
+          </span>
+        )}
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{store.brand.template}</span>
       </div>
       <p className="mt-3.5 flex items-center gap-1.5 font-display text-[15.5px] font-semibold text-ink">
@@ -295,7 +318,12 @@ export function CartLineRow({ line }: { line: { key: string; product: Product; v
   return (
     <li className="flex gap-4 py-4">
       <Link href={`/product/${line.product.slug}`} className="shrink-0">
-        <Plate seed={line.product.slug} className="h-24 w-24 rounded-[3px]" />
+        <Plate
+          seed={line.product.slug}
+          src={assetUrl(line.product.images?.[0])}
+          alt={line.product.title}
+          className="h-24 w-24 rounded-[3px]"
+        />
       </Link>
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex flex-wrap items-start justify-between gap-2">

@@ -11,7 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { requireAccount } from "@/lib/data";
-import { getShipping } from "@/lib/api";
+import { getShipping, assetUrl } from "@/lib/api";
 import { reorderAction } from "@/lib/actions";
 import { AccountShell } from "@/components/ferix/account-shell";
 import { ProductRail } from "@/components/ferix/cards";
@@ -157,7 +157,7 @@ export default async function AccountPage() {
               <ul className="mt-3 space-y-3">
                 {focus.items.slice(0, 3).map((item) => (
                   <li key={`${item.productId}-${item.variant ?? ""}`} className="flex items-center gap-3">
-                    <Plate seed={item.productId} className="h-11 w-11 shrink-0 rounded-[2px]" />
+                    <Plate seed={item.productId} src={assetUrl(item.image)} alt={item.title} className="h-11 w-11 shrink-0 rounded-[2px]" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13px] text-chalk">{item.title}</span>
                       <span className="block font-mono text-[9.5px] uppercase tracking-[0.12em] text-chalk-dim">
@@ -233,7 +233,7 @@ export default async function AccountPage() {
               <li key={order.id}>
                 <details className="group">
                   <summary className="flex cursor-pointer list-none items-center gap-3 p-3.5 transition-colors hover:bg-bone-soft/60 lg:p-4 [&::-webkit-details-marker]:hidden">
-                    <Plate seed={order.items[0]?.productId ?? order.id} className="hidden h-11 w-11 shrink-0 rounded-[2px] sm:block" />
+                    <Plate seed={order.items[0]?.productId ?? order.id} src={assetUrl(order.items[0]?.image)} alt={order.items[0]?.title ?? ""} className="hidden h-11 w-11 shrink-0 rounded-[2px] sm:block" />
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-[12px] font-semibold text-ink">{order.number}</span>
@@ -331,7 +331,7 @@ export default async function AccountPage() {
             <ul className="mt-3 divide-y divide-line-warm overflow-hidden rounded-[3px] border border-line-warm bg-white">
               {buyAgain.map(({ order, item }) => (
                 <li key={order.id} className="flex items-center gap-3 p-3">
-                  <Plate seed={item.productId} className="h-10 w-10 shrink-0 rounded-[2px]" />
+                  <Plate seed={item.productId} src={assetUrl(item.image)} alt={item.title} className="h-10 w-10 shrink-0 rounded-[2px]" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[12.5px] font-medium text-ink">{item.title}</span>
                     <span className="block font-mono text-[9.5px] uppercase tracking-[0.1em] text-ink-soft">

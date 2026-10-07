@@ -6,6 +6,7 @@ import { setOrderStatusAction } from "@/lib/actions";
 import { FilterForm } from "@/components/studio/controls";
 import { ConfirmAction } from "@/components/studio/confirm-action";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
 import { carriersLabel, statusTone } from "@/components/studio/order-bits";
 import { dateShort, money, num, relative, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -33,7 +34,7 @@ export default async function OrdersPage({
 
   return (
     <div className="grid gap-5">
-      <header>
+      <header className="shrinkable">
         <Eyebrow>Orders</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Order queue</h1>
         <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
@@ -61,7 +62,7 @@ export default async function OrdersPage({
               key={filter.id}
               href={filter.id === "all" ? "/orders" : `/orders?status=${filter.id}`}
               className={cn(
-                "rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "min-h-11 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
                 (status ?? "all") === filter.id
                   ? "border-lime/40 bg-lime/10 text-lime"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -80,13 +81,13 @@ export default async function OrdersPage({
               name="search"
               defaultValue={search ?? ""}
               placeholder="Order number, customer or product"
-              className="h-9 w-[240px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
+              className="h-11 w-[240px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
             />
           </label>
           <select
             name="channel"
             defaultValue={channel ?? "all"}
-            className="h-9 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
+            className="h-11 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
             aria-label="Channel"
           >
             <option value="all">Every channel</option>
@@ -97,93 +98,79 @@ export default async function OrdersPage({
       </div>
 
       {data.orders.length ? (
-        <Panel flush>
-          <div className="p-5 md:overflow-x-auto">
-            <table className="w-full min-w-0 border-collapse text-left md:min-w-[980px]">
-              <thead>
-                <tr className="hidden md:table-row">
-                  {["Order", "Customer", "Channel", "Placed", "Total", "Status", "Fulfilment"].map((head) => (
-                    <th
-                      key={head}
-                      className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim"
+        <TablePanel>
+          <DataTable
+            head={["Order", "Customer", "Channel", "Placed", "Total", "Status", "Fulfilment"]}
+            minWidth={980}
+            className="p-5"
+          >
+            {data.orders.map((order) => (
+              <Row key={order.id}>
+                <TdLead>
+                  <Link href={`/orders/${order.id}`} className="font-mono text-[12.5px] font-semibold text-chalk hover:text-lime">
+                    {order.number}
+                  </Link>
+                  <p className="truncate text-[11.5px] text-chalk-dim md:max-w-[200px]">
+                    {order.items.map((item) => item.title).join(", ")}
+                  </p>
+                  <p className="mt-0.5 text-[11.5px] text-chalk-dim md:hidden">
+                    {order.customer.name} · {order.customer.location}
+                  </p>
+                </TdLead>
+                <TdDetail>
+                  <p className="text-[12.5px] text-chalk">{order.customer.name}</p>
+                  <p className="font-mono text-[10px] text-chalk-dim">{order.customer.location}</p>
+                </TdDetail>
+                <TdDetail>
+                  <Pill tone={order.channel === "marketplace" ? "info" : "neutral"}>{order.channel}</Pill>
+                </TdDetail>
+                <TdDetail>
+                  <p className="font-mono text-[11.5px] text-chalk-dim">{dateShort(order.placedAt)}</p>
+                  <p className="font-mono text-[10px] text-chalk-dim/70">{relative(order.placedAt)}</p>
+                </TdDetail>
+                <Td className="font-mono text-[12.5px] tabular-nums text-chalk">
+                  <CellLabel>Total</CellLabel>
+                  {money(order.total)}
+                </Td>
+                <Td>
+                  <Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill>
+                  {order.tracking ? (
+                    <p className="mt-1 font-mono text-[10px] text-chalk-dim">
+                      {carriersLabel(order.carrier)} · {order.tracking}
+                    </p>
+                  ) : null}
+                </Td>
+                <TdEnd>
+                  <div className="flex flex-wrap items-center justify-end gap-1.5">
+                    {/* One action per order, matching where it rests in the
+                        workflow, so there is never a choice to get wrong. */}
+                    {order.fulfillment === "processing" ? (
+                      <StatusButton id={order.id} to="shipped" label="Mark shipped" />
+                    ) : null}
+                    {order.fulfillment === "shipped" ? (
+                      <StatusButton id={order.id} to="delivered" label="Mark delivered" />
+                    ) : null}
+                    {order.fulfillment !== "cancelled" && order.fulfillment !== "delivered" ? (
+                      <ConfirmAction
+                        action={setOrderStatusAction}
+                        fields={{ id: order.id, fulfillment: "cancelled" }}
+                        label="Cancel"
+                        confirmLabel="Refund and cancel?"
+                        tone="danger"
+                      />
+                    ) : null}
+                    <Link
+                      href={`/orders/${order.id}`}
+                      className="inline-flex min-h-[44px] items-center rounded-[2px] border border-hairline px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:border-chalk-dim hover:text-chalk"
                     >
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.orders.map((order) => (
-                  <tr
-                    key={order.id}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0 md:align-top"
-                  >
-                    <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
-                      <Link href={`/orders/${order.id}`} className="font-mono text-[12.5px] font-semibold text-chalk hover:text-lime">
-                        {order.number}
-                      </Link>
-                      <p className="truncate text-[11.5px] text-chalk-dim md:max-w-[200px]">
-                        {order.items.map((item) => item.title).join(", ")}
-                      </p>
-                      <p className="mt-0.5 text-[11.5px] text-chalk-dim md:hidden">
-                        {order.customer.name} · {order.customer.location}
-                      </p>
-                    </td>
-                    <td className="hidden py-3 pr-4 md:table-cell">
-                      <p className="text-[12.5px] text-chalk">{order.customer.name}</p>
-                      <p className="font-mono text-[10px] text-chalk-dim">{order.customer.location}</p>
-                    </td>
-                    <td className="hidden py-3 pr-4 md:table-cell">
-                      <Pill tone={order.channel === "marketplace" ? "info" : "neutral"}>{order.channel}</Pill>
-                    </td>
-                    <td className="hidden py-3 pr-4 md:table-cell">
-                      <p className="font-mono text-[11.5px] text-chalk-dim">{dateShort(order.placedAt)}</p>
-                      <p className="font-mono text-[10px] text-chalk-dim/70">{relative(order.placedAt)}</p>
-                    </td>
-                    <td className="py-0 font-mono text-[12.5px] tabular-nums text-chalk md:py-3 md:pr-4">
-                      {money(order.total)}
-                    </td>
-                    <td className="py-0 md:py-3 md:pr-4">
-                      <Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill>
-                      {order.tracking ? (
-                        <p className="mt-1 font-mono text-[10px] text-chalk-dim">
-                          {carriersLabel(order.carrier)} · {order.tracking}
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="ml-auto py-0 md:py-3">
-                      <div className="flex flex-wrap items-center justify-end gap-1.5">
-                        {/* One action per order, matching where it rests in the
-                            workflow, so there is never a choice to get wrong. */}
-                        {order.fulfillment === "processing" ? (
-                          <StatusButton id={order.id} to="shipped" label="Mark shipped" />
-                        ) : null}
-                        {order.fulfillment === "shipped" ? (
-                          <StatusButton id={order.id} to="delivered" label="Mark delivered" />
-                        ) : null}
-                        {order.fulfillment !== "cancelled" && order.fulfillment !== "delivered" ? (
-                          <ConfirmAction
-                            action={setOrderStatusAction}
-                            fields={{ id: order.id, fulfillment: "cancelled" }}
-                            label="Cancel"
-                            confirmLabel="Refund and cancel?"
-                            tone="danger"
-                          />
-                        ) : null}
-                        <Link
-                          href={`/orders/${order.id}`}
-                          className="inline-flex min-h-[36px] items-center rounded-[2px] border border-hairline px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:border-chalk-dim hover:text-chalk"
-                        >
-                          Open
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
+                      Open
+                    </Link>
+                  </div>
+                </TdEnd>
+              </Row>
+            ))}
+          </DataTable>
+        </TablePanel>
       ) : (
         <Empty title="No orders in this view" body="Clear the filters, or wait for the next sale to come in." />
       )}
@@ -217,7 +204,7 @@ function StatusButton({
       <button
         type="submit"
         className={cn(
-          "cursor-pointer rounded-[2px] border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+          "inline-flex min-h-11 cursor-pointer items-center rounded-[2px] border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
           danger
             ? "border-ember/40 text-ember-soft hover:bg-ember/12"
             : "border-lime/40 bg-lime/10 text-lime hover:bg-lime/20",

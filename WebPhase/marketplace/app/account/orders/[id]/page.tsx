@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Check, CreditCard, MapPin, MessageSquare, Package, RotateCcw, Truck } from "lucide-react";
-import { getOrder, ApiError } from "@/lib/api";
+import { getOrder, ApiError, assetUrl } from "@/lib/api";
 import { requireAccount } from "@/lib/data";
 import { readCredentials } from "@/lib/session";
 import { reorderAction } from "@/lib/actions";
@@ -189,7 +189,7 @@ export default async function OrderDetailPage({
               <ul className="divide-y divide-line-warm">
                 {merchant.items.map((item) => (
                   <li key={`${item.productId}-${item.variant ?? ""}`} className="flex items-center gap-3 px-3.5 py-3 lg:px-5">
-                    <Plate seed={item.productId} className="h-12 w-12 shrink-0 rounded-[2px]" />
+                    <Plate seed={item.productId} src={assetUrl(item.image)} alt={item.title} className="h-12 w-12 shrink-0 rounded-[2px]" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13.5px] font-medium text-ink">{item.title}</p>
                       <p className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-soft">

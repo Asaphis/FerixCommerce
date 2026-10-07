@@ -44,6 +44,35 @@ PLACEHOLDER = "https://picsum.photos/seed/{seed}/900/900"
 UPLOAD_ROOT = ROOT / "uploads" if "ROOT" in globals() else Path(__file__).resolve().parent / "uploads"
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
 
+# Curated catalogue imagery ships with the repository under media/, so a fresh
+# clone renders a real storefront instead of grey placeholders. Anything the
+# CMS or a seller uploads still lands in uploads/ and takes precedence.
+MEDIA_ROOT = ROOT / "media"
+MEDIA_PREFIX = "/media"
+
+
+def catalogue_image(folder: str, slug: str) -> Optional[str]:
+    """The bundled photograph for a catalogue entity, if one was shipped."""
+    for suffix in (".jpg", ".jpeg", ".png", ".webp"):
+        if (MEDIA_ROOT / folder / f"{slug}{suffix}").is_file():
+            return f"{MEDIA_PREFIX}/{folder}/{slug}{suffix}"
+    return None
+
+
+def catalogue_images(folder: str, slug: str, limit: int = 4) -> list[str]:
+    """Every bundled photograph for an entity, in filename order."""
+    found: list[str] = []
+    for suffix in (".jpg", ".jpeg", ".png", ".webp"):
+        candidate = MEDIA_ROOT / folder / f"{slug}{suffix}"
+        if candidate.is_file():
+            found.append(f"{MEDIA_PREFIX}/{folder}/{slug}{suffix}")
+    for index in range(2, limit + 1):
+        for suffix in (".jpg", ".jpeg", ".png", ".webp"):
+            candidate = MEDIA_ROOT / folder / f"{slug}-{index}{suffix}"
+            if candidate.is_file():
+                found.append(f"{MEDIA_PREFIX}/{folder}/{slug}-{index}{suffix}")
+    return found
+
 def save_upload(content: bytes, original_name: str) -> str:
     """Persist an MVP upload locally and return its public filename."""
     suffix = Path(original_name or "asset").suffix.lower()
@@ -416,7 +445,56 @@ def new_id(prefix: str, size: int = 12) -> str:
 
 
 def placeholder(seed: str) -> str:
-    return PLACEHOLDER.format(seed=seed)
+    """Last-resort artwork for an entity with no bundled photograph.
+
+    Deterministic and local, so the storefront never depends on a third-party
+    image host and never shows a broken frame.
+    """
+    return f"/media/placeholder.svg?seed={urllib.parse.quote(seed)}"
+
+
+def backfill_catalogue_media(db: Session) -> int:
+    """Point catalogue rows at the bundled photographs.
+
+    A database seeded before the imagery shipped still holds third-party
+    placeholder URLs. This rewrites only those rows, and only where a bundled
+    photograph exists, so a CMS upload or a seller's own image is never
+    overwritten. Idempotent: a second run changes nothing.
+    """
+    folders = {
+        "category": ("categories", ("image", "imageUrl")),
+        "collection": ("collections", ("image",)),
+        "merchant": ("merchants", ("logo", "cover")),
+        "banner": ("banners", ("image", "imageUrl")),
+    }
+    changed = 0
+    for kind, (folder, fields) in folders.items():
+        for row in rows_of(db, kind):
+            slug = row.get("slug") or row.get("id") or ""
+            bundled = catalogue_image(folder, slug)
+            if not bundled:
+                continue
+            patch = {
+                f: bundled
+                for f in fields
+                if not row.get(f)
+                or "picsum.photos" in str(row.get(f))
+                or str(row.get(f)).startswith("/banners/")
+            }
+            if patch:
+                put_row(db, kind, slug, {**row, **patch})
+                changed += 1
+
+    for row in rows_of(db, "product"):
+        slug = row.get("slug") or ""
+        bundled = catalogue_images("products", slug)
+        if not bundled:
+            continue
+        current = row.get("images") or []
+        if not current or any("picsum.photos" in str(url) for url in current):
+            put_row(db, "product", slug, {**row, "images": bundled})
+            changed += 1
+    return changed
 
 
 def audit(db: Session, actor_type: str, actor_id: str, action: str, target: str = "", detail: str = "") -> None:
@@ -646,6 +724,8 @@ def cart_payload(db: Session, cart: Optional[Cart]) -> dict:
                 continue
             item = {
                 "key": line_key(raw), "product": product, "productId": product["id"],
+                "image": (product.get("images") or [None])[0],
+                "slug": product.get("slug"),
                 "variant": raw.get("variant"), "qty": raw["qty"],
                 "unitPrice": product["price"],
                 "lineTotal": round(product["price"] * raw["qty"], 2),
@@ -748,8 +828,8 @@ def seed(db: Session) -> None:
         put_row(db, "category", row["slug"], {
             **row,
             "id": row.get("id", row["slug"]),
-            "image": row.get("image") or placeholder(f"cat-{row['slug']}"),
-            "imageUrl": row.get("imageUrl") or placeholder(f"cat-{row['slug']}"),
+            "image": row.get("image") or catalogue_image("categories", row["slug"]) or placeholder(f"cat-{row['slug']}"),
+            "imageUrl": row.get("imageUrl") or catalogue_image("categories", row["slug"]) or placeholder(f"cat-{row['slug']}"),
             "showInNav": row.get("showInNav", True),
             "showAsTile": row.get("showAsTile", True),
             "showAsText": row.get("showAsText", False),
@@ -760,15 +840,15 @@ def seed(db: Session) -> None:
         put_row(db, "collection", row["slug"], {
             **row,
             "id": row.get("id", row["slug"]),
-            "image": row.get("image") or placeholder(f"col-{row['slug']}"),
+            "image": row.get("image") or catalogue_image("collections", row["slug"]) or placeholder(f"col-{row['slug']}"),
             "visible": row.get("visible", True),
             "position": row.get("position", 0),
         })
     for row in data.get("merchants", []):
         put_row(db, "merchant", row["slug"], {
             **row,
-            "logo": row.get("logo") or placeholder(f"logo-{row['slug']}"),
-            "cover": row.get("cover") or placeholder(f"cover-{row['slug']}"),
+            "logo": row.get("logo") or catalogue_image("merchants", row["slug"]) or placeholder(f"logo-{row['slug']}"),
+            "cover": row.get("cover") or catalogue_image("merchants", row["slug"]) or placeholder(f"cover-{row['slug']}"),
             "marketplaceEnabled": row.get("marketplaceEnabled", True),
         })
     for row in data.get("products", []):
@@ -778,7 +858,7 @@ def seed(db: Session) -> None:
             **row,
             "merchantSlug": merchant["slug"] if merchant else row["merchantId"],
             "merchantName": merchant["name"] if merchant else row["merchantId"],
-            "images": row.get("images") or [placeholder(f"{row['slug']}-{i}") for i in (1, 2, 3)],
+            "images": row.get("images") or catalogue_images("products", row["slug"]) or [placeholder(f"{row['slug']}-{i}") for i in (1, 2, 3)],
             "collections": row.get("collections", []),
             "variants": row.get("variants", []),
             "bullets": row.get("bullets", []),
@@ -788,11 +868,19 @@ def seed(db: Session) -> None:
             "updatedAt": row.get("createdAt", iso(now())),
         })
     for index, row in enumerate(data.get("banners", [])):
-        put_row(db, "banner", row.get("id", f"banner-{index + 1}"), {
+        banner_id = row.get("id", f"banner-{index + 1}")
+        # The seed ships SVG stand-ins under /banners/ that are not served; the
+        # bundled photograph replaces them.
+        bundled = catalogue_image("banners", banner_id)
+        existing = str(row.get("image") or row.get("mediaUrl") or "")
+        if bundled and (not existing or existing.startswith("/banners/")):
+            existing = bundled
+        put_row(db, "banner", banner_id, {
             **row,
-            "id": row.get("id", f"banner-{index + 1}"),
-            "image": row.get("image") or row.get("mediaUrl") or placeholder(f"banner-{index + 1}"),
-            "imageUrl": row.get("imageUrl") or row.get("mediaUrl") or placeholder(f"banner-{index + 1}"),
+            "id": banner_id,
+            "image": existing or placeholder(f"banner-{index + 1}"),
+            "imageUrl": existing or placeholder(f"banner-{index + 1}"),
+            "mediaUrl": existing or placeholder(f"banner-{index + 1}"),
             "videoUrl": row.get("videoUrl") or (row.get("mediaUrl") if row.get("kind") == "video" else None),
             "position": row.get("order", index + 1),
             "active": row.get("active", True),

@@ -12,7 +12,7 @@ export default async function MediaPage() {
 
   return (
     <div className="grid gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div>
           <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Media</h1>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Pause, Play } from "lucide-react";
 import type { Banner } from "@/lib/api";
+import { assetUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 /**
@@ -170,10 +171,11 @@ export function PromoBanner({
 }
 
 function SlideMedia({ slide }: { slide: Banner }) {
-  if (slide.mediaUrl && slide.kind === "video") {
+  const media = assetUrl(slide.mediaUrl);
+  if (media && slide.kind === "video") {
     return (
       <video
-        src={slide.mediaUrl}
+        src={media}
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         muted
@@ -183,9 +185,9 @@ function SlideMedia({ slide }: { slide: Banner }) {
       />
     );
   }
-  if (slide.mediaUrl) {
+  if (media) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={slide.mediaUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />;
+    return <img src={media} alt="" className="absolute inset-0 h-full w-full object-cover" />;
   }
   return (
     <div

@@ -18,7 +18,7 @@ export function StockAdjust({ productId, title }: { productId: string; title: st
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] border border-hairline px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:border-chalk-dim hover:text-chalk"
+        className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[2px] border border-hairline px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:border-chalk-dim hover:text-chalk"
       >
         <Plus width={11} height={11} /> Adjust
       </button>

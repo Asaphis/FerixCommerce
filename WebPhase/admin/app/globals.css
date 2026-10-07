@@ -25,6 +25,12 @@
   --color-pine: #1f4b43;
   --color-bone: #f5f2ec;
   --color-ink: #14110e;
+  /* Aliases so the shared semantic tone vocabulary resolves here too. */
+  --color-lime: #56d9a3;
+  --color-ember: #f2607a;
+  --color-ember-soft: #f2607a;
+  --color-azure: #6ee7ff;
+  --color-sand: #f5b544;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -61,6 +67,18 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+}
+
+/*
+ * Semantic tone variables consumed by the shared primitives in
+ * components/shared/ui.tsx. Each app maps the same five meanings onto its own
+ * palette, so one component renders correctly in all three.
+ */
+:root {
+  --tone-success: #56d9a3;
+  --tone-warn: #f5b544;
+  --tone-danger: #f2607a;
+  --tone-info: #6ee7ff;
 }
 
 :root {

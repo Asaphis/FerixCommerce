@@ -32,7 +32,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         </Link>
       </div>
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div>
           <Eyebrow>Order</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{order.number}</h1>

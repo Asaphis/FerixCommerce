@@ -15,6 +15,19 @@ const KEY = process.env.CODEWORDS_API_KEY ?? "";
 export const apiBase =
   process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "http://127.0.0.1:8000";
 
+/**
+ * Resolve a catalogue image to something the browser can load.
+ *
+ * The API returns bundled artwork as a root-relative path (`/media/...`) and
+ * CMS uploads as an absolute URL. Relative paths are resolved against the API
+ * origin so the storefront works whether the API is local or deployed.
+ */
+export function assetUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^(https?:)?\/\//.test(path) || path.startsWith("data:")) return path;
+  return `${apiBase.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+}
+
 export type Brand = {
   template: string;
   canvas: string;
@@ -45,6 +58,8 @@ export type Merchant = {
   since: string;
   productCount?: number;
   categories?: string[];
+  logo?: string | null;
+  cover?: string | null;
 };
 
 export type Variant = { name: string; values: string[] };
@@ -70,13 +85,14 @@ export type Product = {
   ratingBreakdown: Record<string, number>;
   variants: Variant[];
   plates: number;
+  images?: string[];
   tags: string[];
   sold30d: number;
   createdAt: string;
 };
 
-export type Category = { slug: string; name: string; glyph: string; blurb: string; count: number };
-export type Collection = { slug: string; name: string; blurb: string; count: number; products?: Product[] };
+export type Category = { slug: string; name: string; glyph: string; blurb: string; count: number; image?: string | null };
+export type Collection = { slug: string; name: string; blurb: string; count: number; image?: string | null; products?: Product[] };
 
 export type BannerOverlay = {
   enabled: boolean;
@@ -213,6 +229,8 @@ export type Address = {
 export type OrderItem = {
   productId: string;
   title: string;
+  image?: string | null;
+  slug?: string | null;
   variant: string | null;
   qty: number;
   price: number;

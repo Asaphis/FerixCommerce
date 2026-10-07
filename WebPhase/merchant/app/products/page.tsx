@@ -3,7 +3,8 @@ import { Plus, Search } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { listProducts } from "@/lib/api";
 import { FilterForm } from "@/components/studio/controls";
-import { Empty, Eyebrow, Panel, Pill } from "@/components/studio/bits";
+import { Empty, Eyebrow, Pill } from "@/components/studio/bits";
+import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
 import { Thumb } from "@/components/studio/marks";
 import { money, num, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -39,8 +40,8 @@ export default async function ProductsPage({
 
   return (
     <div className="grid gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+      <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
           <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
           <p className="mt-1.5 max-w-[70ch] text-[13px] leading-relaxed text-chalk-dim">
@@ -50,7 +51,7 @@ export default async function ProductsPage({
         </div>
         <Link
           href="/products/new"
-          className="inline-flex items-center gap-2 rounded-[2px] bg-lime px-4 py-2.5 text-[12.5px] font-semibold text-void transition-colors hover:bg-chalk"
+          className="inline-flex min-h-11 items-center gap-2 rounded-[2px] bg-lime px-4 py-2.5 text-[12.5px] font-semibold text-void transition-colors hover:bg-chalk"
         >
           <Plus width={14} height={14} /> New product
         </Link>
@@ -63,7 +64,7 @@ export default async function ProductsPage({
               key={filter.id}
               href={filter.id === "all" ? "/products" : `/products?status=${filter.id}`}
               className={cn(
-                "rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "min-h-11 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
                 (status ?? "all") === filter.id
                   ? "border-lime/40 bg-lime/10 text-lime"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -82,7 +83,7 @@ export default async function ProductsPage({
               name="search"
               defaultValue={search ?? ""}
               placeholder="Search title or SKU"
-              className="h-9 w-[220px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
+              className="h-11 w-[220px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
             />
           </label>
           <label className="flex items-center gap-2">
@@ -90,7 +91,7 @@ export default async function ProductsPage({
             <select
               name="sort"
               defaultValue={sort ?? "new"}
-              className="h-9 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
+              className="h-11 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
             >
               {SORTS.map((option) => (
                 <option key={option.id} value={option.id}>
@@ -104,7 +105,7 @@ export default async function ProductsPage({
             <select
               name="channel"
               defaultValue={channel ?? ""}
-              className="h-9 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
+              className="h-11 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
             >
               <option value="">Every channel</option>
               <option value="store">My store</option>
@@ -115,95 +116,81 @@ export default async function ProductsPage({
       </div>
 
       {data.items.length ? (
-        <Panel flush>
-          <div className="p-5 md:overflow-x-auto">
-            <table className="w-full min-w-0 border-collapse text-left md:min-w-[860px]">
-              <thead>
-                <tr className="hidden md:table-row">
-                  {["Product", "SKU", "Price", "Stock", "Sold 30d", "Channels", "Status", ""].map((head) => (
-                    <th
-                      key={head}
-                      className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim"
-                    >
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((product) => (
-                  <tr
-                    key={product.id}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0"
-                  >
-                    <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
-                      <div className="flex items-center gap-3">
-                        <Thumb seed={product.slug} className="h-10 w-10 shrink-0" />
-                        <div className="min-w-0">
-                          <Link
-                            href={`/products/${product.slug}`}
-                            className="block truncate text-[13px] font-medium text-chalk hover:text-lime md:max-w-[260px]"
-                          >
-                            {product.title}
-                          </Link>
-                          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
-                            {titleCase(product.category)}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="hidden py-3 pr-4 font-mono text-[11.5px] text-chalk-dim md:table-cell">{product.sku}</td>
-                    <td className="py-0 md:py-3 md:pr-4">
-                      <span className="font-mono text-[12.5px] text-chalk">{money(product.price)}</span>
-                      {product.compareAt ? (
-                        <span className="ml-2 font-mono text-[11px] text-chalk-dim line-through">
-                          {money(product.compareAt)}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="py-0 md:py-3 md:pr-4">
-                      <span
-                        className={cn(
-                          "font-mono text-[12.5px] tabular-nums",
-                          product.stock <= 0 ? "text-ember-soft" : product.stock <= data.lowStockAt ? "text-sand" : "text-chalk",
-                        )}
-                      >
-                        {product.stock}
-                      </span>
-                    </td>
-                    <td className="hidden py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
-                      {num(product.sold30d)}
-                    </td>
-                    <td className="py-0 md:py-3 md:pr-4">
-                      <div className="flex flex-wrap gap-1.5">
-                        {product.channels.store ? <Pill tone="lime">Store</Pill> : null}
-                        {product.channels.marketplace ? <Pill tone="info">Market</Pill> : null}
-                        {!product.channels.store && !product.channels.marketplace ? (
-                          <Pill tone="warn">Not selling</Pill>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="py-0 md:py-3 md:pr-4">
-                      <Pill
-                        tone={product.status === "active" ? "success" : product.status === "draft" ? "warn" : "neutral"}
-                      >
-                        {product.status}
-                      </Pill>
-                    </td>
-                    <td className="ml-auto py-0 text-right md:py-3">
+        <TablePanel>
+          <DataTable
+            head={["Product", "SKU", "Price", "Stock", "Sold 30d", "Channels", "Status", ""]}
+            minWidth={860}
+            className="p-5"
+          >
+            {data.items.map((product) => (
+              <Row key={product.id}>
+                <TdLead>
+                  <div className="flex items-center gap-3">
+                    <Thumb seed={product.slug} className="h-10 w-10 shrink-0" />
+                    <div className="min-w-0">
                       <Link
                         href={`/products/${product.slug}`}
-                        className="inline-flex min-h-[44px] items-center font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                        className="block truncate text-[13px] font-medium text-chalk hover:text-lime md:max-w-[260px]"
                       >
-                        Edit
+                        {product.title}
                       </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+                        {titleCase(product.category)}
+                      </p>
+                    </div>
+                  </div>
+                </TdLead>
+                <TdDetail className="font-mono text-[11.5px] text-chalk-dim">{product.sku}</TdDetail>
+                <Td>
+                  <span className="font-mono text-[12.5px] text-chalk">{money(product.price)}</span>
+                  {product.compareAt ? (
+                    <span className="ml-2 font-mono text-[11px] text-chalk-dim line-through">
+                      {money(product.compareAt)}
+                    </span>
+                  ) : null}
+                </Td>
+                <Td>
+                  <CellLabel>Stock</CellLabel>
+                  <span
+                    className={cn(
+                      "font-mono text-[12.5px] tabular-nums",
+                      product.stock <= 0 ? "text-ember-soft" : product.stock <= data.lowStockAt ? "text-sand" : "text-chalk",
+                    )}
+                  >
+                    {product.stock}
+                  </span>
+                </Td>
+                <TdDetail className="font-mono text-[12.5px] tabular-nums text-chalk-dim">
+                  {num(product.sold30d)}
+                </TdDetail>
+                <Td>
+                  <div className="flex flex-wrap gap-1.5">
+                    {product.channels.store ? <Pill tone="lime">Store</Pill> : null}
+                    {product.channels.marketplace ? <Pill tone="info">Market</Pill> : null}
+                    {!product.channels.store && !product.channels.marketplace ? (
+                      <Pill tone="warn">Not selling</Pill>
+                    ) : null}
+                  </div>
+                </Td>
+                <Td>
+                  <Pill
+                    tone={product.status === "active" ? "success" : product.status === "draft" ? "warn" : "neutral"}
+                  >
+                    {product.status}
+                  </Pill>
+                </Td>
+                <TdEnd>
+                  <Link
+                    href={`/products/${product.slug}`}
+                    className="inline-flex min-h-[44px] items-center font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                  >
+                    Edit
+                  </Link>
+                </TdEnd>
+              </Row>
+            ))}
+          </DataTable>
+        </TablePanel>
       ) : (
         <Empty
           title="No products match"

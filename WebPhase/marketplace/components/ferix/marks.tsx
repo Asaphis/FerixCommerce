@@ -18,20 +18,45 @@ function hash(value: string): number {
   return out;
 }
 
-/** Procedural product artwork — deterministic per slug, no image files needed. */
+/**
+ * Product artwork.
+ *
+ * Renders the real catalogue photograph when one is available and falls back to
+ * deterministic procedural artwork otherwise, so a product without imagery
+ * still looks deliberate rather than broken.
+ */
 export function Plate({
   seed,
   accent = "#e4572e",
+  src,
+  alt,
   className,
 }: {
   seed: string;
   accent?: string;
+  src?: string | null;
+  alt?: string;
   className?: string;
 }) {
   const h = hash(seed);
   const hue = h % 360;
   const variant = h % 4;
   const spin = (h % 30) - 15;
+
+  if (src) {
+    return (
+      <div className={cn("relative overflow-hidden rounded-[3px] bg-bone-soft", className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt ?? ""}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
 
   return (
     <div

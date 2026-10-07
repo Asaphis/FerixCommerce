@@ -37,7 +37,7 @@ export function ConfirmAction({
         type="button"
         onClick={() => setArmed(true)}
         className={cn(
-          "inline-flex min-h-[36px] cursor-pointer items-center rounded-[2px] border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+          "inline-flex min-h-11 cursor-pointer items-center rounded-[2px] border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           styles,
         )}
@@ -60,14 +60,14 @@ export function ConfirmAction({
       </span>
       <button
         type="submit"
-        className="inline-flex min-h-[32px] cursor-pointer items-center rounded-[2px] bg-ember px-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
+        className="inline-flex min-h-11 cursor-pointer items-center rounded-[2px] bg-ember px-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember"
       >
         Yes
       </button>
       <button
         type="button"
         onClick={() => setArmed(false)}
-        className="inline-flex min-h-[32px] cursor-pointer items-center rounded-[2px] border border-hairline px-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-chalk focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime"
+        className="inline-flex min-h-11 cursor-pointer items-center rounded-[2px] border border-hairline px-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-chalk focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime"
       >
         No
       </button>

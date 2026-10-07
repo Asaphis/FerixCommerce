@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import {
+  Eyebrow as SharedEyebrow,
+  Pill as SharedPill,
+  type Tone as SharedTone,
+} from "@/components/shared/ui";
 
 export function Panel({
   children,
@@ -11,7 +16,7 @@ export function Panel({
   flush?: boolean;
 }) {
   return (
-    <section className={cn("rounded-[3px] border border-hairline bg-panel", !flush && "p-5", className)}>
+    <section className={cn("min-w-0 rounded-[2px] border border-hairline bg-panel", !flush && "p-5", className)}>
       {children}
     </section>
   );
@@ -28,7 +33,7 @@ export function PanelHead({
 }) {
   return (
     <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-      <div>
+      <div className="min-w-0">
         <h2 className="font-display text-[15px] font-semibold text-chalk">{title}</h2>
         {hint ? <p className="mt-1 text-[12.5px] text-chalk-dim">{hint}</p> : null}
       </div>
@@ -37,15 +42,36 @@ export function PanelHead({
   );
 }
 
-type Tone = "neutral" | "success" | "warn" | "danger" | "info" | "lime";
+type Tone =
+  | "neutral"
+  | "success"
+  | "warn"
+  | "danger"
+  | "info"
+  | "lime"
+  | "signal"
+  | "amber"
+  | "rose"
+  | "mint"
+  | "violet";
 
-const TONES: Record<Tone, string> = {
-  neutral: "border-hairline text-chalk-dim",
-  success: "border-lime/35 bg-lime/10 text-lime",
-  warn: "border-sand/35 bg-sand/10 text-sand",
-  danger: "border-ember/40 bg-ember/12 text-ember-soft",
-  info: "border-azure/40 bg-azure/12 text-azure",
-  lime: "border-lime/35 bg-lime/10 text-lime",
+/**
+ * The palette names this console already used are aliases for the five shared
+ * semantic tones, so a status that means "good" is spelled the same way here as
+ * in the admin console. The rendering itself lives in the shared module.
+ */
+const ALIAS: Record<Tone, SharedTone> = {
+  neutral: "neutral",
+  success: "success",
+  warn: "warn",
+  danger: "danger",
+  info: "info",
+  lime: "success",
+  signal: "info",
+  amber: "warn",
+  rose: "danger",
+  mint: "success",
+  violet: "info",
 };
 
 export function Pill({
@@ -58,24 +84,14 @@ export function Pill({
   className?: string;
 }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] border px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em]",
-        TONES[tone],
-        className,
-      )}
-    >
+    <SharedPill tone={ALIAS[tone]} className={className}>
       {children}
-    </span>
+    </SharedPill>
   );
 }
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <span className={cn("font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim", className)}>
-      {children}
-    </span>
-  );
+  return <SharedEyebrow className={className}>{children}</SharedEyebrow>;
 }
 
 export function StatTile({
@@ -99,8 +115,8 @@ export function StatTile({
     chalk: "text-chalk",
   };
   return (
-    <div className="rounded-[3px] border border-hairline bg-panel p-4">
-      <div className="flex items-center justify-between">
+    <div className="min-w-0 rounded-[2px] border border-hairline bg-panel p-4">
+      <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">{label}</span>
         {icon ? <span className={colors[accent]}>{icon}</span> : null}
       </div>
@@ -122,7 +138,7 @@ export function Bar({ value, max, tone = "lime" }: { value: number; max: number;
 
 export function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-[3px] border border-dashed border-hairline px-6 py-12 text-center">
+    <div className="min-w-0 rounded-[2px] border border-dashed border-hairline px-6 py-12 text-center">
       <p className="font-display text-[16px] font-semibold text-chalk">{title}</p>
       <p className="mx-auto mt-2 max-w-[46ch] text-[13px] leading-relaxed text-chalk-dim">{body}</p>
     </div>

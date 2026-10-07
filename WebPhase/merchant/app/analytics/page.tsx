@@ -29,7 +29,7 @@ export default async function AnalyticsPage({
 
   return (
     <div className="grid gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div>
           <Eyebrow>Analytics</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">How the store is performing</h1>
@@ -44,7 +44,7 @@ export default async function AnalyticsPage({
               key={option}
               href={`/analytics?days=${option}`}
               className={cn(
-                "rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "min-h-11 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
                 range === option
                   ? "border-lime/40 bg-lime/10 text-lime"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",

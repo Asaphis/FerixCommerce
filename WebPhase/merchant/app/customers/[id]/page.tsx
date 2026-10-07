@@ -30,7 +30,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         </Link>
       </div>
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-4">
           <span className="grid h-14 w-14 place-items-center rounded-[3px] border border-hairline bg-panel-2 font-display text-[18px] font-extrabold text-lime">
             {customer.name.split(" ").map((part) => part[0]).slice(0, 2).join("")}

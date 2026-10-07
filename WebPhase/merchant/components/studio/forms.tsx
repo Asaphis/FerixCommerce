@@ -7,7 +7,7 @@ import { signInAction, type FormState } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
 export const inputClass =
-  "h-10 w-full rounded-[2px] border border-hairline bg-panel-2 px-3 text-[13px] text-chalk outline-none transition-colors placeholder:text-chalk-dim/60 focus:border-chalk-dim";
+  "h-11 w-full rounded-[2px] border border-hairline bg-panel-2 px-3 text-[13px] text-chalk outline-none transition-colors placeholder:text-chalk-dim/60 focus:border-chalk-dim";
 export const selectClass = inputClass;
 export const textareaClass = cn(inputClass, "h-[92px] resize-y py-2");
 const labelClass = "font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim";

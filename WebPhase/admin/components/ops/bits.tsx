@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import {
+  Eyebrow as SharedEyebrow,
+  Pill as SharedPill,
+  type Tone as SharedTone,
+} from "@/components/shared/ui";
 
 export function Panel({
   children,
@@ -29,33 +34,46 @@ export function PanelHead({ title, hint, action }: { title: string; hint?: strin
   );
 }
 
-type Tone = "neutral" | "signal" | "amber" | "rose" | "mint" | "violet";
+type Tone =
+  | "neutral"
+  | "success"
+  | "warn"
+  | "danger"
+  | "info"
+  | "signal"
+  | "amber"
+  | "rose"
+  | "mint"
+  | "violet";
 
-const TONES: Record<Tone, string> = {
-  neutral: "border-hairline text-chalk-dim",
-  signal: "border-signal/40 bg-signal/10 text-signal",
-  amber: "border-amber/40 bg-amber/10 text-amber",
-  rose: "border-rose/40 bg-rose/12 text-rose",
-  mint: "border-mint/40 bg-mint/10 text-mint",
-  violet: "border-violet/40 bg-violet/10 text-violet",
+/**
+ * The palette names this console already used are aliases for the five shared
+ * semantic tones, so a status that means "good" is spelled the same way here as
+ * in the seller workspace. The rendering itself lives in the shared module.
+ */
+const ALIAS: Record<Tone, SharedTone> = {
+  neutral: "neutral",
+  success: "success",
+  warn: "warn",
+  danger: "danger",
+  info: "info",
+  signal: "info",
+  amber: "warn",
+  rose: "danger",
+  mint: "success",
+  violet: "info",
 };
 
 export function Pill({ children, tone = "neutral", className }: { children: ReactNode; tone?: Tone; className?: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] border px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em]",
-        TONES[tone],
-        className,
-      )}
-    >
+    <SharedPill tone={ALIAS[tone]} className={className}>
       {children}
-    </span>
+    </SharedPill>
   );
 }
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn("font-mono text-[10px] uppercase tracking-[0.18em] text-chalk-dim", className)}>{children}</span>;
+  return <SharedEyebrow className={className}>{children}</SharedEyebrow>;
 }
 
 export function Readout({

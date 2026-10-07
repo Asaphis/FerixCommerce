@@ -4,6 +4,7 @@ import { getPayouts } from "@/lib/api";
 import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { money, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
 
 export default async function PayoutsPage() {
   const { session, merchant } = await requireMerchant();
@@ -11,7 +12,7 @@ export default async function PayoutsPage() {
 
   return (
     <div className="grid gap-5">
-      <header>
+      <header className="shrinkable">
         <Eyebrow>Payouts</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Money</h1>
         <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
@@ -51,64 +52,50 @@ export default async function PayoutsPage() {
         </div>
       </Panel>
 
-      <Panel flush>
+      <TablePanel>
         <div className="p-5 pb-3">
           <PanelHead title="Payout history" hint="Most recent period first" />
         </div>
-        <div className="p-5 md:overflow-x-auto">
-          <table className="w-full min-w-0 border-collapse text-left md:min-w-[820px]">
-            <thead>
-              <tr className="hidden md:table-row">
-                {["Period", "Orders", "Gross", "Commission", "Net", "Status", "Settled"].map((head) => (
-                  <th
-                    key={head}
-                    className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim"
-                  >
-                    {head}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {data.payouts.map((payout) => (
-                <tr
-                  key={payout.id}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0"
-                >
-                  <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
-                    <p className="font-mono text-[11.5px] text-chalk">{payout.period}</p>
-                    <p className="font-mono text-[10px] text-chalk-dim">{payout.id}</p>
-                  </td>
-                  <td className="hidden py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
-                    {num(payout.orders)}
-                  </td>
-                  <td className="py-0 font-mono text-[12.5px] tabular-nums text-chalk md:py-3 md:pr-4">
-                    {money(payout.gross, { cents: false })}
-                  </td>
-                  <td className="hidden py-3 pr-4 md:table-cell">
-                    <span className="inline-flex items-center gap-1 font-mono text-[12.5px] tabular-nums text-ember-soft">
-                      <ArrowDownRight width={12} height={12} />
-                      {money(payout.commission, { cents: false })}
-                    </span>
-                  </td>
-                  <td className="py-0 md:py-3 md:pr-4">
-                    <span className="inline-flex items-center gap-1 font-mono text-[12.5px] font-semibold tabular-nums text-lime">
-                      <ArrowUpRight width={12} height={12} />
-                      {money(payout.net, { cents: false })}
-                    </span>
-                  </td>
-                  <td className="py-0 md:py-3 md:pr-4">
-                    <Pill tone={payout.status === "paid" ? "success" : "warn"}>{payout.status}</Pill>
-                  </td>
-                  <td className={cn("ml-auto py-0 font-mono text-[11.5px] text-chalk-dim md:table-cell md:py-3")}>
-                    {payout.date}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+        <DataTable
+          head={["Period", "Orders", "Gross", "Commission", "Net", "Status", "Settled"]}
+          minWidth={820}
+          className="p-5 pt-0"
+        >
+          {data.payouts.map((payout) => (
+            <Row key={payout.id}>
+              <TdLead>
+                <p className="font-mono text-[11.5px] text-chalk">{payout.period}</p>
+                <p className="font-mono text-[10px] text-chalk-dim">{payout.id}</p>
+              </TdLead>
+              <TdDetail className="font-mono text-[12.5px] tabular-nums text-chalk-dim">
+                {num(payout.orders)}
+              </TdDetail>
+              <Td className="font-mono text-[12.5px] tabular-nums text-chalk">
+                <CellLabel>Gross</CellLabel>
+                {money(payout.gross, { cents: false })}
+              </Td>
+              <TdDetail>
+                <span className="inline-flex items-center gap-1 font-mono text-[12.5px] tabular-nums text-ember-soft">
+                  <ArrowDownRight width={12} height={12} />
+                  {money(payout.commission, { cents: false })}
+                </span>
+              </TdDetail>
+              <Td>
+                <span className="inline-flex items-center gap-1 font-mono text-[12.5px] font-semibold tabular-nums text-lime">
+                  <ArrowUpRight width={12} height={12} />
+                  {money(payout.net, { cents: false })}
+                </span>
+              </Td>
+              <Td>
+                <Pill tone={payout.status === "paid" ? "success" : "warn"}>{payout.status}</Pill>
+              </Td>
+              <TdEnd className="font-mono text-[11.5px] text-chalk-dim md:table-cell">
+                {payout.date}
+              </TdEnd>
+            </Row>
+          ))}
+        </DataTable>
+      </TablePanel>
 
       <Panel>
         <PanelHead title="Where payouts go" />

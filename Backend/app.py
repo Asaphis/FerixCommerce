@@ -27,11 +27,12 @@ from sqlalchemy import select
 from core import (
     Address, Cart, Catalog, ContentDocument, FlashSale, FlashSaleItem, FREE_SHIPPING_OVER,
     Order, Review, SESSION_DAYS, SessionLocal, SessionToken, TAX_RATE, User, Wishlist,
+    backfill_catalogue_media,
     cart_for as _cart_for, cart_payload, categories as category_rows,
     collections as collection_rows, decorate, find_merchant, find_product, get_user,
     hash_password, iso, line_key, merchants as merchant_rows, now, product_rows,
     public_user, put_row, require_user, sale_status, seed, store_card,
-    verify_password, Base, engine, banners as banner_rows, UPLOAD_ROOT, sync_pending_media,
+    verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
 )
 
 from routers import admin as admin_router
@@ -146,7 +147,8 @@ class CheckoutIn(BaseModel):
 # ── App ────────────────────────────────────────────────────────────────────
 
 app = FastAPI(title="Ferixas Commerce API", version="3.0.0")
-app.mount("/media", StaticFiles(directory=str(UPLOAD_ROOT)), name="media")
+app.mount("/media", StaticFiles(directory=str(MEDIA_ROOT)), name="media")
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
@@ -195,6 +197,8 @@ def startup():
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         seed(db)
+        backfill_catalogue_media(db)
+        db.commit()
         sync_pending_media(db)
 
 

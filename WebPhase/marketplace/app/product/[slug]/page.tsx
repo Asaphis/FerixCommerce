@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowRight, Check, Heart, MapPin, RotateCcw, ShieldCheck, Truck } from "lucide-react";
-import { getProduct, ApiError } from "@/lib/api";
+import { getProduct, ApiError, assetUrl } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { addToCartAction, toggleWishlistAction } from "@/lib/actions";
 import { AddToCartButton } from "@/components/ferix/add-to-cart";
@@ -53,14 +53,22 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div>
-          <Plate seed={product.slug} accent="#e4572e" className="aspect-[4/3] w-full" />
+          <Plate
+            seed={product.slug}
+            accent="#e4572e"
+            src={assetUrl(product.images?.[0])}
+            alt={product.title}
+            className="aspect-[4/3] w-full"
+          />
           <div className="mt-3 grid grid-cols-4 gap-3">
-            {[1, 2, 3, 4].map((plate) => (
+            {(product.images?.length ? product.images.slice(0, 4) : [null, null, null, null]).map((image, index) => (
               <Plate
-                key={plate}
-                seed={`${product.slug}-${plate}`}
+                key={image ?? index}
+                seed={`${product.slug}-${index + 1}`}
                 accent="#e4572e"
-                className={`aspect-square w-full ${plate === 1 ? "ring-2 ring-ink" : "opacity-70"}`}
+                src={assetUrl(image)}
+                alt={`${product.title} view ${index + 1}`}
+                className={`aspect-square w-full ${index === 0 ? "ring-2 ring-ink" : "opacity-70"}`}
               />
             ))}
           </div>

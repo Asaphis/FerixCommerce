@@ -66,6 +66,18 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/*
+ * Semantic tone variables consumed by the shared primitives in
+ * components/shared/ui.tsx. Each app maps the same five meanings onto its own
+ * palette, so one component renders correctly in all three.
+ */
+:root {
+  --tone-success: #1f4b43;
+  --tone-warn: #c9a24d;
+  --tone-danger: #e4572e;
+  --tone-info: #2f6f8f;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

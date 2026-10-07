@@ -6,6 +6,7 @@ import { FilterForm } from "@/components/studio/controls";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { money, num, relative } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
 
 const SEGMENTS = [
   { id: "all", label: "Everyone" },
@@ -31,7 +32,7 @@ export default async function CustomersPage({
 
   return (
     <div className="grid gap-5">
-      <header>
+      <header className="shrinkable">
         <Eyebrow>Customers</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Who buys from you</h1>
         <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
@@ -54,7 +55,7 @@ export default async function CustomersPage({
               key={option.id}
               href={option.id === "all" ? "/customers" : `/customers?segment=${option.id}`}
               className={cn(
-                "rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "min-h-11 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
                 (segment ?? "all") === option.id
                   ? "border-lime/40 bg-lime/10 text-lime"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -72,68 +73,55 @@ export default async function CustomersPage({
               name="search"
               defaultValue={search ?? ""}
               placeholder="Name or email"
-              className="h-9 w-[220px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
+              className="h-11 w-[220px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
             />
           </label>
         </FilterForm>
       </div>
 
       {data.customers.length ? (
-        <Panel flush>
-          <div className="overflow-x-auto p-5">
-            <table className="w-full min-w-0 border-collapse text-left md:min-w-[820px]">
-              <thead>
-                <tr className="hidden md:table-row">
-                  {["Customer", "Location", "Orders", "Spent", "Average", "Last order", "Segment", ""].map((head) => (
-                    <th
-                      key={head}
-                      className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim"
-                    >
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.customers.map((customer) => (
-                  <tr
-                    key={customer.id}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline/60 py-3 last:border-0 md:table-row md:py-0"
+        <TablePanel>
+          <DataTable
+            head={["Customer", "Location", "Orders", "Spent", "Average", "Last order", "Segment", ""]}
+            minWidth={820}
+            className="p-5"
+          >
+            {data.customers.map((customer) => (
+              <Row key={customer.id}>
+                <TdLead>
+                  <p className="truncate text-[13px] font-medium text-chalk">{customer.name}</p>
+                  <p className="truncate font-mono text-[10.5px] text-chalk-dim">{customer.email}</p>
+                </TdLead>
+                <TdDetail className="text-[12.5px] text-chalk-dim">{customer.location}</TdDetail>
+                <Td className="font-mono text-[12.5px] tabular-nums text-chalk">
+                  <CellLabel>Orders</CellLabel>
+                  {customer.orders}
+                </Td>
+                <Td className="font-mono text-[12.5px] tabular-nums text-chalk">
+                  <CellLabel>Spent</CellLabel>
+                  {money(customer.spent ?? 0, { cents: false })}
+                </Td>
+                <TdDetail className="font-mono text-[12.5px] tabular-nums text-chalk-dim">
+                  {money(customer.averageOrder ?? 0, { cents: false })}
+                </TdDetail>
+                <TdDetail className="font-mono text-[11.5px] text-chalk-dim">
+                  {customer.lastOrderAt ? relative(customer.lastOrderAt) : "—"}
+                </TdDetail>
+                <Td>
+                  <Pill tone={segmentTone(customer.segment)}>{customer.segment}</Pill>
+                </Td>
+                <TdEnd>
+                  <Link
+                    href={`/customers/${customer.id}`}
+                    className="inline-flex min-h-[44px] items-center font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
                   >
-                    <td className="w-full min-w-0 py-0 md:w-auto md:py-3 md:pr-4">
-                      <p className="truncate text-[13px] font-medium text-chalk">{customer.name}</p>
-                      <p className="truncate font-mono text-[10.5px] text-chalk-dim">{customer.email}</p>
-                    </td>
-                    <td className="hidden py-3 pr-4 text-[12.5px] text-chalk-dim md:table-cell">{customer.location}</td>
-                    <td className="py-0 font-mono text-[12.5px] tabular-nums text-chalk md:py-3 md:pr-4">
-                      {customer.orders} orders
-                    </td>
-                    <td className="py-0 font-mono text-[12.5px] tabular-nums text-chalk md:py-3 md:pr-4">
-                      {money(customer.spent ?? 0, { cents: false })}
-                    </td>
-                    <td className="hidden py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim md:table-cell">
-                      {money(customer.averageOrder ?? 0, { cents: false })}
-                    </td>
-                    <td className="hidden py-3 pr-4 font-mono text-[11.5px] text-chalk-dim md:table-cell">
-                      {customer.lastOrderAt ? relative(customer.lastOrderAt) : "—"}
-                    </td>
-                    <td className="py-0 md:py-3 md:pr-4">
-                      <Pill tone={segmentTone(customer.segment)}>{customer.segment}</Pill>
-                    </td>
-                    <td className="ml-auto py-0 text-right md:py-3">
-                      <Link
-                        href={`/customers/${customer.id}`}
-                        className="inline-flex min-h-[44px] items-center font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
-                      >
-                        Open
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
+                    Open
+                  </Link>
+                </TdEnd>
+              </Row>
+            ))}
+          </DataTable>
+        </TablePanel>
       ) : (
         <Empty title="No customers match" body="Clear the search and the segment filter to see everyone." />
       )}

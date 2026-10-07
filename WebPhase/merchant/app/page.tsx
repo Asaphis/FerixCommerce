@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="grid gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div>
           <Eyebrow>Dashboard</Eyebrow>
           <h1 className="mt-1.5 font-display text-[24px] font-semibold text-ink-soft">
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
               title="Needs attention"
               hint={`Stock at or below ${settings.lowStockAt} units`}
               action={
-                <Link href="/inventory" className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-lime">
+                <Link href="/inventory" className="inline-flex min-h-11 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-lime">
                   Inventory <ArrowRight width={12} height={12} />
                 </Link>
               }
@@ -202,7 +202,7 @@ export default async function DashboardPage() {
           <PanelHead title="Latest orders" hint="From both channels, newest first" />
           <Link
             href="/orders"
-            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-lime"
+            className="inline-flex min-h-11 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-lime"
           >
             All {num(summary.ordersTotal)} orders <ArrowRight width={12} height={12} />
           </Link>

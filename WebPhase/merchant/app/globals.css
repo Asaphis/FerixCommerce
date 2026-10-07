@@ -63,6 +63,18 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/*
+ * Semantic tone variables consumed by the shared primitives in
+ * components/shared/ui.tsx. Each app maps the same five meanings onto its own
+ * palette, so one component renders correctly in all three.
+ */
+:root {
+  --tone-success: #c9f24d;
+  --tone-warn: #c9a24d;
+  --tone-danger: #e4572e;
+  --tone-info: #2f6f8f;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -164,5 +176,46 @@
   [data-nextjs-dialog-overlay],
   [data-nextjs-toast] {
     display: none !important;
+  }
+}
+
+@layer components {
+  /*
+   * Grid and flex children default to `min-width: auto`, which resolves to the
+   * item's *content* width. A wide table or a long unbroken string therefore
+   * widens the whole page instead of scrolling inside its own panel - the
+   * `overflow-x-auto` wrapper has no effect, because the wrapper itself refuses
+   * to shrink below its content. Restoring `min-width: 0` on grid children lets
+   * every panel shrink to its track and scroll internally instead.
+   *
+   * Utilities still win: this sits in the components layer, so an explicit
+   * `min-w-[...]` on a child overrides it.
+   */
+  .grid > * {
+    min-width: 0;
+  }
+
+  /* Same idea for flex rows that must be able to shrink (page headers). */
+  .shrinkable > * {
+    min-width: 0;
+  }
+
+  /*
+   * One table, two layouts. Below 768px each <tr> is a flex card and the
+   * `hidden md:table-cell` columns drop out; from 768px up it is a real table
+   * that scrolls inside its own panel. The minimum width is per-table, passed
+   * as the --table-min custom property so Tailwind never has to see a dynamic
+   * class name.
+   */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  @media (min-width: 768px) {
+    .data-table {
+      min-width: var(--table-min, 720px);
+    }
   }
 }

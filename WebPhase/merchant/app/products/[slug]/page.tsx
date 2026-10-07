@@ -33,7 +33,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </Link>
       </div>
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           <Thumb seed={product.slug} className="h-16 w-16" />
           <div>

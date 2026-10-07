@@ -47,7 +47,7 @@ export default async function StoreDesignPage() {
         <Eyebrow>Storefront</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Store design</h1>
         <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
-          The content behind {merchant.name}&apos;s storefront, straight from the store backend.
+          Your storefront content, straight from the store backend.
         </p>
       </header>
 
@@ -57,8 +57,7 @@ export default async function StoreDesignPage() {
             <Eyebrow className="text-lime">Coming soon</Eyebrow>
             <h2 className="mt-2 font-display text-[18px] font-semibold text-chalk">Visual store design</h2>
             <p className="mt-2 text-[13px] leading-relaxed text-chalk-dim">
-              The drag-and-drop design engine is still being built — it will let you design your storefront
-              without writing any code.
+              A drag-and-drop storefront designer, so you can change your store without code.
             </p>
           </div>
           <span className="inline-flex h-11 w-11 items-center justify-center rounded-[2px] border border-lime/30 bg-lime/10 text-lime">
