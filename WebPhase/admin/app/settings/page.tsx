@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   const { settings, counts, admins } = payload;
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Platform settings</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{settings.platformName} configuration</h1>

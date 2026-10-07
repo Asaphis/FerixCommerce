@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/data";
 import { getAnalytics } from "@/lib/api";
 import { Meter, Eyebrow, Empty, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { CellLabel, DataTable, PageHeader, Row, Td, TdLead } from "@/components/ops/table";
 import { TrendChart } from "@/components/ops/marks";
 import { money, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -30,33 +31,26 @@ export default async function AnalyticsPage({
   const bestDay = data.series.reduce((top, point) => (point.gmv > top.gmv ? point : top), data.series[0]);
 
   return (
-    <div className="grid gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Eyebrow>Platform analytics</Eyebrow>
-          <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Growth across the marketplace</h1>
-          <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-            GMV, commission and order volume over the last {range} days, calculated from the orders actually on
-            the backend — split by merchant, channel, department and plan.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {RANGES.map((option) => (
-            <Link
-              key={option}
-              href={`/analytics?days=${option}`}
-              className={cn(
-                "rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
-                range === option
-                  ? "border-signal/40 bg-signal/10 text-signal"
-                  : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
-              )}
-            >
-              {option} days
-            </Link>
-          ))}
-        </div>
-      </header>
+    <div className="grid min-w-0 gap-5">
+      <PageHeader
+        eyebrow="Platform analytics"
+        title="Growth across the marketplace"
+        description={`GMV, commission and order volume over the last ${range} days, split by merchant, channel, department and plan.`}
+        action={RANGES.map((option) => (
+          <Link
+            key={option}
+            href={`/analytics?days=${option}`}
+            className={cn(
+              "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+              range === option
+                ? "border-signal/40 bg-signal/10 text-signal"
+                : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
+            )}
+          >
+            {option} days
+          </Link>
+        ))}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Readout label={`GMV · ${range} days`} value={money(totalGmv, { cents: false })} sub={`All time ${money(data.totals.gmv, { cents: false })}`} tone="mint" />
@@ -152,35 +146,37 @@ export default async function AnalyticsPage({
       </Panel>
 
       <Panel flush>
-        <div className="p-5 pb-3">
+        <div className="min-w-0 px-4 pb-3 pt-4 md:px-5 md:pt-5">
           <PanelHead title="Best performing products" hint="Platform-wide, by revenue" />
         </div>
         {data.topProducts.length ? (
-          <div className="overflow-x-auto px-5 pb-5">
-            <table className="w-full min-w-[760px] border-collapse text-left">
-              <thead>
-                <tr>
-                  {["Product", "Merchant", "Price", "Sold 30d", "Revenue"].map((head) => (
-                    <th key={head} className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim">
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.topProducts.map((product) => (
-                  <tr key={product.id} className="border-b border-hairline/60 last:border-0">
-                    <td className="py-3 pr-4 text-[13px] text-chalk">{product.title}</td>
-                    <td className="py-3 pr-4 text-[12.5px] text-chalk-dim">{product.merchantName}</td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] text-chalk-dim">{money(product.price)}</td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk">{num(product.sold30d)}</td>
-                    <td className="py-3 font-mono text-[12.5px] tabular-nums text-signal">
-                      {money(product.revenue, { cents: false })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="min-w-0 px-4 pb-4 md:overflow-x-auto md:px-5 md:pb-5">
+            <DataTable
+              head={["Product", "Merchant", "Price", "Sold 30d", "Revenue"]}
+              minWidthClass="md:min-w-[760px]"
+            >
+              {data.topProducts.map((product) => (
+                <Row key={product.id}>
+                  <TdLead className="text-[13px] text-chalk">{product.title}</TdLead>
+                  <Td className="text-[12.5px] text-chalk-dim">
+                    <CellLabel>Merchant</CellLabel>
+                    {product.merchantName}
+                  </Td>
+                  <Td className="font-mono text-[12.5px] text-chalk-dim">
+                    <CellLabel>Price</CellLabel>
+                    {money(product.price)}
+                  </Td>
+                  <Td className="font-mono text-[12.5px] tabular-nums text-chalk">
+                    <CellLabel>Sold 30d</CellLabel>
+                    {num(product.sold30d)}
+                  </Td>
+                  <Td className="font-mono text-[12.5px] tabular-nums text-signal">
+                    <CellLabel>Revenue</CellLabel>
+                    {money(product.revenue, { cents: false })}
+                  </Td>
+                </Row>
+              ))}
+            </DataTable>
           </div>
         ) : (
           <div className="px-5 pb-5">

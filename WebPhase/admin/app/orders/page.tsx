@@ -7,6 +7,7 @@ import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/op
 import { Distribution } from "@/components/ops/marks";
 import { compact, dateShort, money, num, relative, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CellLabel, DataTable, PageHeader, Row, Td, TdDetail, TdLead, TablePanel } from "@/components/ops/table";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -39,7 +40,7 @@ export default async function OrdersPage({
   const activeMerchant = data.merchants.find((m) => m.id === merchantId);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Order oversight</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Platform orders</h1>
@@ -128,61 +129,58 @@ export default async function OrdersPage({
       <div className="grid gap-3 lg:grid-cols-[1fr_280px]">
         <div>
           {data.orders.length ? (
-            <Panel flush>
-              <div className="overflow-x-auto p-5">
-                <table className="w-full min-w-[1000px] border-collapse text-left">
-                  <thead>
-                    <tr>
-                      {["Order", "Merchant", "Customer", "Channel", "Placed", "Payment", "Status", "Commission", "Total"].map((head) => (
-                        <th key={head} className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim">
-                          {head}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.orders.map((order) => (
-                      <tr key={`${order.id}-${order.merchantId}`} className="border-b border-hairline/60 last:border-0">
-                        <td className="py-3 pr-4">
-                          <p className="font-mono text-[12px] text-chalk">{order.number}</p>
-                          <p className="max-w-[170px] truncate text-[11px] text-chalk-dim">
-                            {order.items.map((item) => item.title).join(", ")}
-                          </p>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <Link href={`/merchants/${order.merchantId}`} className="text-[12.5px] text-chalk hover:text-signal">
-                            {order.merchantName}
-                          </Link>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <p className="text-[12.5px] text-chalk-dim">{order.customer.name}</p>
-                          <p className="font-mono text-[10px] text-chalk-dim/70">{order.customer.location}</p>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <Pill tone={order.channel === "marketplace" ? "violet" : "neutral"}>{order.channel}</Pill>
-                        </td>
-                        <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">
-                          {dateShort(order.placedAt)} · {relative(order.placedAt)}
-                        </td>
-                        <td className="py-3 pr-4">
-                          <Pill tone={order.payment === "paid" ? "mint" : order.payment === "refunded" ? "rose" : "amber"}>
-                            {order.payment}
-                          </Pill>
-                        </td>
-                        <td className="py-3 pr-4">
-                          <Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill>
-                          {order.tracking ? (
-                            <p className="mt-1 font-mono text-[10px] text-chalk-dim">{order.carrier}</p>
-                          ) : null}
-                        </td>
-                        <td className="py-3 pr-4 font-mono text-[12px] tabular-nums text-violet">{money(order.commission)}</td>
-                        <td className="py-3 font-mono text-[12.5px] tabular-nums text-chalk">{money(order.total)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Panel>
+            <TablePanel>
+              <DataTable
+                head={["Order", "Merchant", "Customer", "Channel", "Placed", "Payment", "Status", "Commission", "Total"]}
+                minWidthClass="md:min-w-[1000px]"
+              >
+                {data.orders.map((order) => (
+                  <Row key={`${order.id}-${order.merchantId}`}>
+                    <TdLead>
+                      <p className="font-mono text-[12px] text-chalk">{order.number}</p>
+                      <p className="max-w-[170px] truncate text-[11px] text-chalk-dim">
+                        {order.items.map((item) => item.title).join(", ")}
+                      </p>
+                    </TdLead>
+                    <Td>
+                      <CellLabel>Merchant</CellLabel>
+                      <Link href={`/merchants/${order.merchantId}`} className="text-[12.5px] text-chalk hover:text-signal">
+                        {order.merchantName}
+                      </Link>
+                    </Td>
+                    <Td>
+                      <CellLabel>Customer</CellLabel>
+                      <p className="text-[12.5px] text-chalk-dim">{order.customer.name}</p>
+                      <p className="font-mono text-[10px] text-chalk-dim/70">{order.customer.location}</p>
+                    </Td>
+                    <Td>
+                      <Pill tone={order.channel === "marketplace" ? "violet" : "neutral"}>{order.channel}</Pill>
+                    </Td>
+                    <TdDetail className="font-mono text-[11.5px] text-chalk-dim">
+                      {dateShort(order.placedAt)} · {relative(order.placedAt)}
+                    </TdDetail>
+                    <Td>
+                      <CellLabel>Payment</CellLabel>
+                      <Pill tone={order.payment === "paid" ? "mint" : order.payment === "refunded" ? "rose" : "amber"}>
+                        {order.payment}
+                      </Pill>
+                    </Td>
+                    <Td>
+                      <CellLabel>Status</CellLabel>
+                      <Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill>
+                      {order.tracking ? (
+                        <p className="mt-1 font-mono text-[10px] text-chalk-dim">{order.carrier}</p>
+                      ) : null}
+                    </Td>
+                    <TdDetail className="font-mono text-[12px] tabular-nums text-violet">{money(order.commission)}</TdDetail>
+                    <Td className="ml-auto font-mono text-[12.5px] tabular-nums text-chalk md:ml-0">
+                      <CellLabel>Total</CellLabel>
+                      {money(order.total)}
+                    </Td>
+                  </Row>
+                ))}
+              </DataTable>
+            </TablePanel>
           ) : (
             <Empty title="No orders in this view" body="Clear the filters to see the platform's order flow again." />
           )}

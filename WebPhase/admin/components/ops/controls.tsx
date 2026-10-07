@@ -4,6 +4,7 @@ import React from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { labelClass } from "@/components/ops/table";
 
 type Variant = "primary" | "ghost" | "outline" | "danger" | "warn";
 
@@ -33,7 +34,7 @@ export function OpsButton({
       type={type}
       disabled={disabled}
       className={cn(
-        "inline-flex cursor-pointer items-center justify-center gap-2 rounded-[2px] px-3 py-2 text-[12.5px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40",
+        "inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-[2px] px-3 py-2 text-[12.5px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40",
         VARIANTS[variant],
         className,
       )}
@@ -77,11 +78,26 @@ export function SubmitButton({
   );
 }
 
-/** Submits whenever a control inside changes — used for filters. */
-export function FilterForm({ children, className, action }: { children: React.ReactNode; className?: string; action: string }) {
+export function FilterForm({ children, className, action, debounce = true }: { children: React.ReactNode; className?: string; action: string; debounce?: boolean }) {
   const ref = React.useRef<HTMLFormElement>(null);
+  const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Filters submit on change, which is right for a select but fires a request
+  // per keystroke for a text field. Debounce text input to 350ms, submit
+  // selects immediately.
+  function onChange(event: React.FormEvent<HTMLFormElement>) {
+    const target = event.target as HTMLInputElement;
+    const isText = target.tagName === "INPUT" && (target.type === "text" || target.type === "search");
+    if (timer.current) clearTimeout(timer.current);
+    if (!debounce || !isText) {
+      ref.current?.requestSubmit();
+      return;
+    }
+    timer.current = setTimeout(() => ref.current?.requestSubmit(), 350);
+  }
+
   return (
-    <form ref={ref} action={action} method="get" onChange={() => ref.current?.requestSubmit()} className={className}>
+    <form ref={ref} action={action} method="get" onChange={onChange} className={className}>
       {children}
       <noscript>
         <button type="submit" className="rounded-[2px] border border-hairline px-3 py-2 text-[12px] text-chalk">
@@ -91,12 +107,6 @@ export function FilterForm({ children, className, action }: { children: React.Re
     </form>
   );
 }
-
-export const inputClass =
-  "h-10 w-full rounded-[2px] border border-hairline bg-panel-2 px-3 text-[13px] text-chalk outline-none transition-colors placeholder:text-chalk-dim/60 focus:border-signal/60";
-export const selectClass = inputClass;
-export const textareaClass = cn(inputClass, "h-[92px] resize-y py-2");
-export const labelClass = "font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim";
 
 export function Field({ title, children }: { title: string; children: React.ReactNode }) {
   return (

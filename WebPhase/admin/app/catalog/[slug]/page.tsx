@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listCatalog } from "@/lib/api";
-import { Field, SubmitButton, inputClass, selectClass, textareaClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
 import { Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { deleteCatalogProductAction, updateCatalogProductAction } from "@/lib/ops-actions";
 import { money, num, relative, titleCase } from "@/lib/format";
@@ -16,7 +17,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
   if (!product) notFound();
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Link
           href="/catalog"

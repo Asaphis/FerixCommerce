@@ -35,7 +35,7 @@ export default async function OverviewPage() {
   const trend = recentOrders.map((order) => order.total).reverse();
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Eyebrow>Platform overview</Eyebrow>
@@ -214,7 +214,7 @@ export default async function OverviewPage() {
         </div>
 
         {recentOrders.length ? (
-          <div className="px-5 pb-5 md:overflow-x-auto">
+          <div className="min-w-0 px-5 pb-5 md:overflow-x-auto">
             <table className="w-full min-w-0 border-collapse text-left md:min-w-[880px]">
               <thead>
                 <tr className="hidden md:table-row">
@@ -278,7 +278,7 @@ export default async function OverviewPage() {
           <Link
             key={card.href}
             href={card.href}
-            className="group flex items-center justify-between gap-3 rounded-[3px] border border-hairline bg-panel p-4 transition-colors hover:border-chalk-dim"
+            className="group flex items-center justify-between gap-3 rounded-[2px] border border-hairline bg-panel p-4 transition-colors hover:border-chalk-dim"
           >
             <span>
               <span className="block text-[13px] font-medium text-chalk">{card.title}</span>

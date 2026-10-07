@@ -26,7 +26,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const filtered = active === "all" ? events : events.filter((event) => event.action.startsWith(active));
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Control</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Audit log</h1>
@@ -42,7 +42,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             key={item.id}
             href={item.id === "all" ? "/audit" : `/audit?group=${encodeURIComponent(item.id)}`}
             className={cn(
-              "rounded-[2px] border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors",
+              "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors",
               active === item.id
                 ? "border-signal/40 bg-signal/10 text-signal"
                 : "border-hairline text-chalk-dim hover:bg-panel-2 hover:text-chalk",
@@ -60,7 +60,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="md:overflow-x-auto">
+          <div className="min-w-0 md:overflow-x-auto">
             <table className="w-full min-w-0 border-collapse text-left md:min-w-[900px]">
               <thead>
                 <tr className="hidden border-b border-hairline md:table-row">

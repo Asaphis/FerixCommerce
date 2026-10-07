@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { RotateCcw, Save } from "lucide-react";
 import type { SettingsPayload } from "@/lib/api";
-import { Field, SubmitButton, inputClass, selectClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass } from "@/components/ops/table";
 import { Notice } from "@/components/ops/notice";
 import { Panel, PanelHead } from "@/components/ops/bits";
 import { saveSettingsAction, type FormState } from "@/lib/actions";

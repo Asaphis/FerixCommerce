@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listBanners } from "@/lib/api";
-import { Field, SubmitButton, inputClass, selectClass, textareaClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { deleteBannerAction, saveBannerAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
@@ -12,7 +13,7 @@ export default async function BannersPage() {
   const { banners } = await listBanners(session);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Link
           href="/cms"
@@ -33,9 +34,9 @@ export default async function BannersPage() {
       ) : (
         <div className="grid gap-3">
           {banners.map((banner) => (
-            <Panel key={banner.id} className="grid gap-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex min-w-0 items-start gap-3">
+            <Panel key={banner.id} className="grid min-w-0 gap-4">
+              <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 flex-1 items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={banner.image}

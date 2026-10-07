@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listMedia } from "@/lib/api";
-import { Field, SubmitButton, inputClass, selectClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { addMediaAction, removeMediaAction } from "@/lib/ops-actions";
 import { relative, titleCase } from "@/lib/format";
@@ -12,7 +13,7 @@ export default async function MediaPage() {
   const { assets, storage } = await listMedia(session);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link

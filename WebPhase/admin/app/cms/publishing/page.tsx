@@ -18,7 +18,7 @@ export default async function PublishingPage() {
   const cmsEvents = events.filter((event) => event.action.startsWith("cms."));
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link

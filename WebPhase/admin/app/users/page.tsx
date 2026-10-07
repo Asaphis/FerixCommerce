@@ -3,7 +3,8 @@ import { Search, Users } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listUsers } from "@/lib/api";
 import { FilterForm } from "@/components/ops/controls";
-import { Empty, Eyebrow, Meter, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Empty, Meter, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { CellLabel, DataTable, PageHeader, Row, Td, TdDetail, TdLead, TablePanel } from "@/components/ops/table";
 import { money, num, relative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -32,15 +33,12 @@ export default async function UsersPage({
   const withOrders = data.users.filter((u) => u.orders > 0).length;
 
   return (
-    <div className="grid gap-5">
-      <header>
-        <Eyebrow>User oversight</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Customer accounts</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          Every shopper who has registered on the platform, with their spending, saved items and order
-          history. Accounts are shared across the marketplace and every merchant storefront.
-        </p>
-      </header>
+    <div className="grid min-w-0 gap-5">
+      <PageHeader
+        eyebrow="User oversight"
+        title="Customer accounts"
+        description="Every shopper registered on the platform, with their spending, saved items and order history. Accounts are shared across the marketplace and every merchant storefront."
+      />
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Readout label="Accounts" value={num(data.counts.all ?? 0)} sub={`${withOrders} have placed an order`} icon={<Users width={15} height={15} />} />
@@ -49,19 +47,19 @@ export default async function UsersPage({
         <Readout
           label="Paying customers"
           value={`${Math.round((withOrders / Math.max(1, data.counts.all ?? 1)) * 100)}%`}
-          sub={`${data.counts.vip ?? 0} VIP · ${data.counts.returning ?? 0} returning`}
+          sub={`${data.counts.vip ?? 0} VIP \u00b7 ${data.counts.returning ?? 0} returning`}
           tone="violet"
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
           {SEGMENTS.map((option) => (
             <Link
               key={option.id}
               href={option.id === "all" ? "/users" : `/users?segment=${option.id}`}
               className={cn(
-                "rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
                 (segment ?? "all") === option.id
                   ? "border-signal/40 bg-signal/10 text-signal"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -72,77 +70,79 @@ export default async function UsersPage({
             </Link>
           ))}
         </div>
-        <FilterForm action="/users" className="flex items-center gap-2">
-          <label className="relative flex items-center">
+        <FilterForm action="/users" className="flex min-w-0 flex-wrap items-center gap-2">
+          <label className="relative flex min-w-0 flex-1 items-center sm:flex-none">
             <Search width={14} height={14} className="pointer-events-none absolute left-2.5 text-chalk-dim" />
             <input
               name="search"
               defaultValue={search ?? ""}
               placeholder="Name or email"
-              className="h-9 w-[220px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-signal/60"
+              className="h-11 w-full min-w-0 rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-signal/60 sm:w-[220px]"
             />
           </label>
         </FilterForm>
       </div>
 
       {data.users.length ? (
-        <Panel flush>
-          <div className="overflow-x-auto p-5">
-            <table className="w-full min-w-[1000px] border-collapse text-left">
-              <thead>
-                <tr>
-                  {["Account", "Location", "Joined", "Orders", "Spend", "Average", "Last order", "Segment", "Share"].map((head) => (
-                    <th key={head} className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim">
-                      {head}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.users.map((user) => (
-                  <tr key={user.id} className="border-b border-hairline/60 last:border-0">
-                    <td className="py-3 pr-4">
-                      <div className="flex items-center gap-3">
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[2px] border border-hairline bg-panel-2 font-display text-[13px] font-bold text-signal">
-                          {user.initials}
-                        </span>
-                        <div className="min-w-0">
-                          <Link href={`/users/${user.id}`} className="block max-w-[200px] truncate text-[13px] font-medium text-chalk hover:text-signal">
-                            {user.name}
-                          </Link>
-                          <p className="max-w-[200px] truncate font-mono text-[10.5px] text-chalk-dim">{user.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 pr-4 text-[12.5px] text-chalk-dim">{user.location}</td>
-                    <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">
-                      {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk">{user.orders}</td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk">
-                      {money(user.spent, { cents: false })}
-                    </td>
-                    <td className="py-3 pr-4 font-mono text-[12.5px] tabular-nums text-chalk-dim">
-                      {money(user.averageOrder, { cents: false })}
-                    </td>
-                    <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">
-                      {user.lastOrderAt ? relative(user.lastOrderAt) : "—"}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <Pill tone={segmentTone(user.segment)}>{user.segment}</Pill>
-                    </td>
-                    <td className="w-[130px] py-3">
-                      <Meter value={user.spent} max={maxSpend} tone="violet" />
-                      <p className="mt-1 font-mono text-[10px] text-chalk-dim">
-                        {user.saved} saved · {user.reviews} reviews
-                      </p>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
+        <TablePanel>
+          <DataTable
+            head={["Account", "Location", "Joined", "Orders", "Spend", "Average", "Last order", "Segment", "Share"]}
+            minWidthClass="md:min-w-[1040px]"
+          >
+            {data.users.map((user) => (
+              <Row key={user.id}>
+                <TdLead>
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[2px] border border-hairline bg-panel-2 font-display text-[13px] font-bold text-signal">
+                      {user.initials}
+                    </span>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/users/${user.id}`}
+                        className="block truncate text-[13px] font-medium text-chalk hover:text-signal md:max-w-[200px]"
+                      >
+                        {user.name}
+                      </Link>
+                      <p className="truncate font-mono text-[10.5px] text-chalk-dim md:max-w-[200px]">{user.email}</p>
+                    </div>
+                  </div>
+                </TdLead>
+                <Td className="text-[12.5px] text-chalk-dim">
+                  <CellLabel>Location</CellLabel>
+                  {user.location}
+                </Td>
+                <TdDetail className="font-mono text-[11.5px] text-chalk-dim">
+                  {new Date(user.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                </TdDetail>
+                <Td className="font-mono text-[12.5px] tabular-nums text-chalk">
+                  <CellLabel>Orders</CellLabel>
+                  {user.orders}
+                </Td>
+                <Td className="font-mono text-[12.5px] tabular-nums text-chalk">
+                  <CellLabel>Spend</CellLabel>
+                  {money(user.spent, { cents: false })}
+                </Td>
+                <Td className="font-mono text-[12.5px] tabular-nums text-chalk-dim">
+                  <CellLabel>Average</CellLabel>
+                  {money(user.averageOrder, { cents: false })}
+                </Td>
+                <Td className="font-mono text-[11.5px] text-chalk-dim">
+                  <CellLabel>Last order</CellLabel>
+                  {user.lastOrderAt ? relative(user.lastOrderAt) : "\u2014"}
+                </Td>
+                <Td>
+                  <Pill tone={segmentTone(user.segment)}>{user.segment}</Pill>
+                </Td>
+                <Td className="w-full md:w-[130px]">
+                  <Meter value={user.spent} max={maxSpend} tone="violet" />
+                  <p className="mt-1 font-mono text-[10px] text-chalk-dim">
+                    {user.saved} saved · {user.reviews} reviews
+                  </p>
+                </Td>
+              </Row>
+            ))}
+          </DataTable>
+        </TablePanel>
       ) : (
         <Empty title="No accounts match" body="Clear the search and segment filter to see every registered shopper." />
       )}

@@ -1,7 +1,8 @@
 import { Plus, ShieldCheck } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listStaff } from "@/lib/api";
-import { Field, SubmitButton, inputClass, selectClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { deleteStaffAction, saveStaffAction } from "@/lib/ops-actions";
 import { dateLong, titleCase } from "@/lib/format";
@@ -11,7 +12,7 @@ export default async function TeamPage() {
   const { staff, roles } = await listStaff(session);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Control</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Team and roles</h1>
@@ -30,7 +31,7 @@ export default async function TeamPage() {
         {staff.length === 0 ? (
           <Empty title="No accounts listed" body="Add the first team member below." />
         ) : (
-          <div className="md:overflow-x-auto">
+          <div className="min-w-0 md:overflow-x-auto">
             <table className="w-full min-w-0 border-collapse text-left md:min-w-[720px]">
               <thead>
                 <tr className="hidden border-b border-hairline md:table-row">

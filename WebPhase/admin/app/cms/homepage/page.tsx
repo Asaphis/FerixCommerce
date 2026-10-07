@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { getDocument } from "@/lib/api";
-import { Field, SubmitButton, inputClass, selectClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { publishHomepageAction, restoreVersionAction, saveHomepageAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
@@ -27,7 +28,7 @@ export default async function HomepageCmsPage() {
   const sections = [...(document.data.sections ?? [])].sort((a, b) => a.position - b.position);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link

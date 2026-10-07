@@ -58,7 +58,7 @@ export async function OpsShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="min-w-0 flex-1 md:pl-[64px] xl:pl-[230px]">
-        <div className="mx-auto max-w-[1200px] px-4 py-6">{children}</div>
+        <div className="mx-auto max-w-[1200px] px-4 pb-28 pt-6 md:pb-8">{children}</div>
       </main>
       <OpsBottomNav />
     </div>

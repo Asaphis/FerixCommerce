@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listCatalog } from "@/lib/api";
-import { Field, SubmitButton, inputClass, selectClass, textareaClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
 import { Eyebrow, Panel, PanelHead } from "@/components/ops/bits";
 import { createCatalogProductAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
@@ -12,7 +13,7 @@ export default async function NewProductPage() {
   const { categories, collections } = await listCatalog(session, {});
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Link
           href="/catalog"

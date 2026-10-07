@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listCollections } from "@/lib/api";
-import { Field, SubmitButton, inputClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { deleteCollectionAction, saveCollectionAction } from "@/lib/ops-actions";
 import { num } from "@/lib/format";
@@ -12,7 +13,7 @@ export default async function CollectionsPage() {
   const { collections } = await listCollections(session);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Link
           href="/cms"

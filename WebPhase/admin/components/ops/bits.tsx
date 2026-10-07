@@ -11,7 +11,7 @@ export function Panel({
   flush?: boolean;
 }) {
   return (
-    <section className={cn("rounded-[3px] border border-hairline bg-panel", !flush && "p-5", className)}>
+    <section className={cn("min-w-0 rounded-[2px] border border-hairline bg-panel", !flush && "p-5", className)}>
       {children}
     </section>
   );
@@ -88,7 +88,7 @@ export function Readout({
     neutral: "bg-chalk-dim",
   };
   return (
-    <div className="relative overflow-hidden rounded-[3px] border border-hairline bg-panel p-4 pl-5">
+    <div className="relative min-w-0 overflow-hidden rounded-[2px] border border-hairline bg-panel p-4 pl-5">
       <div className="flex items-center justify-between gap-2">
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">{label}</span>
         {icon ? <span className={colors[tone]}>{icon}</span> : null}
@@ -112,7 +112,7 @@ export function Meter({ value, max, tone = "signal" }: { value: number; max: num
 
 export function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-[3px] border border-dashed border-hairline px-6 py-12 text-center">
+    <div className="min-w-0 rounded-[2px] border border-dashed border-hairline px-6 py-12 text-center">
       <p className="font-display text-[16px] font-semibold text-chalk">{title}</p>
       <p className="mx-auto mt-2 max-w-[48ch] text-[13px] leading-relaxed text-chalk-dim">{body}</p>
     </div>

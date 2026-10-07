@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { AlertCircle, Check, LogIn } from "lucide-react";
-import { Field, SubmitButton, inputClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass } from "@/components/ops/table";
 import { signInAction, type FormState } from "@/lib/actions";
 
 export function SignInForm() {

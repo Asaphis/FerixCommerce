@@ -4,6 +4,7 @@ import { ArrowLeft, Bookmark, Mail, MapPin, Phone, Star } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { getUser, ApiError } from "@/lib/api";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { CellLabel, DataTable, Row, Td, TdLead } from "@/components/ops/table";
 import { KeyValue } from "@/components/ops/marks";
 import { money, num, relative } from "@/lib/format";
 
@@ -20,7 +21,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   const { user, orders, addresses, reviews, wishlist, follows, stats } = detail;
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <div>
         <Link
           href="/users"
@@ -31,7 +32,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       </div>
 
       <header className="flex flex-wrap items-center gap-4">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[3px] border border-hairline bg-panel-2 font-display text-[19px] font-extrabold text-signal">
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[2px] border border-hairline bg-panel-2 font-display text-[19px] font-extrabold text-signal">
           {user.initials}
         </span>
         <div>
@@ -63,45 +64,41 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             <PanelHead title="Order history" hint="Every order across every merchant" />
           </div>
           {orders.length ? (
-            <div className="overflow-x-auto px-5 pb-5">
-              <table className="w-full min-w-[620px] border-collapse text-left">
-                <thead>
-                  <tr>
-                    {["Order", "Items", "Placed", "Status", "Total"].map((head) => (
-                      <th key={head} className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim">
-                        {head}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id} className="border-b border-hairline/60 last:border-0">
-                      <td className="py-3 pr-4 font-mono text-[12px] text-chalk">{order.number}</td>
-                      <td className="py-3 pr-4 text-[12.5px] text-chalk-dim">
-                        {order.items.map((item) => item.title).join(", ")}
-                      </td>
-                      <td className="py-3 pr-4 font-mono text-[11.5px] text-chalk-dim">{relative(order.placedAt)}</td>
-                      <td className="py-3 pr-4">
-                        <Pill
-                          tone={
-                            order.fulfillment === "delivered"
-                              ? "mint"
-                              : order.fulfillment === "shipped"
-                                ? "signal"
-                                : order.fulfillment === "cancelled"
-                                  ? "rose"
-                                  : "amber"
-                          }
-                        >
-                          {order.fulfillment}
-                        </Pill>
-                      </td>
-                      <td className="py-3 font-mono text-[12.5px] tabular-nums text-chalk">{money(order.total)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="min-w-0 px-4 pb-4 md:overflow-x-auto md:px-5 md:pb-5">
+              <DataTable head={["Order", "Items", "Placed", "Status", "Total"]} minWidthClass="md:min-w-[620px]">
+                {orders.map((order) => (
+                  <Row key={order.id}>
+                    <TdLead className="font-mono text-[12px] text-chalk">{order.number}</TdLead>
+                    <Td className="text-[12.5px] text-chalk-dim">
+                      <CellLabel>Items</CellLabel>
+                      {order.items.map((item) => item.title).join(", ")}
+                    </Td>
+                    <Td className="font-mono text-[11.5px] text-chalk-dim">
+                      <CellLabel>Placed</CellLabel>
+                      {relative(order.placedAt)}
+                    </Td>
+                    <Td>
+                      <Pill
+                        tone={
+                          order.fulfillment === "delivered"
+                            ? "mint"
+                            : order.fulfillment === "shipped"
+                              ? "signal"
+                              : order.fulfillment === "cancelled"
+                                ? "rose"
+                                : "amber"
+                        }
+                      >
+                        {order.fulfillment}
+                      </Pill>
+                    </Td>
+                    <Td className="ml-auto font-mono text-[12.5px] tabular-nums text-chalk md:ml-0">
+                      <CellLabel>Total</CellLabel>
+                      {money(order.total)}
+                    </Td>
+                  </Row>
+                ))}
+              </DataTable>
             </div>
           ) : (
             <div className="px-5 pb-5">

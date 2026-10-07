@@ -16,7 +16,7 @@ export default async function PaymentsPage() {
   const { totals } = data;
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Commerce</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Payments</h1>
@@ -56,7 +56,7 @@ export default async function PaymentsPage() {
         <Empty title="No transactions yet" body="Orders placed on the storefront appear here with their commission." />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="md:overflow-x-auto">
+          <div className="min-w-0 md:overflow-x-auto">
             <table className="w-full min-w-0 border-collapse text-left md:min-w-[980px]">
               <thead>
                 <tr className="hidden border-b border-hairline md:table-row">

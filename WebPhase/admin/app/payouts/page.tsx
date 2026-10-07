@@ -17,7 +17,7 @@ export default async function PayoutsPage() {
   const data = await listPayouts(session);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Commerce</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Payouts</h1>
@@ -45,7 +45,7 @@ export default async function PayoutsPage() {
         <Empty title="Nothing to pay out yet" body="Payout periods appear once a merchant has taken orders." />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="md:overflow-x-auto">
+          <div className="min-w-0 md:overflow-x-auto">
             <table className="w-full min-w-0 border-collapse text-left md:min-w-[960px]">
               <thead>
                 <tr className="hidden border-b border-hairline md:table-row">

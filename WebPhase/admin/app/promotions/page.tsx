@@ -1,7 +1,8 @@
 import { Megaphone, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listPromotions } from "@/lib/api";
-import { Field, SubmitButton, inputClass, selectClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { deletePromotionAction, savePromotionAction } from "@/lib/ops-actions";
 import { money, num } from "@/lib/format";
@@ -24,7 +25,7 @@ export default async function PromotionsPage() {
   const { sales, products } = await listPromotions(session);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Marketplace</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Promotions</h1>
@@ -66,8 +67,8 @@ export default async function PromotionsPage() {
               </div>
 
               {sale.items.length > 0 ? (
-                <div className="overflow-x-auto rounded-[2px] border border-hairline">
-                  <table className="w-full min-w-[560px] border-collapse text-left">
+                <div className="min-w-0 overflow-x-auto rounded-[2px] border border-hairline">
+                  <table className="w-full min-w-0 border-collapse text-left md:min-w-[560px]">
                     <thead>
                       <tr className="border-b border-hairline bg-panel-2">
                         {["Product", "Sale price", "Limit", "Sold"].map((head) => (

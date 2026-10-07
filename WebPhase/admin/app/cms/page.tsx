@@ -49,7 +49,7 @@ export default async function CmsPage() {
   const { documents } = await listDocuments(session);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Marketplace</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Content management</h1>
@@ -64,7 +64,7 @@ export default async function CmsPage() {
           <Link
             key={href}
             href={href}
-            className="group flex items-start justify-between gap-3 rounded-[3px] border border-hairline bg-panel p-4 transition-colors hover:border-chalk-dim/40 hover:bg-panel-2"
+            className="group flex items-start justify-between gap-3 rounded-[2px] border border-hairline bg-panel p-4 transition-colors hover:border-chalk-dim/40 hover:bg-panel-2"
           >
             <div className="flex items-start gap-3">
               <span className="mt-0.5 text-signal">

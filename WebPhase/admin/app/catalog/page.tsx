@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Boxes, Plus, Search, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listCatalog } from "@/lib/api";
-import { FilterForm, SubmitButton, inputClass, selectClass } from "@/components/ops/controls";
+import { FilterForm, SubmitButton } from "@/components/ops/controls";
+import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { deleteCatalogProductAction } from "@/lib/ops-actions";
 import { money, num, titleCase } from "@/lib/format";
@@ -32,7 +33,7 @@ export default async function CatalogPage({
   const value = data.products.reduce((sum, product) => sum + product.price * product.stock, 0);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Eyebrow>Catalogue</Eyebrow>
@@ -91,7 +92,7 @@ export default async function CatalogPage({
         <Empty title="No products match" body="Clear the filters, or upload the first Ferixas Official product." />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="md:overflow-x-auto">
+          <div className="min-w-0 md:overflow-x-auto">
             <table className="w-full min-w-0 border-collapse text-left md:min-w-[900px]">
               <thead>
                 <tr className="hidden border-b border-hairline md:table-row">
