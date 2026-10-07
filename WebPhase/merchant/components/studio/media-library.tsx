@@ -24,7 +24,6 @@ export function MediaForm() {
               type="url"
               className={inputClass}
               placeholder="https://example.com/photo.jpg"
-              required
             />
           </Field>
           <Field title="Alt text">
@@ -44,7 +43,7 @@ export function MediaForm() {
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
             <SubmitButton pendingLabel="Adding">
-            <Upload width={13} height={13} /> Upload or add link
+            <Upload width={13} height={13} /> Upload file or add link
           </SubmitButton>
           <Notice state={state} />
         </div>

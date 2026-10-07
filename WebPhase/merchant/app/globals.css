@@ -11,18 +11,18 @@
   --font-mono: var(--font-plex);
 
   /* Ferixas studio palette */
-  --color-void: #0b0d11;
-  --color-panel: #131821;
-  --color-panel-2: #1a2130;
-  --color-hairline: #242c39;
-  --color-chalk: #e9ecf1;
-  --color-chalk-dim: #8b95a6;
-  --color-lime: #c9f24d;
+  --color-void: #17232b;
+  --color-panel: #fffdf8;
+  --color-panel-2: #f1ede6;
+  --color-hairline: #ded8ce;
+  --color-chalk: #202a2e;
+  --color-chalk-dim: #647078;
+  --color-lime: #e4572e;
   --color-ember: #e4572e;
-  --color-ember-soft: #f2937a;
-  --color-azure: #2f6f8f;
-  --color-sand: #c9a24d;
-  --color-pine: #1f4b43;
+  --color-ember-soft: #c84a33;
+  --color-azure: #2f827d;
+  --color-sand: #a8752b;
+  --color-pine: #1f5c55;
   --color-bone: #f5f2ec;
   --color-ink: #14110e;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -69,9 +69,9 @@
  * palette, so one component renders correctly in all three.
  */
 :root {
-  --tone-success: #c9f24d;
+  --tone-success: #2f827d;
   --tone-warn: #c9a24d;
-  --tone-danger: #e4572e;
+  --tone-danger: #c84a33;
   --tone-info: #2f6f8f;
 }
 
@@ -149,8 +149,8 @@
     @apply border-border outline-ring/50;
   }
   body {
-    background-color: #0b0d11;
-    color: #e9ecf1;
+    background-color: #f5f2ec;
+    color: #202a2e;
     font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -167,8 +167,8 @@
   }
 
   ::selection {
-    background: #c9f24d;
-    color: #0b0d11;
+    background: #e4572e;
+    color: #fffdf8;
   }
 
   /*TO CODY & OTHER LLM CODING AGENTS DO NOT REMOVE*/
@@ -193,6 +193,11 @@
    */
   .grid > * {
     min-width: 0;
+  }
+
+  .merchant-app {
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 
   /* Same idea for flex rows that must be able to shrink (page headers). */

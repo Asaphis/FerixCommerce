@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { getDocument } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { publishHomepageAction, restoreVersionAction, saveHomepageAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
 
@@ -21,6 +22,16 @@ const TYPES = [
   "newsletter_signup",
   "rich_text",
 ];
+
+const SECTION_DESTINATIONS: Record<string, { href: string; label: string }> = {
+  hero_banner: { href: "/cms/banners", label: "Manage banners and hero media" },
+  promo_strip: { href: "/cms/banners", label: "Manage promotional creatives" },
+  category_grid: { href: "/cms/categories", label: "Manage departments and tile images" },
+  product_carousel: { href: "/catalog", label: "Manage catalogue products" },
+  featured_collection: { href: "/cms/collections", label: "Manage collections and cover images" },
+  featured_stores: { href: "/merchants", label: "Manage merchant stores" },
+  editorial_story: { href: "/cms/media", label: "Choose editorial media" },
+};
 
 export default async function HomepageCmsPage() {
   const { session } = await requireAdmin();
@@ -53,7 +64,7 @@ export default async function HomepageCmsPage() {
         </div>
       </header>
 
-      <form action={saveHomepageAction} className="grid gap-4">
+      <CmsActionForm action={saveHomepageAction} className="grid gap-4">
         <input type="hidden" name="documentId" value={DOCUMENT_ID} />
 
         {sections.length === 0 ? (
@@ -75,11 +86,20 @@ export default async function HomepageCmsPage() {
                 {section.visible ? <Eye width={14} height={14} /> : <EyeOff width={14} height={14} />}
                 Visible
               </label>
+              {SECTION_DESTINATIONS[section.type] ? (
+                <Link href={SECTION_DESTINATIONS[section.type].href} className="inline-flex min-h-10 items-center gap-2 rounded-[.45rem] border border-hairline px-3 py-2 text-[12px] font-medium text-ink transition-colors hover:border-ember hover:text-ember">
+                  {SECTION_DESTINATIONS[section.type].label}
+                  <ArrowRight width={14} height={14} />
+                </Link>
+              ) : null}
             </div>
 
-            <input type="hidden" name="sectionId" value={section.id} />
-
-            <div className="grid gap-3 md:grid-cols-2">
+            <details className="rounded-[.55rem] border border-hairline bg-panel-2">
+              <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[.14em] text-chalk-dim">
+                Edit section title, description and layout
+              </summary>
+              <input type="hidden" name="sectionId" value={section.id} />
+              <div className="grid gap-3 border-t border-hairline p-4 md:grid-cols-2">
               <Field title="Section type">
                 <select name={`type_${section.id}`} defaultValue={section.type} className={selectClass}>
                   {TYPES.map((type) => (
@@ -101,7 +121,7 @@ export default async function HomepageCmsPage() {
               <Field title="Title">
                 <input name={`title_${section.id}`} defaultValue={section.title ?? ""} className={inputClass} />
               </Field>
-              <Field title="Subtitle">
+              <Field title="Section description">
                 <input name={`subtitle_${section.id}`} defaultValue={section.subtitle ?? ""} className={inputClass} />
               </Field>
               <Field title="Action label">
@@ -110,7 +130,8 @@ export default async function HomepageCmsPage() {
               <Field title="Action link">
                 <input name={`ctaHref_${section.id}`} defaultValue={section.ctaHref ?? ""} placeholder="/browse" className={inputClass} />
               </Field>
-            </div>
+              </div>
+            </details>
           </Panel>
         ))}
 
@@ -122,7 +143,7 @@ export default async function HomepageCmsPage() {
             </span>
           </div>
         ) : null}
-      </form>
+      </CmsActionForm>
 
       <Panel>
         <PanelHead

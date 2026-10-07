@@ -22,17 +22,20 @@ export function OpsButton({
   className,
   type = "button",
   disabled,
+  onClick,
 }: {
   children: React.ReactNode;
   variant?: Variant;
   className?: string;
   type?: "button" | "submit";
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type={type}
       disabled={disabled}
+      onClick={onClick}
       className={cn(
         "inline-flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-[2px] px-3 py-2 text-[12.5px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40",
         VARIANTS[variant],

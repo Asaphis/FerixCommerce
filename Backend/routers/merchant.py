@@ -18,8 +18,9 @@ from core import (
     InventoryLog, LedgerEntry, MediaAsset, Order, Payout, SessionLocal, StaffSession,
     audit, aware, collections as all_collections, find_category, find_merchant, find_product,
     hash_password, iso, issue_staff_session, merchants as all_merchants, new_id, now,
-    permissions_for, placeholder, products as all_products, put_row, require_permission,
-    require_staff, rows_of, sync_pending_media, upload_media_blob, verify_password, media_json,
+    permissions_for, placeholder, products as all_products, put_row, remove_media_blob,
+    require_permission, require_staff, rows_of, storage_info, sync_pending_media,
+    upload_media_blob, validate_media_upload, verify_password, media_json,
 )
 
 router = APIRouter(prefix="/merchant", tags=["merchant"])
@@ -858,7 +859,8 @@ def media(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         staff = require_staff(db, session, "merchant")
         sync_pending_media(db)
         from core import media_for
-        return {"assets": media_for(db, "merchant", staff.subject_id), "storage": "cloudinary" if __import__("os").getenv("CLOUDINARY_URL") else "local"}
+        return {"assets": media_for(db, "merchant", staff.subject_id),
+                "storage": storage_info()["provider"], "storageInfo": storage_info()}
 
 
 @router.post("/media")
@@ -866,6 +868,8 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
         require_permission(staff, "merchant.store.manage")
+        if payload.kind not in {"image", "video"}:
+            raise HTTPException(422, "Media kind must be image or video")
         asset = MediaAsset(id=new_id("med"), owner_type="merchant", owner_id=staff.subject_id,
                            kind=payload.kind, url=payload.url, alt=payload.alt, folder=payload.folder,
                            public_id=payload.publicId, width=payload.width, height=payload.height)
@@ -880,6 +884,7 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
 async def upload_media(
     request: Request,
     session: Optional[str] = Query(None),
+    x_session: Optional[str] = Header(None, alias="X-Ferix-Session"),
     file: UploadFile = File(...),
     kind: str = Form("image"),
     alt: str = Form(""),
@@ -887,22 +892,26 @@ async def upload_media(
 ):
     """Local-disk upload fallback for MVP deployments without Cloudinary."""
     with SessionLocal() as db:
-        staff = require_staff(db, session, "merchant")
-        content = await file.read()
+        staff = require_staff(db, session or x_session, "merchant")
+        require_permission(staff, "merchant.store.manage")
+        if kind not in {"image", "video"}:
+            raise HTTPException(422, "Upload kind must be image or video")
+        content = await file.read(20 * 1024 * 1024 + 1)
         if not content or len(content) > 20 * 1024 * 1024:
             raise HTTPException(400, "Upload must be between 1 byte and 20 MB")
+        validate_media_upload(content, file.filename or "asset", kind)
         url, public_id, storage = upload_media_blob(content, file.filename or "asset", kind)
         if url.startswith("/"):
             url = f"{str(request.base_url).rstrip('/')}{url}"
         asset = MediaAsset(
             id=new_id("med"), owner_type="merchant", owner_id=staff.subject_id,
-            kind=kind if kind in {"image", "video"} else "image", url=url,
+            kind=kind, url=url,
             public_id=public_id, alt=alt[:300], folder=folder[:80], bytes=len(content),
         )
         db.add(asset)
         audit(db, "merchant", staff.email, "media.upload", folder, public_id)
         db.commit()
-        return {"asset": media_json(asset), "storage": storage}
+        return {"asset": media_json(asset), "storage": storage, "storageInfo": storage_info(storage)}
 
 
 @router.delete("/media")
@@ -912,9 +921,10 @@ def remove_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
         asset = db.get(MediaAsset, str(payload.get("id")))
         if not asset or asset.owner_id != staff.subject_id:
             raise HTTPException(404, "Media not found")
+        cleanup = remove_media_blob(asset)
         db.delete(asset)
         db.commit()
-        return {"removed": str(payload.get("id"))}
+        return {"removed": str(payload.get("id")), "cleanup": cleanup}
 
 
 # ── Storefront document (Store Design lives behind this) ────────────────────

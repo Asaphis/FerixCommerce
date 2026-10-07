@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Package, Truck } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getOrder, ApiError } from "@/lib/api";
-import { setOrderStatusAction } from "@/lib/actions";
+import { OrderStatusForms } from "@/components/studio/order-status-form";
 import { SubmitButton } from "@/components/studio/controls";
 import { Eyebrow, Panel, PanelHead, Pill } from "@/components/studio/bits";
 import { statusTone } from "@/components/studio/order-bits";
@@ -94,53 +94,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
           <Panel>
             <PanelHead title="Fulfilment" hint="Moving this forward updates the shopper's account" />
-            <div className="flex flex-wrap gap-2">
-              {[
-                { to: "processing", label: "Processing" },
-                { to: "shipped", label: "Shipped" },
-                { to: "delivered", label: "Delivered" },
-                { to: "cancelled", label: "Cancelled" },
-              ].map((option) => (
-                <form key={option.to} action={setOrderStatusAction} className="flex items-end gap-2">
-                  <input type="hidden" name="id" value={order.id} />
-                  <input type="hidden" name="fulfillment" value={option.to} />
-                  {option.to === "shipped" ? (
-                    <>
-                      <label className="block">
-                        <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">Carrier</span>
-                        <select
-                          name="carrier"
-                          defaultValue={order.carrier ?? carriers[0]}
-                          className="mt-1.5 h-9 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
-                        >
-                          {carriers.map((carrier) => (
-                            <option key={carrier} value={carrier}>
-                              {carrier}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="block">
-                        <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">Tracking</span>
-                        <input
-                          name="tracking"
-                          defaultValue={order.tracking ?? ""}
-                          placeholder="Auto if blank"
-                          className="mt-1.5 h-9 w-[150px] rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
-                        />
-                      </label>
-                    </>
-                  ) : null}
-                  <SubmitButton
-                    variant={option.to === "cancelled" ? "danger" : "outline"}
-                    pendingLabel="Saving"
-                    className="py-2"
-                  >
-                    <Truck width={12} height={12} /> {option.label}
-                  </SubmitButton>
-                </form>
-              ))}
-            </div>
+            <OrderStatusForms orderId={order.id} carrier={order.carrier} tracking={order.tracking} carriers={carriers} />
             {order.tracking ? (
               <p className="mt-4 flex items-center gap-2 rounded-[2px] border border-hairline bg-panel-2 px-3 py-2.5 font-mono text-[11.5px] text-chalk">
                 <Package width={13} height={13} /> {order.carrier} · {order.tracking}

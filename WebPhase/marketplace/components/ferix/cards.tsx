@@ -3,14 +3,8 @@ import { ArrowRight, Check, Heart, MapPin, Minus, Plus, Trash2, Truck } from "lu
 import type { Category, Collection, Merchant, Product, Review } from "@/lib/api";
 import { assetUrl } from "@/lib/api";
 import { Eyebrow, Plate, Price, Stars, StockNote, Pill } from "@/components/ferix/marks";
-import { AddToCartButton } from "@/components/ferix/add-to-cart";
-import {
-  addToCartAction,
-  removeLineAction,
-  saveForLaterAction,
-  setQtyAction,
-  toggleWishlistAction,
-} from "@/lib/actions";
+import { AddToCartForm, WishlistForm } from "@/components/ferix/add-to-cart";
+import { removeLineAction, saveForLaterAction, setQtyAction } from "@/lib/actions";
 import { compact, dateShort, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +23,7 @@ export function ProductCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-[2px] rounded-tr-[9px] border border-line-warm bg-white transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25",
+        "group relative flex min-w-0 flex-col overflow-hidden rounded-[3px] border border-line-warm bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-ember/40 hover:shadow-[0_8px_24px_rgba(20,17,14,0.08)]",
         className,
       )}
     >
@@ -39,7 +33,7 @@ export function ProductCard({
           accent="#e4572e"
           src={assetUrl(product.images?.[0])}
           alt={product.title}
-          className="aspect-[3/2] w-full rounded-none sm:aspect-[4/3]"
+            className="aspect-[1/1] w-full rounded-none sm:aspect-[4/3]"
         />
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
           {product.discount ? <Pill tone="ember">−{product.discount}%</Pill> : null}
@@ -70,24 +64,8 @@ export function ProductCard({
 
         {showAdd ? (
           <div className="mt-3 flex items-center gap-1.5 border-t border-line-warm pt-3">
-            <form action={addToCartAction} className="flex-1">
-              <input type="hidden" name="productId" value={product.id} />
-              <AddToCartButton label="Add" disabled={product.stock <= 0} className="w-full py-2" />
-            </form>
-            <form action={toggleWishlistAction}>
-              <input type="hidden" name="productId" value={product.id} />
-              <input type="hidden" name="back" value="/browse" />
-              <button
-                type="submit"
-                aria-label={saved ? "Remove from saved" : "Save for later"}
-                className={cn(
-                  "grid h-9 w-9 cursor-pointer place-items-center rounded-[2px] border transition-colors",
-                  saved ? "border-ember/40 bg-ember/10 text-ember" : "border-line-warm text-ink-soft hover:border-ink/40 hover:text-ink",
-                )}
-              >
-                <Heart width={15} height={15} fill={saved ? "currentColor" : "none"} />
-              </button>
-            </form>
+            {product.stock > 0 ? <AddToCartForm productId={product.id} /> : <span className="flex-1"><button type="button" disabled className="w-full rounded-[2px] bg-bone-soft py-2 text-[13px] font-semibold text-ink-soft">Sold out</button></span>}
+            <WishlistForm productId={product.id} back="/browse" saved={saved} />
           </div>
         ) : null}
       </div>

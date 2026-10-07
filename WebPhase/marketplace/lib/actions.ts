@@ -97,9 +97,9 @@ export async function signOutAction(): Promise<void> {
 
 // ── Cart ───────────────────────────────────────────────────────────────
 
-export async function addToCartAction(formData: FormData): Promise<void> {
+export async function addToCartAction(formData: FormData): Promise<FormState> {
   const productId = String(formData.get("productId") ?? "");
-  if (!productId) return;
+  if (!productId) return { error: "Choose a product before adding it." };
   // A product can have several variant groups (size, colour); they arrive as
   // variant_<group> fields and are combined into the line's variant label.
   const chosen = Array.from(formData.entries())
@@ -113,30 +113,44 @@ export async function addToCartAction(formData: FormData): Promise<void> {
   try {
     const cart = await api.addCartItem({ productId, variant, qty: qty > 0 ? qty : 1 }, creds);
     if (cart.cartId) await writeCartId(cart.cartId);
-  } catch {
-    return;
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not add that item. Please try again." };
   }
   refreshAll();
+  return { message: "Added to your cart." };
+}
+
+/** Progressive-enhancement adapter for forms that do not render action state. */
+export async function addToCartPageAction(formData: FormData): Promise<void> {
+  await addToCartAction(formData);
 }
 
 export async function setQtyAction(formData: FormData): Promise<void> {
   const key = String(formData.get("key") ?? "");
   const qty = Number(formData.get("qty") ?? 1);
-  if (!key) return;
+  if (!key) redirect("/cart?error=That%20cart%20line%20is%20no%20longer%20available.");
   const creds = await withCart();
-  if (qty <= 0) {
-    await api.removeCartItem({ key }, creds);
-  } else {
-    await api.setCartQty({ key, qty }, creds);
+  try {
+    if (qty <= 0) {
+      await api.removeCartItem({ key }, creds);
+    } else {
+      await api.setCartQty({ key, qty }, creds);
+    }
+  } catch (error) {
+    redirect(`/cart?error=${encodeURIComponent(error instanceof api.ApiError ? error.message : "We could not update that quantity.")}`);
   }
   refreshAll();
 }
 
 export async function removeLineAction(formData: FormData): Promise<void> {
   const key = String(formData.get("key") ?? "");
-  if (!key) return;
+  if (!key) redirect("/cart?error=That%20cart%20line%20is%20no%20longer%20available.");
   const creds = await withCart();
-  await api.removeCartItem({ key }, creds);
+  try {
+    await api.removeCartItem({ key }, creds);
+  } catch (error) {
+    redirect(`/cart?error=${encodeURIComponent(error instanceof api.ApiError ? error.message : "We could not remove that item.")}`);
+  }
   refreshAll();
 }
 
@@ -152,13 +166,13 @@ export async function saveForLaterAction(formData: FormData): Promise<void> {
 export async function toggleWishlistAction(formData: FormData): Promise<void> {
   const productId = String(formData.get("productId") ?? "");
   const back = String(formData.get("back") ?? "/account/wishlist");
-  if (!productId) return;
+  if (!productId) redirect(`${back}?error=Choose%20a%20product%20before%20saving%20it.`);
   const creds = await readCredentials();
   if (!creds.session) redirect("/login");
   try {
     await api.toggleWishlist(productId, creds);
-  } catch {
-    return;
+  } catch (error) {
+    redirect(`${back}?error=${encodeURIComponent(error instanceof api.ApiError ? error.message : "We could not update your saved items.")}`);
   }
   revalidatePath(back);
   refreshAll();

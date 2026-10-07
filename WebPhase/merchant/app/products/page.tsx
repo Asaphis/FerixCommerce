@@ -83,7 +83,7 @@ export default async function ProductsPage({
               name="search"
               defaultValue={search ?? ""}
               placeholder="Search title or SKU"
-              className="h-11 w-[220px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
+              className="h-11 w-full rounded-[2px] sm:w-[220px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
             />
           </label>
           <label className="flex items-center gap-2">

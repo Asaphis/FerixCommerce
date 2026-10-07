@@ -5,7 +5,8 @@ import { CartLineRow } from "@/components/ferix/cards";
 import { EmptyState, Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
 import { money } from "@/lib/format";
 
-export default async function CartPage() {
+export default async function CartPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
+  const query = searchParams ? await searchParams : {};
   const cart = await cartState();
 
   if (!cart.lines.length) {
@@ -22,6 +23,11 @@ export default async function CartPage() {
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8">
+      {query.error ? (
+        <p role="alert" className="mb-4 rounded-[3px] border border-ember/40 bg-ember/8 px-3.5 py-3 text-[12.5px] text-ember">
+          {query.error}
+        </p>
+      ) : null}
       <SectionHead
         eyebrow="Cart"
         title={`${cart.count} item${cart.count === 1 ? "" : "s"} from ${cart.merchants.length} seller${cart.merchants.length === 1 ? "" : "s"}`}

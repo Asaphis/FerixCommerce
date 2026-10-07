@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import { Check, Loader2, ShoppingBag } from "lucide-react";
+import { Loader2, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { addToCartAction, toggleWishlistAction, type FormState } from "@/lib/actions";
 
 export function AddToCartButton({
   label = "Add to cart",
@@ -20,7 +21,7 @@ export function AddToCartButton({
 }) {
   const { pending } = useFormStatus();
   const tones = {
-    solid: "bg-ink text-bone hover:bg-ember",
+    solid: "bg-ember text-white hover:bg-ink",
     light: "bg-white text-ink hover:bg-bone-soft",
     lime: "bg-lime text-void hover:bg-chalk",
   };
@@ -41,8 +42,8 @@ export function AddToCartButton({
         </>
       ) : disabled ? (
         <>
-          <Check width={14} height={14} />
-          {addedLabel}
+          <span aria-hidden="true">—</span>
+          Sold out
         </>
       ) : (
         <>
@@ -51,6 +52,35 @@ export function AddToCartButton({
         </>
       )}
     </button>
+  );
+}
+
+/** A compact progressive-enhancement wrapper for product-card mutations. */
+export function AddToCartForm({ productId, className }: { productId: string; className?: string }) {
+  const [state, action] = useActionState<FormState, FormData>(async (_previous, formData) => addToCartAction(formData), {});
+  return (
+    <form action={action} className={cn("flex min-w-0 flex-1 flex-col gap-1.5", className)}>
+      <input type="hidden" name="productId" value={productId} />
+      <AddToCartButton label="Add" className="w-full py-2" />
+      {state?.error ? <p role="alert" className="text-[10px] leading-tight text-ember">{state.error}</p> : null}
+      {state?.message ? <p role="status" className="text-[10px] leading-tight text-pine">{state.message}</p> : null}
+    </form>
+  );
+}
+
+/** Wishlist feedback stays next to the heart instead of disappearing on error. */
+export function WishlistForm({ productId, back, saved }: { productId: string; back: string; saved: boolean }) {
+  return (
+    <form action={toggleWishlistAction} className="flex flex-col items-center gap-1">
+      <input type="hidden" name="productId" value={productId} />
+      <input type="hidden" name="back" value={back} />
+      <button type="submit" aria-label={saved ? "Remove from saved" : "Save for later"} className={cn(
+        "grid h-9 w-9 cursor-pointer place-items-center rounded-[2px] border transition-colors",
+        saved ? "border-ember/40 bg-ember/10 text-ember" : "border-line-warm text-ink-soft hover:border-ink/40 hover:text-ink",
+      )}>
+        <span aria-hidden="true">♡</span>
+      </button>
+    </form>
   );
 }
 
@@ -67,7 +97,7 @@ export function SubmitButton({
 }) {
   const { pending } = useFormStatus();
   const tones = {
-    solid: "bg-ink text-bone hover:bg-ember",
+    solid: "bg-ember text-white hover:bg-ink",
     outline: "border border-ink/25 text-ink hover:border-ink",
     light: "bg-lime text-void hover:bg-chalk",
   };

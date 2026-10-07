@@ -23,12 +23,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from core import (
     Address, Cart, Catalog, ContentDocument, FlashSale, FlashSaleItem, FREE_SHIPPING_OVER,
     Order, Review, SESSION_DAYS, SessionLocal, SessionToken, TAX_RATE, User, Wishlist,
     backfill_catalogue_media,
-    cart_for as _cart_for, cart_payload, categories as category_rows,
+    cart_for as _cart_for, cart_payload, categories as category_rows, brands as brand_rows,
     collections as collection_rows, decorate, find_merchant, find_product, get_user,
     hash_password, iso, line_key, merchants as merchant_rows, now, product_rows,
     public_user, put_row, require_user, sale_status, seed, store_card,
@@ -146,8 +147,26 @@ class CheckoutIn(BaseModel):
 
 # ── App ────────────────────────────────────────────────────────────────────
 
+class CompatibleMediaFiles(StaticFiles):
+    """Serve bundled /media assets and legacy local upload URLs together."""
+
+    def __init__(self, directory: str, upload_directory: str):
+        super().__init__(directory=directory)
+        self.upload_fallback = StaticFiles(directory=upload_directory)
+
+    async def get_response(self, path: str, scope):
+        if "/" not in path.strip("/"):
+            try:
+                return await super().get_response(path, scope)
+            except (HTTPException, StarletteHTTPException) as exc:
+                if exc.status_code != 404:
+                    raise
+                return await self.upload_fallback.get_response(path, scope)
+        return await super().get_response(path, scope)
+
+
 app = FastAPI(title="Ferixas Commerce API", version="3.0.0")
-app.mount("/media", StaticFiles(directory=str(MEDIA_ROOT)), name="media")
+app.mount("/media", CompatibleMediaFiles(str(MEDIA_ROOT), str(UPLOAD_ROOT)), name="media")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
 app.add_middleware(
     CORSMiddleware,
@@ -237,6 +256,15 @@ def categories():
             [{**c, "count": sum(p.get("category") == c.get("slug") for p in rows)}
              for c in category_rows(db) if c.get("visible", True)],
             key=lambda c: c.get("position", 0))}
+
+
+@app.get("/catalog/brands")
+def brands():
+    """Public brand directory: only visible brands, in editorial order."""
+    with SessionLocal() as db:
+        rows = [b for b in brand_rows(db) if b.get("visible", True)]
+        rows.sort(key=lambda b: (int(b.get("position", 0)), str(b.get("name", "")).lower()))
+        return {"brands": rows}
 
 
 @app.get("/catalog/products")
@@ -330,6 +358,10 @@ def home():
         cats = category_rows(db)
         cols = collection_rows(db)
         ms = merchant_rows(db)
+        brands = sorted(
+            [b for b in brand_rows(db) if b.get("visible", True)],
+            key=lambda b: (int(b.get("position", 0)), str(b.get("name", "")).lower()),
+        )
 
         doc = db.get(ContentDocument, "doc_marketplace_home")
         content = (doc.data if doc and doc.status == "published" else None) or {"sections": []}
@@ -358,6 +390,10 @@ def home():
                            "endsAt": iso(sale.ends_at), "bannerUrl": sale.banner_url,
                            "products": flash_items[:8]} if sale else None),
             "stores": [store_card(db, m) for m in ms],
+            # Hook for a future CMS `featured_brands` section. The existing
+            # document contract remains untouched; clients can opt into this
+            # data without requiring a schema migration.
+            "brands": brands,
             "stats": {"products": len(items), "merchants": len(ms), "categories": len(cats)},
         }
 

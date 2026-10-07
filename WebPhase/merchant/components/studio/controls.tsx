@@ -19,7 +19,7 @@ export function StudioButton({
   disabled?: boolean;
 }) {
   const variants = {
-    primary: "bg-lime text-void hover:bg-chalk border border-transparent",
+    primary: "bg-ember text-white hover:bg-[#c74725] border border-transparent",
     ghost: "text-chalk-dim hover:text-chalk hover:bg-panel-2 border border-transparent",
     outline: "border border-hairline text-chalk hover:border-chalk-dim hover:bg-panel-2",
     danger: "border border-ember/40 text-ember-soft hover:bg-ember/12",
@@ -29,7 +29,7 @@ export function StudioButton({
       type={type}
       disabled={disabled}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[2px] px-3 py-2 text-[12.5px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40",
+        "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[5px] px-3 py-2 text-[12.5px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-40",
         variants[variant],
         className,
       )}
@@ -53,7 +53,7 @@ export function SubmitButton({
 }) {
   const { pending } = useFormStatus();
   const variants = {
-    primary: "bg-lime text-void hover:bg-chalk border border-transparent",
+    primary: "bg-ember text-white hover:bg-[#c74725] border border-transparent",
     ghost: "text-chalk-dim hover:text-chalk hover:bg-panel-2 border border-transparent",
     outline: "border border-hairline text-chalk hover:border-chalk-dim hover:bg-panel-2",
     danger: "border border-ember/40 text-ember-soft hover:bg-ember/12",
@@ -63,7 +63,7 @@ export function SubmitButton({
       type="submit"
       disabled={pending}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[2px] px-3.5 py-2.5 text-[12.5px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[5px] px-3.5 py-2.5 text-[12.5px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60",
         variants[variant],
         className,
       )}
@@ -102,7 +102,7 @@ export function FilterForm({
       const target = event.target as HTMLElement;
       const isText = target instanceof HTMLInputElement && target.type === "search";
       if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => form.requestSubmit(), isText ? 350 : 0);
+      timer.current = setTimeout(() => HTMLFormElement.prototype.submit.call(form), isText ? 350 : 0);
     },
     [],
   );
@@ -115,7 +115,7 @@ export function FilterForm({
     <form ref={ref} action={action} method="get" onSubmit={onSubmit} className={className}>
       {children}
       <noscript>
-        <button type="submit" className="rounded-[2px] border border-hairline px-3 py-2 text-[12px] text-chalk">
+        <button type="submit" className="rounded-[5px] border border-hairline px-3 py-2 text-[12px] text-chalk">
           Apply
         </button>
       </noscript>

@@ -52,6 +52,7 @@ export default async function SettingsPage() {
                   <p className="mt-0.5 break-all font-mono text-[11px] text-chalk-dim">
                     {data.settings.customDomain || "Not connected"}
                   </p>
+                  <p className="mt-1 text-[10.5px] text-sand">Custom domain + SSL connection is coming soon.</p>
                 </div>
               </li>
               <li className="flex items-start gap-3 rounded-[2px] border border-hairline p-3.5">

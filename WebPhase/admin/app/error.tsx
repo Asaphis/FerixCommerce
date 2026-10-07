@@ -1,0 +1,4 @@
+"use client";
+export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  return <main className="grid min-h-[55vh] place-items-center"><div className="max-w-md rounded-[.65rem] border border-rose/30 bg-panel p-6 text-center"><p className="font-mono text-[10px] uppercase tracking-[.16em] text-rose">Console error</p><h1 className="mt-2 font-display text-xl font-semibold text-chalk">We could not load this view.</h1><p className="mt-2 text-[13px] leading-relaxed text-chalk-dim">Check the backend connection, then try again. No changes were applied.</p><button type="button" onClick={reset} className="mt-5 inline-flex min-h-11 items-center justify-center rounded-[.55rem] bg-signal px-4 py-2 text-[13px] font-semibold text-void">Try again</button></div></main>;
+}

@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listBanners } from "@/lib/api";
+import { assetUrl, listBanners, listMedia, type MediaAsset } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { CmsActionForm } from "@/components/ops/cms-action-form";
+import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { deleteBannerAction, saveBannerAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
 
 export default async function BannersPage() {
   const { session } = await requireAdmin();
   const { banners } = await listBanners(session);
+  let assets: MediaAsset[] = [];
+  try { assets = (await listMedia(session)).assets.map((asset) => ({ ...asset, url: assetUrl(asset.url) })); } catch { /* the URL field remains available if the library is unavailable */ }
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -39,7 +43,7 @@ export default async function BannersPage() {
                 <div className="flex min-w-0 flex-1 items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={banner.image}
+                    src={assetUrl(banner.image)}
                     alt={banner.headline}
                     className="h-16 w-24 shrink-0 rounded-[2px] border border-hairline object-cover"
                   />
@@ -64,7 +68,7 @@ export default async function BannersPage() {
                 <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
                   Edit banner
                 </summary>
-                <form action={saveBannerAction} className="grid gap-3 border-t border-hairline p-4">
+                <CmsActionForm action={saveBannerAction} className="grid gap-3 border-t border-hairline p-4">
                   <input type="hidden" name="id" value={banner.id} />
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <Field title="Media type">
@@ -105,13 +109,17 @@ export default async function BannersPage() {
                     <Field title="Secondary link">
                       <input name="secondaryHref" defaultValue={banner.secondaryHref ?? ""} className={inputClass} />
                     </Field>
-                    <Field title="Image URL">
-                      <input name="mediaUrl" defaultValue={banner.mediaUrl} className={inputClass} />
-                    </Field>
-                    <Field title="Video URL">
-                      <input name="videoUrl" defaultValue={banner.videoUrl ?? ""} className={inputClass} />
-                    </Field>
                   </div>
+                  <MediaUploadField
+                    urlName="mediaUrl"
+                    fileName="mediaFile"
+                    defaultUrl={assetUrl(banner.kind === "video" ? banner.videoUrl ?? banner.mediaUrl : banner.mediaUrl)}
+                    kind="auto"
+                    urlLabel="Media URL"
+                    fileLabel="Upload banner image or video"
+                    libraryAssets={assets.map((asset) => ({ url: asset.url, label: `${asset.kind} · ${asset.alt || asset.id}` }))}
+                    selectedLibraryUrl={assets.some((asset) => asset.url === assetUrl(banner.kind === "video" ? banner.videoUrl ?? banner.mediaUrl : banner.mediaUrl)) ? assetUrl(banner.kind === "video" ? banner.videoUrl ?? banner.mediaUrl : banner.mediaUrl) : ""}
+                  />
                   <Field title="Body">
                     <textarea name="body" defaultValue={banner.body} className={textareaClass} />
                   </Field>
@@ -126,7 +134,7 @@ export default async function BannersPage() {
                       </SubmitButton>
                     </div>
                   </div>
-                </form>
+                </CmsActionForm>
                 <form action={deleteBannerAction} className="border-t border-hairline px-4 py-3">
                   <input type="hidden" name="id" value={banner.id} />
                   <SubmitButton variant="danger" pendingLabel="Removing">
@@ -141,7 +149,7 @@ export default async function BannersPage() {
 
       <Panel>
         <PanelHead title="New banner" hint="Saved as live unless you switch it off." />
-        <form action={saveBannerAction} className="grid gap-3">
+        <CmsActionForm action={saveBannerAction} className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Media type">
               <select name="kind" defaultValue="image" className={selectClass}>
@@ -175,10 +183,15 @@ export default async function BannersPage() {
             <Field title="Action link">
               <input name="ctaHref" defaultValue="/browse" className={inputClass} />
             </Field>
-            <Field title="Image URL">
-              <input name="mediaUrl" placeholder="https://" className={inputClass} />
-            </Field>
           </div>
+          <MediaUploadField
+            urlName="mediaUrl"
+            fileName="mediaFile"
+            kind="auto"
+            urlLabel="Media URL"
+            fileLabel="Upload banner image or video"
+            libraryAssets={assets.map((asset) => ({ url: asset.url, label: `${asset.kind} · ${asset.alt || asset.id}` }))}
+          />
           <Field title="Body">
             <textarea name="body" placeholder="One short supporting line." className={textareaClass} />
           </Field>
@@ -192,7 +205,7 @@ export default async function BannersPage() {
               Create banner
             </SubmitButton>
           </div>
-        </form>
+        </CmsActionForm>
       </Panel>
 
       <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">

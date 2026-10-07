@@ -1,16 +1,19 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listMedia } from "@/lib/api";
+import { assetUrl, listMedia } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { CmsActionForm } from "@/components/ops/cms-action-form";
+import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { addMediaAction, removeMediaAction } from "@/lib/ops-actions";
 import { relative, titleCase } from "@/lib/format";
 
 export default async function MediaPage() {
   const { session } = await requireAdmin();
-  const { assets, storage } = await listMedia(session);
+  const { assets: listedAssets, storage } = await listMedia(session);
+  const assets = listedAssets.map((asset) => ({ ...asset, url: assetUrl(asset.url) }));
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -44,14 +47,9 @@ export default async function MediaPage() {
 
       <Panel>
         <PanelHead title="Add media" hint="Upload a file or paste a hosted URL. Alt text keeps the storefront accessible." />
-        <form action={addMediaAction} encType="multipart/form-data" className="grid gap-3">
-          <div className="grid grid-cols-2 gap-2.5 md:gap-3 xl:grid-cols-4">
-            <Field title="Media URL">
-              <input name="url" placeholder="https://" className={inputClass} />
-            </Field>
-            <Field title="Upload from device">
-              <input name="file" type="file" accept="image/*,video/*" className={inputClass} />
-            </Field>
+        <CmsActionForm action={addMediaAction} className="grid gap-3">
+          <MediaUploadField urlName="url" fileName="file" kind="auto" urlLabel="Media URL" fileLabel="Upload image or video" />
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:gap-3 xl:grid-cols-3">
             <Field title="Alt text">
               <input name="alt" placeholder="What the image shows" className={inputClass} />
             </Field>
@@ -71,7 +69,7 @@ export default async function MediaPage() {
               Add to library
             </SubmitButton>
           </div>
-        </form>
+        </CmsActionForm>
       </Panel>
 
       {assets.length === 0 ? (

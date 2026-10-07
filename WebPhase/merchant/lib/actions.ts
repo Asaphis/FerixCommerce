@@ -12,6 +12,26 @@ function refresh(path = "/") {
   revalidatePath("/", "layout");
 }
 
+function readImageUrls(formData: FormData): string[] {
+  const raw = String(formData.get("images") ?? "[]");
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string" && (value.startsWith("http") || value.startsWith("/"))) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function uploadProductImages(session: string, formData: FormData, current: string[]): Promise<string[]> {
+  const files = formData.getAll("mediaFiles").filter((value): value is File => value instanceof File && value.size > 0);
+  const uploaded = [...current];
+  for (const file of files) {
+    const result = await api.uploadMedia(session, file, { kind: "image", alt: String(formData.get("title") ?? "Product image").trim(), folder: "products" });
+    uploaded.push(result.asset.url);
+  }
+  return uploaded;
+}
+
 // ── Session ────────────────────────────────────────────────────────────
 
 export async function signInAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -63,6 +83,8 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       marketplace: formData.get("marketplace") === "on",
       description: String(formData.get("description") ?? "").trim() || null,
     });
+    const images = await uploadProductImages(session, formData, readImageUrls(formData));
+    if (images.length) await api.updateProduct(session, { id: created.product.id, images });
     refresh("/products");
     redirect(`/products/${created.product.slug}`);
   } catch (error) {
@@ -81,17 +103,19 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
   if (title.length < 2) return { error: "Give the product a title." };
   const compareRaw = String(formData.get("compareAt") ?? "").trim();
   try {
+    const images = await uploadProductImages(session, formData, readImageUrls(formData));
     await api.updateProduct(session, {
       id,
       title,
       category: String(formData.get("category") ?? "electronics"),
       price: Number(formData.get("price") ?? 0),
-      compareAt: compareRaw ? Number(compareRaw) : 0,
+      compareAt: compareRaw ? Number(compareRaw) : null,
       stock: Number(formData.get("stock") ?? 0),
       status: String(formData.get("status") ?? "draft"),
       store: formData.get("store") === "on",
       marketplace: formData.get("marketplace") === "on",
       description: String(formData.get("description") ?? "").trim(),
+      images,
     });
   } catch (error) {
     return { error: error instanceof api.ApiError ? error.message : "We could not save that product." };
@@ -100,14 +124,15 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
   return { message: "Product saved. Your store and the marketplace both use this record." };
 }
 
-export async function deleteProductAction(formData: FormData): Promise<void> {
+export async function deleteProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
   const id = String(formData.get("id") ?? "");
-  if (!session || !id) return;
+  if (!session) redirect("/login");
+  if (!id) return { error: "Which product?" };
   try {
     await api.deleteProduct(session, id);
-  } catch {
-    return;
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not remove that product." };
   }
   refresh("/products");
   redirect("/products");
@@ -134,25 +159,26 @@ export async function adjustStockAction(_prev: FormState, formData: FormData): P
 
 // ── Orders ─────────────────────────────────────────────────────────────
 
-export async function setOrderStatusAction(formData: FormData): Promise<void> {
+export async function setOrderStatusAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
   const id = String(formData.get("id") ?? "");
   const fulfillment = String(formData.get("fulfillment") ?? "");
-  if (!session || !id || !fulfillment) return;
+  if (!session) redirect("/login");
+  if (!id || !fulfillment) return { error: "Choose a fulfilment status." };
   const carrier = String(formData.get("carrier") ?? "").trim();
   const tracking = String(formData.get("tracking") ?? "").trim();
   try {
-    await api.setOrderStatus(session, {
-      id,
-      fulfillment,
-      carrier: carrier || null,
-      tracking: tracking || null,
-    });
-  } catch {
-    return;
+    await api.setOrderStatus(session, { id, fulfillment, carrier: carrier || null, tracking: tracking || null });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not update this order." };
   }
   refresh("/orders");
   revalidatePath(`/orders/${id}`);
+  return { message: "Fulfilment status updated." };
+}
+
+export async function setOrderStatusRequestAction(formData: FormData): Promise<void> {
+  await setOrderStatusAction({}, formData);
 }
 
 // ── Settings ───────────────────────────────────────────────────────────

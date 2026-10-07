@@ -16,6 +16,7 @@ import {
   Settings2,
   ShieldCheck,
   Store,
+  Tag,
   Users,
   Wallet,
   X,
@@ -35,6 +36,7 @@ const ICONS: Record<string, LucideIcon> = {
   card: CreditCard,
   wallet: Wallet,
   store: Store,
+  tag: Tag,
   users: Users,
   shield: ShieldCheck,
   history: History,
@@ -63,7 +65,7 @@ export function OpsSidebar() {
     <nav aria-label="Platform console" className="flex flex-col gap-4 px-3 pb-4">
       {NAV_GROUPS.map((group) => (
         <div key={group.label}>
-          <p className="px-3 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-chalk-dim/60">
+          <p className="px-3 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#9aa8ae]/70">
             {group.label}
           </p>
           <div className="flex flex-col gap-0.5">
@@ -78,7 +80,7 @@ export function OpsSidebar() {
                   className={cn(
                     "flex min-h-[44px] items-center gap-2.5 rounded-[2px] px-3 text-[12.5px] transition-colors",
                     FOCUS_RING,
-                    active ? "bg-panel-2 text-signal" : "text-chalk-dim hover:bg-panel-2 hover:text-chalk",
+                    active ? "bg-[#34434b] text-[#ffb29c]" : "text-[#b7c0c4] hover:bg-[#2b3840] hover:text-white",
                   )}
                 >
                   <Icon width={16} height={16} className="shrink-0" />
@@ -116,7 +118,7 @@ export function OpsRail() {
                 className={cn(
                   "grid h-11 w-11 place-items-center rounded-[2px] transition-colors",
                   FOCUS_RING,
-                  active ? "bg-panel-2 text-signal" : "text-chalk-dim hover:bg-panel-2 hover:text-chalk",
+                  active ? "bg-[#34434b] text-[#ffb29c]" : "text-[#b7c0c4] hover:bg-[#2b3840] hover:text-white",
                 )}
               >
                 <Icon width={18} height={18} />
@@ -150,7 +152,7 @@ export function OpsBottomNav() {
       <div aria-hidden="true" className="h-[72px] md:hidden" />
       <nav
         aria-label="Admin primary navigation"
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-hairline bg-panel/95 backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-hairline bg-[#202a31]/95 backdrop-blur-md md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto grid max-w-[560px] grid-cols-5">
@@ -235,7 +237,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
         className="absolute inset-0 h-full w-full cursor-default bg-black/60 backdrop-blur-sm"
       />
       <div
-        className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[4px] border-t border-hairline bg-panel px-4 pb-6 pt-3"
+        className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[4px] border-t border-hairline bg-[#202a31] px-4 pb-6 pt-3"
         style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -255,7 +257,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
         <div className="flex flex-col gap-4">
           {NAV_GROUPS.map((group) => (
             <div key={group.label}>
-              <p className="px-1 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-chalk-dim/60">
+              <p className="px-1 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#9aa8ae]/70">
                 {group.label}
               </p>
               <div className="flex flex-col gap-0.5">
@@ -271,7 +273,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
                       className={cn(
                         "flex min-h-[48px] items-center gap-3 rounded-[2px] px-3 text-[13.5px] transition-colors",
                         FOCUS_RING,
-                        active ? "bg-panel-2 text-signal" : "text-chalk-dim hover:bg-panel-2 hover:text-chalk",
+                        active ? "bg-[#34434b] text-[#ffb29c]" : "text-[#b7c0c4] hover:bg-[#2b3840] hover:text-white",
                       )}
                     >
                       <Icon width={17} height={17} className="shrink-0" />

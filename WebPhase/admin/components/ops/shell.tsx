@@ -13,12 +13,12 @@ export async function OpsShell({ children }: { children: ReactNode }) {
   const admin = await currentAdmin();
 
   if (!admin) {
-    return <div className="min-h-screen bg-void">{children}</div>;
+    return <div className="min-h-screen bg-[var(--canvas)]">{children}</div>;
   }
 
   return (
-    <div className="min-h-screen bg-void md:flex">
-      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-[64px] md:flex-col md:border-r md:border-hairline md:bg-panel xl:w-[230px]">
+    <div className="min-h-screen bg-[var(--canvas)] md:flex">
+      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-[64px] md:flex-col md:border-r md:border-[#303941] md:bg-[#202a31] xl:w-[230px]">
         <div className="flex items-center gap-2.5 px-2 py-4 xl:px-4">
           <OpsMark />
           <div className="hidden min-w-0 xl:block">
@@ -58,7 +58,7 @@ export async function OpsShell({ children }: { children: ReactNode }) {
       </aside>
 
       <main className="min-w-0 flex-1 md:pl-[64px] xl:pl-[230px]">
-        <div className="mx-auto max-w-[1200px] px-4 pb-28 pt-6 md:pb-8">{children}</div>
+        <div className="mx-auto w-full max-w-[1280px] px-4 pb-28 pt-5 sm:px-6 md:pb-8 lg:px-8">{children}</div>
       </main>
       <OpsBottomNav />
     </div>

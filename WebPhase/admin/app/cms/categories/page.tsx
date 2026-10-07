@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCategories } from "@/lib/api";
+import { assetUrl, listCategories } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { CmsActionForm } from "@/components/ops/cms-action-form";
+import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { deleteCategoryAction, saveCategoryAction } from "@/lib/ops-actions";
 import { num } from "@/lib/format";
 
@@ -62,7 +64,7 @@ export default async function CategoriesPage() {
                 <div className="flex min-w-0 items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={category.image}
+                    src={assetUrl(category.image)}
                     alt={category.name}
                     className="h-14 w-14 shrink-0 rounded-[2px] border border-hairline object-cover"
                   />
@@ -87,7 +89,7 @@ export default async function CategoriesPage() {
                 <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
                   Edit department
                 </summary>
-                <form action={saveCategoryAction} className="grid gap-3 border-t border-hairline p-4">
+                <CmsActionForm action={saveCategoryAction} className="grid gap-3 border-t border-hairline p-4">
                   <input type="hidden" name="slug" value={category.slug} />
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <Field title="Name">
@@ -99,13 +101,11 @@ export default async function CategoriesPage() {
                     <Field title="Position">
                       <input name="position" type="number" min={0} defaultValue={category.position} className={inputClass} />
                     </Field>
-                    <Field title="Image URL">
-                      <input name="image" defaultValue={category.image} className={inputClass} />
-                    </Field>
                     <Field title="Short description">
                       <input name="blurb" defaultValue={category.blurb} className={inputClass} />
                     </Field>
                   </div>
+                  <MediaUploadField urlName="image" fileName="imageFile" defaultUrl={assetUrl(category.image)} kind="image" urlLabel="Image URL" fileLabel="Upload department image" />
                   <Switches
                     defaults={{
                       showInNav: category.showInNav,
@@ -119,7 +119,7 @@ export default async function CategoriesPage() {
                       Save changes
                     </SubmitButton>
                   </div>
-                </form>
+                </CmsActionForm>
                 <form action={deleteCategoryAction} className="border-t border-hairline px-4 py-3">
                   <input type="hidden" name="slug" value={category.slug} />
                   <SubmitButton variant="danger" pendingLabel="Removing">
@@ -134,7 +134,7 @@ export default async function CategoriesPage() {
 
       <Panel>
         <PanelHead title="New department" hint="The slug is generated from the name if you leave it blank." />
-        <form action={saveCategoryAction} className="grid gap-3">
+        <CmsActionForm action={saveCategoryAction} className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Name">
               <input name="name" placeholder="Outdoor living" className={inputClass} />
@@ -148,13 +148,11 @@ export default async function CategoriesPage() {
             <Field title="Position">
               <input name="position" type="number" min={0} defaultValue={categories.length + 1} className={inputClass} />
             </Field>
-            <Field title="Image URL">
-              <input name="image" placeholder="https://" className={inputClass} />
-            </Field>
             <Field title="Short description">
               <input name="blurb" placeholder="One short line." className={inputClass} />
             </Field>
           </div>
+          <MediaUploadField urlName="image" fileName="imageFile" kind="image" urlLabel="Image URL" fileLabel="Upload department image" />
           <Switches defaults={{ showInNav: true, showAsTile: true, showAsText: false, visible: true }} />
           <div>
             <SubmitButton pendingLabel="Creating">
@@ -162,7 +160,7 @@ export default async function CategoriesPage() {
               Create department
             </SubmitButton>
           </div>
-        </form>
+        </CmsActionForm>
       </Panel>
     </div>
   );

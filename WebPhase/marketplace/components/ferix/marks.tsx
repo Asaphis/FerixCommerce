@@ -230,7 +230,7 @@ export function LinkButton({
   className?: string;
 }) {
   const variants = {
-    solid: "bg-ink text-bone hover:bg-ember",
+    solid: "bg-ember text-white hover:bg-ink",
     outline: "border border-ink/25 text-ink hover:border-ink hover:bg-ink hover:text-bone",
     ghost: "text-ink-soft hover:text-ink",
     light: "bg-white/90 text-ink hover:bg-white",

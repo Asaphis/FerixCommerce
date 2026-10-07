@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getProduct, ApiError } from "@/lib/api";
-import { deleteProductAction } from "@/lib/actions";
-import { SubmitButton } from "@/components/studio/controls";
+import { ProductDeleteForm } from "@/components/studio/product-delete-form";
 import { ProductForm } from "@/components/studio/product-form";
 import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { Thumb } from "@/components/studio/marks";
@@ -51,12 +50,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
         </div>
-        <form action={deleteProductAction}>
-          <input type="hidden" name="id" value={product.id} />
-          <SubmitButton variant="danger" pendingLabel="Removing">
-            <Trash2 width={13} height={13} /> Remove from catalogue
-          </SubmitButton>
-        </form>
+        <ProductDeleteForm id={product.id} />
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">

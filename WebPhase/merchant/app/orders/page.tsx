@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Package, Search, Truck } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { listOrders } from "@/lib/api";
-import { setOrderStatusAction } from "@/lib/actions";
+import { setOrderStatusRequestAction } from "@/lib/actions";
 import { FilterForm } from "@/components/studio/controls";
 import { ConfirmAction } from "@/components/studio/confirm-action";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
@@ -152,7 +152,7 @@ export default async function OrdersPage({
                     ) : null}
                     {order.fulfillment !== "cancelled" && order.fulfillment !== "delivered" ? (
                       <ConfirmAction
-                        action={setOrderStatusAction}
+                        action={setOrderStatusRequestAction}
                         fields={{ id: order.id, fulfillment: "cancelled" }}
                         label="Cancel"
                         confirmLabel="Refund and cancel?"
@@ -198,7 +198,7 @@ function StatusButton({
   danger?: boolean;
 }) {
   return (
-    <form action={setOrderStatusAction}>
+    <form action={setOrderStatusRequestAction}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="fulfillment" value={to} />
       <button

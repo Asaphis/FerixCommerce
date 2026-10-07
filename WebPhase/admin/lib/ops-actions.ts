@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as api from "@/lib/api";
 import { readSession } from "@/lib/session";
+import type { FormState } from "@/lib/actions";
 
 function refresh(path: string) {
   revalidatePath(path);
@@ -22,6 +23,24 @@ const csv = (form: FormData, key: string) =>
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean);
+
+async function uploadedMediaUrl(
+  session: string,
+  form: FormData,
+  fieldName: string,
+  kind: string,
+  alt: string,
+  folder: string,
+): Promise<string> {
+  const file = form.get(fieldName);
+  if (!(file instanceof File) || file.size === 0) return "";
+  const result = await api.uploadMedia(session, file, { kind, alt, folder });
+  return result.asset.url;
+}
+
+function actionError(error: unknown, fallback: string): FormState {
+  return { error: error instanceof api.ApiError ? error.message : fallback };
+}
 
 // ── Catalogue ──────────────────────────────────────────────────────────
 
@@ -93,15 +112,21 @@ export async function deleteCatalogProductAction(form: FormData): Promise<void> 
 
 // ── CMS: banners ───────────────────────────────────────────────────────
 
-export async function saveBannerAction(form: FormData): Promise<void> {
+export async function saveBannerAction(_previous: FormState, form: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
   const headline = str(form, "headline");
-  if (!headline) return;
+  if (!headline) return { error: "Enter a banner headline before saving." };
+  const kind = str(form, "kind", "image");
   try {
+    const uploadedUrl = await uploadedMediaUrl(session, form, "mediaFile", kind, headline, "banners");
+    const libraryUrl = str(form, "mediaLibraryUrl");
+    const mediaUrl = uploadedUrl || libraryUrl || str(form, "mediaUrl");
+    if (!mediaUrl) return { error: "Choose a media-library asset, paste a URL, or upload a banner file." };
+    const videoUrl = kind === "video" ? uploadedUrl || libraryUrl || str(form, "mediaUrl") || str(form, "videoUrl") || null : null;
     await api.saveBanner(session, {
       id: str(form, "id") || undefined,
-      kind: str(form, "kind", "image"),
+      kind,
       eyebrow: str(form, "eyebrow"),
       headline,
       body: str(form, "body"),
@@ -109,17 +134,18 @@ export async function saveBannerAction(form: FormData): Promise<void> {
       ctaHref: str(form, "ctaHref", "/browse"),
       secondaryLabel: str(form, "secondaryLabel") || null,
       secondaryHref: str(form, "secondaryHref") || null,
-      mediaUrl: str(form, "mediaUrl"),
-      videoUrl: str(form, "videoUrl") || null,
+      mediaUrl,
+      videoUrl,
       accent: str(form, "accent", "#c8ff3d"),
       audience: str(form, "audience", "everyone"),
       active: bool(form, "active"),
       order: Number(form.get("order") ?? 99),
     });
-  } catch {
-    return;
+  } catch (error) {
+    return actionError(error, "We could not upload or save this banner.");
   }
   refresh("/cms/banners");
+  return { message: str(form, "id") ? "Banner changes saved." : "Banner created." };
 }
 
 export async function deleteBannerAction(form: FormData): Promise<void> {
@@ -137,27 +163,30 @@ export async function deleteBannerAction(form: FormData): Promise<void> {
 
 // ── CMS: categories and collections ────────────────────────────────────
 
-export async function saveCategoryAction(form: FormData): Promise<void> {
+export async function saveCategoryAction(_previous: FormState, form: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
-  if (!str(form, "name")) return;
+  const name = str(form, "name");
+  if (!name) return { error: "Enter a department name." };
   try {
+    const imageFileUrl = await uploadedMediaUrl(session, form, "imageFile", "image", name, "categories");
     await api.saveCategory(session, {
       slug: str(form, "slug") || undefined,
-      name: str(form, "name"),
+      name,
       blurb: str(form, "blurb"),
       glyph: str(form, "glyph", "Tag"),
-      image: str(form, "image") || undefined,
+      image: imageFileUrl || str(form, "image") || undefined,
       showInNav: bool(form, "showInNav"),
       showAsTile: bool(form, "showAsTile"),
       showAsText: bool(form, "showAsText"),
       visible: bool(form, "visible"),
       position: Number(form.get("position") ?? 0),
     });
-  } catch {
-    return;
+  } catch (error) {
+    return actionError(error, "We could not upload the department image or save this department.");
   }
   refresh("/cms/categories");
+  return { message: "Department saved." };
 }
 
 export async function deleteCategoryAction(form: FormData): Promise<void> {
@@ -173,23 +202,26 @@ export async function deleteCategoryAction(form: FormData): Promise<void> {
   refresh("/cms/categories");
 }
 
-export async function saveCollectionAction(form: FormData): Promise<void> {
+export async function saveCollectionAction(_previous: FormState, form: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
-  if (!str(form, "name")) return;
+  const name = str(form, "name");
+  if (!name) return { error: "Enter a collection name." };
   try {
+    const imageFileUrl = await uploadedMediaUrl(session, form, "imageFile", "image", name, "collections");
     await api.saveCollection(session, {
       slug: str(form, "slug") || undefined,
-      name: str(form, "name"),
+      name,
       blurb: str(form, "blurb"),
-      image: str(form, "image") || undefined,
+      image: imageFileUrl || str(form, "image") || undefined,
       visible: bool(form, "visible"),
       position: Number(form.get("position") ?? 0),
     });
-  } catch {
-    return;
+  } catch (error) {
+    return actionError(error, "We could not upload the collection image or save this collection.");
   }
   refresh("/cms/collections");
+  return { message: "Collection saved." };
 }
 
 export async function deleteCollectionAction(form: FormData): Promise<void> {
@@ -207,7 +239,7 @@ export async function deleteCollectionAction(form: FormData): Promise<void> {
 
 // ── CMS: media ─────────────────────────────────────────────────────────
 
-export async function addMediaAction(form: FormData): Promise<void> {
+export async function addMediaAction(_previous: FormState, form: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
   const url = str(form, "url");
@@ -215,17 +247,18 @@ export async function addMediaAction(form: FormData): Promise<void> {
   const kind = str(form, "kind", "image");
   const alt = str(form, "alt");
   const folder = str(form, "folder", "platform");
-  if (!(file instanceof File && file.size > 0) && !url) return;
+  if (!(file instanceof File && file.size > 0) && !url) return { error: "Choose a file or enter a hosted media URL." };
   try {
     if (file instanceof File && file.size > 0) {
       await api.uploadMedia(session, file, { kind, alt, folder });
     } else {
       await api.addMedia(session, { url, kind, alt, folder });
     }
-  } catch {
-    return;
+  } catch (error) {
+    return actionError(error, "We could not upload or add this media asset.");
   }
   refresh("/cms/media");
+  return { message: "Media asset added to the library." };
 }
 
 export async function removeMediaAction(form: FormData): Promise<void> {
@@ -243,7 +276,7 @@ export async function removeMediaAction(form: FormData): Promise<void> {
 
 // ── CMS: documents ─────────────────────────────────────────────────────
 
-export async function saveHomepageAction(form: FormData): Promise<void> {
+export async function saveHomepageAction(_previous: FormState, form: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
   const documentId = str(form, "documentId", "doc_marketplace_home");
@@ -260,10 +293,11 @@ export async function saveHomepageAction(form: FormData): Promise<void> {
   }));
   try {
     await api.saveDocument(session, { id: documentId, data: { sections }, note: "Homepage saved" });
-  } catch {
-    return;
+  } catch (error) {
+    return actionError(error, "We could not save the homepage draft.");
   }
   refresh("/cms/homepage");
+  return { message: "Homepage draft saved." };
 }
 
 export async function publishHomepageAction(form: FormData): Promise<void> {

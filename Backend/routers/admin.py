@@ -6,6 +6,7 @@ needs next: catalogue, CMS, media, promotions, payments, payouts, roles, audit.
 from __future__ import annotations
 
 from datetime import timedelta
+import re
 from typing import Optional
 
 from fastapi import APIRouter, Body, File, Form, Header, HTTPException, Query, Request, UploadFile
@@ -18,7 +19,8 @@ from core import (
     audit, collections as all_collections, categories as all_categories, find_merchant,
     find_product, iso, issue_staff_session, media_json, merchants as all_merchants,
     new_id, now, permissions_for, placeholder, products as all_products, put_row, drop_row,
-    require_permission, require_staff, rows_of, sync_pending_media, upload_media_blob, verify_password,
+    remove_media_blob, require_permission, require_staff, rows_of, storage_info,
+    sync_pending_media, upload_media_blob, validate_media_upload, verify_password,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -136,6 +138,27 @@ class MediaIn(BaseModel):
     height: int = 0
 
 
+class BrandCreate(BaseModel):
+    name: str
+    slug: str
+    description: str = ""
+    imageUrl: str = ""
+    featured: bool = False
+    visible: bool = True
+    position: int = 0
+
+
+class BrandPatch(BaseModel):
+    id: str
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    description: Optional[str] = None
+    imageUrl: Optional[str] = None
+    featured: Optional[bool] = None
+    visible: Optional[bool] = None
+    position: Optional[int] = None
+
+
 class DocumentIn(BaseModel):
     id: str
     title: Optional[str] = None
@@ -194,6 +217,42 @@ def _days_between(a: str) -> int:
         return (now().date() - date.fromisoformat(_date(a))).days
     except Exception:
         return 999
+
+
+def _brand_fields(data: dict, existing: Optional[dict] = None) -> dict:
+    """Normalize and validate the stable cross-surface brand contract."""
+    current = existing or {}
+    name = str(data.get("name", current.get("name", ""))).strip()
+    slug = str(data.get("slug", current.get("slug", ""))).strip().lower()
+    description = str(data.get("description", current.get("description", "")) or "").strip()
+    image_url = str(data.get("imageUrl", current.get("imageUrl", "")) or "").strip()
+    if not 1 <= len(name) <= 120:
+        raise HTTPException(422, "Brand name must be between 1 and 120 characters")
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug) or len(slug) > 80:
+        raise HTTPException(422, "Brand slug must be lowercase kebab-case and at most 80 characters")
+    if len(description) > 500:
+        raise HTTPException(422, "Brand description must be at most 500 characters")
+    if len(image_url) > 2048 or (image_url and not (image_url.startswith("/") or re.match(r"^https?://", image_url, re.I))):
+        raise HTTPException(422, "Brand imageUrl must be a relative path or http(s) URL under 2048 characters")
+    position = data.get("position", current.get("position", 0))
+    if not isinstance(position, int) or position < 0 or position > 100000:
+        raise HTTPException(422, "Brand position must be between 0 and 100000")
+    return {
+        "id": str(data.get("id", current.get("id", ""))),
+        "name": name, "slug": slug, "description": description,
+        "imageUrl": image_url, "featured": bool(data.get("featured", current.get("featured", False))),
+        "visible": bool(data.get("visible", current.get("visible", True))), "position": position,
+    }
+
+
+def _brand_by_id(db, value: str) -> Optional[dict]:
+    return next((b for b in rows_of(db, "brand") if b.get("id") == value or b.get("slug") == value), None)
+
+
+def _assert_unique_brand_slug(db, slug: str, brand_id: Optional[str] = None) -> None:
+    duplicate = next((b for b in rows_of(db, "brand") if b.get("slug") == slug and b.get("id") != brand_id), None)
+    if duplicate:
+        raise HTTPException(409, "A brand with that slug already exists")
 
 
 def _order_row(db, row: Order) -> dict:
@@ -896,6 +955,64 @@ def cms_banner_delete(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         return {"removed": banner_id}
 
 
+# ── Brands (CMS) ────────────────────────────────────────────────────────────
+
+@router.get("/cms/brands")
+def cms_brands(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        rows = sorted(rows_of(db, "brand"), key=lambda b: (int(b.get("position", 0)), str(b.get("name", "")).lower()))
+        return {"brands": rows}
+
+
+@router.post("/cms/brand")
+def cms_brand_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: BrandCreate = Body(...)):
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        row = _brand_fields(payload.model_dump())
+        row["id"] = new_id("brd")
+        _assert_unique_brand_slug(db, row["slug"])
+        put_row(db, "brand", row["slug"], row)
+        audit(db, "admin", staff.email, "brand.create", row["id"], row["name"])
+        db.commit()
+        return {"brand": row}
+
+
+@router.patch("/cms/brand")
+def cms_brand_update(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: BrandPatch = Body(...)):
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        existing = _brand_by_id(db, payload.id)
+        if not existing:
+            raise HTTPException(404, "Brand not found")
+        values = {key: value for key, value in payload.model_dump().items() if key != "id" and value is not None}
+        row = _brand_fields({**existing, **values, "id": existing["id"]}, existing)
+        _assert_unique_brand_slug(db, row["slug"], row["id"])
+        if row["slug"] != existing.get("slug"):
+            drop_row(db, "brand", existing["slug"])
+        put_row(db, "brand", row["slug"], row)
+        audit(db, "admin", staff.email, "brand.update", row["id"], row["name"])
+        db.commit()
+        return {"brand": row}
+
+
+@router.delete("/cms/brand")
+def cms_brand_delete(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        existing = _brand_by_id(db, str(payload.get("id") or ""))
+        if not existing:
+            raise HTTPException(404, "Brand not found")
+        drop_row(db, "brand", existing["slug"])
+        audit(db, "admin", staff.email, "brand.delete", existing["id"], existing["name"])
+        db.commit()
+        return {"removed": existing["id"]}
+
+
 # ── Content documents (CMS) ────────────────────────────────────────────────
 
 def _document_json(doc: ContentDocument) -> dict:
@@ -1006,9 +1123,8 @@ def media(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         require_staff(db, session, "admin")
         sync_pending_media(db)
         rows = db.scalars(select(MediaAsset).where(MediaAsset.owner_type == "platform").order_by(MediaAsset.created_at.desc())).all()
-        import os
         return {"assets": [media_json(m) for m in rows],
-                "storage": "cloudinary" if os.getenv("CLOUDINARY_URL") else "local"}
+                "storage": storage_info()["provider"], "storageInfo": storage_info()}
 
 
 @router.post("/media")
@@ -1016,6 +1132,8 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "media.manage")
+        if payload.kind not in {"image", "video"}:
+            raise HTTPException(422, "Media kind must be image or video")
         asset = MediaAsset(id=new_id("med"), owner_type="platform", owner_id="platform",
                            kind=payload.kind, url=payload.url, alt=payload.alt, folder=payload.folder,
                            public_id=payload.publicId, width=payload.width, height=payload.height)
@@ -1029,6 +1147,7 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
 async def upload_media(
     request: Request,
     session: Optional[str] = Query(None),
+    x_session: Optional[str] = Header(None, alias="X-Ferix-Session"),
     file: UploadFile = File(...),
     kind: str = Form("image"),
     alt: str = Form(""),
@@ -1036,23 +1155,26 @@ async def upload_media(
 ):
     """Local-disk upload fallback for MVP deployments without Cloudinary."""
     with SessionLocal() as db:
-        staff = require_staff(db, session, "admin")
+        staff = require_staff(db, session or x_session, "admin")
         require_permission(staff, "media.manage")
-        content = await file.read()
+        if kind not in {"image", "video"}:
+            raise HTTPException(422, "Upload kind must be image or video")
+        content = await file.read(20 * 1024 * 1024 + 1)
         if not content or len(content) > 20 * 1024 * 1024:
             raise HTTPException(400, "Upload must be between 1 byte and 20 MB")
+        validate_media_upload(content, file.filename or "asset", kind)
         url, public_id, storage = upload_media_blob(content, file.filename or "asset", kind)
         if url.startswith("/"):
             url = f"{str(request.base_url).rstrip('/')}{url}"
         asset = MediaAsset(
             id=new_id("med"), owner_type="platform", owner_id="platform",
-            kind=kind if kind in {"image", "video"} else "image", url=url,
+            kind=kind, url=url,
             public_id=public_id, alt=alt[:300], folder=folder[:80], bytes=len(content),
         )
         db.add(asset)
         audit(db, "admin", staff.email, "media.upload", folder, public_id)
         db.commit()
-        return {"asset": media_json(asset), "storage": storage}
+        return {"asset": media_json(asset), "storage": storage, "storageInfo": storage_info(storage)}
 
 
 @router.delete("/media")
@@ -1063,9 +1185,10 @@ def remove_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
         asset = db.get(MediaAsset, str(payload.get("id")))
         if not asset:
             raise HTTPException(404, "Media not found")
+        cleanup = remove_media_blob(asset)
         db.delete(asset)
         db.commit()
-        return {"removed": str(payload.get("id"))}
+        return {"removed": str(payload.get("id")), "cleanup": cleanup}
 
 
 # ── Promotions ─────────────────────────────────────────────────────────────

@@ -14,6 +14,13 @@ const KEY = process.env.CODEWORDS_API_KEY ?? "";
 export const apiBase =
   process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "http://127.0.0.1:8000";
 
+/** Resolve backend-relative media paths such as /media/... for browser previews. */
+export function assetUrl(path: string | null | undefined): string {
+  if (!path) return "";
+  if (/^(https?:)?\/\//.test(path) || path.startsWith("data:") || path.startsWith("blob:")) return path;
+  return `${apiBase.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+}
+
 export type Admin = { email: string; platformName: string };
 
 export type Settings = {
@@ -493,6 +500,20 @@ export const publishDocument = (session: string | null, id: string) =>
 
 export const restoreDocumentVersion = (session: string | null, versionId: string) =>
   call<{ document: ContentDocument }>("POST", "admin/cms/document/restore", { body: { versionId }, session });
+
+// ── Brands CMS ---------------------------------------------------------
+export type AdminBrand = {
+  id: string; name: string; slug: string; description: string; imageUrl: string;
+  featured: boolean; visible: boolean; position: number;
+};
+export const listBrands = (session: string | null) =>
+  call<{ brands: AdminBrand[] }>("GET", "admin/cms/brands", { session });
+export const saveBrand = (session: string | null, body: Record<string, unknown>) =>
+  call<{ brand: AdminBrand }>("POST", "admin/cms/brand", { body, session });
+export const updateBrand = (session: string | null, body: Record<string, unknown>) =>
+  call<{ brand: AdminBrand }>("PATCH", "admin/cms/brand", { body, session });
+export const deleteBrand = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "admin/cms/brand", { body: { id }, session });
 
 // ── Media library ──────────────────────────────────────────────────────
 

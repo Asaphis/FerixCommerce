@@ -1,5 +1,4 @@
 import { requireMerchant } from "@/lib/data";
-import { getProduct } from "@/lib/api";
 import { ProductForm } from "@/components/studio/product-form";
 import { Eyebrow, Panel, PanelHead } from "@/components/studio/bits";
 
@@ -9,8 +8,7 @@ const CATEGORIES = [
 ];
 
 export default async function NewProductPage() {
-  const { session, merchant } = await requireMerchant();
-  void (await getProduct(session, "__none__").catch(() => null));
+  const { merchant } = await requireMerchant();
 
   return (
     <div className="grid gap-5">

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCollections } from "@/lib/api";
+import { assetUrl, listCollections } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { CmsActionForm } from "@/components/ops/cms-action-form";
+import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { deleteCollectionAction, saveCollectionAction } from "@/lib/ops-actions";
 import { num } from "@/lib/format";
 
@@ -39,7 +41,7 @@ export default async function CollectionsPage() {
                 <div className="flex min-w-0 items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={collection.image}
+                    src={assetUrl(collection.image)}
                     alt={collection.name}
                     className="h-14 w-14 shrink-0 rounded-[2px] border border-hairline object-cover"
                   />
@@ -65,7 +67,7 @@ export default async function CollectionsPage() {
                 <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
                   Edit collection
                 </summary>
-                <form action={saveCollectionAction} className="grid gap-3 border-t border-hairline p-4">
+                <CmsActionForm action={saveCollectionAction} className="grid gap-3 border-t border-hairline p-4">
                   <input type="hidden" name="slug" value={collection.slug} />
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <Field title="Name">
@@ -74,13 +76,11 @@ export default async function CollectionsPage() {
                     <Field title="Position">
                       <input name="position" type="number" min={0} defaultValue={collection.position} className={inputClass} />
                     </Field>
-                    <Field title="Image URL">
-                      <input name="image" defaultValue={collection.image} className={inputClass} />
-                    </Field>
                     <Field title="Short description">
                       <input name="blurb" defaultValue={collection.blurb} className={inputClass} />
                     </Field>
                   </div>
+                  <MediaUploadField urlName="image" fileName="imageFile" defaultUrl={assetUrl(collection.image)} kind="image" urlLabel="Cover image URL" fileLabel="Upload collection cover" />
                   <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
                     <input type="checkbox" name="visible" defaultChecked={collection.visible} className="size-4 accent-signal" />
                     Visible to shoppers
@@ -90,7 +90,7 @@ export default async function CollectionsPage() {
                       Save changes
                     </SubmitButton>
                   </div>
-                </form>
+                </CmsActionForm>
                 <form action={deleteCollectionAction} className="border-t border-hairline px-4 py-3">
                   <input type="hidden" name="slug" value={collection.slug} />
                   <SubmitButton variant="danger" pendingLabel="Removing">
@@ -105,7 +105,7 @@ export default async function CollectionsPage() {
 
       <Panel>
         <PanelHead title="New collection" hint="Tag products with the slug to add them." />
-        <form action={saveCollectionAction} className="grid gap-3">
+        <CmsActionForm action={saveCollectionAction} className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Name">
               <input name="name" placeholder="Gift guide" className={inputClass} />
@@ -116,13 +116,11 @@ export default async function CollectionsPage() {
             <Field title="Position">
               <input name="position" type="number" min={0} defaultValue={collections.length + 1} className={inputClass} />
             </Field>
-            <Field title="Image URL">
-              <input name="image" placeholder="https://" className={inputClass} />
-            </Field>
             <Field title="Short description">
               <input name="blurb" placeholder="One short line." className={inputClass} />
             </Field>
           </div>
+          <MediaUploadField urlName="image" fileName="imageFile" kind="image" urlLabel="Cover image URL" fileLabel="Upload collection cover" />
           <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
             <input type="checkbox" name="visible" defaultChecked className="size-4 accent-signal" />
             Visible to shoppers
@@ -133,7 +131,7 @@ export default async function CollectionsPage() {
               Create collection
             </SubmitButton>
           </div>
-        </form>
+        </CmsActionForm>
       </Panel>
     </div>
   );

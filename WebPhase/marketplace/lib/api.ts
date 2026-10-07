@@ -4,7 +4,7 @@
  * Every screen and every action goes through here, so nothing in the UI ever
  * holds its own data. Point FERIX_API_BASE at the live commerce backend and
  * the whole app follows without a code change. Local development uses the
- * real FastAPI service on port 8000 rather than the retired mock runtime.
+ * real FastAPI service on the contract port 8003.
  */
 
 const KEY = process.env.CODEWORDS_API_KEY ?? "";
@@ -13,7 +13,7 @@ const KEY = process.env.CODEWORDS_API_KEY ?? "";
 // renders without any environment setup. Point FERIX_API_BASE at the deployed
 // API in production.
 export const apiBase =
-  process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "http://127.0.0.1:8000";
+  process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "http://127.0.0.1:8003";
 
 /**
  * Resolve a catalogue image to something the browser can load.

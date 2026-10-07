@@ -105,3 +105,45 @@ export async function saveSettingsAction(_prev: FormState, formData: FormData): 
   refresh("/settings");
   return { message: "Platform settings saved." };
 }
+
+// ── CMS: brands --------------------------------------------------------
+export async function saveBrandAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const slug = String(formData.get("slug") ?? "").trim();
+  if (!name || !slug) return { error: "Brand name and slug are required." };
+  let imageUrl = String(formData.get("imageUrl") ?? "").trim();
+  try {
+    const file = formData.get("imageFile");
+    if (file instanceof File && file.size > 0) {
+      const uploaded = await api.uploadMedia(session, file, { kind: "image", alt: name, folder: "brands" });
+      imageUrl = uploaded.asset.url;
+    }
+    const body = {
+      ...(id ? { id } : {}), name, slug,
+      description: String(formData.get("description") ?? "").trim(),
+      imageUrl,
+      featured: formData.get("featured") === "on",
+      visible: formData.get("visible") === "on",
+      position: Number(formData.get("position") ?? 1),
+    };
+    if (id) await api.updateBrand(session, body);
+    else await api.saveBrand(session, body);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not save this brand." };
+  }
+  refresh("/cms/brands");
+  return { message: id ? "Brand updated." : "Brand created." };
+}
+export async function deleteBrandAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "Choose a brand to delete." };
+  try { await api.deleteBrand(session, id); }
+  catch (error) { return { error: error instanceof api.ApiError ? error.message : "We could not delete this brand." }; }
+  refresh("/cms/brands");
+  return { message: "Brand deleted." };
+}

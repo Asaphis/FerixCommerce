@@ -31,13 +31,16 @@ export function SettingsForm({ settings, templates }: { settings: Settings; temp
             <textarea name="about" defaultValue={settings.about} className={textareaClass} />
           </Field>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field title="Branded domain">
+            <Field title="Branded domain · coming soon">
               <input
                 name="customDomain"
                 defaultValue={settings.customDomain}
-                className={inputClass}
-                placeholder="yourstore.com"
+                className={`${inputClass} opacity-70`}
+                placeholder="Connection unavailable"
+                readOnly
+                aria-describedby="custom-domain-note"
               />
+              <span id="custom-domain-note" className="mt-1 block text-[10.5px] text-sand">Custom domain and SSL are not connected yet.</span>
             </Field>
             <Field title="Storefront template">
               <select name="template" defaultValue={settings.template} className={selectClass}>
@@ -55,7 +58,7 @@ export function SettingsForm({ settings, templates }: { settings: Settings; temp
                   name="accent"
                   defaultValue={settings.accent}
                   aria-label="Brand colour"
-                  className="h-10 w-12 cursor-pointer rounded-[2px] border border-hairline bg-panel-2"
+                  className="h-10 w-12 cursor-pointer rounded-[7px] border border-hairline bg-panel-2"
                 />
                 <input
                   defaultValue={settings.accent}
@@ -72,12 +75,12 @@ export function SettingsForm({ settings, templates }: { settings: Settings; temp
       <Panel>
         <PanelHead title="Selling" hint="Channels, stock warnings and payouts" />
         <div className="grid gap-4">
-          <label className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
+          <label className="flex cursor-pointer items-start gap-3 rounded-[7px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
             <input
               type="checkbox"
               name="marketplaceEnabled"
               defaultChecked={settings.marketplaceEnabled}
-              className="mt-[3px] h-4 w-4 accent-[#c9f24d]"
+              className="mt-[3px] h-4 w-4 accent-[#e4572e]"
             />
             <span>
               <span className="block text-[13px] font-medium text-chalk">Sell on the Ferixas marketplace</span>
@@ -111,24 +114,24 @@ export function SettingsForm({ settings, templates }: { settings: Settings; temp
       <Panel>
         <PanelHead title="Working style" hint="How the workspace behaves" />
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
+          <label className="flex cursor-pointer items-start gap-3 rounded-[7px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
             <input
               type="checkbox"
               name="orderEmails"
               defaultChecked={settings.orderEmails}
-              className="mt-[3px] h-4 w-4 accent-[#c9f24d]"
+              className="mt-[3px] h-4 w-4 accent-[#e4572e]"
             />
             <span>
               <span className="block text-[13px] font-medium text-chalk">Email me on every new order</span>
               <span className="block text-[12px] text-chalk-dim">Sent as soon as the order lands</span>
             </span>
           </label>
-          <label className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
+          <label className="flex cursor-pointer items-start gap-3 rounded-[7px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
             <input
               type="checkbox"
               name="autoFulfil"
               defaultChecked={settings.autoFulfil}
-              className="mt-[3px] h-4 w-4 accent-[#c9f24d]"
+              className="mt-[3px] h-4 w-4 accent-[#e4572e]"
             />
             <span>
               <span className="block text-[13px] font-medium text-chalk">Start orders as processing</span>

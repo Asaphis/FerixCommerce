@@ -35,7 +35,7 @@ export function AccountShell({
   };
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 pb-10 pt-4 lg:px-6 lg:pt-8">
+    <div className="mx-auto w-full max-w-[1240px] px-4 pb-10 pt-4 lg:px-6 lg:pt-8">
       <section className="flex items-center gap-3 pb-3 lg:hidden">
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink font-display text-[15px] font-extrabold text-lime">
           {user.avatarInitials}
@@ -65,7 +65,8 @@ export function AccountShell({
       </section>
 
       <div className="lg:hidden">
-        <h1 className="font-display text-[19px] font-semibold leading-tight text-ink">{title}</h1>
+        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-soft">Account</p>
+        <h1 className="mt-1 font-display text-[19px] font-semibold leading-tight text-ink">{title}</h1>
         {/* Phones get the title only: the chips and the page itself carry the rest. */}
         {description ? (
           <p className="mt-1 hidden text-[12.5px] leading-relaxed text-ink-soft sm:block">{description}</p>
@@ -104,7 +105,8 @@ export function AccountShell({
         <div className="min-w-0 pt-4 lg:pt-0">
           <header className="hidden items-end justify-between gap-4 pb-5 lg:flex">
             <div>
-              <h1 className="font-display text-[26px] font-semibold leading-none text-ink">{title}</h1>
+              <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-ink-soft">Account</p>
+              <h1 className="mt-1 font-display text-[28px] font-semibold leading-none text-ink">{title}</h1>
               {description ? <p className="mt-1.5 max-w-[70ch] text-[12.5px] text-ink-soft">{description}</p> : null}
             </div>
             {actions ? <div className="flex shrink-0 gap-2">{actions}</div> : null}

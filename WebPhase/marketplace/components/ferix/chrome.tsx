@@ -34,7 +34,7 @@ export function FerixHeader({
   categories: Category[];
 }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-line-warm bg-bone/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-line-warm bg-bone/95 shadow-[0_2px_12px_rgba(20,17,14,0.05)] backdrop-blur-md">
       <div className="hidden border-b border-line-warm bg-void lg:block">
         <div className="mx-auto flex max-w-[1240px] items-center gap-4 px-6 py-1.5">
           <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-chalk-dim">
@@ -66,7 +66,7 @@ export function FerixHeader({
             name="q"
             placeholder="Search products, stores and categories"
             aria-label="Search products, stores and categories"
-            className="h-10 w-full rounded-[2px] border border-line-warm bg-white pl-9 pr-3 text-[13.5px] text-ink outline-none transition-colors placeholder:text-ink-soft/70 focus:border-ink"
+            className="h-10 w-full rounded-[3px] border border-line-warm bg-white pl-9 pr-3 text-[13.5px] text-ink outline-none transition-colors placeholder:text-ink-soft/70 focus:border-ember"
           />
         </form>
 
@@ -112,7 +112,7 @@ export function FerixHeader({
           <Link
             href="/cart"
             aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`}
-            className="inline-flex items-center gap-2 rounded-[2px] bg-ink px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
+            className="inline-flex items-center gap-2 rounded-[3px] bg-ember px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-ink"
           >
             <ShoppingBag width={14} height={14} />
             <span className="hidden lg:inline">Cart</span>
@@ -123,11 +123,11 @@ export function FerixHeader({
         </div>
       </div>
 
-      <div className="hidden border-t border-line-warm lg:block">
+      <div className="hidden border-t border-hairline bg-void lg:block">
         <div className="mx-auto flex max-w-[1240px] items-center gap-1 overflow-x-auto px-6 py-2">
           <Link
             href="/browse"
-            className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink transition-colors hover:bg-bone-soft"
+            className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk transition-colors hover:bg-panel"
           >
             All departments
           </Link>
@@ -135,14 +135,14 @@ export function FerixHeader({
             <Link
               key={category.slug}
               href={`/category/${category.slug}`}
-              className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
+              className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:bg-panel hover:text-chalk"
             >
               {category.name}
             </Link>
           ))}
           <Link
             href="/collections"
-            className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
+            className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:bg-panel hover:text-chalk"
           >
             Collections
           </Link>

@@ -81,6 +81,36 @@ def save_upload(content: bytes, original_name: str) -> str:
     (UPLOAD_ROOT / filename).write_bytes(content)
     return filename
 
+
+def validate_media_upload(content: bytes, original_name: str, kind: str) -> None:
+    """Reject non-media payloads before storing or forwarding an upload.
+
+    Browser ``accept`` attributes are only hints, so validate file signatures on
+    the server. SVG is intentionally excluded because active markup is unsafe
+    to serve as an uploaded image without sanitisation.
+    """
+    if kind not in {"image", "video"}:
+        raise HTTPException(422, "Upload kind must be image or video")
+
+    image_ok = (
+        content.startswith(b"\x89PNG\r\n\x1a\n")
+        or content.startswith(b"\xff\xd8\xff")
+        or content.startswith((b"GIF87a", b"GIF89a"))
+        or (len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP")
+    )
+    brand = content[8:12] if len(content) >= 12 and content[4:8] == b"ftyp" else b""
+    if brand in {b"avif", b"avis", b"mif1", b"heic", b"heix", b"hevc", b"hevx"}:
+        image_ok = True
+
+    video_ok = content.startswith(b"\x1aE\xdf\xa3")
+    video_brands = {b"isom", b"iso2", b"iso5", b"iso6", b"mp41", b"mp42", b"avc1", b"M4V ", b"qt  ", b"3gp4", b"3gp5"}
+    if brand in video_brands:
+        video_ok = True
+
+    valid = image_ok if kind == "image" else video_ok
+    if not valid:
+        raise HTTPException(415, f"This file does not appear to be a supported {kind}.")
+
 def upload_media_blob(content: bytes, original_name: str, kind: str = "image") -> tuple[str, str, str]:
     """Upload to Cloudinary when configured, otherwise use local MVP storage."""
     cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
@@ -132,7 +162,88 @@ def upload_media_blob(content: bytes, original_name: str, kind: str = "image") -
             # A provider outage should not make the MVP unusable; local storage is the fallback.
             pass
     filename = save_upload(content, original_name)
-    return f"/media/{filename}", filename, "local"
+    # Uploaded files live under uploads/, which is mounted at /uploads.  Keep
+    # /media for bundled catalogue assets; returning /media here used to make
+    # every local upload appear saved while serving a 404.
+    return f"/uploads/{filename}", filename, "local"
+
+
+def storage_info(effective: Optional[str] = None) -> dict[str, Any]:
+    """Describe storage without returning provider credentials or URLs."""
+    configured = "cloudinary" if os.getenv("CLOUDINARY_URL", "").startswith("cloudinary://") else "local"
+    active = effective or configured
+    return {
+        "provider": active,
+        "configuredProvider": configured,
+        "fallback": active != configured,
+        "fallbackAvailable": True,
+    }
+
+
+def remove_media_blob(asset: "MediaAsset") -> str:
+    """Best-effort cleanup for a media record's owned local/provider blob.
+
+    Bundled /media/<folder>/ assets are never removed. Legacy local uploads
+    were incorrectly recorded as /media/<filename>; those single-segment
+    paths are intentionally included for backwards-compatible cleanup.
+    """
+    url = str(asset.url or "")
+    parsed = urllib.parse.urlparse(url)
+    path = parsed.path or url
+    filename = ""
+    local_candidate = False
+    if path.startswith("/uploads/") and "/" not in path[len("/uploads/"):].strip("/"):
+        filename = Path(path).name
+        local_candidate = True
+    elif path.startswith("/media/") and "/" not in path[len("/media/"):].strip("/"):
+        filename = Path(path).name
+        local_candidate = True
+    if local_candidate and filename:
+        source = (UPLOAD_ROOT / filename).resolve()
+        try:
+            source.relative_to(UPLOAD_ROOT.resolve())
+            if source.is_file():
+                source.unlink()
+                return "local"
+        except (OSError, ValueError):
+            pass
+
+    cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
+    public_id = str(asset.public_id or "")
+    if cloudinary_url.startswith("cloudinary://") and public_id:
+        try:
+            parsed_config = urllib.parse.urlparse(cloudinary_url)
+            cloud_name = parsed_config.hostname or ""
+            api_key = urllib.parse.unquote(parsed_config.username or "")
+            api_secret = urllib.parse.unquote(parsed_config.password or "")
+            if not (cloud_name and api_key and api_secret):
+                return "none"
+            timestamp = int(time.time())
+            signature_base = f"public_id={public_id}&timestamp={timestamp}{api_secret}"
+            signature = hashlib.sha1(signature_base.encode()).hexdigest()
+            resource = "video" if asset.kind == "video" else "image"
+            fields = {"api_key": api_key, "public_id": public_id,
+                      "timestamp": str(timestamp), "signature": signature}
+            boundary = f"----ferixas-delete{uuid.uuid4().hex}"
+            parts: list[bytes] = []
+            for key, value in fields.items():
+                parts.extend([f"--{boundary}\r\n".encode(),
+                              f'Content-Disposition: form-data; name="{key}"\r\n\r\n'.encode(),
+                              str(value).encode(), b"\r\n"])
+            parts.append(f"--{boundary}--\r\n".encode())
+            request = urllib.request.Request(
+                f"https://api.cloudinary.com/v1_1/{cloud_name}/{resource}/destroy",
+                data=b"".join(parts),
+                headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+                method="POST",
+            )
+            with urllib.request.urlopen(request, timeout=10):
+                return "cloudinary"
+        except Exception:
+            # Removing the database record must remain possible during a
+            # provider outage; orphan cleanup can be retried out of band.
+            return "cloudinary-pending"
+    return "none"
 
 def sync_pending_media(db: Session) -> int:
     """Back up fallback uploads to Cloudinary as soon as credentials work again."""
@@ -465,7 +576,7 @@ def backfill_catalogue_media(db: Session) -> int:
         "category": ("categories", ("image", "imageUrl")),
         "collection": ("collections", ("image",)),
         "merchant": ("merchants", ("logo", "cover")),
-        "banner": ("banners", ("image", "imageUrl")),
+        "banner": ("banners", ("image", "imageUrl", "mediaUrl")),
     }
     changed = 0
     for kind, (folder, fields) in folders.items():
@@ -481,6 +592,17 @@ def backfill_catalogue_media(db: Session) -> int:
                 or "picsum.photos" in str(row.get(f))
                 or str(row.get(f)).startswith("/banners/")
             }
+            legacy_banner_media = kind == "banner" and any(
+                str(row.get(f) or "").startswith("/banners/") for f in fields
+            )
+            legacy_banner_video = kind == "banner" and str(row.get("videoUrl") or "").startswith("/banners/")
+            if legacy_banner_media or legacy_banner_video:
+                if row.get("kind") == "video" and (
+                    legacy_banner_media or str(row.get("mediaUrl") or "").startswith("/media/banners/")
+                ):
+                    patch["kind"] = "image"
+                if legacy_banner_video:
+                    patch["videoUrl"] = None
             if patch:
                 put_row(db, kind, slug, {**row, **patch})
                 changed += 1
@@ -603,6 +725,14 @@ def categories(db: Session) -> list[dict]:
 
 def collections(db: Session) -> list[dict]:
     return rows_of(db, "collection")
+
+
+def brands(db: Session) -> list[dict]:
+    """Persisted platform brands, stored in the existing catalogue table."""
+    return rows_of(db, "brand")
+
+
+brand_rows = brands
 
 
 DEFAULT_OVERLAY = {
@@ -873,15 +1003,17 @@ def seed(db: Session) -> None:
         # bundled photograph replaces them.
         bundled = catalogue_image("banners", banner_id)
         existing = str(row.get("image") or row.get("mediaUrl") or "")
-        if bundled and (not existing or existing.startswith("/banners/")):
+        legacy_poster = any(str(row.get(field) or "").startswith("/banners/") for field in ("image", "imageUrl", "mediaUrl"))
+        if bundled and (not existing or legacy_poster):
             existing = bundled
         put_row(db, "banner", banner_id, {
             **row,
             "id": banner_id,
+            "kind": "image" if legacy_poster else (row.get("kind") or "image"),
             "image": existing or placeholder(f"banner-{index + 1}"),
             "imageUrl": existing or placeholder(f"banner-{index + 1}"),
             "mediaUrl": existing or placeholder(f"banner-{index + 1}"),
-            "videoUrl": row.get("videoUrl") or (row.get("mediaUrl") if row.get("kind") == "video" else None),
+            "videoUrl": None if legacy_poster else (row.get("videoUrl") or (row.get("mediaUrl") if row.get("kind") == "video" else None)),
             "position": row.get("order", index + 1),
             "active": row.get("active", True),
             "status": "published",

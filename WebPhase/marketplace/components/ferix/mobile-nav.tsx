@@ -51,7 +51,7 @@ export function FerixMobileNav({ cartCount, signedIn }: { cartCount: number; sig
       <div aria-hidden="true" className="h-[72px] lg:hidden" />
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-line-warm bg-white/95 backdrop-blur-md lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-line-warm bg-bone/95 shadow-[0_-8px_24px_rgba(20,17,14,0.08)] backdrop-blur-md lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto grid max-w-[560px] grid-cols-5">
@@ -63,7 +63,7 @@ export function FerixMobileNav({ cartCount, signedIn }: { cartCount: number; sig
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "relative flex flex-col items-center gap-1 py-2.5 font-mono text-[9.5px] uppercase tracking-[0.1em] transition-colors",
+                    "relative flex min-h-[56px] flex-col items-center gap-1 py-2.5 font-mono text-[9.5px] uppercase tracking-[0.1em] transition-colors",
                     active ? "text-ink" : "text-ink-soft",
                   )}
                 >

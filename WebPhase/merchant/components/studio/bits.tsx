@@ -16,7 +16,7 @@ export function Panel({
   flush?: boolean;
 }) {
   return (
-    <section className={cn("min-w-0 rounded-[2px] rounded-tr-[9px] border border-hairline bg-panel", !flush && "p-3 sm:p-5", className)}>
+    <section className={cn("min-w-0 rounded-[7px] border border-hairline bg-panel", !flush && "p-3 sm:p-5", className)}>
       {children}
     </section>
   );
@@ -115,7 +115,7 @@ export function StatTile({
     chalk: "text-chalk",
   };
   return (
-    <div className="flex min-h-[82px] min-w-0 items-center gap-2.5 rounded-[2px] rounded-tr-[9px] border border-hairline bg-panel p-2.5 sm:min-h-[94px] sm:p-4">
+    <div className="flex min-h-[82px] min-w-0 items-center gap-2.5 rounded-[7px] border border-hairline bg-panel p-2.5 sm:min-h-[94px] sm:p-4">
       {icon ? <span className={cn("shrink-0 [&>svg]:h-4 [&>svg]:w-4", colors[accent])}>{icon}</span> : null}
       <div className="min-w-0 flex-1">
         <span className="block line-clamp-2 break-words font-mono text-[8.5px] leading-tight uppercase tracking-[0.08em] text-chalk-dim sm:line-clamp-none sm:text-[10px] sm:tracking-[0.16em]">{label}</span>
@@ -138,7 +138,7 @@ export function Bar({ value, max, tone = "lime" }: { value: number; max: number;
 
 export function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="min-w-0 rounded-[2px] border border-dashed border-hairline px-6 py-12 text-center">
+    <div className="min-w-0 rounded-[7px] border border-dashed border-hairline px-6 py-12 text-center">
       <p className="font-display text-[16px] font-semibold text-chalk">{title}</p>
       <p className="mx-auto mt-2 max-w-[46ch] text-[13px] leading-relaxed text-chalk-dim">{body}</p>
     </div>

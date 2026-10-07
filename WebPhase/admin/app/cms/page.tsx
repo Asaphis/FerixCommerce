@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Boxes, Image as ImageIcon, Layers, Megaphone, Palette, UploadCloud } from "lucide-react";
+import { ArrowRight, Boxes, Image as ImageIcon, Layers, Megaphone, Palette, Tag, UploadCloud } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listDocuments } from "@/lib/api";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
@@ -29,6 +29,12 @@ const SECTIONS = [
     label: "Collections",
     detail: "Curated product groupings",
     Icon: Palette,
+  },
+  {
+    href: "/cms/brands",
+    label: "Brands",
+    detail: "Brand names, descriptions and logo imagery",
+    Icon: Tag,
   },
   {
     href: "/cms/media",
