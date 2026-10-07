@@ -32,7 +32,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Price" value={money(product.price)} sub={product.compareAt ? `was ${money(product.compareAt)}` : "no compare price"} />
         <Readout label="Stock" value={num(product.stock)} sub="Units on hand" tone={product.stock > 0 ? "mint" : "rose"} />
         <Readout label="Sold, 30 days" value={num(product.sold30d)} sub="Across all channels" tone="violet" />

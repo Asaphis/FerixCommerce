@@ -51,7 +51,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         </div>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Orders" value={num(stats.orders)} sub={`Average ${money(stats.averageOrder, { cents: false })}`} />
         <Readout label="Total spent" value={money(stats.spent, { cents: false })} sub="Paid orders only" tone="mint" />
         <Readout label="Saved items" value={num(stats.saved)} sub={`Following ${stats.follows} stores`} icon={<Bookmark width={15} height={15} />} tone="violet" />

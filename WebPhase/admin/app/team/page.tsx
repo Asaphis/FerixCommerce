@@ -106,7 +106,7 @@ export default async function TeamPage() {
       <Panel>
         <PanelHead title="Add a team member" hint="They sign in with this email and password." />
         <form action={saveStaffAction} className="grid gap-3">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 md:gap-3 xl:grid-cols-4">
             <Field title="Name">
               <input name="name" placeholder="Amara Bello" className={inputClass} />
             </Field>

@@ -52,7 +52,7 @@ export default async function AnalyticsPage({
         ))}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label={`GMV · ${range} days`} value={money(totalGmv, { cents: false })} sub={`All time ${money(data.totals.gmv, { cents: false })}`} tone="mint" />
         <Readout label={`Commission · ${range} days`} value={money(totalCommission, { cents: false })} sub={`${Math.round((totalCommission / Math.max(1, totalGmv)) * 100)}% take rate`} tone="violet" />
         <Readout label={`Orders · ${range} days`} value={num(totalOrders)} sub={`Average ${money(totalGmv / Math.max(1, totalOrders), { cents: false })}`} />

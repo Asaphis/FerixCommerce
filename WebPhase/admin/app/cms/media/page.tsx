@@ -45,7 +45,7 @@ export default async function MediaPage() {
       <Panel>
         <PanelHead title="Add media" hint="Upload a file or paste a hosted URL. Alt text keeps the storefront accessible." />
         <form action={addMediaAction} encType="multipart/form-data" className="grid gap-3">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 md:gap-3 xl:grid-cols-4">
             <Field title="Media URL">
               <input name="url" placeholder="https://" className={inputClass} />
             </Field>

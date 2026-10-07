@@ -41,7 +41,7 @@ export default async function MerchantsPage({
         description="Every store on the platform. Suspending a merchant stops them selling at once; commission and plan changes apply from the next order."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Merchants" value={num(data.counts.all ?? 0)} sub={`${data.counts.active ?? 0} active`} icon={<Store width={15} height={15} />} />
         <Readout label="Combined GMV" value={money(totalGmv, { cents: false })} sub="Paid orders only" tone="mint" />
         <Readout label="Platform commission" value={money(totalCommission, { cents: false })} sub="Retained on marketplace sales" tone="violet" />

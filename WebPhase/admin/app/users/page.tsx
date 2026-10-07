@@ -40,7 +40,7 @@ export default async function UsersPage({
         description="Every shopper registered on the platform, with their spending, saved items and order history. Accounts are shared across the marketplace and every merchant storefront."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Accounts" value={num(data.counts.all ?? 0)} sub={`${withOrders} have placed an order`} icon={<Users width={15} height={15} />} />
         <Readout label="Orders placed" value={num(data.orders)} sub="Across every account" tone="signal" />
         <Readout label="Lifetime spend" value={money(data.lifetime, { cents: false })} sub={`Average ${money(data.lifetime / Math.max(1, data.counts.all ?? 1), { cents: false })} per account`} tone="mint" />

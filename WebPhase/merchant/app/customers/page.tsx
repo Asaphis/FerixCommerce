@@ -41,7 +41,7 @@ export default async function CustomersPage({
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile label="Buyers" value={num(data.segments.all ?? 0)} sub="Distinct customers" />
         <StatTile label="VIP" value={num(data.segments.vip ?? 0)} sub="Spent $600 or more" accent="lime" />
         <StatTile label="Returning" value={num(data.segments.returning ?? 0)} sub="Ordered more than once" accent="azure" />

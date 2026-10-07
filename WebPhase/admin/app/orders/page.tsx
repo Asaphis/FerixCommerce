@@ -50,7 +50,7 @@ export default async function OrdersPage({
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Orders in view" value={num(data.total)} sub={`${data.counts.all ?? 0} on the platform`} icon={<Receipt width={15} height={15} />} />
         <Readout label="Value in view" value={money(data.gmv, { cents: false })} sub="Paid orders" tone="mint" />
         <Readout label="Commission in view" value={money(data.commission, { cents: false })} sub="Retained by the platform" tone="violet" />

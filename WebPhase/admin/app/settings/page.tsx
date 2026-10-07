@@ -22,7 +22,7 @@ export default async function SettingsPage() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Merchants" value={num(counts.merchants)} sub="Trading on the platform" tone="signal" />
         <Readout label="Products" value={num(counts.products)} sub="One catalogue, every channel" tone="mint" />
         <Readout label="Departments" value={num(counts.categories)} sub={`${counts.collections} curated collections`} tone="violet" />

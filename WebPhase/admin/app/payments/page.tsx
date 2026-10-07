@@ -26,7 +26,7 @@ export default async function PaymentsPage() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Gross taken" value={money(totals.gross, { cents: false })} sub="All orders" icon={<CreditCard width={15} height={15} />} />
         <Readout label="Platform commission" value={money(totals.commission, { cents: false })} sub="Retained" tone="violet" />
         <Readout label="Merchant net" value={money(totals.merchantNet, { cents: false })} sub="Payable to sellers" tone="mint" />

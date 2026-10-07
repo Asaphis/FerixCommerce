@@ -203,14 +203,14 @@ export default async function AccountPage() {
           <Link
             key={tile.label}
             href={tile.href}
-            className="rounded-[3px] border border-line-warm bg-white p-3.5 transition-colors hover:border-ink/25"
+            className="flex min-h-[78px] min-w-0 items-center gap-2.5 rounded-[2px] rounded-tr-[9px] border border-line-warm bg-white p-2.5 transition-colors hover:border-ink/25 sm:min-h-[92px] sm:p-3.5"
           >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-soft">{tile.label}</span>
-              <tile.Icon width={14} height={14} className="text-ember" />
-            </div>
-            <p className="mt-2.5 font-mono text-[21px] font-semibold leading-none tabular-nums text-ink">{tile.value}</p>
-            <p className="mt-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-soft">{tile.sub}</p>
+            <tile.Icon width={16} height={16} className="shrink-0 text-ember" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft sm:text-[9.5px] sm:tracking-[0.14em]">{tile.label}</span>
+              <span className="mt-1 block truncate font-mono text-[17px] font-semibold leading-none tabular-nums text-ink sm:mt-2 sm:text-[21px]">{tile.value}</span>
+              <span className="mt-1 hidden truncate font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-soft sm:block">{tile.sub}</span>
+            </span>
           </Link>
         ))}
       </section>

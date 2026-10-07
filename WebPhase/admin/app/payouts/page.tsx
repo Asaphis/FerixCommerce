@@ -27,7 +27,7 @@ export default async function PayoutsPage() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Awaiting payout" value={money(data.totals.pending ?? 0, { cents: false })} sub="Not yet settled" icon={<Wallet width={15} height={15} />} tone="amber" />
         <Readout label="Paid to date" value={money(data.totals.paid ?? 0, { cents: false })} sub="Settled to merchants" tone="mint" />
         <Readout label="Gross processed" value={money(data.totals.gross ?? 0, { cents: false })} sub="Across all periods" tone="violet" />

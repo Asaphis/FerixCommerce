@@ -16,7 +16,7 @@ export function Panel({
   flush?: boolean;
 }) {
   return (
-    <section className={cn("min-w-0 rounded-[2px] border border-hairline bg-panel", !flush && "p-5", className)}>
+    <section className={cn("min-w-0 rounded-[2px] rounded-tr-[9px] border border-hairline bg-panel", !flush && "p-3 sm:p-5", className)}>
       {children}
     </section>
   );
@@ -115,13 +115,13 @@ export function StatTile({
     chalk: "text-chalk",
   };
   return (
-    <div className="min-w-0 rounded-[2px] border border-hairline bg-panel p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">{label}</span>
-        {icon ? <span className={colors[accent]}>{icon}</span> : null}
+    <div className="flex min-h-[82px] min-w-0 items-center gap-2.5 rounded-[2px] rounded-tr-[9px] border border-hairline bg-panel p-2.5 sm:min-h-[94px] sm:p-4">
+      {icon ? <span className={cn("shrink-0 [&>svg]:h-4 [&>svg]:w-4", colors[accent])}>{icon}</span> : null}
+      <div className="min-w-0 flex-1">
+        <span className="block line-clamp-2 break-words font-mono text-[8.5px] leading-tight uppercase tracking-[0.08em] text-chalk-dim sm:line-clamp-none sm:text-[10px] sm:tracking-[0.16em]">{label}</span>
+        <p className="mt-1 font-mono text-[17px] font-semibold leading-none tabular-nums text-chalk sm:mt-2 sm:text-[22px]">{value}</p>
+        {sub ? <p className="mt-1 truncate text-[10px] text-chalk-dim sm:mt-1.5 sm:text-[12px]">{sub}</p> : null}
       </div>
-      <p className="mt-3 font-mono text-[22px] font-semibold leading-none tabular-nums text-chalk">{value}</p>
-      {sub ? <p className="mt-1.5 text-[12px] text-chalk-dim">{sub}</p> : null}
     </div>
   );
 }
