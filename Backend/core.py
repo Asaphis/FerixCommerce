@@ -304,7 +304,9 @@ class StaffUser(Base):
     name: Mapped[str] = mapped_column(String(160))
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(256))
-    role: Mapped[str] = mapped_column(String(40), default="owner")
+    # No access until a role is granted. This previously defaulted to "owner",
+    # so any staff row created without naming a role was a full-access account.
+    role: Mapped[str] = mapped_column(String(40), default="")
     permissions: Mapped[list] = mapped_column(JSON, default=list)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
