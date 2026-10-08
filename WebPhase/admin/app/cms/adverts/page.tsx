@@ -4,7 +4,7 @@ import { requireAdmin, explain } from "@/lib/data";
 import { listAdverts, type AdminAdvert } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
-import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { deleteAdvertAction, saveAdvertAction } from "@/lib/actions";
