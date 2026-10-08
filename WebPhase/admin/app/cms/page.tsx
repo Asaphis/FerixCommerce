@@ -10,6 +10,7 @@ const AREAS = [
   { href: "/cms/categories", label: "Departments", detail: "Tiles, order and visibility", Icon: Boxes },
   { href: "/cms/collections", label: "Collections", detail: "Curated product groupings", Icon: Palette },
   { href: "/cms/brands", label: "Brands", detail: "Names, logos and order", Icon: Tag },
+  { href: "/cms/adverts", label: "Adverts", detail: "Promotions inside the product list", Icon: Megaphone },
   { href: "/cms/media", label: "Media", detail: "Images and video", Icon: ImageIcon },
   { href: "/cms/publishing", label: "Publishing", detail: "Version history and restore", Icon: UploadCloud },
 ];

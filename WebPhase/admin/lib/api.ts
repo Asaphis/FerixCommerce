@@ -553,6 +553,33 @@ export type AdminBrand = {
   id: string; name: string; slug: string; description: string; imageUrl: string;
   featured: boolean; visible: boolean; position: number;
 };
+export type AdminAdvert = {
+  id: string;
+  name?: string;
+  headline?: string;
+  body?: string;
+  mediaUrl?: string;
+  kind?: string;
+  href?: string;
+  placement?: string;
+  sponsor?: string;
+  position?: number;
+  active?: boolean;
+  startsAt?: string;
+  endsAt?: string;
+  running?: boolean;
+};
+
+export const listAdverts = (session: string | null) =>
+  call<{ adverts: AdminAdvert[]; counts: { total: number; running: number; explore: number } }>(
+    "GET", "admin/cms/adverts", { session });
+
+export const saveAdvert = (session: string | null, body: Record<string, unknown>) =>
+  call<{ advert: AdminAdvert }>("POST", "admin/cms/advert", { body, session });
+
+export const deleteAdvert = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "admin/cms/advert", { body: { id }, session });
+
 export const listBrands = (session: string | null) =>
   call<{ brands: AdminBrand[] }>("GET", "admin/cms/brands", { session });
 export const saveBrand = (session: string | null, body: Record<string, unknown>) =>

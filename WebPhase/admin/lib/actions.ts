@@ -258,3 +258,61 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
   refresh(`/cms/pages/${id}`);
   return { message: "Saved as a draft. Publish to put it on the storefront." };
 }
+
+// ── Advertisements ─────────────────────────────────────────────────────
+
+export async function saveAdvertAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const headline = String(formData.get("headline") ?? "").trim();
+  if (!name || !headline) return { error: "A name and a headline are both needed." };
+
+  let mediaUrl = String(formData.get("mediaUrl") ?? "").trim()
+    || String(formData.get("mediaLibraryUrl") ?? "").trim();
+  try {
+    const file = formData.get("mediaFile");
+    if (file instanceof File && file.size > 0) {
+      const uploaded = await api.uploadMedia(session, file, {
+        kind: String(formData.get("kind") ?? "image") === "video" ? "video" : "image",
+        alt: headline,
+        folder: "adverts",
+      });
+      mediaUrl = uploaded.asset.url;
+    }
+    await api.saveAdvert(session, {
+      ...(id ? { id } : {}),
+      name,
+      headline,
+      body: String(formData.get("body") ?? "").trim(),
+      mediaUrl,
+      kind: String(formData.get("kind") ?? "image"),
+      href: String(formData.get("href") ?? "").trim(),
+      placement: String(formData.get("placement") ?? "explore"),
+      sponsor: String(formData.get("sponsor") ?? "").trim(),
+      position: Number(formData.get("position") ?? 1),
+      active: formData.get("active") === "on",
+      startsAt: String(formData.get("startsAt") ?? "") || undefined,
+      endsAt: String(formData.get("endsAt") ?? "") || undefined,
+    });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That advertisement could not be saved." };
+  }
+  refresh("/cms/adverts");
+  return { message: id ? "Saved." : "Advertisement created." };
+}
+
+export async function deleteAdvertAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "That advertisement is missing." };
+  try {
+    await api.deleteAdvert(session, id);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That advertisement could not be deleted." };
+  }
+  refresh("/cms/adverts");
+  return { message: "Deleted." };
+}
