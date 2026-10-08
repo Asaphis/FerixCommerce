@@ -720,3 +720,40 @@ function resolveApiBase(): string {
 
   return "http://127.0.0.1:8003";
 }
+
+/* ── CMS pages and sections ─────────────────────────────────────────────────
+   A page is a document; its sections are ordered and can be switched off
+   without being deleted. These four calls are what the CMS screens use. */
+
+export type CmsSection = {
+  id: string;
+  name: string;
+  type: string;
+  position: number;
+  visible: boolean;
+  [key: string]: unknown;
+};
+
+export type CmsPage = {
+  id: string;
+  title: string;
+  documentType: string;
+  status: string;
+  hasDraft: boolean;
+  sectionCount: number;
+  visibleCount: number;
+  sections: CmsSection[];
+  publishedSections?: CmsSection[];
+};
+
+export const listCmsPages = (session: string | null) =>
+  call<{ pages: CmsPage[] }>("GET", "admin/cms/pages", { session });
+
+export const getCmsPage = (session: string | null, id: string) =>
+  call<{ page: CmsPage }>("GET", "admin/cms/page", { session, params: { id } });
+
+export const saveCmsPage = (session: string | null, body: { id: string; title?: string; sections?: CmsSection[] }) =>
+  call<{ page: CmsPage }>("PATCH", "admin/cms/page", { session, body });
+
+export const publishCmsPage = (session: string | null, id: string) =>
+  call<{ page: CmsPage }>("POST", "admin/cms/page/publish", { session, body: { id } });

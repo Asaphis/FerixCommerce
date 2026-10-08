@@ -1,150 +1,119 @@
 import Link from "next/link";
 import { ArrowRight, Boxes, Image as ImageIcon, Layers, Megaphone, Palette, Tag, UploadCloud } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
-import { listDocuments } from "@/lib/api";
+import { listCmsPages, type CmsPage } from "@/lib/api";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
-import { relative, titleCase } from "@/lib/format";
+import { PageHeader } from "@/components/ops/table";
 
-const SECTIONS = [
-  {
-    href: "/cms/homepage",
-    label: "Homepage",
-    detail: "Sections, order and copy for ferixas.com",
-    Icon: Layers,
-  },
-  {
-    href: "/cms/banners",
-    label: "Banners",
-    detail: "Hero and promo creatives",
-    Icon: Megaphone,
-  },
-  {
-    href: "/cms/categories",
-    label: "Departments",
-    detail: "Category tiles, text links and order",
-    Icon: Boxes,
-  },
-  {
-    href: "/cms/collections",
-    label: "Collections",
-    detail: "Curated product groupings",
-    Icon: Palette,
-  },
-  {
-    href: "/cms/brands",
-    label: "Brands",
-    detail: "Brand names, descriptions and logo imagery",
-    Icon: Tag,
-  },
-  {
-    href: "/cms/media",
-    label: "Media",
-    detail: "Images and video for every surface",
-    Icon: ImageIcon,
-  },
-  {
-    href: "/cms/publishing",
-    label: "Publishing",
-    detail: "Version history and restore",
-    Icon: UploadCloud,
-  },
+const AREAS = [
+  { href: "/cms/banners", label: "Banners", detail: "Hero and promo creatives", Icon: Megaphone },
+  { href: "/cms/categories", label: "Departments", detail: "Tiles, order and visibility", Icon: Boxes },
+  { href: "/cms/collections", label: "Collections", detail: "Curated product groupings", Icon: Palette },
+  { href: "/cms/brands", label: "Brands", detail: "Names, logos and order", Icon: Tag },
+  { href: "/cms/media", label: "Media", detail: "Images and video", Icon: ImageIcon },
+  { href: "/cms/publishing", label: "Publishing", detail: "Version history and restore", Icon: UploadCloud },
 ];
+
+function sectionSummary(page: CmsPage) {
+  return `${page.sectionCount} section${page.sectionCount === 1 ? "" : "s"} · ${page.visibleCount} on the storefront`;
+}
 
 export default async function CmsPage() {
   const { session } = await requireAdmin();
 
-  // The tools below are the point of this screen. If the content API cannot be
-  // reached, say so and keep every destination on the page usable — an
-  // unreachable API must never replace the CMS with an error screen.
-  let documents: Awaited<ReturnType<typeof listDocuments>>["documents"] = [];
+  // The pages are the point of this screen, so an unreachable API reports itself
+  // and leaves every destination below usable.
+  let pages: CmsPage[] = [];
   let loadError: string | null = null;
   try {
-    documents = (await listDocuments(session)).documents;
+    pages = (await listCmsPages(session)).pages;
   } catch (error) {
     loadError = explain(error);
   }
 
   return (
     <div className="grid min-w-0 gap-5">
-      <header>
-        <Eyebrow>Marketplace</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Content management</h1>
-        
-      </header>
+      <PageHeader
+        eyebrow="Marketplace"
+        title="Content"
+        action={
+          <Link
+            href="/"
+            target="_blank"
+            className="inline-flex min-h-9 items-center gap-2 rounded-[10px] border border-hairline px-3 text-[12.5px] font-semibold text-chalk transition-colors hover:bg-panel-2"
+          >
+            Preview the storefront
+          </Link>
+        }
+      />
 
       {loadError ? (
-        <div role="status" className="rounded-[.5rem] border border-[#e34d32]/40 bg-[#e34d32]/8 px-4 py-3 text-[13px] leading-relaxed text-[#b23a24]">
-          <span className="font-semibold">The content API could not be reached.</span> Every tool below still opens;
-          nothing has been lost. {loadError}
+        <div role="status" className="rounded-[12px] border border-[#e34d32]/40 bg-[#e34d32]/8 px-4 py-3 text-[13px] leading-relaxed text-[#b23a24]">
+          <span className="font-semibold">The content API could not be reached.</span> Every screen below still opens,
+          and nothing has been lost. {loadError}
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {SECTIONS.map(({ href, label, detail, Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className="group flex items-start justify-between gap-3 rounded-[2px] border border-hairline bg-panel p-4 transition-colors hover:border-chalk-dim/40 hover:bg-panel-2"
-          >
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 text-signal">
-                <Icon width={16} height={16} />
-              </span>
-              <div>
-                <p className="font-display text-[14px] font-semibold text-chalk">{label}</p>
-                <p className="mt-1 text-[12.5px] text-chalk-dim">{detail}</p>
-              </div>
-            </div>
-            <ArrowRight
-              width={15}
-              height={15}
-              className="mt-1 shrink-0 text-chalk-dim transition-transform group-hover:translate-x-0.5"
-            />
-          </Link>
-        ))}
-      </div>
-
       <Panel>
         <PanelHead
-          title="Content documents"
-          action={
-            <Link
-              href="/cms/homepage"
-              className="rounded-[2px] border border-hairline px-3 py-2 text-[12.5px] text-chalk transition-colors hover:bg-panel-2"
-            >
-              Open homepage
-            </Link>
-          }
+          title="Pages"
+          hint="Pick a page, then the section inside it"
+          action={<Pill tone="mint">{pages.length} pages</Pill>}
         />
-        {documents.length === 0 ? (
-          <Empty
-            title="No documents yet"
-            body="Opening the homepage editor creates the first document. Until then the storefront renders its built-in layout."
-          />
-        ) : (
+        {pages.length ? (
           <ul className="grid gap-2">
-            {documents.map((doc) => (
-              <li
-                key={doc.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-[2px] border border-hairline bg-panel-2 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-display text-[13.5px] font-semibold text-chalk">{doc.title}</p>
-                  <p className="mt-0.5 font-mono text-[10.5px] text-chalk-dim">
-                    {doc.id} · {titleCase(doc.documentType)}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Pill tone={doc.status === "published" ? "mint" : "amber"}>{doc.status}</Pill>
-                  <span className="font-mono text-[10.5px] text-chalk-dim">
-                    {doc.updatedBy ? `${doc.updatedBy} · ` : ""}
-                    {relative(doc.updatedAt)}
+            {pages.map((page) => (
+              <li key={page.id}>
+                <Link
+                  href={`/cms/pages/${page.id}`}
+                  className="group flex flex-wrap items-center gap-3 rounded-[12px] border border-hairline bg-panel px-4 py-3 transition-colors hover:border-signal/40 hover:bg-white"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-panel-2 text-signal">
+                    <Layers width={16} height={16} />
                   </span>
-                </div>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-display text-[14px] font-semibold text-chalk group-hover:text-signal">
+                      {page.title}
+                    </span>
+                    <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
+                      {page.documentType} · {sectionSummary(page)}
+                    </span>
+                  </span>
+                  {page.hasDraft ? <Pill tone="amber">Draft</Pill> : null}
+                  <Pill tone={page.status === "published" ? "mint" : "amber"}>{page.status}</Pill>
+                  <ArrowRight width={15} height={15} className="shrink-0 text-chalk-dim transition-transform group-hover:translate-x-0.5" />
+                </Link>
               </li>
             ))}
           </ul>
+        ) : (
+          <Empty
+            title="No pages yet"
+            body="A page is a document holding an ordered list of sections. Seeding the content creates the storefront pages."
+          />
         )}
+      </Panel>
+
+      <Panel>
+        <PanelHead title="Libraries" hint="What each page's sections draw from" />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {AREAS.map(({ href, label, detail, Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group flex items-start justify-between gap-3 rounded-[12px] border border-hairline bg-panel p-4 transition-colors hover:border-chalk-dim/40 hover:bg-panel-2"
+            >
+              <span className="flex items-start gap-3">
+                <span className="mt-0.5 text-signal"><Icon width={16} height={16} /></span>
+                <span>
+                  <span className="block font-display text-[14px] font-semibold text-chalk">{label}</span>
+                  <span className="mt-1 block text-[12.5px] text-chalk-dim">{detail}</span>
+                </span>
+              </span>
+              <ArrowRight width={15} height={15} className="mt-1 shrink-0 text-chalk-dim transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          ))}
+        </div>
       </Panel>
     </div>
   );

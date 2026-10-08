@@ -147,3 +147,114 @@ export async function deleteBrandAction(_prev: FormState, formData: FormData): P
   refresh("/cms/brands");
   return { message: "Brand deleted." };
 }
+
+// ── CMS pages ──────────────────────────────────────────────────────────
+
+/** Save a page's sections as a draft. The live storefront is untouched. */
+export async function saveCmsPageAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "That page is missing." };
+  let sections: api.CmsSection[] = [];
+  try {
+    sections = JSON.parse(String(formData.get("sections") ?? "[]")) as api.CmsSection[];
+  } catch {
+    return { error: "The sections could not be read." };
+  }
+  try {
+    await api.saveCmsPage(session, { id, sections });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "The draft could not be saved." };
+  }
+  refresh(`/cms/pages/${id}`);
+  refresh("/cms");
+  return { message: "Draft saved. The storefront is unchanged until you publish." };
+}
+
+/** Publish the draft. This is the moment the storefront changes. */
+export async function publishCmsPageAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "That page is missing." };
+  try {
+    await api.publishCmsPage(session, id);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "The page could not be published." };
+  }
+  refresh(`/cms/pages/${id}`);
+  refresh("/cms");
+  refresh("/");
+  return { message: "Published. The storefront now serves this version." };
+}
+
+/** Switch one section on or off, keeping everything else where it is. */
+export async function toggleCmsSectionAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  const visible = formData.get("visible") === "on";
+  if (!id || !sectionId) return { error: "That section is missing." };
+  try {
+    const { page } = await api.getCmsPage(session, id);
+    const sections = page.sections.map((section) =>
+      section.id === sectionId ? { ...section, visible } : section,
+    );
+    await api.saveCmsPage(session, { id, sections });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That section could not be changed." };
+  }
+  refresh(`/cms/pages/${id}`);
+  return { message: visible ? "Back on the storefront." : "Hidden. Still in the list, nothing deleted." };
+}
+
+/** Move a section one place up or down, which is what reorders the shop. */
+export async function moveCmsSectionAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  const direction = String(formData.get("direction") ?? "up") === "down" ? 1 : -1;
+  if (!id || !sectionId) return { error: "That section is missing." };
+  try {
+    const { page } = await api.getCmsPage(session, id);
+    const sections = [...page.sections];
+    const from = sections.findIndex((section) => section.id === sectionId);
+    const to = from + direction;
+    if (from === -1 || to < 0 || to >= sections.length) return {};
+    const [moved] = sections.splice(from, 1);
+    sections.splice(to, 0, moved);
+    await api.saveCmsPage(session, { id, sections });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That section could not be moved." };
+  }
+  refresh(`/cms/pages/${id}`);
+  return { message: "Order changed. Publish to put it on the storefront." };
+}
+
+/** Save the fields of one section. */
+export async function saveCmsSectionAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  if (!id || !sectionId) return { error: "That section is missing." };
+  try {
+    const { page } = await api.getCmsPage(session, id);
+    const sections = page.sections.map((section) => {
+      if (section.id !== sectionId) return section;
+      const next: Record<string, unknown> = { ...section };
+      for (const [field, value] of formData.entries()) {
+        if (field.startsWith("field_")) next[field.slice("field_".length)] = String(value);
+      }
+      return next as api.CmsSection;
+    });
+    await api.saveCmsPage(session, { id, sections });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "Those changes could not be saved." };
+  }
+  refresh(`/cms/pages/${id}`);
+  return { message: "Saved as a draft. Publish to put it on the storefront." };
+}
