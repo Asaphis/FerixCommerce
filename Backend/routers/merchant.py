@@ -1085,3 +1085,16 @@ def create_promotion(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         audit(db, "merchant", staff.email, "promotion.create", sale.name, merchant["slug"])
         db.commit()
         return {"sale": {"id": sale.id, "name": sale.name, "status": sale.status}}
+
+@router.post("/auth/refresh")
+def auth_refresh(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Silently rotate the seller session. Nothing is extended: the new token carries
+    the original expiry, so the session still ends seven days after signing in."""
+    from core import refresh_staff_session
+
+    with SessionLocal() as db:
+        result = refresh_staff_session(db, session, "seller")
+        if not result:
+            raise HTTPException(401, "That session has ended. Please sign in again.")
+        return {"token": result["token"], "expiresAt": iso(result["expiresAt"]),
+                "role": result["staff"].role, "permissions": result["staff"].permissions}

@@ -36,7 +36,8 @@ SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 FREE_SHIPPING_OVER = 120.0
 TAX_RATE = 0.075
-SESSION_DAYS = 30
+SESSION_DAYS = 7             # the absolute life of a session, never extended
+SESSION_IDLE_MINUTES = 60     # untouched for this long and the session is dead
 ROOT = Path(__file__).resolve().parent
 SEED_PATH = ROOT / "seed.json"
 DEMO_PASSWORD = "Ferixas123"
@@ -293,6 +294,7 @@ class SessionToken(Base):
     token: Mapped[str] = mapped_column(String(96), primary_key=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class StaffUser(Base):
@@ -316,6 +318,9 @@ class StaffSession(Base):
     token: Mapped[str] = mapped_column(String(96), primary_key=True)
     staff_id: Mapped[str] = mapped_column(ForeignKey("staff_users.id"), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    # Touched by the silent refresh. A session untouched for the idle window is
+    # refused even while it is inside its absolute life.
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class Catalog(Base):
@@ -662,12 +667,56 @@ def staff_from_token(db: Session, token: Optional[str], subject_type: str) -> Op
     row = db.get(StaffSession, token)
     if not row:
         return None
+
+    # Past its absolute life: the row is deleted, not just refused.
     if aware(row.expires_at) < now():
+        db.delete(row)
+        db.commit()
         return None
+
+    # Untouched for too long: dead even inside the seven days. Guarded with
+    # getattr so a database that has not yet been migrated degrades to working
+    # rather than failing.
+    seen = getattr(row, "last_seen_at", None)
+    if seen is not None and aware(seen) + timedelta(minutes=SESSION_IDLE_MINUTES) < now():
+        db.delete(row)
+        db.commit()
+        return None
+
     staff = db.get(StaffUser, row.staff_id)
     if not staff or staff.subject_type != subject_type:
         return None
     return staff
+
+
+def rotate_staff_session(db: Session, row: StaffSession, staff_id: str) -> str:
+    """Issue a fresh token and retire the previous one.
+
+    The new session inherits the ORIGINAL expiry, so refreshing every minute
+    never extends the absolute life of a session - it only shrinks the window in
+    which a stolen token is worth anything.
+    """
+    import secrets
+
+    token = secrets.token_urlsafe(32)
+    expires = row.expires_at
+    db.delete(row)
+    db.add(StaffSession(token=token, staff_id=staff_id, expires_at=expires, last_seen_at=now()))
+    db.commit()
+    return token
+
+
+def refresh_staff_session(db: Session, token: Optional[str], subject_type: str) -> Optional[dict]:
+    """Validate a token, rotate it, and report the session's original end."""
+    staff = staff_from_token(db, token, subject_type)
+    if not staff:
+        return None
+    row = db.get(StaffSession, token)
+    if not row:
+        return None
+    expires = row.expires_at
+    fresh = rotate_staff_session(db, row, staff.id)
+    return {"token": fresh, "staff": staff, "expiresAt": expires}
 
 
 def require_staff(db: Session, token: Optional[str], subject_type: str) -> StaffUser:
