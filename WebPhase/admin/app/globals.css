@@ -46,3 +46,51 @@ input, select, textarea { max-width: 100%; }
 *:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 /*TO CODY & OTHER LLM CODING AGENTS DO NOT REMOVE*/
 nextjs-portal, [data-nextjs-dialog-overlay], [data-nextjs-toast] { display: none !important; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   FERIXAS SHAPE PASS
+   ──────────────────────────────────────────────────────────────────────────
+   This block is the single place that decides the geometry of the whole app.
+
+   Before it, every block was a 2px rectangle with ONE cut corner. That reads
+   precise and technical, and it is the main reason the product does not feel
+   like commerce. The approved concept boards draw soft rounded rectangles, so
+   every radius now resolves to one of these four values.
+
+   The radii are written as Tailwind arbitrary values across hundreds of
+   screens, so this layer carries !important deliberately: it has to win over
+   the inline utility. Change the four values here and the entire product
+   changes shape with no page edits.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --fx-r-card: 14px;     /* panels, cards, tiles, table shells */
+  --fx-r-control: 10px;  /* buttons, inputs, selects, textareas */
+  --fx-r-inner: 10px;    /* icon squares inside a card */
+  --fx-r-pill: 999px;    /* status chips, avatars, counters */
+  --radius: 0.875rem;
+}
+
+/* 1. Retire the cut corner. Anything that carried a one-corner chamfer becomes
+      an ordinary rectangle again, so the old rule can never fight this one. */
+[class*="rounded-tr-["] { border-top-right-radius: inherit; }
+
+/* 2. Every block becomes a soft rectangle. */
+[class*="rounded-["] { border-radius: var(--fx-r-card) !important; }
+
+/* 3. Capsules stay capsules. */
+[class*="rounded-full"],
+[class*="rounded-[999"] { border-radius: var(--fx-r-pill) !important; }
+
+/* 4. Controls take the smaller radius, so a button never reads as a card. */
+button[class*="rounded-["],
+input[class*="rounded-["],
+select,
+textarea { border-radius: var(--fx-r-control) !important; }
+
+/* 5. Icon squares and small inner marks. */
+[class*="h-7"][class*="w-7"][class*="rounded-["],
+[class*="h-8"][class*="w-8"][class*="rounded-["] { border-radius: var(--fx-r-inner) !important; }
+
+/* 6. Depth without drama. */
+[class*="shadow-[0_2px_10px"] { box-shadow: 0 2px 14px rgba(16, 45, 67, 0.07) !important; }

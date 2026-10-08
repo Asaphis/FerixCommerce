@@ -16,7 +16,7 @@ export function Panel({
   flush?: boolean;
 }) {
   return (
-    <section className={cn("min-w-0 rounded-[2px] rounded-tr-[14px] border border-hairline bg-panel shadow-[0_2px_10px_rgba(16,45,67,0.04)]", !flush && "p-3 sm:p-5", className)}>
+    <section className={cn("min-w-0 rounded-[14px] border border-hairline bg-panel shadow-[0_2px_14px_rgba(16,45,67,0.06)]", !flush && "p-3 sm:p-5", className)}>
       {children}
     </section>
   );
@@ -106,8 +106,8 @@ export function Readout({
     neutral: "bg-chalk-dim",
   };
   return (
-    <div className="relative flex min-h-[72px] min-w-0 items-center gap-2 overflow-hidden rounded-[2px] rounded-tr-[12px] border border-hairline bg-panel p-2 shadow-[0_2px_10px_rgba(16,45,67,0.04)] sm:min-h-[94px] sm:gap-2.5 sm:p-4 sm:pl-5">
-      {icon ? <span className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-[2px] rounded-tr-[8px] bg-panel-2 [&>svg]:h-4 [&>svg]:w-4", colors[tone])}>{icon}</span> : null}
+    <div className="relative flex min-h-[72px] min-w-0 items-center gap-2 overflow-hidden rounded-[14px] border border-hairline bg-panel p-2 shadow-[0_2px_14px_rgba(16,45,67,0.06)] sm:min-h-[94px] sm:gap-2.5 sm:p-4 sm:pl-5">
+      {icon ? <span className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-[10px] bg-panel-2 [&>svg]:h-4 [&>svg]:w-4", colors[tone])}>{icon}</span> : null}
       <div className="min-w-0 flex-1">
         <span className="block truncate font-mono text-[8px] leading-tight uppercase tracking-[0.08em] text-chalk-dim sm:text-[10px] sm:tracking-[0.12em]">{label}</span>
         <p className="mt-1 font-display text-[17px] font-bold leading-none tabular-nums text-chalk sm:mt-2 sm:text-[22px]">{value}</p>
@@ -122,15 +122,15 @@ export function Meter({ value, max, tone = "signal" }: { value: number; max: num
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   const colors = { signal: "bg-signal", amber: "bg-amber", rose: "bg-rose", violet: "bg-violet" };
   return (
-    <span className="block h-1.5 w-full overflow-hidden rounded-[1px] bg-panel-2">
-      <span className={cn("block h-full rounded-[1px]", colors[tone])} style={{ width: `${pct}%` }} />
+    <span className="block h-1.5 w-full overflow-hidden rounded-full bg-panel-2">
+      <span className={cn("block h-full rounded-full", colors[tone])} style={{ width: `${pct}%` }} />
     </span>
   );
 }
 
 export function Empty({ title, body }: { title: string; body: string }) {
   return (
-    <div className="min-w-0 rounded-[2px] border border-dashed border-hairline px-6 py-12 text-center">
+    <div className="min-w-0 rounded-[14px] border border-dashed border-hairline px-6 py-12 text-center">
       <p className="font-display text-[16px] font-semibold text-chalk">{title}</p>
       <p className="mx-auto mt-2 max-w-[48ch] text-[13px] leading-relaxed text-chalk-dim">{body}</p>
     </div>
