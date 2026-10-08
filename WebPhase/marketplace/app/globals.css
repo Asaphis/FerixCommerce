@@ -276,10 +276,29 @@ textarea { border-radius: var(--fx-r-control) !important; }
 [class*="rounded-["][class*="text-[11"] {
   border-radius: 6px !important;
 }
-[class*="rounded-tr-[18px]"] {
-  border-radius: 18px !important;
+@media (min-width: 1024px) {
+  [class*="rounded-tr-[18px]"] {
+    border-radius: 18px !important;
+  }
 }
 [class*="rounded-full"],
 [class*="rounded-[999"] {
   border-radius: var(--fx-r-pill) !important;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   A block that is explicitly square below lg stays square.
+   ──────────────────────────────────────────────────────────────────────────
+   The blanket radius rules above are unlayered and carry !important, so they
+   win over Tailwind's max-lg:rounded-none, which lives in @layer utilities.
+   That put a corner back on every full-bleed block on a phone — and on a
+   full-bleed campaign that reads as a chipped, cropped corner.
+
+   This rule is last, so it wins: anything marked square below lg is square.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 1023.98px) {
+  [class*="max-lg:rounded-none"] {
+    border-radius: 0 !important;
+  }
 }
