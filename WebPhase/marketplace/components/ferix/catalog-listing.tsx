@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import { assetUrl, getCataloguePage, listAdverts, listProducts, type Advert } from "@/lib/api";
+import { assetUrl, getCataloguePage, getHome, listAdverts, listProducts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
 import { AutoForm } from "@/components/ferix/add-to-cart";
@@ -115,6 +115,19 @@ export async function CatalogListing({
   const adverts = slotSection && slotLimit > 0
     ? (await listAdverts(slotSection.placement ?? "explore").catch(() => ({ adverts: [] }))).adverts.slice(0, slotLimit)
     : [];
+
+  // The other two sections this page can carry. The band above the results and
+  // the brand row below them are the CMS's to switch on, reword and fill; the
+  // listing only decides where they land.
+  const hero = page.sections.find(
+    (section) => (section.type === "hero_slim" || section.type === "hero_banner") && section.visible !== false,
+  );
+  const brandRow = page.sections.find(
+    (section) => section.type === "brand_carousel" && section.visible !== false,
+  );
+  const brands = brandRow
+    ? ((await getHome().catch(() => null))?.brands ?? []).slice(0, Math.max(1, Number(brandRow.limit) || 8))
+    : [];
   const activeStore = feed.facets.stores.find((item) => item.slug === filters.store);
   const activeCategory = feed.facets.categories.find((item) => item.slug === filters.category);
   // Filtering by department renames the page, so the heading always matches the list.
@@ -158,6 +171,30 @@ export async function CatalogListing({
             </span>
           ))}
         </nav>
+      ) : null}
+
+      {hero ? (
+        <section className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-[16px] bg-gradient-to-r from-[#b8542a] via-[#e0703a] to-[#f3a877] px-5 py-5">
+          <div className="min-w-0">
+            {hero.eyebrow ? (
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/85">{hero.eyebrow}</span>
+            ) : null}
+            <p className="mt-1.5 font-display text-[19px] font-bold leading-tight text-white sm:text-[23px]">
+              {hero.title ?? "This week on Ferixas"}
+            </p>
+            {hero.subtitle ? (
+              <p className="mt-1 max-w-[56ch] text-[12.5px] leading-relaxed text-white/85">{hero.subtitle}</p>
+            ) : null}
+          </div>
+          {hero.ctaLabel ? (
+            <Link
+              href={hero.ctaHref ?? basePath}
+              className="shrink-0 rounded-[10px] bg-white px-4 py-2.5 text-[12.5px] font-bold text-[#c2441a]"
+            >
+              {hero.ctaLabel}
+            </Link>
+          ) : null}
+        </section>
       ) : null}
 
       <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
@@ -279,6 +316,47 @@ export async function CatalogListing({
               action={<LinkButton href={basePath}>Clear every filter</LinkButton>}
             />
           )}
+
+          {brands.length ? (
+            <section className="mt-8 border-t border-line-warm pt-6">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
+                    {brandRow?.subtitle ?? "Verified makers"}
+                  </span>
+                  <h2 className="mt-1 font-display text-[18px] font-semibold text-ink">
+                    {brandRow?.title ?? "Shop by brand"}
+                  </h2>
+                </div>
+                <Link href="/browse" className="text-[12px] font-semibold text-ember hover:underline">
+                  All brands
+                </Link>
+              </div>
+              <div className="no-scrollbar -mx-4 mt-3 flex gap-2.5 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0">
+                {brands.map((brand) => {
+                  const record = brand as unknown as { slug: string; name: string; imageUrl?: string; logo?: string };
+                  const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
+                  return (
+                    <Link
+                      key={record.slug}
+                      href={`/browse?brand=${record.slug}`}
+                      className="flex shrink-0 items-center gap-2.5 rounded-[12px] border border-line-warm bg-white px-3 py-2.5 transition-colors hover:border-ember/40"
+                    >
+                      {artwork ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img src={artwork} alt="" className="h-8 w-8 rounded-[8px] object-cover" />
+                      ) : (
+                        <span className="grid h-8 w-8 place-items-center rounded-[8px] bg-bone-soft font-display text-[12px] font-bold text-ink-soft">
+                          {record.name.slice(0, 1)}
+                        </span>
+                      )}
+                      <span className="text-[12.5px] font-semibold text-ink">{record.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
           {feed.pages > 1 ? (
             <div className="mt-8 flex items-center justify-between gap-3 border-t border-line-warm pt-5">
