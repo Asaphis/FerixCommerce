@@ -1098,3 +1098,37 @@ def auth_refresh(session: Optional[str] = Header(None, alias="X-Ferix-Session"))
             raise HTTPException(401, "That session has ended. Please sign in again.")
         return {"token": result["token"], "expiresAt": iso(result["expiresAt"]),
                 "role": result["staff"].role, "permissions": result["staff"].permissions}
+
+# ── Submitting a product for review ────────────────────────────────────────
+# Nothing a seller publishes goes live on its own. A product carries its review
+# state and the trail behind it, and only an operator decision puts it on sale.
+
+
+class ProductRefIn(BaseModel):
+    id: str
+    note: Optional[str] = None
+
+
+@router.post("/product/submit")
+def product_submit(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                   payload: ProductRefIn = Body(...)):
+    """Send a seller's product to the platform for review."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.products.manage")
+
+        product = next((p for p in all_products(db) if p.get("id") == payload.id), None)
+        if not product:
+            raise HTTPException(404, "That product is not in your catalogue")
+        if product.get("merchantId") != staff.subject_id:
+            raise HTTPException(403, "That product belongs to another store")
+
+        product["reviewStatus"] = "in_review"
+        product["reviewNote"] = payload.note or ""
+        product["submittedBy"] = staff.email
+        product["submittedAt"] = now().isoformat()
+        put_row(db, "product", product["id"], product)
+        audit(db, "merchant", staff.email, "product.submit", product["id"], "in_review")
+        db.commit()
+        return {"product": {"id": product["id"], "reviewStatus": product["reviewStatus"],
+                            "submittedAt": product["submittedAt"]}}
