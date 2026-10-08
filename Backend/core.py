@@ -1249,8 +1249,15 @@ def migrate() -> None:
             for name, _ in columns:
                 if name in present:
                     continue
-                connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {stamp}"))
-                print(f"[ferixas] migrated: added {table}.{name}")
+                try:
+                    connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {stamp}"))
+                    print(f"[ferixas] migrated: added {table}.{name}")
+                except Exception as error:
+                    # Startup can fire more than once - FastAPI merges the lifespan
+                    # of every included router - so a column added by the first run
+                    # must not abort the second. Anything else is a real failure.
+                    if "duplicate column" not in str(error).lower():
+                        raise
 
 def ensure_seed() -> None:
     Base.metadata.create_all(engine)
