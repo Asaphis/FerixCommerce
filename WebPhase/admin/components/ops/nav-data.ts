@@ -38,8 +38,8 @@ export const NAV_GROUPS: NavGroupData[] = [
     items: [
       { href: "/catalog", label: "Catalogue", icon: "boxes", permission: "catalog.manage" },
       { href: "/cms", label: "CMS", icon: "palette", permission: "cms.manage" },
-      { href: "/cms/brands", label: "Brands", icon: "tag", permission: "catalog.manage" },
-      { href: "/cms/categories", label: "Departments", icon: "dashboard", permission: "catalog.manage" },
+      { href: "/brands", label: "Brands", icon: "tag", permission: "catalog.manage" },
+      { href: "/departments", label: "Departments", icon: "dashboard", permission: "catalog.manage" },
       { href: "/cms/collections", label: "Collections", icon: "boxes", permission: "catalog.manage" },
       { href: "/cms/adverts", label: "Adverts", icon: "megaphone", permission: "cms.manage" },
       { href: "/cms/banners", label: "Banners", icon: "megaphone", permission: "cms.manage" },
