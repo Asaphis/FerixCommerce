@@ -232,13 +232,13 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
   const vertical = overlay.vertical === "top" ? "items-start pt-10" : overlay.vertical === "bottom" ? "items-end pb-16" : "items-center";
 
   return (
-    <div className={cn("absolute inset-0 z-20 flex px-4 pb-16 sm:px-6", vertical)}>
+    <div className={cn("absolute inset-0 z-20 flex px-4 pb-14 sm:px-6 sm:pb-16", vertical)}>
       <div className="mx-auto flex w-full max-w-[1240px]">
         <div className={cn("flex w-full", overlay.align === "center" ? "justify-center" : overlay.align === "right" ? "justify-end" : "justify-start")}>
           <div className={cn("flex flex-col", horizontal)} style={{ maxWidth: `${Math.max(18, Math.min(64, overlay.width))}ch` }}>
             {showText && slide.eyebrow ? (
               <span
-                className="inline-flex items-center gap-2 rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] backdrop-blur-sm"
+                className="inline-flex items-center gap-2 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] backdrop-blur-sm sm:px-2.5 sm:py-1 sm:text-[10px]"
                 style={{
                   borderColor: `${slide.accent}77`,
                   background: `${slide.accent}26`,
@@ -253,7 +253,7 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
             {showText ? (
               <h1
                 className={cn(
-                  "mt-3.5 font-display font-extrabold leading-[1.06] tracking-[-0.025em] text-[22px] sm:text-[26px] lg:text-[32px]",
+                  "mt-2.5 font-display font-extrabold leading-[1.06] tracking-[-0.025em] text-[19px] sm:mt-3.5 sm:text-[26px] lg:text-[32px]",
                   light ? "text-white" : "text-ink",
                 )}
                 style={{ textShadow: light ? "0 2px 20px rgba(0,0,0,0.45)" : "none" }}
@@ -267,7 +267,7 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
             ) : null}
 
             {showText && slide.body ? (
-              <p className={cn("mt-2.5 line-clamp-1 text-[12px] leading-relaxed sm:line-clamp-2 sm:text-[13.5px]", light ? "text-white/85" : "text-ink/80")}>
+              <p className={cn("mt-2 line-clamp-1 text-[11.5px] leading-relaxed sm:mt-2.5 sm:line-clamp-2 sm:text-[13.5px]", light ? "text-white/85" : "text-ink/80")}>
                 {slide.body}
               </p>
             ) : null}
@@ -275,7 +275,7 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
             {showButtons ? (
               <div
                 className={cn(
-                  "mt-5 flex flex-wrap items-center gap-3",
+                  "mt-3.5 flex flex-wrap items-center gap-2 sm:mt-5 sm:gap-3",
                   overlay.align === "center" ? "justify-center" : overlay.align === "right" ? "justify-end" : "",
                 )}
               >
@@ -283,7 +283,7 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
                   <Link
                     href={slide.ctaHref || "/browse"}
                     tabIndex={active ? 0 : -1}
-                    className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-[2px] px-5 text-[13.5px] font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5"
+                    className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-[2px] px-4 text-[12.5px] font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 sm:h-11 sm:px-5 sm:text-[13.5px]"
                     style={{ background: slide.accent }}
                   >
                     {slide.ctaLabel}
@@ -295,7 +295,7 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
                     href={slide.secondaryHref || "/browse"}
                     tabIndex={active ? 0 : -1}
                     className={cn(
-                      "inline-flex h-11 cursor-pointer items-center gap-2 rounded-[2px] border px-5 text-[13.5px] font-medium backdrop-blur-sm transition-colors",
+                      "hidden h-10 cursor-pointer items-center gap-2 rounded-[2px] border px-4 text-[12.5px] font-medium backdrop-blur-sm transition-colors sm:inline-flex sm:h-11 sm:px-5 sm:text-[13.5px]",
                       light ? "border-white/40 text-white hover:border-white/80 hover:bg-white/10" : "border-ink/25 text-ink hover:border-ink/70",
                     )}
                   >
