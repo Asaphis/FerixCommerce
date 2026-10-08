@@ -11,8 +11,8 @@ export default async function LoginPage() {
   const heroImage = assetUrl("/media/banners/bnr_launch.jpg");
 
   return (
-    <div className="mx-auto max-w-[1180px] px-3 py-5 sm:px-5 sm:py-8 lg:py-10">
-      <div className="grid overflow-hidden rounded-[3px] rounded-tr-[18px] border border-line-warm bg-white shadow-[0_12px_36px_rgba(16,45,67,0.08)] lg:grid-cols-[0.92fr_1.08fr]">
+    <div className="mx-auto max-w-[1180px] sm:px-5 sm:py-8 lg:py-10">
+      <div className="grid overflow-hidden rounded-[3px] rounded-tr-[18px] border border-line-warm bg-white shadow-[0_12px_36px_rgba(16,45,67,0.08)] max-lg:rounded-none max-lg:border-0 max-lg:shadow-none lg:grid-cols-[0.92fr_1.08fr]">
         <section className="flex items-center px-5 py-7 max-lg:order-2 sm:px-8 sm:py-9 lg:px-10 lg:py-12">
           <div className="mx-auto w-full max-w-[410px]">
             <FerixMark className="h-9 w-9" />

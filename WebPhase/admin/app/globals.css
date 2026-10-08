@@ -94,3 +94,32 @@ textarea { border-radius: var(--fx-r-control) !important; }
 
 /* 6. Depth without drama. */
 [class*="shadow-[0_2px_10px"] { box-shadow: 0 2px 14px rgba(16, 45, 67, 0.07) !important; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   FULL PAGE PASS — phones and small tablets
+   ──────────────────────────────────────────────────────────────────────────
+   A console panel was a bordered, rounded, shadowed sheet inset from both
+   edges, so a phone showed a column of floating cards instead of a page.
+   Below lg a panel becomes a full-width band divided by hairlines, and the
+   page ground stops banding around it. Internal padding, headings, tables and
+   controls are unchanged. Desktop is untouched.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 1023.98px) {
+  [class*="rounded-tr-[14px]"],
+  [class*="rounded-tr-[12px]"],
+  [class*="rounded-tr-[11px]"],
+  [class*="rounded-tr-[10px]"],
+  [class*="rounded-tr-[9px]"],
+  [class*="rounded-tr-[8px]"] {
+    border-radius: 0 !important;
+  }
+  [class*="rounded-tr-["][class*="border"] {
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+  }
+  [class*="shadow-[0_2px_14px"],
+  [class*="shadow-[0_2px_10px"] {
+    box-shadow: none !important;
+  }
+}

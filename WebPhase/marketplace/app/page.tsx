@@ -52,7 +52,7 @@ export default async function HomePage() {
 
   return (
     <div className="pb-10">
-      <section className="mx-auto max-w-[1440px] px-3 pt-3 sm:px-5 sm:pt-5">
+      <section className="mx-auto max-w-[1440px] sm:px-5 sm:pt-5">
         <div className="grid gap-3 lg:grid-cols-[226px_minmax(0,1fr)]">
           <aside className="hidden rounded-[3px] rounded-tr-[14px] border border-line-warm bg-white p-3.5 lg:block">
             <div className="mb-2 flex items-center gap-2 border-b border-line-warm px-1 pb-3">

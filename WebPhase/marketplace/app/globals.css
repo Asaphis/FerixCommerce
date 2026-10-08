@@ -253,3 +253,50 @@ textarea { border-radius: var(--fx-r-control) !important; }
 
 /* 6. Depth without drama. */
 [class*="shadow-[0_2px_10px"] { box-shadow: 0 2px 14px rgba(16, 45, 67, 0.07) !important; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   FULL PAGE PASS — phones and small tablets
+   ──────────────────────────────────────────────────────────────────────────
+   On a phone the content was wrapped in a bordered, rounded, shadowed card,
+   inset from both edges. The page looked like one widget floating on a page.
+
+   Below lg the page IS the page: the frame goes, the page ground stops banding
+   around the content, and page-level wrappers run to the edges. Cards, inputs
+   and chips keep their own rounding — the softness stays, it just stops
+   wrapping the whole screen. Desktop is untouched.
+   ────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 1023.98px) {
+  /* 1. One ground, so nothing reads as a floating card on a coloured band. */
+  html,
+  body {
+    background-color: #ffffff !important;
+  }
+
+  /* 2. The page-level wrappers carry the gutter; they run to the edges now. */
+  [class*="max-w-[1180px]"],
+  [class*="max-w-[1240px]"] {
+    max-width: none;
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 0;
+  }
+
+  /* 3. Full-bleed blocks: campaign banners and the account panel. */
+  [class*="rounded-tr-[18px]"],
+  [class*="rounded-tr-[14px]"] {
+    border-radius: 0 !important;
+  }
+  [class*="rounded-tr-[18px]"][class*="border"],
+  [class*="rounded-tr-[14px]"][class*="border"] {
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+  }
+
+  /* 4. No drop shadow on a page-sized block — it is the page, not a sheet. */
+  [class*="shadow-[0_12px_36px"],
+  [class*="shadow-[0_10px_28px"],
+  [class*="shadow-[0_-8px_24px"] {
+    box-shadow: none !important;
+  }
+}
