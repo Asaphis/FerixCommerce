@@ -126,7 +126,11 @@ export async function CatalogListing({
     (section) => section.type === "brand_carousel" && section.visible !== false,
   );
   const brands = brandRow
-    ? ((await getHome().catch(() => null))?.brands ?? []).slice(0, Math.max(1, Number(brandRow.limit) || 8))
+    // The payload carries brands, but HomeFeed does not declare them and the
+    // Brand type describes a store's theming rather than a brand record.
+    ? (((await getHome().catch(() => null)) as unknown as {
+        brands?: { slug: string; name: string; imageUrl?: string; logo?: string }[];
+      } | null)?.brands ?? []).slice(0, Math.max(1, Number(brandRow.limit) || 8))
     : [];
   const activeStore = feed.facets.stores.find((item) => item.slug === filters.store);
   const activeCategory = feed.facets.categories.find((item) => item.slug === filters.category);
