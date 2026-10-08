@@ -35,6 +35,29 @@ const FALLBACK: { key: string; title: string; long?: boolean }[] = [
   { key: "subtitle", title: "Description", long: true },
 ];
 
+/** Section types in plain words. A type with no entry falls back to its own name. */
+const SECTION_LABELS: Record<string, string> = {
+  hero_banner: "Hero banner",
+  hero_slim: "Banner",
+  promo_strip: "Message strip",
+  promo_slots: "Promotion slots",
+  category_grid: "Department tiles",
+  brand_carousel: "Brand row",
+  product_carousel: "Product row",
+  product_grid: "Product list",
+  featured_stores: "Stores",
+  featured_collection: "Collection",
+  footer: "Footer",
+  product_gallery: "Gallery",
+  buy_box: "Buy box",
+  delivery_block: "Delivery and returns",
+  reviews: "Reviews",
+};
+
+function sectionLabel(section: { type?: string; name?: string }) {
+  return SECTION_LABELS[String(section.type)] ?? section.name ?? "Section";
+}
+
 function fieldsFor(section: CmsSection) {
   const key = String(section.type ?? "");
   if (TEXT_FIELDS[key]) return TEXT_FIELDS[key];
@@ -71,7 +94,7 @@ export default async function CmsSectionEditor({
             <ArrowLeft width={13} height={13} /> {page?.title ?? "Content"}
           </Link>
         }
-        eyebrow={section?.type}
+        eyebrow={section ? sectionLabel(section) : undefined}
         title={section?.name || "That section"}
         action={
           section ? (
@@ -218,8 +241,6 @@ export default async function CmsSectionEditor({
             <Panel>
               <PanelHead title="This section" />
               <dl className="grid gap-2 text-[12.5px]">
-                <div className="flex justify-between gap-3"><dt className="text-chalk-dim">Type</dt><dd className="font-mono text-[11px] text-chalk">{String(section.type)}</dd></div>
-                <div className="flex justify-between gap-3"><dt className="text-chalk-dim">Id</dt><dd className="font-mono text-[11px] text-chalk">{section.id}</dd></div>
                 <div className="flex justify-between gap-3"><dt className="text-chalk-dim">Position</dt><dd className="font-mono text-[11px] text-chalk">{section.position}</dd></div>
                 <div className="flex justify-between gap-3"><dt className="text-chalk-dim">On the shop</dt><dd className="font-mono text-[11px] text-chalk">{section.visible ? "yes" : "hidden"}</dd></div>
               </dl>

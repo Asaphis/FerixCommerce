@@ -15,6 +15,14 @@ const AREAS = [
   { href: "/cms/publishing", label: "Publishing", detail: "Version history and restore", Icon: UploadCloud },
 ];
 
+/** What a page is, in the words an operator uses - never the internal type. */
+const PAGE_LOCATION: Record<string, string> = {
+  marketplace_home: "The homepage",
+  marketplace_explore: "The explore and search results",
+  marketplace_product: "Every product page",
+  marketplace_store: "Every store page",
+};
+
 function sectionSummary(page: CmsPage) {
   return `${page.sectionCount} section${page.sectionCount === 1 ? "" : "s"} · ${page.visibleCount} on the storefront`;
 }
@@ -77,7 +85,7 @@ export default async function CmsPage() {
                       {page.title}
                     </span>
                     <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                      {page.documentType} · {sectionSummary(page)}
+                      {PAGE_LOCATION[page.documentType] ?? page.title} · {sectionSummary(page)}
                     </span>
                   </span>
                   {page.hasDraft ? <Pill tone="amber">Draft</Pill> : null}

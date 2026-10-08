@@ -9,6 +9,29 @@ import { PageHeader } from "@/components/ops/table";
 import { SubmitButton } from "@/components/ops/controls";
 import { moveCmsSectionAction, publishCmsPageAction, toggleCmsSectionAction } from "@/lib/actions";
 
+/** Section types in plain words. A type with no entry falls back to its own name. */
+const SECTION_LABELS: Record<string, string> = {
+  hero_banner: "Hero banner",
+  hero_slim: "Banner",
+  promo_strip: "Message strip",
+  promo_slots: "Promotion slots",
+  category_grid: "Department tiles",
+  brand_carousel: "Brand row",
+  product_carousel: "Product row",
+  product_grid: "Product list",
+  featured_stores: "Stores",
+  featured_collection: "Collection",
+  footer: "Footer",
+  product_gallery: "Gallery",
+  buy_box: "Buy box",
+  delivery_block: "Delivery and returns",
+  reviews: "Reviews",
+};
+
+function sectionLabel(section: { type?: string; name?: string }) {
+  return SECTION_LABELS[String(section.type)] ?? section.name ?? "Section";
+}
+
 export default async function CmsPageSections({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { session } = await requireAdmin();
@@ -65,7 +88,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13.5px] font-semibold text-chalk">{section.name || section.type}</span>
                   <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                    {section.type} · {section.visible ? "on the storefront" : "hidden"}
+                    {sectionLabel(section)} · {section.visible ? "on the storefront" : "hidden"}
                   </span>
                 </span>
 
