@@ -9,7 +9,7 @@ import { AddToCartButton } from "@/components/ferix/add-to-cart";
 import { ReviewForm } from "@/components/ferix/forms";
 import { ProductRail, RatingBars, ReviewList } from "@/components/ferix/cards";
 import { Eyebrow, LinkButton, Plate, Pill, Price, SectionHead, Stars, StockNote } from "@/components/ferix/marks";
-import { compact, dateShort } from "@/lib/format";
+import { compact, dateShort, money } from "@/lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -82,12 +82,38 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             {product.discount ? <Pill tone="ember">−{product.discount}% today</Pill> : null}
           </div>
 
-          <Link
-            href={`/store/${merchant.slug}`}
-            className="mt-3 inline-block font-mono text-[10.5px] uppercase tracking-[0.16em] text-ember transition-colors hover:text-ink"
-          >
-            {merchant.name}
-          </Link>
+          {/* Who is selling this. A name alone tells a shopper nothing; the card
+              gives the seller a face, a place and a rating before they buy. */}
+          <div className="mt-3 flex items-center gap-3 rounded-[14px] border border-line-warm bg-white p-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px] bg-ink font-display text-[15px] font-extrabold text-bone">
+              {merchant.name.slice(0, 1)}
+            </span>
+            <div className="min-w-0 flex-1 leading-tight">
+              <div className="flex items-center gap-1.5">
+                <Link
+                  href={`/store/${merchant.slug}`}
+                  className="truncate text-[13px] font-semibold text-ink transition-colors hover:text-ember"
+                >
+                  {merchant.name}
+                </Link>
+                {merchant.verified ? (
+                  <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-pine text-white">
+                    <Check width={10} height={10} />
+                  </span>
+                ) : null}
+              </div>
+              <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                {merchant.location}
+                {typeof merchant.rating === "number" ? ` · ${merchant.rating.toFixed(1)} ★` : ""}
+              </span>
+            </div>
+            <Link
+              href={`/store/${merchant.slug}`}
+              className="shrink-0 rounded-[9px] border border-line-warm px-3 py-1.5 text-[11px] font-semibold text-ink transition-colors hover:border-ember hover:text-ember"
+            >
+              Visit store
+            </Link>
+          </div>
           <h1 className="mt-1.5 font-display text-[27px] font-semibold leading-tight text-ink sm:text-[32px]">
             {product.title}
           </h1>
@@ -147,6 +173,28 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 disabled={product.stock <= 0}
                 className="flex-1 sm:flex-none sm:px-8"
               />
+            </div>
+
+            {/* On a phone the buy control scrolls away, so it travels with the
+                shopper. Two submit buttons, one form, one action — no extra state. */}
+            <div className="sticky bottom-[72px] z-20 -mx-4 mt-1 flex items-center gap-3 border-t border-line-warm bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+              <span className="min-w-0 shrink-0">
+                <span className="block font-display text-[17px] font-bold leading-none text-ink">
+                  {money(product.price)}
+                </span>
+                {product.compareAt ? (
+                  <span className="mt-0.5 block font-mono text-[10px] text-ink-soft line-through">
+                    {money(product.compareAt)}
+                  </span>
+                ) : null}
+              </span>
+              <span className="flex-1">
+                <AddToCartButton
+                  label={product.stock > 0 ? "Add to cart" : "Out of stock"}
+                  disabled={product.stock <= 0}
+                  className="w-full"
+                />
+              </span>
             </div>
           </form>
 
