@@ -23,7 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOBILE_PRIMARY, isActivePath, visibleGroups, type NavItem } from "@/components/ops/nav-data";
+import { MOBILE_PRIMARY, NAV_GROUPS, isActivePath, visibleGroups, type NavItem } from "@/components/ops/nav-data";
 
 /** Icons are the only React-bound part of the nav, so they live here. */
 const ICONS: Record<string, LucideIcon> = {
@@ -139,10 +139,17 @@ export function OpsBottomNav({ permissions }: { permissions?: string[] } = {}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const all = visibleGroups(permissions).flatMap((group) => group.items);
-  const items = MOBILE_PRIMARY.map((href) => all.find((item) => item.href === href)).filter(
-    (item): item is NavItem => Boolean(item),
+  // The bar's destinations are declared by href, so they must be looked up in the
+  // FULL list and filtered afterwards. Resolving them against the already-filtered
+  // list meant a role that could not reach four of the five was left with a
+  // two-item bar and a screen of empty space.
+  const all = NAV_GROUPS.flatMap((group) => group.items);
+  const permitted = new Set(
+    visibleGroups(permissions).flatMap((group) => group.items).map((item) => item.href),
   );
+  const items = MOBILE_PRIMARY
+    .map((href) => all.find((item) => item.href === href))
+    .filter((item): item is NavItem => Boolean(item && permitted.has(item.href)));
   const moreActive = !items.some((item) => isActivePath(pathname, item.href));
 
   useEffect(() => {
@@ -157,7 +164,10 @@ export function OpsBottomNav({ permissions }: { permissions?: string[] } = {}) {
         className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#102d43]/95 backdrop-blur-md md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto grid max-w-[560px] grid-cols-5">
+        <ul
+          className="mx-auto grid max-w-[560px]"
+          style={{ gridTemplateColumns: `repeat(${items.length + 1}, minmax(0, 1fr))` }}
+        >
           {items.map((item) => {
             const Icon = iconFor(item);
             const active = isActivePath(pathname, item.href);
