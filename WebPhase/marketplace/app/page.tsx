@@ -276,7 +276,7 @@ export default async function HomePage() {
               }
               className="mb-3 sm:mb-4"
             />
-            {section.arragement === "groups" || (section as { layout?: string }).layout === "groups" ? (
+            {(section as { layout?: string }).layout === "groups" ? (
               <SetSwiper
                 products={shown}
                 savedIds={saved}
