@@ -358,6 +358,7 @@ export const getMerchant = (session: string | null, id: string) =>
   call<MerchantDetail>("GET", "admin/merchant", { params: { id }, session });
 
 export const updateMerchant = (session: string | null, body: Record<string, unknown>) =>
+  call<{ merchant: MerchantRow }>("PATCH", "admin/merchant", { body, session });
 
 /** Remove a seller account. The endpoint is the owner's alone and refuses while orders exist. */
 export const deleteMerchant = (session: string | null, id: string) =>
@@ -372,7 +373,6 @@ export type ReviewItem = {
 };
 export const listReviewQueue = (session: string | null) =>
   call<{ items: ReviewItem[]; counts: Record<string, number> }>("GET", "admin/review/queue", { session });
-  call<{ merchant: MerchantRow }>("PATCH", "admin/merchant", { body, session });
 
 export const listUsers = (session: string | null, params: Params = {}) =>
   call<UserList>("GET", "admin/users", { params, session });

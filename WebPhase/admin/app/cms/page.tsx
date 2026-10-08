@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ops/table";
 // The records - products, departments, brands, sellers - have pages of their own.
 // What is left here exists only to fill a place in a page: a banner, a promotion,
 // and the library both draw from.
+const AREAS = [
   { href: "/cms/banners", label: "Banners", detail: "Hero and promo creatives", Icon: Megaphone },
   { href: "/cms/collections", label: "Collections", detail: "Curated product groupings", Icon: Palette },
   { href: "/cms/adverts", label: "Adverts", detail: "Promotions inside the product list", Icon: Megaphone },
