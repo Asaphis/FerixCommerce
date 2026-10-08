@@ -12,7 +12,7 @@ const KEY = process.env.CODEWORDS_API_KEY ?? "";
 // renders without any environment setup. Point FERIX_API_BASE at the deployed
 // API in production.
 export const apiBase =
-  process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? requireLocalApiBase();
+  process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? resolveApiBase();
 
 /** Resolve backend-relative media paths such as /media/... for browser previews. */
 export function assetUrl(path: string | null | undefined): string {
@@ -684,19 +684,39 @@ export const getAudit = (session: string | null, limit = 120) =>
   call<{ events: AuditEvent[] }>("GET", "admin/audit", { params: { limit }, session });
 
 
+
 /**
- * A hard-coded address is acceptable in exactly one place: local development.
+ * Resolve the API address.
  *
- * In production the environment must supply FERIX_API_BASE. Silently falling
- * back to 127.0.0.1 makes a misconfigured deployment look healthy until the
- * first request fails, so we fail loudly and name the variable instead.
+ * Order: an explicit variable, then the other names this project has used, then
+ * a local address in development only.
+ *
+ * In production, a missing variable must NEVER throw. An earlier version did
+ * exactly that, and one unset setting took every page of the live site down
+ * behind an error screen. A misconfiguration should degrade — the app still
+ * renders, requests resolve to this app's own origin, and a single line is
+ * logged naming the variable to set.
  */
-function requireLocalApiBase(): string {
+function resolveApiBase(): string {
+  const explicit =
+    process.env.NEXT_PUBLIC_API_URL ??
+    process.env.API_BASE_URL ??
+    process.env.NEXT_PUBLIC_API_BASE ??
+    process.env.API_URL;
+
+  if (explicit) return explicit.replace(/\/$/, "");
+
   if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "FERIX_API_BASE is not set. Set it in this app's environment (for example " +
-        "FERIX_API_BASE=https://api.ferixas.com) so every screen reads the live API.",
-    );
+    const flag = globalThis as unknown as { __ferixApiBaseWarned?: boolean };
+    if (!flag.__ferixApiBaseWarned) {
+      flag.__ferixApiBaseWarned = true;
+      console.warn(
+        "[ferixas] FERIX_API_BASE is not set. Requests fall back to this app's own origin. " +
+          "Set FERIX_API_BASE in the environment to point at the commerce API.",
+      );
+    }
+    return "";
   }
+
   return "http://127.0.0.1:8003";
 }
