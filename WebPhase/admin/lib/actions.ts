@@ -428,3 +428,37 @@ export async function deleteMerchantAction(_prev: FormState, formData: FormData)
   refresh("/merchants");
   return { message: "Seller account removed, along with their products and sign-ins." };
 }
+
+// ── Acting on an order ─────────────────────────────────────────────────
+// Every one of these is refused by the endpoint when it would be wrong - cancelling a
+// delivered order, refunding one that was never paid - and the refusal arrives as the
+// API's own sentence rather than a generic failure.
+
+async function orderAction(action: "cancel" | "refund" | "resend", formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!id) return { error: "That order is missing." };
+  let message = "";
+  try {
+    const result = await api.actOnOrder(session, action, reason ? { id, reason } : { id });
+    message = result.message;
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That could not be done to this order." };
+  }
+  refresh("/orders");
+  return { message };
+}
+
+export async function cancelOrderAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  return orderAction("cancel", formData);
+}
+
+export async function refundOrderAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  return orderAction("refund", formData);
+}
+
+export async function resendOrderAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  return orderAction("resend", formData);
+}

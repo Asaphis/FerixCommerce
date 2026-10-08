@@ -8,6 +8,9 @@ import { Distribution } from "@/components/ops/marks";
 import { compact, dateShort, money, num, relative, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CellLabel, DataTable, PageHeader, Row, Td, TdDetail, TdLead, TablePanel } from "@/components/ops/table";
+import { CmsActionForm } from "@/components/ops/cms-action-form";
+import { SubmitButton } from "@/components/ops/controls";
+import { cancelOrderAction, refundOrderAction, resendOrderAction } from "@/lib/actions";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -128,7 +131,7 @@ export default async function OrdersPage({
           {data.orders.length ? (
             <TablePanel>
               <DataTable
-                head={["Order", "Merchant", "Customer", "Channel", "Placed", "Payment", "Status", "Commission", "Total"]}
+                head={["Order", "Merchant", "Customer", "Channel", "Placed", "Payment", "Status", "Commission", "Total", "Actions"]}
                 minWidthClass="md:min-w-[1000px]"
               >
                 {data.orders.map((order) => (
@@ -174,6 +177,30 @@ export default async function OrdersPage({
                       <CellLabel>Total</CellLabel>
                       {money(order.total)}
                     </Td>
+                  <Td>
+                    <CellLabel>Actions</CellLabel>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CmsActionForm action={resendOrderAction} className="inline-flex">
+                        <input type="hidden" name="id" value={order.id} />
+                        <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
+                          Resend
+                        </SubmitButton>
+                      </CmsActionForm>
+                      <CmsActionForm action={refundOrderAction} className="inline-flex">
+                        <input type="hidden" name="id" value={order.id} />
+                        <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
+                          Refund
+                        </SubmitButton>
+                      </CmsActionForm>
+                      <CmsActionForm action={cancelOrderAction} className="inline-flex">
+                        <input type="hidden" name="id" value={order.id} />
+                        <SubmitButton variant="danger" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
+                          Cancel
+                        </SubmitButton>
+                      </CmsActionForm>
+                    </div>
+                  </Td>
+
                   </Row>
                 ))}
               </DataTable>

@@ -171,6 +171,16 @@ function sectionLabel(section: { type?: string; name?: string }) {
   return SECTION_LABELS[String(section.type)] ?? section.name ?? "Section";
 }
 
+/** Where each kind of band gets its records, so the editor can point there. */
+const DRAW_FROM: Record<string, { href: string; label: string }> = {
+  category_grid: { href: "/departments", label: "departments" },
+  brand_carousel: { href: "/brands", label: "brands" },
+  featured_stores: { href: "/merchants", label: "sellers" },
+  product_carousel: { href: "/catalog", label: "our products" },
+  product_grid: { href: "/catalog", label: "our products" },
+  promo_slots: { href: "/cms/adverts", label: "advertisements" },
+};
+
 function fieldsFor(section: CmsSection): EditorField[] {
   const key = String(section.type ?? "");
   const text = TEXT_FIELDS[key] ?? (TITLED.includes(key) ? [...FALLBACK] : []);
@@ -381,6 +391,23 @@ export default async function CmsSectionEditor({
                 <div className="flex justify-between gap-3"><dt className="text-chalk-dim">Position</dt><dd className="font-mono text-[11px] text-chalk">{section.position}</dd></div>
                 <div className="flex justify-between gap-3"><dt className="text-chalk-dim">On the shop</dt><dd className="font-mono text-[11px] text-chalk">{section.visible ? "yes" : "hidden"}</dd></div>
               </dl>
+              {DRAW_FROM[String(section.type)] ? (
+                <div className="mt-4 rounded-[12px] border border-hairline bg-panel-2 px-3.5 py-3">
+                  <p className="text-[12.5px] leading-relaxed text-chalk-dim">
+                    This band draws from your{" "}
+                    <span className="text-chalk">{DRAW_FROM[String(section.type)].label}</span>. What it
+                    holds, and how it is arranged, are set here; the {DRAW_FROM[String(section.type)].label}{" "}
+                    themselves are added and edited on their own page.
+                  </p>
+                  <Link
+                    href={DRAW_FROM[String(section.type)].href}
+                    className="mt-2.5 inline-flex min-h-9 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel"
+                  >
+                    Manage the {DRAW_FROM[String(section.type)].label} →
+                  </Link>
+                </div>
+              ) : null}
+
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link href={`/cms/pages/${id}`} className="rounded-[9px] border border-hairline px-3 py-1.5 text-[11px] font-semibold text-chalk transition-colors hover:bg-panel-2">
                   All sections
