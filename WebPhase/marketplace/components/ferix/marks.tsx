@@ -198,7 +198,7 @@ export function Price({
 }) {
   return (
     <span className={cn("flex flex-wrap items-baseline gap-2", className)}>
-      <span className="font-mono text-[14px] font-semibold text-ink">{money(value)}</span>
+      <span className="font-mono text-[14px] font-bold text-ember sm:text-[15px]">{money(value)}</span>
       {compareAt ? (
         <span className="font-mono text-[11.5px] text-ink-soft line-through">{money(compareAt)}</span>
       ) : null}

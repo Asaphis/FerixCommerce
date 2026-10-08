@@ -2,12 +2,9 @@ import Link from "next/link";
 import {
   Heart,
   Instagram,
-  RotateCcw,
   Search,
-  ShieldCheck,
   ShoppingBag,
   Store,
-  Truck,
   Twitter,
   User2,
 } from "lucide-react";
@@ -29,7 +26,7 @@ export function FerixHeader({
     <header className="sticky top-0 z-40 border-b border-line-warm bg-white shadow-[0_2px_12px_rgba(16,45,67,0.06)]">
       <div className="hidden border-b border-white/10 bg-void lg:block">
         <div className="mx-auto flex max-w-[1320px] items-center gap-4 px-6 py-1.5">
-          <p className="text-[10px] font-medium text-white/75">Shop with confidence · Trusted sellers · Easy returns</p>
+          <p className="text-[10px] font-medium text-white/75">Discover products from stores across Ferixas.</p>
           <Link href="/stores" className="ml-auto text-[10px] font-semibold text-white/75 transition-colors hover:text-white">
             {user ? `Hi, ${user.name.split(" ")[0]}` : "Sell on Ferixas"}
           </Link>
@@ -100,17 +97,17 @@ export function FerixFooter() {
           <div>
             <div className="flex items-center gap-2">
               <FerixMark />
-              <span className="font-display text-[15px] font-extrabold tracking-[0.16em] text-chalk">FERIXAS</span>
+              <span className="font-display text-[15px] font-extrabold tracking-[0.16em] text-white">FERIXAS</span>
             </div>
-            <p className="mt-4 max-w-[34ch] text-[13px] leading-relaxed text-chalk-dim">
+            <p className="mt-4 max-w-[34ch] text-[13px] leading-relaxed text-white/70">
               One catalogue, every channel. Merchants keep their own storefront and sell on the
               marketplace from the same product record.
             </p>
             <div className="mt-5 flex gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-[2px] border border-hairline text-chalk-dim">
+              <span className="grid h-8 w-8 place-items-center rounded-[2px] border border-white/20 text-white/70">
                 <Twitter width={14} height={14} />
               </span>
-              <span className="grid h-8 w-8 place-items-center rounded-[2px] border border-hairline text-chalk-dim">
+              <span className="grid h-8 w-8 place-items-center rounded-[2px] border border-white/20 text-white/70">
                 <Instagram width={14} height={14} />
               </span>
             </div>
@@ -140,18 +137,18 @@ export function FerixFooter() {
           />
 
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">Buying on Ferixas</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">Your shopping</p>
             <ul className="mt-4 space-y-3">
               {[
-                { icon: Truck, title: "Delivery in 2-5 days", body: "Tracked across seven countries" },
-                { icon: ShieldCheck, title: "Buyer protection", body: "Refunded if it never arrives" },
-                { icon: RotateCcw, title: "30-day returns", body: "Free over $120" },
+                { icon: ShoppingBag, title: "One cart", body: "Shop across multiple stores" },
+                { icon: User2, title: "Order history", body: "View orders in your account" },
+                { icon: Heart, title: "Saved items", body: "Keep favourites for later" },
               ].map((item) => (
                 <li key={item.title} className="flex items-start gap-2.5">
                   <item.icon width={15} height={15} className="mt-[2px] shrink-0 text-lime" />
                   <span>
-                    <span className="block text-[12.5px] font-medium text-chalk">{item.title}</span>
-                    <span className="block text-[11.5px] text-chalk-dim">{item.body}</span>
+                    <span className="block text-[12.5px] font-medium text-white">{item.title}</span>
+                    <span className="block text-[11.5px] text-white/65">{item.body}</span>
                   </span>
                 </li>
               ))}
@@ -166,7 +163,7 @@ export function FerixFooter() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-lime"
+                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/65 transition-colors hover:text-white"
                 >
                   {link.label}
                 </Link>
@@ -176,7 +173,7 @@ export function FerixFooter() {
         </div>
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-6">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">
             © {new Date().getFullYear()} Ferixas Commerce
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -189,7 +186,7 @@ export function FerixFooter() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-lime"
+                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/65 transition-colors hover:text-white"
               >
                 {link.label}
               </Link>

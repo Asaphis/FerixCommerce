@@ -280,6 +280,28 @@ def _order_row(db, row: Order) -> dict:
     }
 
 
+def _order_product_units(orders: list[dict], days: Optional[int] = None, merchant_id: Optional[str] = None) -> dict[str, int]:
+    """Aggregate real non-cancelled order quantities; catalogue seed metadata is not sales."""
+    counts: dict[str, int] = {}
+    for order in orders:
+        if order.get("fulfillment") == "cancelled":
+            continue
+        if days is not None and _days_between(order.get("placedAt", "")) >= days:
+            continue
+        for item in order.get("items", []):
+            if merchant_id and item.get("merchantId") != merchant_id:
+                continue
+            product_id = str(item.get("productId", ""))
+            if not product_id:
+                continue
+            try:
+                quantity = max(0, int(item.get("qty", 0)))
+            except (TypeError, ValueError):
+                quantity = 0
+            counts[product_id] = counts.get(product_id, 0) + quantity
+    return counts
+
+
 def _merchant_row(db, merchant: dict) -> dict:
     owned = [p for p in all_products(db) if p.get("merchantId") == merchant["id"]]
     orders = [_order_row(db, r) for r in db.scalars(select(Order)).all() if any(i.get("merchantId") == merchant["id"] for i in (r.data or {}).get("items", []))]
@@ -375,6 +397,7 @@ def overview(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         orders = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()]
         users = db.scalars(select(User)).all()
         products = all_products(db)
+        sold_units = _order_product_units(orders)
 
         gmv = round(sum(o["total"] for o in orders), 2)
         commission = round(sum(o["commission"] for o in orders), 2)
@@ -400,7 +423,7 @@ def overview(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
                 "suspendedMerchants": sum(m["status"] == "suspended" for m in merchants),
                 "products": len(products),
                 "marketplaceListings": sum((p.get("channels") or {}).get("marketplace") for p in products),
-                "soldUnits": sum(p.get("sold30d", 0) for p in products),
+                "soldUnits": sum(sold_units.values()),
             },
             "windows": {"today": window(1), "week": window(7), "month": window(30)},
             "channels": {
@@ -450,6 +473,7 @@ def merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
         row = _merchant_row(db, found)
         orders = [_order_row(db, r) for r in db.scalars(select(Order)).all() if any(i.get("merchantId") == found["id"] for i in (r.data or {}).get("items", []))]
         owned = [p for p in all_products(db) if p.get("merchantId") == found["id"]]
+        sold30 = _order_product_units(orders, days=30, merchant_id=found["id"])
         statuses: dict[str, int] = {}
         for order in orders:
             statuses[order["fulfillment"]] = statuses.get(order["fulfillment"], 0) + 1
@@ -469,7 +493,7 @@ def merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
             "catalog": [{"id": p["id"], "slug": p["slug"], "title": p["title"], "sku": p.get("sku", ""),
                          "price": p.get("price", 0), "stock": p.get("stock", 0), "status": p.get("status", "active"),
                          "category": p.get("category", ""), "channels": p.get("channels") or {},
-                         "sold30d": p.get("sold30d", 0)} for p in owned],
+                         "sold30d": sold30.get(p["id"], 0)} for p in owned],
             "orders": orders[:12],
             "commissionEarned": row["commission"],
         }
@@ -592,6 +616,7 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
         orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()]
         products = all_products(db)
         span = max(7, min(180, days))
+        sold_units = _order_product_units(orders)
 
         series = []
         from datetime import date as _date_t
@@ -612,6 +637,32 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
                 key = (product or {}).get("category", "other")
                 by_category[key] = round(by_category.get(key, 0) + item.get("price", 0) * item.get("qty", 0), 2)
 
+        product_sales: dict[str, dict] = {}
+        for order in orders:
+            if order.get("fulfillment") == "cancelled" or _days_between(order.get("placedAt", "")) >= 30:
+                continue
+            for item in order.get("items", []):
+                product_id = str(item.get("productId", ""))
+                if not product_id:
+                    continue
+                record = product_sales.setdefault(product_id, {"sold30d": 0, "revenue": 0.0})
+                try:
+                    quantity = max(0, int(item.get("qty", 0)))
+                    line_price = float(item.get("price", 0) or 0)
+                except (TypeError, ValueError):
+                    continue
+                record["sold30d"] += quantity
+                record["revenue"] = round(record["revenue"] + line_price * quantity, 2)
+        product_by_id = {product["id"]: product for product in products}
+        top_products = []
+        for product_id, sales in product_sales.items():
+            product = product_by_id.get(product_id)
+            if not product:
+                continue
+            top_products.append({"id": product_id, "slug": product.get("slug", ""), "title": product.get("title", ""),
+                                 "merchantName": product.get("merchantName", ""), "sold30d": sales["sold30d"],
+                                 "price": product.get("price", 0), "revenue": sales["revenue"]})
+
         return {
             "series": series,
             "totals": {
@@ -624,7 +675,7 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
                 "suspendedMerchants": sum(m["status"] == "suspended" for m in merchants),
                 "products": len(products),
                 "marketplaceListings": sum((p.get("channels") or {}).get("marketplace") for p in products),
-                "soldUnits": sum(p.get("sold30d", 0) for p in products),
+                "soldUnits": sum(sold_units.values()),
             },
             "byMerchant": sorted([{"id": m["id"], "name": m["name"], "slug": m["slug"], "gmv": m["gmv"],
                                    "commission": m["commission"], "orders": m["orders"]} for m in merchants],
@@ -632,10 +683,7 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
             "byChannel": {"store": round(sum(o["total"] for o in orders if o["channel"] == "store"), 2),
                           "marketplace": round(sum(o["total"] for o in orders if o["channel"] == "marketplace"), 2)},
             "byCategory": [{"category": k, "name": k.title(), "revenue": v} for k, v in sorted(by_category.items(), key=lambda kv: -kv[1])],
-            "topProducts": sorted([{"id": p["id"], "slug": p["slug"], "title": p["title"],
-                                    "merchantName": p.get("merchantName", ""), "sold30d": p.get("sold30d", 0),
-                                    "price": p.get("price", 0), "revenue": round(p.get("price", 0) * p.get("sold30d", 0), 2)}
-                                   for p in products], key=lambda p: -p["revenue"])[:10],
+            "topProducts": sorted(top_products, key=lambda product: -product["revenue"])[:10],
             "plans": [{"plan": plan, "merchants": sum(m["plan"] == plan for m in merchants)}
                       for plan in sorted({m["plan"] for m in merchants})],
         }
@@ -682,6 +730,8 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
     with SessionLocal() as db:
         require_staff(db, session, "admin")
         rows = all_products(db)
+        order_rows = [_order_row(db, row) for row in db.scalars(select(Order)).all()]
+        sold30 = _order_product_units(order_rows, days=30)
         counts = {"all": len(rows)}
         for row in rows:
             counts[row.get("status", "active")] = counts.get(row.get("status", "active"), 0) + 1
@@ -706,7 +756,7 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                           "merchantId": p.get("merchantId", ""), "merchantName": p.get("merchantName", ""),
                           "image": (p.get("images") or [placeholder(p["slug"])])[0],
                           "channels": p.get("channels") or {}, "featured": p.get("featured", False),
-                          "collections": p.get("collections", []), "sold30d": p.get("sold30d", 0),
+                          "collections": p.get("collections", []), "sold30d": sold30.get(p["id"], 0),
                           "updatedAt": p.get("updatedAt", "")} for p in filtered],
             "total": len(filtered), "counts": counts,
             "categories": sorted({p.get("category") for p in rows if p.get("category")}),

@@ -145,6 +145,30 @@ def _merchant_orders(db, merchant_id: str) -> list[Order]:
     return [r for r in rows if any(i.get("merchantId") == merchant_id for i in (r.data or {}).get("items", []))]
 
 
+def _merchant_product_units(db, merchant_id: str, days: Optional[int] = None) -> dict[str, int]:
+    """Count units from persisted, non-cancelled order lines, never seed sales metadata."""
+    today = now().date()
+    counts: dict[str, int] = {}
+    for row in _merchant_orders(db, merchant_id):
+        data = row.data or {}
+        if data.get("fulfillment") == "cancelled":
+            continue
+        if days is not None and (today - _date(data.get("placedAt", iso(row.placed_at)))).days >= days:
+            continue
+        for item in data.get("items", []):
+            if item.get("merchantId") != merchant_id:
+                continue
+            product_id = str(item.get("productId", ""))
+            if not product_id:
+                continue
+            try:
+                quantity = max(0, int(item.get("qty", 0)))
+            except (TypeError, ValueError):
+                quantity = 0
+            counts[product_id] = counts.get(product_id, 0) + quantity
+    return counts
+
+
 def _customer_of(db, order_row: Order) -> dict:
     from core import User
     user = db.get(User, order_row.user_id)
@@ -202,7 +226,6 @@ def _money_series(db, merchant_id: str, days: int) -> list[dict]:
             "date": label,
             "revenue": round(sum(o["total"] for o in matching), 2),
             "orders": len(matching),
-            "visitors": 40 + (len(matching) * 7) + (day.toordinal() % 23),
         })
     return series
 
@@ -288,6 +311,7 @@ def dashboard(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
             return [o for o in orders if (today - _date(o["placedAt"])).days < days]
         revenue_total = round(sum(o["total"] for o in orders), 2)
         rev30 = round(sum(o["total"] for o in window(30)), 2)
+        sold30 = _merchant_product_units(db, merchant["id"], 30)
         low_stock = [p for p in owned if p.get("stock", 0) <= settings["lowStockAt"]]
 
         summary = {
@@ -323,11 +347,11 @@ def dashboard(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
                 "storeOrders": sum(o["channel"] == "store" for o in orders),
             },
             "traffic": {
-                "storeVisitors": 420 + len(orders) * 11,
-                "marketplaceImpressions": 1850 + len(owned) * 90,
-                "conversionStore": 2.4,
-                "conversionMarketplace": 1.7,
-                "sold30d": sum(p.get("sold30d", 0) for p in owned),
+                "storeVisitors": None,
+                "marketplaceImpressions": None,
+                "conversionStore": None,
+                "conversionMarketplace": None,
+                "sold30d": sum(sold30.values()),
             },
             "lowStock": [{"id": p["id"], "title": p["title"], "sku": p.get("sku", ""), "stock": p.get("stock", 0), "slug": p["slug"]} for p in low_stock[:6]],
             "recentOrders": orders[:6],
@@ -354,7 +378,8 @@ def products(
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
-        items = _own_products(db, merchant["id"])
+        sold30 = _merchant_product_units(db, merchant["id"], 30)
+        items = [dict(p, sold30d=sold30.get(p["id"], 0)) for p in _own_products(db, merchant["id"])]
         low_at = _merchant_settings(db, merchant)["lowStockAt"]
 
         if search:
@@ -404,10 +429,13 @@ def product(session: Optional[str] = Header(None, alias="X-Ferix-Session"), slug
         found = find_product(db, slug)
         if not found or found.get("merchantId") != merchant["id"]:
             raise HTTPException(404, "Product not found in your catalogue")
+        sold_all = _merchant_product_units(db, merchant["id"])
+        sold30 = _merchant_product_units(db, merchant["id"], 30)
+        product_data = {**found, "sold30d": sold30.get(found["id"], 0), "views30d": None}
         return {
-            "product": found,
+            "product": product_data,
             "stock": found.get("stock", 0),
-            "sold": found.get("sold30d", 0),
+            "sold": sold_all.get(found["id"], 0),
             "lowStockAt": _merchant_settings(db, merchant)["lowStockAt"],
             "categories": sorted({p.get("category") for p in _own_products(db, merchant["id"]) if p.get("category")}) or [found.get("category")],
         }
@@ -518,6 +546,7 @@ def inventory(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         merchant = _merchant_or_404(db, staff.subject_id)
         low_at = _merchant_settings(db, merchant)["lowStockAt"]
         orders = _merchant_orders(db, merchant["id"])
+        sold30 = _merchant_product_units(db, merchant["id"], 30)
         reserved: dict[str, int] = {}
         for row in orders:
             data = row.data or {}
@@ -535,7 +564,7 @@ def inventory(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
             rows.append({
                 "id": product["id"], "slug": product["slug"], "title": product["title"],
                 "sku": product.get("sku", ""), "stock": stock, "reserved": held,
-                "available": available, "sold30d": product.get("sold30d", 0),
+                "available": available, "sold30d": sold30.get(product["id"], 0),
                 "status": product.get("status", "active"), "channels": product.get("channels") or {},
                 "category": product.get("category", ""), "state": state,
             })
@@ -723,7 +752,7 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
                 category = (product or {}).get("category", "other")
                 by_category[category] = round(by_category.get(category, 0) + item["price"] * item["qty"], 2)
                 row = top.setdefault(item["productId"], {"id": item["productId"], "slug": (product or {}).get("slug", ""),
-                                                         "title": item["title"], "sold30d": 0, "views30d": (product or {}).get("views30d", 0),
+                                                         "title": item["title"], "sold30d": 0, "views30d": None,
                                                          "price": item["price"], "revenue": 0.0})
                 row["sold30d"] += item["qty"]
                 row["revenue"] = round(row["revenue"] + item["price"] * item["qty"], 2)
@@ -748,7 +777,7 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
                 "marketplace": round(sum(o["total"] for o in window if o["channel"] == "marketplace"), 2),
             },
             "topProducts": [
-                {**row, "conversion": round((row["sold30d"] / row["views30d"] * 100) if row["views30d"] else 0, 1)}
+                {**row, "conversion": None}
                 for row in sorted(top.values(), key=lambda r: -r["revenue"])[:8]
             ],
             "byCategory": [

@@ -14,6 +14,12 @@ const KEY = process.env.CODEWORDS_API_KEY ?? "";
 export const apiBase =
   process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "http://127.0.0.1:8003";
 
+export function apiImageUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (/^(https?:)?\/\//.test(path) || path.startsWith("data:")) return path;
+  return `${apiBase.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
+}
+
 export type Brand = {
   template: string;
   canvas: string;
@@ -71,7 +77,7 @@ export type Product = {
   tags: string[];
   createdAt: string;
   sold30d: number;
-  views30d: number;
+  views30d: number | null;
   images?: string[];
 };
 
@@ -174,10 +180,10 @@ export type Dashboard = {
     storeOrders: number;
   };
   traffic: {
-    storeVisitors: number;
-    marketplaceImpressions: number;
-    conversionStore: number;
-    conversionMarketplace: number;
+    storeVisitors: number | null;
+    marketplaceImpressions: number | null;
+    conversionStore: number | null;
+    conversionMarketplace: number | null;
     sold30d: number;
   };
   lowStock: { id: string; title: string; sku: string; stock: number; slug: string }[];
@@ -239,10 +245,10 @@ export type CustomerList = {
 
 export type Analytics = {
   merchant: Merchant;
-  series: { date: string; revenue: number; orders: number; visitors: number }[];
+  series: { date: string; revenue: number; orders: number }[];
   summary: Summary;
   byChannel: { store: number; marketplace: number };
-  topProducts: { id: string; slug: string; title: string; sold30d: number; views30d: number; price: number; revenue: number; conversion: number }[];
+  topProducts: { id: string; slug: string; title: string; sold30d: number; views30d: number | null; price: number; revenue: number; conversion: number | null }[];
   byCategory: { category: string; name: string; revenue: number }[];
   customers: { buyers: number; repeat: number; repeatRate: number };
 };

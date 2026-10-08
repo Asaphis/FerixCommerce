@@ -11,7 +11,7 @@ export function SignInForm() {
   return (
     <form action={action} className="grid gap-4">
       <Field title="Operator email">
-        <input name="email" type="email" className={inputClass} placeholder="info@ferixas.com" autoComplete="email" required />
+        <input name="email" type="email" className={inputClass} placeholder="operator@ferixas.com" autoComplete="email" required />
       </Field>
       <Field title="Password">
         <input

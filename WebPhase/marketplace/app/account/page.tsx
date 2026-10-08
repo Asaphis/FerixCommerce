@@ -36,16 +36,6 @@ const SHORT_STAGE: Record<string, string> = {
   Delivered: "Delivered",
 };
 
-/** Status chips sit on the dark tracking panel, so they carry their own palette. */
-const DARK_CHIP: Record<string, string> = {
-  success: "bg-lime text-void",
-  info: "bg-azure text-white",
-  warn: "bg-sand text-void",
-  neutral: "bg-chalk/15 text-chalk",
-  danger: "bg-ember text-white",
-  ember: "bg-ember text-white",
-};
-
 export default async function AccountPage() {
   const account = await requireAccount();
   const { user, orders, wishlist, addresses, stats } = account;
@@ -70,28 +60,23 @@ export default async function AccountPage() {
     >
       {/* ── tracking ───────────────────────────────────────────────── */}
       {focus ? (
-        <section className="overflow-hidden rounded-[3px] bg-void text-chalk">
+        <section className="overflow-hidden rounded-[3px] rounded-tr-[16px] border border-line-warm bg-white text-ink shadow-[0_4px_18px_rgba(16,45,67,0.06)]">
           <div className="lg:grid lg:grid-cols-[1.6fr_1fr]">
             <div className="p-4 sm:p-5 lg:p-6">
               <div className="flex flex-wrap items-center gap-2.5">
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-[2px] px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em]",
-                    DARK_CHIP[statusTone(focus.fulfillment)] ?? DARK_CHIP.neutral,
-                  )}
-                >
+                <Pill tone={statusTone(focus.fulfillment)}>
                   <Truck width={12} height={12} strokeWidth={2.4} />
                   {statusLabel(focus.fulfillment)}
-                </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+                </Pill>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
                   {focus.number}
                 </span>
               </div>
 
-              <h2 className="mt-3 font-display text-[20px] font-semibold leading-tight text-chalk sm:text-[25px]">
+              <h2 className="mt-3 font-display text-[20px] font-semibold leading-tight text-ink sm:text-[25px]">
                 {statusHeadline(focus)}
               </h2>
-              <p className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-chalk-dim">
+              <p className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-soft">
                 {focus.items.length} item{focus.items.length === 1 ? "" : "s"} · {money(focus.total)}
                 {focus.carrier ? ` · ${focus.carrier}` : ""}
                 {focus.tracking ? ` · ${focus.tracking}` : ""}
@@ -104,39 +89,39 @@ export default async function AccountPage() {
                       <span
                         className={cn(
                           "grid h-4 w-4 shrink-0 place-items-center rounded-full",
-                          stage.state === "done" && "bg-lime text-void",
-                          stage.state === "current" && "bg-lime text-void",
-                          stage.state === "todo" && "border-2 border-hairline",
+                          stage.state === "done" && "bg-ember text-white",
+                          stage.state === "current" && "bg-ember text-white",
+                          stage.state === "todo" && "border-2 border-line-warm",
                         )}
                       >
                         {stage.state === "done" ? <Check width={10} height={10} strokeWidth={3.2} /> : null}
                         {stage.state === "current" ? <span className="h-1.5 w-1.5 rounded-full bg-void" /> : null}
                       </span>
-                      {stage.state !== "todo" ? <span className="h-[2px] flex-1 bg-lime" /> : <span className="h-[2px] flex-1 bg-hairline" />}
+                      {stage.state !== "todo" ? <span className="h-[2px] flex-1 bg-ember" /> : <span className="h-[2px] flex-1 bg-line-warm" />}
                     </div>
                     <p
                       className={cn(
                         "mt-2 font-mono text-[8.5px] uppercase tracking-[0.08em] sm:text-[9px]",
-                        stage.state === "current" ? "text-lime" : stage.state === "done" ? "text-chalk" : "text-chalk-dim",
+                        stage.state === "current" ? "text-ember" : stage.state === "done" ? "text-ink" : "text-ink-soft",
                       )}
                     >
                       {SHORT_STAGE[stage.label] ?? stage.label}
                     </p>
                     {stage.at ? (
-                      <p className="font-mono text-[8.5px] text-chalk-dim sm:text-[9px]">{dateShort(stage.at)}</p>
+                      <p className="font-mono text-[8.5px] text-ink-soft sm:text-[9px]">{dateShort(stage.at)}</p>
                     ) : null}
                   </li>
                 ))}
               </ol>
 
-              <p className="mt-4 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">
+              <p className="mt-4 font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-soft">
                 Placed {dateShort(focus.placedAt)} · {relative(focus.placedAt)}
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link
                   href={`/account/orders/${focus.id}`}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-[2px] bg-lime px-3.5 py-2.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.14em] text-void transition-colors hover:bg-white sm:flex-none"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-[2px] rounded-tr-[8px] bg-ember px-3.5 py-2.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white transition-colors hover:bg-ink sm:flex-none"
                 >
                   <Truck width={15} height={15} /> Track this order
                 </Link>
@@ -144,7 +129,7 @@ export default async function AccountPage() {
                   <input type="hidden" name="orderId" value={focus.id} />
                   <button
                     type="submit"
-                    className="w-full cursor-pointer rounded-[2px] border border-hairline px-3.5 py-2.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk transition-colors hover:border-chalk/40"
+                    className="w-full cursor-pointer rounded-[2px] border border-line-warm px-3.5 py-2.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink transition-colors hover:border-ink/40"
                   >
                     Buy again
                   </button>
@@ -152,24 +137,24 @@ export default async function AccountPage() {
               </div>
             </div>
 
-            <div className="border-t border-hairline p-4 sm:p-5 lg:border-l lg:border-t-0 lg:p-6">
-              <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-chalk-dim">In this order</p>
+            <div className="border-t border-line-warm bg-[#f8fafc] p-4 sm:p-5 lg:border-l lg:border-t-0 lg:p-6">
+              <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-ink-soft">In this order</p>
               <ul className="mt-3 space-y-3">
                 {focus.items.slice(0, 3).map((item) => (
                   <li key={`${item.productId}-${item.variant ?? ""}`} className="flex items-center gap-3">
                     <Plate seed={item.productId} src={assetUrl(item.image)} alt={item.title} className="h-11 w-11 shrink-0 rounded-[2px]" />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[13px] text-chalk">{item.title}</span>
-                      <span className="block font-mono text-[9.5px] uppercase tracking-[0.12em] text-chalk-dim">
+                      <span className="block truncate text-[13px] text-ink">{item.title}</span>
+                      <span className="block font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-soft">
                         {item.merchantName} · Qty {item.qty}
                       </span>
                     </span>
-                    <span className="font-mono text-[12px] tabular-nums text-chalk">{money(item.price)}</span>
+                    <span className="font-mono text-[12px] tabular-nums text-ink">{money(item.price)}</span>
                   </li>
                 ))}
               </ul>
               {defaultAddress ? (
-                <p className="mt-4 border-t border-hairline pt-3 font-mono text-[9.5px] uppercase tracking-[0.12em] text-chalk-dim">
+                <p className="mt-4 border-t border-line-warm pt-3 font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-soft">
                   Ships to {defaultAddress.label} · {defaultAddress.city}, {defaultAddress.country}
                 </p>
               ) : null}

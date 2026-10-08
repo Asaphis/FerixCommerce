@@ -25,6 +25,11 @@ export const apiBase =
 export function assetUrl(path: string | null | undefined): string | null {
   if (!path) return null;
   if (/^(https?:)?\/\//.test(path) || path.startsWith("data:")) return path;
+  // Files in Next's public/banners directory are served by the storefront;
+  // bundled catalogue media and uploads are served by the API.
+  if (path === "/banners" || path.startsWith("/banners/") || path === "banners" || path.startsWith("banners/")) {
+    return path.startsWith("/") ? path : `/${path}`;
+  }
   return `${apiBase.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
 }
 

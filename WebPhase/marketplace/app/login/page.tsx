@@ -1,63 +1,42 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Check } from "lucide-react";
+import { ArrowRight, Heart, Package, MapPin } from "lucide-react";
 import { AuthForm } from "@/components/ferix/forms";
 import { FerixMark, Eyebrow } from "@/components/ferix/marks";
+import { assetUrl } from "@/lib/api";
 import { readSession } from "@/lib/session";
 
 export default async function LoginPage() {
   if (await readSession()) redirect("/account");
+  const heroImage = assetUrl("/media/banners/bnr_launch.jpg");
 
   return (
-    <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-14 lg:grid-cols-[1fr_1fr]">
-      <div className="max-w-[420px]">
-        <FerixMark className="h-8 w-8" />
-        <Eyebrow className="mt-6 block">Welcome back</Eyebrow>
-        <h1 className="mt-2 font-display text-[28px] font-semibold text-ink">Sign in to your account</h1>
-        <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-soft">
-          Your orders, saved items and addresses follow you across every store on the platform.
-        </p>
-        <div className="mt-7">
-          <AuthForm mode="login" />
-        </div>
-        <div className="mt-6 rounded-[3px] border border-line-warm bg-white p-4">
-          <Eyebrow>Just looking around?</Eyebrow>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">
-            Sign in with the demo shopper to see an account with past orders and saved items:{" "}
-            <span className="font-mono text-ink">demo@ferixas.com</span> /{" "}
-            <span className="font-mono text-ink">Ferixas123</span>
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-[1180px] px-3 py-5 sm:px-5 sm:py-8 lg:py-10">
+      <div className="grid overflow-hidden rounded-[3px] rounded-tr-[18px] border border-line-warm bg-white shadow-[0_12px_36px_rgba(16,45,67,0.08)] lg:grid-cols-[0.92fr_1.08fr]">
+        <section className="flex items-center px-5 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-12">
+          <div className="mx-auto w-full max-w-[410px]">
+            <FerixMark className="h-9 w-9" />
+            <Eyebrow className="mt-5 block">Welcome back</Eyebrow>
+            <h1 className="mt-1.5 font-display text-[25px] font-bold leading-tight text-ink sm:text-[30px]">Sign in to Ferixas</h1>
+            <p className="mt-1.5 max-w-[38ch] text-[12px] text-ink-soft">One account for your marketplace orders and saved items.</p>
+            <div className="mt-6"><AuthForm mode="login" /></div>
+            <p className="mt-5 text-center text-[11px] text-ink-soft">Shopping as a guest? <Link href="/browse" className="font-semibold text-ember hover:underline">Explore the marketplace</Link></p>
+          </div>
+        </section>
 
-      <aside className="rounded-[3px] border border-hairline bg-void p-8">
-        <Eyebrow className="text-lime">One account, every store</Eyebrow>
-        <h2 className="mt-3 font-display text-[24px] font-semibold leading-tight text-chalk">
-          Seven merchants, one cart and one checkout
-        </h2>
-        <ul className="mt-6 space-y-4">
-          {[
-            { title: "Order history in one place", body: "Whatever seller you bought from, the order sits in your account." },
-            { title: "Saved items that stay saved", body: "Keep something for later and it is still there next week." },
-            { title: "Addresses ready at checkout", body: "Add an address once and it is offered on every order." },
-            { title: "Reviews you control", body: "Edit or delete anything you have written." },
-          ].map((item) => (
-            <li key={item.title} className="flex items-start gap-3">
-              <Check width={15} height={15} className="mt-[3px] shrink-0 text-lime" />
-              <span>
-                <span className="block text-[13.5px] font-medium text-chalk">{item.title}</span>
-                <span className="block text-[12.5px] text-chalk-dim">{item.body}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
-          Not a customer?{" "}
-          <Link href="/register" className="text-lime underline decoration-2 underline-offset-4">
-            Create an account
-          </Link>
-        </p>
-      </aside>
+        <aside className="relative isolate flex min-h-[240px] flex-col justify-end overflow-hidden bg-[#f8e8df] p-5 sm:min-h-[290px] sm:p-7 lg:min-h-[510px] lg:p-9">
+          {heroImage ? <><img src={heroImage} alt="Shopper carrying bags" className="absolute inset-0 -z-20 h-full w-full object-cover" /><div className="absolute inset-0 -z-10 bg-gradient-to-r from-white/95 via-white/72 to-transparent lg:from-white/90 lg:via-white/45" /></> : null}
+          <div className="relative max-w-[390px]">
+            <Eyebrow className="text-ember">Your shopping, together</Eyebrow>
+            <h2 className="mt-2 font-display text-[23px] font-bold leading-tight text-ink sm:text-[28px]">Shop more. Do more. In one account.</h2>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+              {[{ title: "Track orders", Icon: Package }, { title: "Save favourites", Icon: Heart }, { title: "Manage addresses", Icon: MapPin }].map(({ title, Icon }) => <div key={title} className="flex min-h-9 items-center gap-2 rounded-[2px] border border-white/70 bg-white/85 px-2.5 text-[11px] font-semibold text-ink"><span className="grid h-6 w-6 place-items-center rounded-[2px] bg-[#fff0e9] text-ember"><Icon width={13} height={13} /></span>{title}</div>)}
+            </div>
+            <Link href="/register" className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-bold text-ember">New to Ferixas? Create an account <ArrowRight width={13} height={13} /></Link>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -57,9 +57,9 @@ export function PromoBanner({
 
   if (!slides.length) {
     return (
-      <div className={cn("flex items-center justify-center bg-void px-4", heightClassName, className)}>
-        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
-          No promotions are running right now
+      <div className={cn("flex items-center justify-center bg-[#fff0e9] px-4", heightClassName, className)}>
+        <p className="font-display text-[15px] font-semibold text-ink">
+          Discover something new on Ferixas
         </p>
       </div>
     );
@@ -69,7 +69,7 @@ export function PromoBanner({
     <section
       aria-roledescription="carousel"
       aria-label="Promotions"
-      className={cn("relative isolate w-full overflow-hidden bg-void", heightClassName, className)}
+      className={cn("relative isolate w-full overflow-hidden bg-[#f05a28]", heightClassName, className)}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
@@ -192,11 +192,11 @@ function SlideMedia({ slide }: { slide: Banner }) {
   return (
     <div
       className="absolute inset-0"
-      style={{ background: `linear-gradient(102deg, #150f0c 0%, #2e1a12 52%, #672b18 100%)` }}
+      style={{ background: "linear-gradient(108deg, #e85022 0%, #f17446 54%, #ffd6bd 100%)" }}
     >
       <span
         className="absolute -right-24 -top-24 h-[380px] w-[380px] rounded-full opacity-45"
-        style={{ background: `radial-gradient(circle, ${slide.accent}, transparent 70%)` }}
+        style={{ background: `radial-gradient(circle, ${slide.accent || "#ff8d59"}, transparent 70%)` }}
       />
     </div>
   );

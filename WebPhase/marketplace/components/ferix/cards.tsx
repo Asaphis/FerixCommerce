@@ -46,7 +46,7 @@ export function ProductCard({
         <Link href={`/store/${product.merchantSlug}`} className="hidden truncate font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember sm:block">
           {product.merchantName}
         </Link>
-        <Link href={href} className="mt-1 line-clamp-1 font-display text-[13px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:line-clamp-2 sm:text-[14.5px]">
+        <Link href={href} className="mt-1 line-clamp-2 min-h-[2.25em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">
           {product.title}
         </Link>
         <div className="mt-2 hidden items-center gap-2 sm:flex">
@@ -101,17 +101,10 @@ export function ProductGrid({
 
 export function ProductRail({ products, savedIds = [] }: { products: Product[]; savedIds?: string[] }) {
   return (
-    <div className="-mx-4 overflow-x-auto px-4 pb-2">
-      <div className="flex gap-3.5">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            saved={savedIds.includes(product.id)}
-            className="w-[168px] shrink-0 sm:w-[206px]"
-          />
-        ))}
-      </div>
+    <div className="grid grid-cols-2 gap-x-2.5 gap-y-3 sm:grid-cols-3 sm:gap-x-3.5 sm:gap-y-5 lg:grid-cols-4 xl:grid-cols-5">
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} saved={savedIds.includes(product.id)} />
+      ))}
     </div>
   );
 }

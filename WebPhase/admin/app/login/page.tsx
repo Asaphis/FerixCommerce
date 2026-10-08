@@ -1,88 +1,42 @@
-import Link from "next/link";
+/* eslint-disable @next/next/no-img-element */
 import { redirect } from "next/navigation";
-import { AlertTriangle, Check, Eye } from "lucide-react";
+import { AlertTriangle, ArrowRight, Boxes, Building2, Receipt } from "lucide-react";
 import { SignInForm } from "@/components/ops/sign-in";
 import { OpsMark } from "@/components/ops/marks";
-import { Eyebrow, Panel, Pill } from "@/components/ops/bits";
+import { Eyebrow } from "@/components/ops/bits";
+import { assetUrl } from "@/lib/api";
 import { readSession } from "@/lib/session";
 
 export default async function LoginPage() {
   if (await readSession()) redirect("/");
+  const heroImage = assetUrl("/media/banners/bnr_official.jpg");
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1fr_1fr]">
-      <div className="flex items-center justify-center px-6 py-14">
-        <div className="w-full max-w-[380px]">
+    <main className="grid min-h-screen bg-panel lg:grid-cols-[1.04fr_0.96fr]">
+      <section className="relative isolate flex min-h-[220px] items-end overflow-hidden bg-[#132b3b] px-5 py-6 sm:min-h-[280px] sm:px-8 sm:py-8 lg:min-h-screen lg:px-12 lg:py-12">
+        {heroImage ? <><img src={heroImage} alt="Ferixas marketplace operations" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-45" /><div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#112b3b]/95 via-[#112b3b]/80 to-[#0e7284]/55" /></> : null}
+        <div className="relative max-w-[530px]">
+          <OpsMark className="h-10 w-10" />
+          <Eyebrow className="mt-5 block text-signal">Platform operations</Eyebrow>
+          <h1 className="mt-2 max-w-[17ch] font-display text-[26px] font-bold leading-tight text-white sm:text-[34px]">A safer marketplace for everyone.</h1>
+          <p className="mt-2 max-w-[42ch] text-[12px] text-white/80">Monitor and manage Ferixas from one console.</p>
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-[450px]">
+            {[{ title: "Merchants", Icon: Building2 }, { title: "Orders", Icon: Receipt }, { title: "Catalogue", Icon: Boxes }].map(({ title, Icon }) => <div key={title} className="flex min-h-10 items-center gap-1.5 rounded-[2px] border border-white/20 bg-white/10 px-2 text-[10px] font-semibold text-white"><Icon width={13} height={13} className="shrink-0 text-signal" />{title}</div>)}
+          </div>
+        </div>
+      </section>
+
+      <section className="flex items-center justify-center px-4 py-7 sm:px-8 sm:py-10 lg:px-10">
+        <div className="w-full max-w-[430px] rounded-[3px] rounded-tr-[16px] border border-hairline bg-white p-5 shadow-[0_12px_36px_rgba(16,45,67,0.08)] sm:p-8">
           <OpsMark className="h-9 w-9" />
-          <Eyebrow className="mt-6 block">Platform operations</Eyebrow>
-          <h1 className="mt-2 font-display text-[26px] font-semibold text-chalk">Ferixas console</h1>
-          <p className="mt-2.5 text-[13px] leading-relaxed text-chalk-dim">
-            The control room for the whole platform: every merchant, every customer, every order, and the
-            settings that govern how the marketplace behaves.
-          </p>
-          <div className="mt-7">
-            <SignInForm />
-          </div>
-          <div className="mt-6 rounded-[2px] border border-hairline bg-panel p-4">
-            <Eyebrow>Demo operator</Eyebrow>
-            <p className="mt-1.5 text-[12.5px] leading-relaxed text-chalk-dim">
-              Sign in with <span className="font-mono text-chalk">info@ferixas.com</span> /{" "}
-              <span className="font-mono text-chalk">Ferixas123</span> to see the live platform.
-            </p>
-            <p className="mt-2 font-mono text-[10.5px] text-chalk-dim/80">
-              Other operator addresses: admin@ferixas.com, ops@ferixas.com
-            </p>
-          </div>
+          <Eyebrow className="mt-5 block text-signal">Authorized operators only</Eyebrow>
+          <h2 className="mt-1.5 font-display text-[23px] font-bold text-chalk sm:text-[27px]">Sign in to the console</h2>
+          <p className="mt-1.5 text-[12px] text-chalk-dim">Use your assigned operator credentials.</p>
+          <div className="mt-6"><SignInForm /></div>
+          <div className="mt-5 flex items-start gap-2 border-t border-hairline pt-4"><AlertTriangle width={14} height={14} className="mt-0.5 shrink-0 text-amber" /><p className="text-[10px] leading-relaxed text-chalk-dim">Changes in this console can affect live merchants and marketplace operations.</p></div>
+          <a href="https://shop.ferixas.com" className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold text-signal">Open marketplace <ArrowRight width={13} height={13} /></a>
         </div>
-      </div>
-
-      <aside className="hidden flex-col justify-center border-l border-hairline bg-panel px-10 py-14 lg:flex">
-        <Eyebrow className="text-signal">Two systems in your hands</Eyebrow>
-        <h2 className="mt-3 max-w-[24ch] font-display text-[26px] font-semibold leading-tight text-chalk">
-          Shoppers and merchants, from one console
-        </h2>
-        <ul className="mt-7 space-y-4">
-          {[
-            { title: "Merchants", body: "Approve, suspend, set commission, choose plans and switch marketplace access." },
-            { title: "Customers", body: "Every registered shopper with their orders, spend and saved items." },
-            { title: "Orders", body: "Platform-wide fulfilment, payment state and commission per order." },
-            { title: "Analytics", body: "GMV, commission and growth split by merchant, channel and department." },
-            { title: "Settings", body: "Platform defaults that bind every merchant and every checkout." },
-          ].map((item) => (
-            <li key={item.title} className="flex items-start gap-3">
-              <Check width={15} height={15} className="mt-[3px] shrink-0 text-signal" />
-              <span>
-                <span className="block text-[13.5px] font-medium text-chalk">{item.title}</span>
-                <span className="block text-[12.5px] text-chalk-dim">{item.body}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        <Panel className="mt-9 max-w-[400px] bg-panel-2">
-          <div className="flex items-center gap-2">
-            <AlertTriangle width={14} height={14} className="text-amber" />
-            <Eyebrow>Acting as the platform</Eyebrow>
-          </div>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-chalk-dim">
-            Anything you change here is live. A suspended merchant stops selling at once; commission changes apply
-            to the next order, not to orders already placed.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <Pill tone="signal">Live data</Pill>
-            <Pill tone="neutral">No simulated records</Pill>
-          </div>
-        </Panel>
-
-        <div className="mt-8 flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
-          <Link href="/" className="transition-colors hover:text-signal">
-            Open console
-          </Link>
-          <span className="flex items-center gap-1.5">
-            <Eye width={11} height={11} /> Read-only previews available
-          </span>
-        </div>
-      </aside>
-    </div>
+      </section>
+    </main>
   );
 }

@@ -62,7 +62,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           accent={product.stock <= lowStockAt ? "sand" : "chalk"}
         />
         <StatTile label="Sold to date" value={num(sold)} sub={`${num(product.sold30d)} in the last 30 days`} accent="azure" />
-        <StatTile label="Views · 30d" value={num(product.views30d)} sub={`${product.reviewCount} reviews · ${product.rating.toFixed(1)} stars`} accent="sand" />
+        <StatTile label="Product views" value="Coming soon" sub="Visitor tracking is not connected" accent="sand" />
       </div>
 
       <ProductForm product={product} categories={categories.length ? categories : [product.category]} />
