@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
-import { requireAdmin } from "@/lib/data";m "@/lib/data";
+import { requireAdmin } from "@/lib/data";
 import { listCatalog, listMedia } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";

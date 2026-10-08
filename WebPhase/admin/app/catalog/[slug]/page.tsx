@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Store } from "lucide-react";
-import { requireAdmin } from "@/lib/data";m "@/lib/data";
+import { requireAdmin } from "@/lib/data";
 import { listCatalog, listMedia } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
