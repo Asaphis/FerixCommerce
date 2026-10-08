@@ -1,30 +1,48 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
+
 @theme inline {
   --color-background: var(--canvas); --color-foreground: var(--ink);
   --color-card: var(--panel); --color-card-foreground: var(--ink);
   --color-popover: var(--panel); --color-popover-foreground: var(--ink);
-  --color-primary: var(--ember); --color-primary-foreground: #fffaf3;
+  --color-primary: var(--orange); --color-primary-foreground: #ffffff;
   --color-secondary: var(--panel-muted); --color-secondary-foreground: var(--ink);
   --color-muted: var(--panel-muted); --color-muted-foreground: var(--ink-soft);
   --color-accent: var(--panel-muted); --color-accent-foreground: var(--ink);
-  --color-border: var(--line); --color-input: var(--line); --color-ring: var(--ember);
-  --color-void: var(--canvas); --color-panel: var(--panel); --color-panel-2: var(--panel-muted);
+  --color-border: var(--line); --color-input: var(--line); --color-ring: var(--orange);
+  --color-void: var(--navy); --color-panel: var(--panel); --color-panel-2: var(--panel-muted);
   --color-chalk: var(--ink); --color-chalk-dim: var(--ink-soft); --color-hairline: var(--line);
-  --color-signal: var(--ember); --color-mint: var(--teal); --color-amber: #b7791f; --color-rose: #c53d3d; --color-violet: #6854a6;
+  --color-signal: var(--orange); --color-mint: var(--teal); --color-amber: #b7791f; --color-rose: #c53d3d; --color-violet: #6854a6;
   --font-sans: var(--font-archivo); --font-display: var(--font-bricolage); --font-mono: var(--font-plex);
 }
-:root { --canvas:#f4efe7; --panel:#fffdf9; --panel-muted:#eee8de; --ink:#20252a; --ink-soft:#687078; --line:#ded6ca; --ember:#e4572e; --teal:#2c8b78; --radius:0.65rem; --tone-success:#2c8b78; --tone-warn:#b7791f; --tone-danger:#c53d3d; --tone-info:#337c9b; }
+
+:root {
+  --canvas: #f3f6f9;
+  --navy: #102d43;
+  --panel: #ffffff;
+  --panel-muted: #f3f6f9;
+  --ink: #172b3b;
+  --ink-soft: #637586;
+  --line: #dfe6ed;
+  --orange: #f05a28;
+  --teal: #16856f;
+  --radius: 0.25rem;
+  --tone-success: #16856f;
+  --tone-warn: #c58a21;
+  --tone-danger: #e34d32;
+  --tone-info: #3479a8;
+}
+
 * { box-sizing: border-box; }
-html, body { max-width:100%; overflow-x:hidden; }
-body { margin:0; background:var(--canvas); color:var(--ink); font-family:var(--font-archivo),ui-sans-serif,system-ui,sans-serif; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased; }
-h1,h2,h3,h4,h5,h6 { font-family:var(--font-bricolage),ui-sans-serif,system-ui,sans-serif; letter-spacing:-.02em; }
-::selection { background:#f8bdab; color:var(--ink); }
-button,a,input,select,textarea { -webkit-tap-highlight-color:transparent; }
-input,select,textarea { max-width:100%; }
-/* Console surfaces: compact commerce density with warm bone canvas. */
-.bg-panel, .bg-panel\/95 { background-color:var(--panel); }
-.rounded-\[2px\] { border-radius:.55rem; }
+html, body { max-width: 100%; overflow-x: hidden; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif; letter-spacing: -.02em; }
+::selection { background: #f05a28; color: #ffffff; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+input, select, textarea { max-width: 100%; }
+.bg-panel, .bg-panel\/95 { background-color: var(--panel); }
+.rounded-\[2px\].rounded-tr-\[9px\] { border-radius: 2px 13px 2px 2px; }
+*:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 /*TO CODY & OTHER LLM CODING AGENTS DO NOT REMOVE*/
-nextjs-portal,[data-nextjs-dialog-overlay],[data-nextjs-toast] { display:none!important; }
+nextjs-portal, [data-nextjs-dialog-overlay], [data-nextjs-toast] { display: none !important; }

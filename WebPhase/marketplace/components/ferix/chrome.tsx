@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Bell,
   Heart,
   Instagram,
   RotateCcw,
@@ -16,14 +15,7 @@ import type { AccountUser, Category } from "@/lib/api";
 import { FerixMark } from "@/components/ferix/marks";
 import { FerixMobileMenu } from "@/components/ferix/mobile-menu";
 
-/**
- * The shared marketplace chrome.
- *
- * Desktop keeps the full header: announcement strip, search, account actions and
- * a department strip. Below 1024px that whole thing collapses to a single 56px
- * bar — menu, logo, search, cart — because navigation belongs in the bottom tab
- * bar (`FerixMobileNav`), not stacked at the top of the screen.
- */
+/** Shared retail marketplace navigation, with a complete search-first mobile header. */
 export function FerixHeader({
   user,
   cartCount,
@@ -34,120 +26,68 @@ export function FerixHeader({
   categories: Category[];
 }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-line-warm bg-bone/95 shadow-[0_2px_12px_rgba(20,17,14,0.05)] backdrop-blur-md">
-      <div className="hidden border-b border-line-warm bg-void lg:block">
-        <div className="mx-auto flex max-w-[1240px] items-center gap-4 px-6 py-1.5">
-          <p className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-chalk-dim">
-            Free delivery over $120 · Tracked across seven countries
-          </p>
-          <Link
-            href="/stores"
-            className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-lime"
-          >
-            {user ? `Signed in as ${user.name.split(" ")[0]}` : "Sell on Ferixas"}
+    <header className="sticky top-0 z-40 border-b border-line-warm bg-white shadow-[0_2px_12px_rgba(16,45,67,0.06)]">
+      <div className="hidden border-b border-white/10 bg-void lg:block">
+        <div className="mx-auto flex max-w-[1320px] items-center gap-4 px-6 py-1.5">
+          <p className="text-[10px] font-medium text-white/75">Shop with confidence · Trusted sellers · Easy returns</p>
+          <Link href="/stores" className="ml-auto text-[10px] font-semibold text-white/75 transition-colors hover:text-white">
+            {user ? `Hi, ${user.name.split(" ")[0]}` : "Sell on Ferixas"}
           </Link>
         </div>
       </div>
 
-      <div className="mx-auto flex h-14 max-w-[1240px] items-center gap-2 px-4 lg:h-auto lg:gap-3 lg:px-6 lg:py-3">
-        <FerixMobileMenu categories={categories} user={user} />
-
-        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Ferixas home">
-          <FerixMark />
-          <span className="hidden font-display text-[15px] font-extrabold tracking-[0.16em] text-ink lg:inline">
-            FERIXAS
-          </span>
-        </Link>
-
-        <form action="/search" className="relative ml-4 hidden min-w-0 flex-1 items-center lg:flex">
-          <Search width={15} height={15} className="pointer-events-none absolute left-3 text-ink-soft" />
-          <input
-            type="search"
-            name="q"
-            placeholder="Search products, stores and categories"
-            aria-label="Search products, stores and categories"
-            className="h-10 w-full rounded-[3px] border border-line-warm bg-white pl-9 pr-3 text-[13.5px] text-ink outline-none transition-colors placeholder:text-ink-soft/70 focus:border-ember"
-          />
-        </form>
-
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <Link
-            href="/stores"
-            className="hidden items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:inline-flex"
-          >
-            <Store width={14} height={14} />
-            Stores
+      <div className="hidden lg:block">
+        <div className="mx-auto flex h-[76px] max-w-[1320px] items-center gap-5 px-6">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Ferixas home">
+            <FerixMark className="h-8 w-8" />
+            <span className="font-display text-[18px] font-extrabold tracking-[0.08em] text-ink">FERIXAS</span>
           </Link>
-          <Link
-            href={user ? "/account/wishlist" : "/login?return=/account/wishlist"}
-            className="hidden items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:inline-flex"
-          >
-            <Heart width={14} height={14} />
-            Wishlist
-          </Link>
-          <Link
-            href={user ? "/account/notifications" : "/login?return=/account/notifications"}
-            aria-label="Notifications"
-            className="hidden items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:inline-flex"
-          >
-            <Bell width={14} height={14} />
-            Alerts
-          </Link>
-          <Link
-            href={user ? "/account" : "/login"}
-            className="hidden items-center gap-1.5 rounded-[2px] px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:inline-flex"
-          >
-            <User2 width={14} height={14} />
-            {user ? user.avatarInitials : "Sign in"}
-          </Link>
-
-          <Link
-            href="/search"
-            aria-label="Search"
-            className="grid h-10 w-10 place-items-center rounded-[2px] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink lg:hidden"
-          >
-            <Search width={20} height={20} />
-          </Link>
-
-          <Link
-            href="/cart"
-            aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`}
-            className="inline-flex items-center gap-2 rounded-[3px] bg-ember px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-white transition-colors hover:bg-ink"
-          >
-            <ShoppingBag width={14} height={14} />
-            <span className="hidden lg:inline">Cart</span>
-            <span className="rounded-[2px] bg-lime px-1.5 py-[1px] font-semibold tabular-nums text-void">
-              {cartCount > 99 ? "99+" : cartCount}
-            </span>
-          </Link>
-        </div>
-      </div>
-
-      <div className="hidden border-t border-hairline bg-void lg:block">
-        <div className="mx-auto flex max-w-[1240px] items-center gap-1 overflow-x-auto px-6 py-2">
-          <Link
-            href="/browse"
-            className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk transition-colors hover:bg-panel"
-          >
-            All departments
-          </Link>
-          {categories.map((category) => (
-            <Link
-              key={category.slug}
-              href={`/category/${category.slug}`}
-              className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:bg-panel hover:text-chalk"
-            >
-              {category.name}
+          <form action="/search" className="relative ml-3 flex min-w-0 flex-1 items-center">
+            <Search width={17} height={17} className="pointer-events-none absolute left-3.5 text-ink-soft" />
+            <input type="search" name="q" placeholder="Search products, brands and more" aria-label="Search products, brands and more" className="h-11 w-full rounded-[2px] rounded-tr-[12px] border border-line-warm bg-[#f7f9fb] pl-10 pr-3 text-[13px] text-ink outline-none transition-colors placeholder:text-ink-soft/75 focus:border-ember focus:bg-white" />
+            <button type="submit" aria-label="Submit search" className="absolute right-0 grid h-11 w-12 place-items-center rounded-[2px] rounded-tr-[12px] bg-ember text-white transition-colors hover:bg-[#dc481c]"><Search width={17} height={17} /></button>
+          </form>
+          <div className="flex shrink-0 items-center gap-1">
+            <Link href="/stores" className="inline-flex min-h-10 items-center gap-1.5 px-2.5 text-[11px] font-semibold text-ink-soft transition-colors hover:text-ember"><Store width={16} height={16} /> Stores</Link>
+            <Link href={user ? "/account/wishlist" : "/login?return=/account/wishlist"} className="inline-flex min-h-10 items-center gap-1.5 px-2.5 text-[11px] font-semibold text-ink-soft transition-colors hover:text-ember"><Heart width={16} height={16} /> Saved</Link>
+            <Link href={user ? "/account" : "/login"} className="inline-flex min-h-10 items-center gap-1.5 px-2.5 text-[11px] font-semibold text-ink-soft transition-colors hover:text-ember"><User2 width={16} height={16} /> {user ? user.name.split(" ")[0] : "Account"}</Link>
+            <Link href="/cart" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`} className="ml-1 inline-flex h-10 items-center gap-2 rounded-[2px] rounded-tr-[10px] bg-ember px-3.5 text-[12px] font-bold text-white transition-colors hover:bg-[#dc481c]">
+              <ShoppingBag width={16} height={16} /> Cart <span className="grid h-5 min-w-5 place-items-center rounded-[2px] bg-white px-1 text-[10px] font-bold tabular-nums text-ember">{cartCount > 99 ? "99+" : cartCount}</span>
             </Link>
-          ))}
-          <Link
-            href="/collections"
-            className="shrink-0 rounded-[2px] px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:bg-panel hover:text-chalk"
-          >
-            Collections
-          </Link>
+          </div>
         </div>
       </div>
+
+      <div className="lg:hidden">
+        <div className="mx-auto flex h-[54px] max-w-[1320px] items-center gap-2 px-3">
+          <FerixMobileMenu categories={categories} user={user} />
+          <Link href="/" className="flex shrink-0 items-center gap-1.5" aria-label="Ferixas home">
+            <FerixMark className="h-7 w-7" /><span className="font-display text-[14px] font-extrabold tracking-[0.08em] text-ink">FERIXAS</span>
+          </Link>
+          <div className="ml-auto flex items-center gap-1">
+            <Link href="/search" aria-label="Search" className="grid h-9 w-9 place-items-center text-ink-soft hover:text-ember"><Search width={19} height={19} /></Link>
+            <Link href="/cart" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`} className="inline-flex h-9 items-center gap-1.5 rounded-[2px] rounded-tr-[9px] bg-ember px-2.5 text-[11px] font-bold text-white">
+              <ShoppingBag width={15} height={15} /><span>{cartCount > 99 ? "99+" : cartCount}</span>
+            </Link>
+          </div>
+        </div>
+        <form action="/search" className="mx-auto max-w-[1320px] px-3 pb-2.5 sm:px-5">
+          <label className="relative block">
+            <Search width={15} height={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
+            <input type="search" name="q" placeholder="Search products, brands and more" aria-label="Search products, brands and more" className="h-10 w-full rounded-[2px] rounded-tr-[10px] border border-line-warm bg-[#f7f9fb] pl-9 pr-3 text-[12px] text-ink outline-none transition-colors placeholder:text-ink-soft/75 focus:border-ember focus:bg-white" />
+          </label>
+        </form>
+      </div>
+
+      <nav aria-label="Departments" className="hidden border-t border-line-warm bg-[#f8fafc] lg:block">
+        <div className="mx-auto flex max-w-[1320px] items-center gap-1 overflow-x-auto px-6 py-2">
+          <Link href="/browse" className="shrink-0 rounded-[2px] rounded-tr-[8px] bg-ember px-3 py-2 text-[11px] font-bold text-white">All departments</Link>
+          {categories.slice(0, 8).map((category) => (
+            <Link key={category.slug} href={`/category/${category.slug}`} className="shrink-0 rounded-[2px] px-3 py-2 text-[11px] font-semibold text-ink-soft transition-colors hover:bg-white hover:text-ember">{category.name}</Link>
+          ))}
+          <Link href="/collections" className="ml-auto shrink-0 px-3 py-2 text-[11px] font-semibold text-ink-soft transition-colors hover:text-ember">Collections</Link>
+        </div>
+      </nav>
     </header>
   );
 }

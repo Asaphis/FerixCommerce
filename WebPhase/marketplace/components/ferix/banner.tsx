@@ -267,7 +267,7 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
             ) : null}
 
             {showText && slide.body ? (
-              <p className={cn("mt-2.5 text-[12.5px] leading-relaxed sm:text-[13.5px]", light ? "text-white/85" : "text-ink/80")}>
+              <p className={cn("mt-2.5 line-clamp-1 text-[12px] leading-relaxed sm:line-clamp-2 sm:text-[13.5px]", light ? "text-white/85" : "text-ink/80")}>
                 {slide.body}
               </p>
             ) : null}

@@ -23,7 +23,7 @@ export function ProductCard({
   return (
     <article
       className={cn(
-        "group relative flex min-w-0 flex-col overflow-hidden rounded-[3px] border border-line-warm bg-white transition-all duration-200 hover:-translate-y-0.5 hover:border-ember/40 hover:shadow-[0_8px_24px_rgba(20,17,14,0.08)]",
+        "group relative flex min-w-0 flex-col overflow-hidden rounded-[2px] rounded-tr-[14px] border border-line-warm bg-white shadow-[0_2px_10px_rgba(16,45,67,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-ember/40 hover:shadow-[0_8px_24px_rgba(16,45,67,0.12)]",
         className,
       )}
     >
@@ -43,17 +43,17 @@ export function ProductCard({
       </Link>
 
       <div className="flex flex-1 flex-col p-2.5 sm:p-3.5">
-        <Link href={`/store/${product.merchantSlug}`} className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
+        <Link href={`/store/${product.merchantSlug}`} className="hidden truncate font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember sm:block">
           {product.merchantName}
         </Link>
-        <Link href={href} className="mt-1.5 line-clamp-2 font-display text-[14.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember">
+        <Link href={href} className="mt-1 line-clamp-1 font-display text-[13px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:line-clamp-2 sm:text-[14.5px]">
           {product.title}
         </Link>
         <div className="mt-2 hidden items-center gap-2 sm:flex">
           <Stars value={product.rating} />
           <span className="font-mono text-[10.5px] text-ink-soft">({compact(product.reviewCount)})</span>
         </div>
-        <div className="mt-3 flex items-end justify-between gap-2">
+        <div className="mt-2 flex items-end justify-between gap-2 sm:mt-3">
           <Price value={product.price} compareAt={product.compareAt} discount={product.discount} />
         </div>
         {product.stock > 0 && product.stock <= 25 ? (
@@ -63,7 +63,7 @@ export function ProductCard({
         ) : null}
 
         {showAdd ? (
-          <div className="mt-3 flex items-center gap-1.5 border-t border-line-warm pt-3">
+          <div className="mt-2 flex items-center gap-1.5 border-t border-line-warm pt-2 sm:mt-3 sm:pt-3">
             {product.stock > 0 ? <AddToCartForm productId={product.id} /> : <span className="flex-1"><button type="button" disabled className="w-full rounded-[2px] bg-bone-soft py-2 text-[13px] font-semibold text-ink-soft">Sold out</button></span>}
             <WishlistForm productId={product.id} back="/browse" saved={saved} />
           </div>
@@ -108,7 +108,7 @@ export function ProductRail({ products, savedIds = [] }: { products: Product[]; 
             key={product.id}
             product={product}
             saved={savedIds.includes(product.id)}
-            className="w-[220px] shrink-0"
+            className="w-[168px] shrink-0 sm:w-[206px]"
           />
         ))}
       </div>

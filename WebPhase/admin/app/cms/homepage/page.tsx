@@ -50,10 +50,7 @@ export default async function HomepageCmsPage() {
             Content
           </Link>
           <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Homepage</h1>
-          <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-            The order of these sections is the order shoppers scroll through on ferixas.com. Hiding a section
-            keeps its content but removes it from the storefront.
-          </p>
+          <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">Arrange visible sections on the shopper homepage.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Pill tone={document.status === "published" ? "mint" : "amber"}>{document.status}</Pill>

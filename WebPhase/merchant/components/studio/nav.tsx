@@ -50,7 +50,7 @@ function SoonTag() {
 }
 
 const FOCUS_RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-[#17232b]";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lime focus-visible:ring-offset-2 focus-visible:ring-offset-[#102d43]";
 
 /** Grouped sidebar. Rendered at 1280px and up. */
 export function StudioSidebar() {
@@ -74,7 +74,7 @@ export function StudioSidebar() {
                   className={cn(
                     "flex min-h-[44px] items-center gap-2.5 rounded-[2px] px-3 text-[12.5px] transition-colors",
                     FOCUS_RING,
-                    active ? "bg-white/10 text-lime" : "text-white/65 hover:bg-white/10 hover:text-white",
+                    active ? "bg-[#f05a28] text-white shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white",
                   )}
                 >
                   <Icon width={16} height={16} className="shrink-0" />
@@ -112,7 +112,7 @@ export function StudioRail() {
                 className={cn(
                   "grid h-11 w-11 place-items-center rounded-[2px] transition-colors",
                   FOCUS_RING,
-                  active ? "bg-white/10 text-lime" : "text-white/65 hover:bg-white/10 hover:text-white",
+                  active ? "bg-[#f05a28] text-white shadow-sm" : "text-white/70 hover:bg-white/10 hover:text-white",
                 )}
               >
                 <Icon width={18} height={18} />
@@ -146,7 +146,7 @@ export function StudioBottomNav() {
       <div aria-hidden="true" className="h-[72px] md:hidden" />
       <nav
         aria-label="Merchant primary navigation"
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-[#17232b]/15 bg-[#17232b]/95 backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#102d43]/95 backdrop-blur-md md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <ul className="mx-auto grid max-w-[560px] grid-cols-5">
@@ -231,7 +231,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
         className="absolute inset-0 h-full w-full cursor-default bg-[#10191f]/70 backdrop-blur-sm"
       />
       <div
-        className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[4px] border-t border-hairline bg-[#17232b] px-4 pb-6 pt-3"
+        className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[4px] border-t border-white/10 bg-[#102d43] px-4 pb-6 pt-3"
         style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
       >
         <div className="mb-3 flex items-center justify-between">

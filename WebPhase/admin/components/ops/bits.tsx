@@ -16,7 +16,7 @@ export function Panel({
   flush?: boolean;
 }) {
   return (
-    <section className={cn("min-w-0 rounded-[2px] rounded-tr-[9px] border border-hairline bg-panel", !flush && "p-3 sm:p-5", className)}>
+    <section className={cn("min-w-0 rounded-[2px] rounded-tr-[14px] border border-hairline bg-panel shadow-[0_2px_10px_rgba(16,45,67,0.04)]", !flush && "p-3 sm:p-5", className)}>
       {children}
     </section>
   );
@@ -26,7 +26,7 @@ export function PanelHead({ title, hint, action }: { title: string; hint?: strin
   return (
     <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h2 className="font-display text-[15px] font-semibold text-chalk">{title}</h2>
+        <h2 className="font-display text-[15px] font-bold text-chalk">{title}</h2>
         {hint ? <p className="mt-1 text-[12.5px] text-chalk-dim">{hint}</p> : null}
       </div>
       {action}
@@ -106,12 +106,12 @@ export function Readout({
     neutral: "bg-chalk-dim",
   };
   return (
-    <div className="relative flex min-h-[82px] min-w-0 items-center gap-2.5 overflow-hidden rounded-[2px] rounded-tr-[9px] border border-hairline bg-panel p-2.5 sm:min-h-[94px] sm:p-4 sm:pl-5">
-      {icon ? <span className={cn("shrink-0 [&>svg]:h-4 [&>svg]:w-4", colors[tone])}>{icon}</span> : null}
+    <div className="relative flex min-h-[72px] min-w-0 items-center gap-2 overflow-hidden rounded-[2px] rounded-tr-[12px] border border-hairline bg-panel p-2 shadow-[0_2px_10px_rgba(16,45,67,0.04)] sm:min-h-[94px] sm:gap-2.5 sm:p-4 sm:pl-5">
+      {icon ? <span className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-[2px] rounded-tr-[8px] bg-panel-2 [&>svg]:h-4 [&>svg]:w-4", colors[tone])}>{icon}</span> : null}
       <div className="min-w-0 flex-1">
-        <span className="block line-clamp-2 break-words font-mono text-[8.5px] leading-tight uppercase tracking-[0.08em] text-chalk-dim sm:line-clamp-none sm:text-[10px] sm:tracking-[0.16em]">{label}</span>
-        <p className="mt-1 font-mono text-[17px] font-semibold leading-none tabular-nums text-chalk sm:mt-2 sm:text-[22px]">{value}</p>
-        {sub ? <p className="mt-1 truncate text-[10px] text-chalk-dim sm:mt-1.5 sm:text-[12px]">{sub}</p> : null}
+        <span className="block truncate font-mono text-[8px] leading-tight uppercase tracking-[0.08em] text-chalk-dim sm:text-[10px] sm:tracking-[0.12em]">{label}</span>
+        <p className="mt-1 font-display text-[17px] font-bold leading-none tabular-nums text-chalk sm:mt-2 sm:text-[22px]">{value}</p>
+        {sub ? <p className="mt-1 hidden truncate text-[10px] text-chalk-dim sm:block sm:text-[12px]">{sub}</p> : null}
       </div>
       <span className={cn("absolute inset-y-0 left-0 w-[2px]", bars[tone])} />
     </div>

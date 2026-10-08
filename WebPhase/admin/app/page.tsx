@@ -26,7 +26,7 @@ function statusTone(status: string) {
 }
 
 export default async function OverviewPage() {
-  const { session, admin } = await requireAdmin();
+  const { session } = await requireAdmin();
   const data = await getOverview(session);
   const { totals, windows, channels, statuses, topMerchants, needsAttention, recentOrders, settings } = data;
 
@@ -39,11 +39,8 @@ export default async function OverviewPage() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Eyebrow>Platform overview</Eyebrow>
-          <h1 className="mt-1.5 font-display text-[24px] font-semibold text-chalk">{settings.platformName} console</h1>
-          <p className="mt-1.5 text-[13px] text-chalk-dim">
-            Signed in as {admin.email} · {totals.merchants} merchants · {compact(totals.products)} products on one
-            catalogue
-          </p>
+          <h1 className="mt-1.5 font-display text-[24px] font-bold text-chalk">Platform overview</h1>
+          <p className="mt-1.5 text-[13px] text-chalk-dim">Live activity across orders and merchants</p>
         </div>
         <form action={signOutAction}>
           <SubmitButton variant="outline" pendingLabel="Signing out">

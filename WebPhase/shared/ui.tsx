@@ -5,9 +5,8 @@
  * the generated copies; edit this file and run the sync.
  *
  * Tones resolve through CSS custom properties (`--tone-*`) that each app
- * defines in its own `globals.css`, so one implementation renders in the
- * marketplace's warm palette, the seller workspace's lime palette and the
- * admin console's signal palette without any per-app branching.
+ * defines in its own `globals.css`, keeping the same Ferixas orange/navy
+ * identity and accessible status colors across every surface.
  */
 
 import type { ReactNode } from "react";
@@ -33,7 +32,7 @@ export function Pill({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] border px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em] ${TONE_CLASS[tone]} ${className}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] rounded-tr-[7px] border px-2.5 py-1 font-sans text-[9.5px] font-bold uppercase tracking-[0.07em] ${TONE_CLASS[tone]} ${className}`}
     >
       {children}
     </span>
@@ -42,7 +41,7 @@ export function Pill({
 
 export function Eyebrow({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <span className={`font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim ${className}`}>
+    <span className={`font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-chalk-dim ${className}`}>
       {children}
     </span>
   );
@@ -51,7 +50,7 @@ export function Eyebrow({ children, className = "" }: { children: ReactNode; cla
 /** Inline label for a value in a phone card, so a bare number still reads. */
 export function CellLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="mr-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim/70 md:hidden">
+    <span className="mr-1.5 font-sans text-[9px] font-semibold uppercase tracking-[0.08em] text-chalk-dim/80 md:hidden">
       {children}
     </span>
   );

@@ -47,9 +47,7 @@ export default async function DashboardPage() {
           <h1 className="mt-1.5 font-display text-[24px] font-semibold text-ink-soft">
             <span className="text-chalk">{merchant.name}</span>
           </h1>
-          <p className="mt-1.5 text-[13px] text-chalk-dim">
-            {merchant.tagline} · trading since {dateShort(merchant.since)}
-          </p>
+          <p className="mt-1.5 text-[13px] text-chalk-dim">Store performance at a glance</p>
         </div>
         <form action={signOutAction}>
           <SubmitButton variant="outline" pendingLabel="Signing out">
