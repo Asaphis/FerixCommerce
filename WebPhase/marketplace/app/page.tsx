@@ -52,7 +52,7 @@ export default async function HomePage() {
 
   return (
     <div className="pb-10">
-      <section className="mx-auto max-w-[1440px] px-3 pt-3 sm:px-5 sm:pt-5">
+      <section className="mx-auto max-w-[1440px] sm:px-5 sm:pt-5">
         <div className="grid gap-3 lg:grid-cols-[226px_minmax(0,1fr)]">
           <aside className="hidden rounded-[3px] rounded-tr-[14px] border border-line-warm bg-white p-3.5 lg:block">
             <div className="mb-2 flex items-center gap-2 border-b border-line-warm px-1 pb-3">
@@ -72,9 +72,9 @@ export default async function HomePage() {
             <PromoBanner
               banners={home.banners}
               heightClassName="h-[208px] sm:h-[286px] lg:h-[350px]"
-              className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)]"
+              className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
             />
-            <div className="mt-2.5 grid grid-cols-3 divide-x divide-line-warm rounded-[3px] border border-line-warm bg-white py-2.5">
+            <div className="mt-2.5 grid grid-cols-3 divide-x divide-line-warm rounded-[3px] border border-line-warm bg-white py-2.5 max-lg:mt-0 max-lg:rounded-none max-lg:border-x-0">
               <div className="flex items-center justify-center gap-1.5 px-1 text-center text-[9px] font-semibold text-ink-soft sm:gap-2 sm:text-[11px]"><ShoppingBag width={14} height={14} className="shrink-0 text-ember" />One cart, many stores</div>
               <div className="flex items-center justify-center gap-1.5 px-1 text-center text-[9px] font-semibold text-ink-soft sm:gap-2 sm:text-[11px]"><BadgeCheck width={14} height={14} className="shrink-0 text-ember" />Seller profiles</div>
               <div className="flex items-center justify-center gap-1.5 px-1 text-center text-[9px] font-semibold text-ink-soft sm:gap-2 sm:text-[11px]"><StoreIcon width={14} height={14} className="shrink-0 text-ember" />{home.stats.merchants} stores</div>
