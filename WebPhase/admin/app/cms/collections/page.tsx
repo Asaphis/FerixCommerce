@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { assetUrl, listCollections } from "@/lib/api";
+import { assetUrl, listCollections, listMedia } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
@@ -12,6 +12,13 @@ import { num } from "@/lib/format";
 
 export default async function CollectionsPage() {
   const { session } = await requireAdmin();
+
+  const library = await listMedia(session).catch(() => ({ assets: [], storage: "" }));
+  // The picker needs a plain url and label; an asset carries whichever of these it has.
+  const libraryOptions = library.assets.map((asset) => {
+    const row = asset as { url: string; label?: string; alt?: string; name?: string };
+    return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
+  });
   const { collections } = await listCollections(session);
 
   return (
@@ -77,7 +84,9 @@ export default async function CollectionsPage() {
                       <input name="blurb" defaultValue={collection.blurb} className={inputClass} />
                     </Field>
                   </div>
-                  <MediaUploadField urlName="image" fileName="imageFile" defaultUrl={assetUrl(collection.image)} kind="image" urlLabel="Cover image URL" fileLabel="Upload collection cover" />
+                  <MediaUploadField urlName="image" fileName="imageFile" defaultUrl={assetUrl(collection.image)} kind="image" urlLabel="Cover image URL" fileLabel="Upload collection cover"
+              libraryAssets={libraryOptions}
+            />
                   <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
                     <input type="checkbox" name="visible" defaultChecked={collection.visible} className="size-4 accent-signal" />
                     Visible to shoppers
@@ -117,7 +126,9 @@ export default async function CollectionsPage() {
               <input name="blurb" placeholder="One short line." className={inputClass} />
             </Field>
           </div>
-          <MediaUploadField urlName="image" fileName="imageFile" kind="image" urlLabel="Cover image URL" fileLabel="Upload collection cover" />
+          <MediaUploadField urlName="image" fileName="imageFile" kind="image" urlLabel="Cover image URL" fileLabel="Upload collection cover"
+              libraryAssets={libraryOptions}
+            />
           <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
             <input type="checkbox" name="visible" defaultChecked className="size-4 accent-signal" />
             Visible to shoppers

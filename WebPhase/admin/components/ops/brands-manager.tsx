@@ -11,9 +11,9 @@ import { inputClass as tableInputClass } from "@/components/ops/table";
 import { OpsButton } from "@/components/ops/controls";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 
-type Props = { initialBrands: AdminBrand[]; loadError?: string };
+type Props = { initialBrands: AdminBrand[]; loadError?: string; libraryAssets?: { url: string; label: string }[] };
 const blank: AdminBrand = { id: "", name: "", slug: "", description: "", imageUrl: "", featured: false, visible: true, position: 1 };
-export default function BrandsManager({ initialBrands, loadError }: Props) {
+export default function BrandsManager({ initialBrands, loadError, libraryAssets }: Props) {
   const [selected, setSelected] = useState<AdminBrand | null>(null);
   const [saveState, saveAction] = useActionState<FormState, FormData>(saveBrandAction, {});
   const [deleteState, deleteAction] = useActionState<FormState, FormData>(deleteBrandAction, {});
@@ -35,7 +35,7 @@ export default function BrandsManager({ initialBrands, loadError }: Props) {
           <Field title="Name"><input name="name" required defaultValue={active.name} key={`${active.id}-name`} className={tableInputClass} placeholder="Northstar Audio" /></Field>
           <Field title="Slug"><input name="slug" required defaultValue={active.slug} key={`${active.id}-slug`} className={tableInputClass} placeholder="northstar-audio" /></Field>
           <Field title="Description"><textarea name="description" defaultValue={active.description} key={`${active.id}-description`} className={`${tableInputClass} min-h-[96px]`} rows={3} placeholder="Short shopper-facing description." /></Field>
-          <MediaUploadField key={`brand-image-${active.id || "new"}`} urlName="imageUrl" fileName="imageFile" defaultUrl={active.imageUrl} kind="image" urlLabel="Brand image URL" fileLabel="Upload brand image" />
+          <MediaUploadField key={`brand-image-${active.id || "new"}`} urlName="imageUrl" fileName="imageFile" defaultUrl={active.imageUrl} kind="image" urlLabel="Brand image URL" fileLabel="Upload brand image" libraryAssets={libraryAssets} />
           <div className="grid gap-3 sm:grid-cols-2"><Field title="Position"><input name="position" type="number" min="1" defaultValue={active.position} key={`${active.id}-position`} className={tableInputClass} /></Field><div className="flex items-end gap-4 pb-2"><label className="flex items-center gap-2 text-[12px] text-chalk"><input type="checkbox" name="visible" defaultChecked={active.visible} key={`${active.id}-visible`} className="size-4 accent-[var(--ember)]" /> Visible</label><label className="flex items-center gap-2 text-[12px] text-chalk"><input type="checkbox" name="featured" defaultChecked={active.featured} key={`${active.id}-featured`} className="size-4 accent-[var(--ember)]" /> Featured</label></div></div>
           <Notice state={saveState} /><div className="flex flex-wrap gap-2"><SubmitButton pendingLabel="Saving"><Save width={14} /> Save brand</SubmitButton><OpsButton type="button" variant="ghost" onClick={() => setSelected(null)}><X width={14} /> Cancel</OpsButton></div>
         </form>

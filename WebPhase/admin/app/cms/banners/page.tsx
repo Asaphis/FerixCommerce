@@ -12,6 +12,13 @@ import { titleCase } from "@/lib/format";
 
 export default async function BannersPage() {
   const { session } = await requireAdmin();
+
+  const library = await listMedia(session).catch(() => ({ assets: [], storage: "" }));
+  // The picker needs a plain url and label; an asset carries whichever of these it has.
+  const libraryOptions = library.assets.map((asset) => {
+    const row = asset as { url: string; label?: string; alt?: string; name?: string };
+    return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
+  });
   const { banners } = await listBanners(session);
   let assets: MediaAsset[] = [];
   try { assets = (await listMedia(session)).assets.map((asset) => ({ ...asset, url: assetUrl(asset.url) })); } catch { /* the URL field remains available if the library is unavailable */ }
@@ -114,7 +121,9 @@ export default async function BannersPage() {
                     kind="auto"
                     urlLabel="Media URL"
                     fileLabel="Upload banner image or video"
-                    libraryAssets={assets.map((asset) => ({ url: asset.url, label: `${asset.kind} · ${asset.alt || asset.id}` }))}
+                    libraryAssets={assets.map((asset) =
+              libraryAssets={libraryOptions}
+            > ({ url: asset.url, label: `${asset.kind} · ${asset.alt || asset.id}` }))}
                     selectedLibraryUrl={assets.some((asset) => asset.url === assetUrl(banner.kind === "video" ? banner.videoUrl ?? banner.mediaUrl : banner.mediaUrl)) ? assetUrl(banner.kind === "video" ? banner.videoUrl ?? banner.mediaUrl : banner.mediaUrl) : ""}
                   />
                   <Field title="Body">
@@ -187,7 +196,9 @@ export default async function BannersPage() {
             kind="auto"
             urlLabel="Media URL"
             fileLabel="Upload banner image or video"
-            libraryAssets={assets.map((asset) => ({ url: asset.url, label: `${asset.kind} · ${asset.alt || asset.id}` }))}
+            libraryAssets={assets.map((asset) =
+              libraryAssets={libraryOptions}
+            > ({ url: asset.url, label: `${asset.kind} · ${asset.alt || asset.id}` }))}
           />
           <Field title="Body">
             <textarea name="body" placeholder="One short supporting line." className={textareaClass} />

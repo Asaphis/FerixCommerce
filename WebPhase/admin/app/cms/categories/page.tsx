@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { assetUrl, listCategories } from "@/lib/api";
+import { assetUrl, listCategories, listMedia } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
@@ -35,6 +35,13 @@ function Switches({
 
 export default async function CategoriesPage() {
   const { session } = await requireAdmin();
+
+  const library = await listMedia(session).catch(() => ({ assets: [], storage: "" }));
+  // The picker needs a plain url and label; an asset carries whichever of these it has.
+  const libraryOptions = library.assets.map((asset) => {
+    const row = asset as { url: string; label?: string; alt?: string; name?: string };
+    return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
+  });
   const { categories } = await listCategories(session);
 
   return (
@@ -102,7 +109,9 @@ export default async function CategoriesPage() {
                       <input name="blurb" defaultValue={category.blurb} className={inputClass} />
                     </Field>
                   </div>
-                  <MediaUploadField urlName="image" fileName="imageFile" defaultUrl={assetUrl(category.image)} kind="image" urlLabel="Image URL" fileLabel="Upload department image" />
+                  <MediaUploadField urlName="image" fileName="imageFile" defaultUrl={assetUrl(category.image)} kind="image" urlLabel="Image URL" fileLabel="Upload department image"
+              libraryAssets={libraryOptions}
+            />
                   <Switches
                     defaults={{
                       showInNav: category.showInNav,
@@ -149,7 +158,9 @@ export default async function CategoriesPage() {
               <input name="blurb" placeholder="One short line." className={inputClass} />
             </Field>
           </div>
-          <MediaUploadField urlName="image" fileName="imageFile" kind="image" urlLabel="Image URL" fileLabel="Upload department image" />
+          <MediaUploadField urlName="image" fileName="imageFile" kind="image" urlLabel="Image URL" fileLabel="Upload department image"
+              libraryAssets={libraryOptions}
+            />
           <Switches defaults={{ showInNav: true, showAsTile: true, showAsText: false, visible: true }} />
           <div>
             <SubmitButton pendingLabel="Creating">
