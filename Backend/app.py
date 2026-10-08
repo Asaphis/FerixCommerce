@@ -214,6 +214,13 @@ async def carry_frontend_credentials(request: Request, call_next):
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(engine)
+    # create_all creates missing TABLES and never alters an existing one, so a
+    # database provisioned before a column was added would break the moment that
+    # column is queried. startup used to call create_all alone and never reached
+    # the migration that lives in core, which is why this is called here now.
+    from core import migrate
+
+    migrate()
     with SessionLocal() as db:
         seed(db)
         backfill_catalogue_media(db)
