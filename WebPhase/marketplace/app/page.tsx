@@ -203,7 +203,9 @@ export default async function HomePage() {
                 // A brand's artwork has been called imageUrl and logo in different
                 // places, so read whichever the record carries rather than pinning
                 // the page to one spelling.
-                const record = brand as { slug: string; name: string; imageUrl?: string; logo?: string };
+                // The Brand type here describes a store's theming, not a brand record, so the cast
+                // goes through unknown rather than pretending the shapes overlap.
+                const record = brand as unknown as { slug: string; name: string; imageUrl?: string; logo?: string };
                 const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
                 return (
                   <Link
