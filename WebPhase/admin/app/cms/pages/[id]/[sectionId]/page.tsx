@@ -4,7 +4,7 @@ import { ArrowLeft, ImagePlus } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
 import { getCmsPage, type CmsSection } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
-import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { saveCmsSectionAction } from "@/lib/actions";

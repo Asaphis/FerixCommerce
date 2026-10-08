@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pencil } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Pencil } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
 import { getCmsPage } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
-import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
-import { PageHeader, inputClass } from "@/components/ops/table";
+import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { PageHeader } from "@/components/ops/table";
 import { SubmitButton } from "@/components/ops/controls";
 import { moveCmsSectionAction, publishCmsPageAction, toggleCmsSectionAction } from "@/lib/actions";
 
