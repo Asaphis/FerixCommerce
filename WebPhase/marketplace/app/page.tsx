@@ -5,6 +5,7 @@ import { assetUrl, getHome, listAdverts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { PromoBanner } from "@/components/ferix/banner";
 import { CategoryTile, ProductGrid, ProductRail, StoreCard } from "@/components/ferix/cards";
+import { SetSwiper } from "@/components/ferix/set-swiper";
 import { SectionHead } from "@/components/ferix/marks";
 
 /**
@@ -275,7 +276,16 @@ export default async function HomePage() {
               }
               className="mb-3 sm:mb-4"
             />
-            <ProductGrid products={shown} savedIds={saved} across={Number(section.across) || 2} />
+            {section.arragement === "groups" || (section as { layout?: string }).layout === "groups" ? (
+              <SetSwiper
+                products={shown}
+                savedIds={saved}
+                across={Number(section.across) || 2}
+                rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
+              />
+            ) : (
+              <ProductGrid products={shown} savedIds={saved} across={Number(section.across) || 2} />
+            )}
           </section>
         );
       }
