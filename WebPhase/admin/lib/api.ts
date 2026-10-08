@@ -365,6 +365,18 @@ export const deleteMerchant = (session: string | null, id: string) =>
   call<{ removed: string; name?: string; products: number; signIns: number }>(
     "DELETE", "admin/merchant", { session, body: { id } });
 
+/** Where a product sits, and every section it could sit in. */
+export type SectionOption = {
+  documentId: string; documentTitle: string; sectionId: string;
+  sectionName: string; sectionType: string; source?: string; placements: number;
+};
+export const getProductSections = (session: string | null, slug: string) =>
+  call<{ placements: { id: string; documentId: string; sectionId: string; price: number }[]; available: SectionOption[] }>(
+    "GET", "admin/product/sections", { session, params: { slug } });
+
+export const placeProductInSection = (session: string | null, body: Record<string, unknown>) =>
+  call<{ placement: { id: string } }>("POST", "admin/product/section", { session, body });
+
 /** Products waiting on the platform, with what each submission is waiting for. */
 export type ReviewItem = {
   id: string; title: string; slug: string; merchantId: string; merchantName: string;

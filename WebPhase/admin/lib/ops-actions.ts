@@ -67,6 +67,43 @@ function productPayload(form: FormData) {
   };
 }
 
+
+/**
+ * Put a product into every section that was ticked on the form.
+ *
+ * It only ever places. A section that is not ticked is left alone rather than removed,
+ * because a form that has not been shown a product's existing placements would otherwise
+ * untick them all and quietly take the product out of every section it was in.
+ */
+async function placeTickedSections(session: string, form: FormData, slug: string, title: string) {
+  let available: api.SectionOption[] = [];
+  try {
+    available = (await api.getProductSections(session, slug)).available;
+  } catch {
+    return;
+  }
+  for (const section of available) {
+    const key = `section__${section.documentId}__${section.sectionId}`;
+    if (form.get(key) !== "on") continue;
+    const price = str(form, `price${key}`);
+    const quantity = str(form, `qty${key}`);
+    try {
+      await api.placeProductInSection(session, {
+        slug,
+        documentId: section.documentId,
+        sectionId: section.sectionId,
+        sectionType: section.sectionType,
+        title,
+        ...(price ? { price: Number(price) } : {}),
+        ...(quantity ? { quantity: Number(quantity) } : {}),
+      });
+    } catch {
+      // One section failing to take the product must not lose the product itself.
+      continue;
+    }
+  }
+}
+
 export async function createCatalogProductAction(form: FormData): Promise<void> {
   const session = await readSession();
   if (!session) redirect("/login");
@@ -82,6 +119,7 @@ export async function createCatalogProductAction(form: FormData): Promise<void> 
   } catch {
     return;
   }
+  await placeTickedSections(session, form, String(payload.slug ?? ""), String(payload.title ?? ""));
   refresh("/catalog");
   redirect("/catalog");
 }
@@ -100,6 +138,7 @@ export async function updateCatalogProductAction(form: FormData): Promise<void> 
   } catch {
     return;
   }
+  await placeTickedSections(session, form, str(form, "slug"), String(payload.title ?? ""));
   refresh("/catalog");
   revalidatePath(`/catalog/${str(form, "slug")}`);
 }
