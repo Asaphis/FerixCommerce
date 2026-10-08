@@ -25,7 +25,10 @@ export default async function CatalogPage({
     search,
     category: category ?? "all",
     status: status ?? "all",
-    owner: owner ?? "all",
+    // The catalogue is the platform's own stock. A seller's products belong to that seller
+    // and are reached from their page; asking for every owner was showing the
+    // marketplace in what is meant to be our own shelf.
+    owner: owner ?? "official",
   });
 
   const official = data.counts.official ?? 0;
@@ -77,8 +80,9 @@ export default async function CatalogPage({
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
           </select>
-          <select name="owner" defaultValue={owner ?? "all"} className={selectClass}>
-            <option value="all">All owners</option>
+          <select name="owner" defaultValue={owner ?? "official"} className={selectClass}>
+            <option value="official">Our products</option>
+            <option value="all">Every owner, including sellers</option>
             <option value="official">Ferixas Official</option>
             <option value="seller">Merchant sellers</option>
           </select>
