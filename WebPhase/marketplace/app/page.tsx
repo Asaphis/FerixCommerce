@@ -6,6 +6,7 @@ import { savedIds } from "@/lib/data";
 import { PromoBanner } from "@/components/ferix/banner";
 import { CategoryTile, ProductGrid, ProductRail, StoreCard } from "@/components/ferix/cards";
 import { SetSwiper } from "@/components/ferix/set-swiper";
+import { TileSwiper } from "@/components/ferix/tile-swiper";
 import { SectionHead } from "@/components/ferix/marks";
 
 /**
@@ -190,6 +191,10 @@ export default async function HomePage() {
       /* ── Departments ────────────────────────────────────────────── */
       case "category_grid": {
         const shown = limit ? categories.slice(0, limit) : categories.slice(0, 8);
+        const arrangement = String((section as { layout?: string }).layout ?? "groups");
+        // Departments default to sets of rows when the section does not say otherwise,
+        // because that is the arrangement they are shaped for.
+        const isGrouped = arrangement === "groups";
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-1 pt-5 sm:px-6 sm:pt-7 lg:pt-8">
             <SectionHead
@@ -203,11 +208,19 @@ export default async function HomePage() {
               className="mb-3"
             />
             {shown.length ? (
-              /* Two across, fixed, was the only arrangement this could take. The section's
-                 own choice decides it now - the same control the product rows use. */
-              <div className={tileWidth(Number(section.across) || 2)}>
-                {shown.map((category) => <CategoryTile key={category.slug} category={category} />)}
-              </div>
+              /* The section decides the arrangement: sets of rows swiped for the next set,
+                 everything at once, or one row running off the edge. */
+              isGrouped ? (
+                <TileSwiper
+                  categories={shown}
+                  across={Number(section.across) || 3}
+                  rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
+                />
+              ) : (
+                <div className={tileWidth(Number(section.across) || 2)}>
+                  {shown.map((category) => <CategoryTile key={category.slug} category={category} />)}
+                </div>
+              )
             ) : null}
           </section>
         );
