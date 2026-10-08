@@ -365,6 +365,18 @@ def login(payload: LoginIn):
         # A correct password is not the same as permission. An account created
         # without a role, or had one withdrawn, holds no permissions at all - and
         # must be told so rather than signed in to an empty console.
+        # The role's definition is authoritative. Permissions are stored on the row,
+        # so changing a role in the code would otherwise leave every existing account
+        # holding the permissions it was created with - an administrator would keep
+        # reaching a destination the role no longer grants.
+        from core import ROLE_PERMISSIONS, permissions_for
+
+        if staff.role in ROLE_PERMISSIONS:
+            fresh = permissions_for(staff.role)
+            if list(staff.permissions or []) != fresh:
+                staff.permissions = fresh
+                db.commit()
+
         if not (staff.permissions or []):
             raise HTTPException(403, "That account has no access. Ask an owner to grant it a role.")
         token = issue_staff_session(db, staff)

@@ -270,6 +270,15 @@ def login(payload: LoginIn):
         # to a workspace you are barred from is the first thing a suspension is
         # meant to stop. A store still under review may sign in and prepare its
         # catalogue; it simply cannot go live until it is approved.
+        # The role's definition is authoritative, as on the operator side.
+        from core import ROLE_PERMISSIONS, permissions_for
+
+        if staff.role in ROLE_PERMISSIONS:
+            fresh = permissions_for(staff.role)
+            if list(staff.permissions or []) != fresh:
+                staff.permissions = fresh
+                db.commit()
+
         from core import find_merchant
 
         store = find_merchant(db, staff.subject_id)
