@@ -1042,3 +1042,34 @@ app.include_router(admin_router.router)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=int(os.getenv("PORT", "8000")), reload=False)
+
+
+@app.post("/auth/refresh")
+def refresh_session(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Silently rotate a shopper's session.
+
+    The new token INHERITS THE ORIGINAL EXPIRY, so refreshing while someone browses
+    never extends how long a session lives - it only shrinks the window in which a
+    stolen token is worth anything.
+    """
+    import secrets
+
+    from core import aware
+
+    with SessionLocal() as db:
+        row = db.get(SessionToken, session) if session else None
+        if not row:
+            raise HTTPException(401, "That session has ended. Please sign in again.")
+
+        if aware(row.expires_at) < now():
+            db.delete(row)
+            db.commit()
+            raise HTTPException(401, "That session has ended. Please sign in again.")
+
+        expires = row.expires_at
+        user_id = row.user_id
+        token = secrets.token_urlsafe(32)
+        db.delete(row)
+        db.add(SessionToken(token=token, user_id=user_id, expires_at=expires, last_seen_at=now()))
+        db.commit()
+        return {"token": token, "expiresAt": iso(expires)}

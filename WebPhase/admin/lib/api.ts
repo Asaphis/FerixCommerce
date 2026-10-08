@@ -260,6 +260,32 @@ export class ApiError extends Error {
 
 type Params = Record<string, string | number | boolean | undefined | null>;
 
+/**
+ * Ask the API for a new token.
+ *
+ * Returns null when the refresh itself fails, which is the only case that should
+ * send someone back to sign-in. Persisting the new token is best effort: a server
+ * component may not write a cookie while it renders, and failing to persist must
+ * not lose the request that is in flight.
+ */
+async function refreshSession(session: string, endpoint: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${apiBase}/${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${KEY}` },
+      body: JSON.stringify({ session }),
+      cache: "no-store",
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as { token?: string };
+    return body.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const REFRESH_ENDPOINT = "admin/auth/refresh";
+
 async function call<T>(
   method: string,
   path: string,
@@ -283,6 +309,21 @@ async function call<T>(
     body: method === "GET" ? undefined : JSON.stringify(payload),
     cache: "no-store",
   });
+
+  // An expired session is refreshed and the request sent once more, so nobody is
+  // thrown out of the console mid-task. Only a refresh that also fails reaches the
+  // caller — and that is what sends them to sign-in.
+  const alreadyRetried = (opts as { __retried?: boolean }).__retried === true;
+  if (response.status === 401 && opts.session && !alreadyRetried) {
+    const fresh = await refreshSession(opts.session, REFRESH_ENDPOINT);
+    if (fresh) {
+      return call<T>(method, path, {
+        ...opts,
+        session: fresh,
+        __retried: true,
+      } as unknown as typeof opts);
+    }
+  }
 
   if (!response.ok) {
     let detail = `Request failed (${response.status})`;
