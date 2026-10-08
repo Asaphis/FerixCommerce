@@ -1087,6 +1087,43 @@ def seed(db: Session) -> None:
             "position": brand_index,
         })
 
+    # ── Advertisements ───────────────────────────────────────────────────
+    # A promotion slot in a product list needs something to put in it. Each one
+    # carries its own run of dates, so an out-of-date campaign stops on its own
+    # rather than waiting for someone to remember to switch it off.
+    advert_until = now() + timedelta(days=90)
+    for advert_position, advert in enumerate((
+        {
+            "id": "adv_autumn", "name": "Autumn edit",
+            "headline": "Autumn edit: quiet pieces, bold colours",
+            "body": "Hand-picked from three stores.",
+            "mediaUrl": catalogue_image("banners", "bnr_launch") or "",
+            "kind": "image", "href": "/browse?onSale=1",
+            "placement": "explore", "sponsor": "",
+        },
+        {
+            "id": "adv_audio_range", "name": "New audio range",
+            "headline": "See the new audio range",
+            "body": "", "mediaUrl": "", "kind": "video",
+            "href": "/browse?category=audio",
+            "placement": "explore", "sponsor": "AuraSound Audio",
+        },
+        {
+            "id": "adv_delivery", "name": "Delivery promise",
+            "headline": "Free delivery over $120",
+            "body": "Across every store, one checkout.",
+            "mediaUrl": "", "kind": "image", "href": "/browse",
+            "placement": "home", "sponsor": "",
+        },
+    ), start=1):
+        put_row(db, "advert", advert["id"], {
+            **advert,
+            "position": advert_position,
+            "active": True,
+            "startsAt": now().isoformat(),
+            "endsAt": advert_until.isoformat(),
+        })
+
     # ── Storefront pages ─────────────────────────────────────────────────
     # One document per page. The CMS lists these, opens one, and edits the
     # sections inside it; the storefront renders those sections in this order,
@@ -1152,6 +1189,9 @@ def seed(db: Session) -> None:
              "columns": 4, "perPage": 24, "adEvery": 6, "position": 2, "visible": True},
             {"id": "sec_explore_brands", "type": "brand_carousel", "name": "Brand row",
              "title": "Shop by brand", "limit": 8, "position": 3, "visible": True},
+            {"id": "sec_explore_slots", "type": "promo_slots", "name": "Promotion slots",
+             "subtitle": "Advertisement", "adEvery": 6, "limit": 3, "placement": "explore",
+             "position": 4, "visible": True},
         ],
     )
 

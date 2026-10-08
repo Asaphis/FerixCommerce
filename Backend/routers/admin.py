@@ -1697,3 +1697,95 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
         return {"product": {"id": product["id"], "reviewStatus": product["reviewStatus"],
                             "status": product["status"], "placement": product.get("placement"),
                             "reviewNote": product.get("reviewNote") or ""}}
+
+# ── Advertisements ─────────────────────────────────────────────────────────
+# A record type of its own, because an advert is not a banner: it has a sponsor,
+# a placement and a run of dates.
+
+
+class AdvertIn(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    headline: Optional[str] = None
+    body: Optional[str] = None
+    mediaUrl: Optional[str] = None
+    kind: Optional[str] = None
+    href: Optional[str] = None
+    placement: Optional[str] = None
+    sponsor: Optional[str] = None
+    position: Optional[int] = None
+    active: Optional[bool] = None
+    startsAt: Optional[str] = None
+    endsAt: Optional[str] = None
+
+
+class AdvertRefIn(BaseModel):
+    id: str
+
+
+def _advert_running(advert: dict, stamp: str) -> bool:
+    """Running means active and inside its own dates. ISO stamps compare as text."""
+    if "active" in advert and not advert.get("active"):
+        return False
+    start = str(advert.get("startsAt") or "")
+    end = str(advert.get("endsAt") or "")
+    if start and start > stamp:
+        return False
+    if end and end < stamp:
+        return False
+    return True
+
+
+@router.get("/cms/adverts")
+def cms_adverts(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Every advertisement, and whether it is running right now."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        stamp = iso(now())
+        rows = sorted(rows_of(db, "advert"), key=lambda row: row.get("position", 0))
+        items = [{**row, "running": _advert_running(row, stamp)} for row in rows]
+        return {
+            "adverts": items,
+            "counts": {
+                "total": len(items),
+                "running": sum(1 for item in items if item["running"]),
+                "explore": sum(1 for item in items if item.get("placement") == "explore"),
+            },
+        }
+
+
+@router.post("/cms/advert")
+def cms_advert_save(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                    payload: AdvertIn = Body(...)):
+    """Create or change an advertisement."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+
+        advert_id = payload.id or new_id("adv")
+        existing = next((row for row in rows_of(db, "advert") if row.get("id") == advert_id), {})
+        sent = {key: value for key, value in payload.model_dump().items() if value is not None}
+        body = {**existing, **sent, "id": advert_id}
+        body.setdefault("active", True)
+        body.setdefault("placement", "explore")
+        put_row(db, "advert", advert_id, body)
+        audit(db, "admin", staff.email, "cms.advert.save", advert_id, staff.role)
+        db.commit()
+        return {"advert": body}
+
+
+@router.delete("/cms/advert")
+def cms_advert_remove(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                      payload: AdvertRefIn = Body(...)):
+    """Take an advertisement out for good."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        existing = next((row for row in rows_of(db, "advert") if row.get("id") == payload.id), None)
+        if not existing:
+            raise HTTPException(404, "That advertisement does not exist")
+        drop_row(db, "advert", payload.id)
+        audit(db, "admin", staff.email, "cms.advert.delete", payload.id, staff.role)
+        db.commit()
+        return {"removed": payload.id}

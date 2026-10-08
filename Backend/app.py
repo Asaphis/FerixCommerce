@@ -1073,3 +1073,30 @@ def refresh_session(session: Optional[str] = Header(None, alias="X-Ferix-Session
         db.add(SessionToken(token=token, user_id=user_id, expires_at=expires, last_seen_at=now()))
         db.commit()
         return {"token": token, "expiresAt": iso(expires)}
+
+
+@app.get("/catalog/adverts")
+def adverts(placement: Optional[str] = None):
+    """Advertisements running right now, for the slots in a product list.
+
+    Public on purpose: a shopper's page needs them and nothing here is private.
+    An advert outside its dates simply does not come back, so a finished campaign
+    disappears without anyone remembering to switch it off.
+    """
+    from core import rows_of
+
+    with SessionLocal() as db:
+        stamp = iso(now())
+        running = []
+        for row in rows_of(db, "advert"):
+            if "active" in row and not row.get("active"):
+                continue
+            start = str(row.get("startsAt") or "")
+            end = str(row.get("endsAt") or "")
+            if (start and start > stamp) or (end and end < stamp):
+                continue
+            if placement and str(row.get("placement") or "") not in ("", placement, "both"):
+                continue
+            running.append(row)
+        running.sort(key=lambda row: row.get("position", 0))
+        return {"adverts": running, "count": len(running)}
