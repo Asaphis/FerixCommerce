@@ -80,6 +80,22 @@ const BUILT_IN: Section[] = [
   { id: "built_in_footer", type: "footer", position: 8, visible: true },
 ];
 
+/**
+ * How many department tiles sit side by side, from the section.
+ *
+ * Wider screens take proportionally more, so two on a phone is five on a desktop.
+ */
+function tileWidth(across: number) {
+  const columns = Math.min(4, Math.max(1, Math.round(across || 2)));
+  const widths: Record<number, string> = {
+    1: "grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4",
+    2: "grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5",
+    3: "grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6",
+    4: "grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-3 md:grid-cols-6 lg:grid-cols-6",
+  };
+  return widths[columns];
+}
+
 export default async function HomePage() {
   const [home, saved] = await Promise.all([getHome(), savedIds()]);
 
@@ -187,7 +203,9 @@ export default async function HomePage() {
               className="mb-3"
             />
             {shown.length ? (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              /* Two across, fixed, was the only arrangement this could take. The section's
+                 own choice decides it now - the same control the product rows use. */
+              <div className={tileWidth(Number(section.across) || 2)}>
                 {shown.map((category) => <CategoryTile key={category.slug} category={category} />)}
               </div>
             ) : null}
