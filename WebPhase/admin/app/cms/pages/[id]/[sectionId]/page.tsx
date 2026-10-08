@@ -10,7 +10,19 @@ import { Field, SubmitButton } from "@/components/ops/controls";
 import { saveCmsSectionAction } from "@/lib/actions";
 
 /** The fields each section type can be managed by, in the order they read. */
-const TEXT_FIELDS: Record<string, { key: string; title: string; long?: boolean }[]> = {
+type Choice = { value: string; label: string };
+type EditorField = {
+  key: string;
+  title: string;
+  /** A paragraph rather than a line. */
+  long?: boolean;
+  /** A number field. */
+  numeric?: boolean;
+  /** A set of options, rendered as a picker. */
+  options?: Choice[];
+};
+
+const TEXT_FIELDS: Record<string, EditorField[]> = {
   hero_banner: [
     { key: "eyebrow", title: "Eyebrow" },
     { key: "title", title: "Title" },
@@ -30,10 +42,63 @@ const TEXT_FIELDS: Record<string, { key: string; title: string; long?: boolean }
   footer: [],
 };
 const TITLED = ["category_grid", "brand_carousel", "product_carousel", "featured_stores", "product_grid"];
-const FALLBACK: { key: string; title: string; long?: boolean }[] = [
+const FALLBACK: EditorField[] = [
   { key: "title", title: "Title" },
   { key: "subtitle", title: "Description", long: true },
 ];
+
+/** The choices each kind of section carries. */
+const CHOICES: Record<string, EditorField[]> = {
+  product_carousel: [
+    { key: "source", title: "Which products", options: [
+      { value: "flash", label: "Today's deals" },
+      { value: "trending", label: "Trending" },
+      { value: "new", label: "New arrivals" },
+      { value: "related", label: "Related to a product" },
+    ] },
+  ],
+  category_grid: [
+    { key: "showAsTile", title: "Show as", options: [
+      { value: "true", label: "Image tiles" },
+      { value: "false", label: "Text links" },
+    ] },
+  ],
+  brand_carousel: [
+    { key: "layout", title: "How they sit", options: [
+      { value: "slider", label: "A sliding row" },
+      { value: "wrap", label: "Wrapped rows" },
+    ] },
+  ],
+  featured_stores: [
+    { key: "layout", title: "How they sit", options: [
+      { value: "rows", label: "One per row" },
+      { value: "cards", label: "Cards in a grid" },
+    ] },
+    { key: "showFollow", title: "Follow button", options: [
+      { value: "true", label: "Show it" },
+      { value: "false", label: "Hide it" },
+    ] },
+  ],
+  promo_slots: [
+    { key: "placement", title: "Which adverts", options: [
+      { value: "home", label: "Those placed on the homepage" },
+      { value: "explore", label: "Those placed on explore" },
+      { value: "both", label: "Both" },
+    ] },
+  ],
+};
+
+/** The numbers each kind of section carries. */
+const COUNTS: Record<string, EditorField[]> = {
+  category_grid: [{ key: "limit", title: "How many departments", numeric: true }],
+  product_carousel: [{ key: "limit", title: "How many products", numeric: true }],
+  brand_carousel: [{ key: "limit", title: "How many brands", numeric: true }],
+  featured_stores: [{ key: "limit", title: "How many stores", numeric: true }],
+  promo_slots: [
+    { key: "adEvery", title: "One advert every … products", numeric: true },
+    { key: "limit", title: "At most how many adverts", numeric: true },
+  ],
+};
 
 /** Section types in plain words. A type with no entry falls back to its own name. */
 const SECTION_LABELS: Record<string, string> = {
@@ -58,12 +123,22 @@ function sectionLabel(section: { type?: string; name?: string }) {
   return SECTION_LABELS[String(section.type)] ?? section.name ?? "Section";
 }
 
-function fieldsFor(section: CmsSection) {
+function fieldsFor(section: CmsSection): EditorField[] {
   const key = String(section.type ?? "");
-  if (TEXT_FIELDS[key]) return TEXT_FIELDS[key];
-  const base = TITLED.includes(key) ? [...FALLBACK] : [];
-  if ("limit" in section) base.push({ key: "limit", title: "How many to show" });
-  return base;
+  const text = TEXT_FIELDS[key] ?? (TITLED.includes(key) ? [...FALLBACK] : []);
+  // Everything the section can carry: its words, then its choices, then its
+  // counts. Each kind only ever sees fields it can act on.
+  return [
+    ...text,
+    ...(CHOICES[key] ?? []),
+    ...(COUNTS[key] ?? []),
+  ];
+}
+
+/** A stored value as the option that represents it. */
+function asOption(field: EditorField, value: unknown) {
+  if (typeof value === "boolean") return value ? "true" : "false";
+  return value === undefined || value === null ? "" : String(value);
 }
 
 export default async function CmsSectionEditor({
@@ -120,7 +195,19 @@ export default async function CmsSectionEditor({
                   <input type="hidden" name="id" value={id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   {fields.map((field) =>
-                    field.long ? (
+                    field.options ? (
+                      <Field key={field.key} title={field.title}>
+                        <select
+                          name={`field_${field.key}`}
+                          defaultValue={asOption(field, section[field.key])}
+                          className={selectClass}
+                        >
+                          {field.options.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </Field>
+                    ) : field.long ? (
                       <Field key={field.key} title={field.title}>
                         <textarea
                           name={`field_${field.key}`}
@@ -133,6 +220,8 @@ export default async function CmsSectionEditor({
                       <Field key={field.key} title={field.title}>
                         <input
                           name={`field_${field.key}`}
+                          type={field.numeric ? "number" : "text"}
+                          min={field.numeric ? 0 : undefined}
                           defaultValue={String(section[field.key] ?? "")}
                           className={inputClass}
                         />
