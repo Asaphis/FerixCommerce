@@ -267,7 +267,7 @@ export default async function HomePage() {
               isGrouped ? (
                 <TileSwiper
                   categories={shown}
-                  across={Number(section.across) || 3}
+                  across={Number((section as { across?: number }).across) || 3}
                   rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
                 />
               ) : (

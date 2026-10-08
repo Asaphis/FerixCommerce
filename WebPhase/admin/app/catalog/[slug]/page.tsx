@@ -12,7 +12,7 @@ import { money, num, relative, titleCase } from "@/lib/format";
 
 export default async function ProductEditorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { session } = await requ
+  const { session } = await requireAdmin();
   const library = await listMedia(session).catch(() => ({ assets: [], storage: "" }));
   // An asset carries its human-readable bit under whichever name the record has used over
   // time. The picker needs one plain url and label, so it falls back through them.
