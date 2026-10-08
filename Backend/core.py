@@ -1235,6 +1235,8 @@ def migrate() -> None:
     silently decided the column was present and added nothing, which is worse
     than failing, because the deploy then looks fine until the first sign-in.
     """
+    from sqlalchemy import text
+
     stamp = "TIMESTAMP WITH TIME ZONE" if engine.dialect.name.startswith("postgres") else "TIMESTAMP"
     statements = [
         f"ALTER TABLE staff_sessions ADD COLUMN last_seen_at {stamp}",
