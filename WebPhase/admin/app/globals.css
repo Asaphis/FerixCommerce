@@ -94,3 +94,33 @@ textarea { border-radius: var(--fx-r-control) !important; }
 
 /* 6. Depth without drama. */
 [class*="shadow-[0_2px_10px"] { box-shadow: 0 2px 14px rgba(16, 45, 67, 0.07) !important; }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+   CORNER SCALE
+   ──────────────────────────────────────────────────────────────────────────
+   The shape pass above put ONE value — 14px — on every element carrying a
+   Tailwind radius, and the markup carries 2px radii on 150 elements in the
+   shopper app alone. A chip is about 24px tall, so a 14px corner is more than
+   half its height and the browser draws a lozenge or a circle.
+
+   Corners are now sized to the element instead of to one number:
+     label, badge, chip, small button  6px
+     button, input, select            10px
+     card, panel, table shell         14px
+     hero, campaign, image plate      18px
+     avatar, counter                   capsule (left alone)
+   ────────────────────────────────────────────────────────────────────────── */
+[class*="rounded-["][class*="text-[8"],
+[class*="rounded-["][class*="text-[9"],
+[class*="rounded-["][class*="text-[10"],
+[class*="rounded-["][class*="text-[11"] {
+  border-radius: 6px !important;
+}
+[class*="rounded-tr-[18px]"] {
+  border-radius: 18px !important;
+}
+[class*="rounded-full"],
+[class*="rounded-[999"] {
+  border-radius: var(--fx-r-pill) !important;
+}

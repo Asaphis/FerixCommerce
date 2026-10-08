@@ -23,7 +23,15 @@ const quickLinks = [
 
 export default async function DashboardPage() {
   const { session, merchant } = await requireMerchant();
-  const data = await getDashboard(session);
+
+  // An unreachable API must never replace the workspace with an error screen.
+  let data: Awaited<ReturnType<typeof getDashboard>>;
+  try {
+    data = await getDashboard(session);
+  } catch (error) {
+    return <DataUnavailable title="Dashboard" reason={describeError(error)} />;
+  }
+
   const { summary, counts, statuses, lowStock, recentOrders, settings } = data;
   const orderMix = [
     { label: "Needs action", value: statuses.processing ?? 0, tone: "bg-[#e4572e]" },
@@ -146,6 +154,29 @@ export default async function DashboardPage() {
         <span>{compact(counts.products)} products · {counts.published} published</span>
         <Link href="/payouts" className="inline-flex items-center gap-1 font-semibold text-signal"><Wallet width={12} height={12} /> View payout history <ArrowRight width={12} height={12} /></Link>
       </div>
+    </div>
+  );
+}
+
+function describeError(error: unknown) {
+  return error instanceof Error ? error.message : "The request could not be completed.";
+}
+
+function DataUnavailable({ title, reason }: { title: string; reason: string }) {
+  return (
+    <div className="grid min-w-0 gap-4">
+      <header>
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">Console</p>
+        <h1 className="mt-1.5 font-display text-[23px] font-bold leading-tight text-chalk">{title}</h1>
+      </header>
+      <section className="rounded-[14px] border border-hairline bg-panel p-5">
+        <p className="font-display text-[16px] font-semibold text-chalk">The commerce API could not be reached</p>
+        <p className="mt-1.5 max-w-[70ch] text-[13px] leading-relaxed text-chalk-dim">
+          Nothing was lost and nothing was changed. Set FERIX_API_BASE in this app&apos;s environment to the address
+          of the commerce API, then reload. Every other screen in the console keeps working.
+        </p>
+        <p className="mt-3 rounded-[10px] bg-panel-2 px-3 py-2 font-mono text-[11px] break-words text-chalk-dim">{reason}</p>
+      </section>
     </div>
   );
 }

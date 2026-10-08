@@ -24,7 +24,15 @@ const adminLinks = [
 
 export default async function OverviewPage() {
   const { session } = await requireAdmin();
-  const data = await getOverview(session);
+
+  // An unreachable API must never replace the console with an error screen.
+  let data: Awaited<ReturnType<typeof getOverview>>;
+  try {
+    data = await getOverview(session);
+  } catch (error) {
+    return <DataUnavailable title="Overview" reason={describeError(error)} />;
+  }
+
   const { settings, totals, windows, channels, statuses, topMerchants, needsAttention, recentOrders } = data;
   const channelMax = Math.max(channels.store, channels.marketplace, 1);
   const merchantMax = Math.max(...topMerchants.map((merchant) => merchant.gmv), 1);
@@ -110,6 +118,29 @@ export default async function OverviewPage() {
       </Panel>
 
       <p className="flex flex-wrap items-center gap-2 border-t border-hairline pt-3 font-mono text-[9px] uppercase tracking-[0.12em] text-chalk-dim"><Boxes width={11} height={11} /> {compact(totals.marketplaceListings)} marketplace listings · {settings.currency} · {settings.payoutCadence} payout cadence</p>
+    </div>
+  );
+}
+
+function describeError(error: unknown) {
+  return error instanceof Error ? error.message : "The request could not be completed.";
+}
+
+function DataUnavailable({ title, reason }: { title: string; reason: string }) {
+  return (
+    <div className="grid min-w-0 gap-4">
+      <header>
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">Console</p>
+        <h1 className="mt-1.5 font-display text-[23px] font-bold leading-tight text-chalk">{title}</h1>
+      </header>
+      <section className="rounded-[14px] border border-hairline bg-panel p-5">
+        <p className="font-display text-[16px] font-semibold text-chalk">The commerce API could not be reached</p>
+        <p className="mt-1.5 max-w-[70ch] text-[13px] leading-relaxed text-chalk-dim">
+          Nothing was lost and nothing was changed. Set FERIX_API_BASE in this app&apos;s environment to the address
+          of the commerce API, then reload. Every other screen in the console keeps working.
+        </p>
+        <p className="mt-3 rounded-[10px] bg-panel-2 px-3 py-2 font-mono text-[11px] break-words text-chalk-dim">{reason}</p>
+      </section>
     </div>
   );
 }
