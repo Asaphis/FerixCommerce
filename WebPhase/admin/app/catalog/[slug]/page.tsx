@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCatalog } from "@/lib/api";
+import { listCatalog, listMedia } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
@@ -12,7 +12,14 @@ import { money, num, relative, titleCase } from "@/lib/format";
 
 export default async function ProductEditorPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { session } = await requireAdmin();
+  const { session } = await requ
+  const library = await listMedia(session).catch(() => ({ assets: [], storage: "" }));
+  // An asset carries its human-readable bit under whichever name the record has used over
+  // time. The picker needs one plain url and label, so it falls back through them.
+  const libraryOptions = library.assets.map((asset) => {
+    const row = asset as { url: string; label?: string; alt?: string; name?: string };
+    return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
+  });ireAdmin();
   const data = await listCatalog(session, {});
   const product = data.products.find((row) => row.slug === slug);
   if (!product) notFound();
@@ -121,6 +128,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
             urlName="imageUrl"
             fileName="mediaFile"
             kind="image"
+            libraryAssets={libraryOptions}
             urlLabel="Product image URL"
             fileLabel="Upload a product image"
           />

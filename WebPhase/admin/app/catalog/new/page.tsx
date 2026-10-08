@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCatalog } from "@/lib/api";
+import { listCatalog, listMedia } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
@@ -10,7 +10,14 @@ import { createCatalogProductAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
 
 export default async function NewProductPage() {
-  const { session } = await requireAdmin();
+  const { session } = await requ
+  const library = await listMedia(session).catch(() => ({ assets: [], storage: "" }));
+  // An asset carries its human-readable bit under whichever name the record has used over
+  // time. The picker needs one plain url and label, so it falls back through them.
+  const libraryOptions = library.assets.map((asset) => {
+    const row = asset as { url: string; label?: string; alt?: string; name?: string };
+    return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
+  });ireAdmin();
   const { categories, collections } = await listCatalog(session, {});
 
   return (
@@ -87,6 +94,7 @@ export default async function NewProductPage() {
             urlName="imageUrl"
             fileName="mediaFile"
             kind="image"
+            libraryAssets={libraryOptions}
             urlLabel="Product image URL"
             fileLabel="Upload a product image"
           />
