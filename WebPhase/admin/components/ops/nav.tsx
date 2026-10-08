@@ -103,7 +103,7 @@ export function OpsRail({ permissions }: { permissions?: string[] } = {}) {
   const pathname = usePathname();
   return (
     <nav aria-label="Platform console" className="flex flex-col gap-1 px-2 py-1">
-      {NAV_GROUPS.map((group, index) => (
+      {groups.map((group, index) => (
         <div
           key={group.label}
           className={cn("flex flex-col gap-1", index > 0 && "mt-2 border-t border-hairline pt-2")}
