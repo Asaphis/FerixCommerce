@@ -1100,3 +1100,25 @@ def adverts(placement: Optional[str] = None):
             running.append(row)
         running.sort(key=lambda row: row.get("position", 0))
         return {"adverts": running, "count": len(running)}
+
+
+@app.get("/catalog/page")
+def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
+    """A published storefront page, for the listing that renders it.
+
+    The homepage already reads its own document. This is the same contract for
+    every other page, so Explore can build itself from its sections instead of
+    drawing its own layout and ignoring the CMS.
+    """
+    with SessionLocal() as db:
+        document = db.get(ContentDocument, id) if id else None
+        if document is None and type:
+            document = db.scalar(select(ContentDocument).where(ContentDocument.document_type == type))
+        if not document or document.status != "published":
+            return {"page": None, "sections": []}
+        sections = sorted((document.data or {}).get("sections") or [],
+                          key=lambda section: section.get("position", 0))
+        return {
+            "page": {"id": document.id, "title": document.title, "documentType": document.document_type},
+            "sections": sections,
+        }
