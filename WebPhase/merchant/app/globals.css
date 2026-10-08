@@ -279,11 +279,18 @@ textarea { border-radius: var(--fx-r-control) !important; }
    ──────────────────────────────────────────────────────────────────────────
    A console panel was a bordered, rounded, shadowed sheet inset from both
    edges, so a phone showed a column of floating cards instead of a page.
-   Below lg a panel becomes a full-width band divided by hairlines, and the
+   Below md a panel becomes a full-width band divided by hairlines, and the
    page ground stops banding around it. Internal padding, headings, tables and
-   controls are unchanged. Desktop is untouched.
+   controls are unchanged.
+
+   The boundary is 768px on purpose: that is exactly where this console stops
+   being a phone. Below it the shell shows the fixed bottom bar and the "More"
+   sheet; at 768 and up it shows the icon rail (to 1279) and then the full
+   sidebar (1280 and up). Every responsive change must switch at the same
+   boundary the layout switches at, or a device in between gets a hybrid of
+   the two. Desktop is untouched.
    ────────────────────────────────────────────────────────────────────────── */
-@media (max-width: 1023.98px) {
+@media (max-width: 767.98px) {
   [class*="rounded-tr-[14px]"],
   [class*="rounded-tr-[12px]"],
   [class*="rounded-tr-[11px]"],
