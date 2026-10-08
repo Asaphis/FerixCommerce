@@ -25,12 +25,10 @@ from core import (
     StaffUser,
     ensure_seed,
     find_merchant,
-    inventory_rows,
     new_id,
     now,
     put_row,
     rows_of,
-    store_order,
 )
 
 # The stores the seed invents. Removing them by name is honest about what they are.
