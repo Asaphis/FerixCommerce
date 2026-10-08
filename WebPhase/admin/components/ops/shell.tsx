@@ -25,8 +25,8 @@ export async function OpsShell({ children }: { children: ReactNode }) {
         </div>
         <div className="hidden xl:block"><Operator email={admin.email} platformName={admin.platformName} /></div>
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="xl:hidden"><OpsRail /></div>
-          <div className="hidden xl:block"><OpsSidebar /></div>
+          <div className="xl:hidden"><OpsRail permissions={admin.permissions} /></div>
+          <div className="hidden xl:block"><OpsSidebar permissions={admin.permissions} /></div>
         </div>
         <div className="hidden px-4 pb-5 xl:block">
           <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/70"><ShieldCheck width={13} height={13} className="text-[#f05a28]" /> Operator access</p>
@@ -49,7 +49,7 @@ export async function OpsShell({ children }: { children: ReactNode }) {
           <div className="mx-auto w-full max-w-[1460px] px-4 pb-28 pt-5 sm:px-6 md:pb-8 lg:px-8">{children}</div>
         </main>
       </div>
-      <OpsBottomNav />
+      <OpsBottomNav permissions={admin.permissions} />
     </div>
   );
 }

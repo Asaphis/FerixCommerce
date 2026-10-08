@@ -21,7 +21,13 @@ export function assetUrl(path: string | null | undefined): string {
   return `${apiBase.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
 }
 
-export type Admin = { email: string; platformName: string };
+export type Admin = {
+  email: string;
+  platformName: string;
+  // The backend has always returned these; the type simply never declared them.
+  role?: string;
+  permissions?: string[];
+};
 
 export type Settings = {
   platformName: string;

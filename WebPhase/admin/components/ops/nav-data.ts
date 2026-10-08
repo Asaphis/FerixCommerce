@@ -14,6 +14,8 @@
  */
 
 export type NavItem = {
+  /** Permission this destination needs. Absent means everyone. */
+  permission?: string;
   href: string;
   label: string;
   /** Key into the ICONS map in nav.tsx. */
@@ -28,39 +30,39 @@ export const NAV_GROUPS: NavGroupData[] = [
     label: "Platform",
     items: [
       { href: "/", label: "Overview", icon: "dashboard" },
-      { href: "/analytics", label: "Analytics", icon: "chart" },
+      { href: "/analytics", label: "Analytics", icon: "chart", permission: "analytics.view" },
     ],
   },
   {
     label: "Marketplace",
     items: [
-      { href: "/catalog", label: "Catalogue", icon: "boxes" },
-      { href: "/cms", label: "CMS", icon: "palette" },
-      { href: "/cms/brands", label: "Brands", icon: "tag" },
-      { href: "/promotions", label: "Promotions", icon: "megaphone" },
+      { href: "/catalog", label: "Catalogue", icon: "boxes", permission: "catalog.manage" },
+      { href: "/cms", label: "CMS", icon: "palette", permission: "cms.manage" },
+      { href: "/cms/brands", label: "Brands", icon: "tag", permission: "catalog.manage" },
+      { href: "/promotions", label: "Promotions", icon: "megaphone", permission: "promotions.manage" },
     ],
   },
   {
     label: "Commerce",
     items: [
-      { href: "/orders", label: "Orders", icon: "receipt" },
-      { href: "/payments", label: "Payments", icon: "card" },
-      { href: "/payouts", label: "Payouts", icon: "wallet" },
+      { href: "/orders", label: "Orders", icon: "receipt", permission: "orders.view" },
+      { href: "/payments", label: "Payments", icon: "card", permission: "payments.view" },
+      { href: "/payouts", label: "Payouts", icon: "wallet", permission: "payouts.view" },
     ],
   },
   {
     label: "People",
     items: [
-      { href: "/merchants", label: "Merchants", icon: "store" },
-      { href: "/users", label: "Customers", icon: "users" },
+      { href: "/merchants", label: "Merchants", icon: "store", permission: "merchant.view" },
+      { href: "/users", label: "Customers", icon: "users", permission: "customer.view" },
     ],
   },
   {
     label: "Control",
     items: [
-      { href: "/team", label: "Team & roles", icon: "shield" },
-      { href: "/audit", label: "Audit log", icon: "history" },
-      { href: "/settings", label: "Settings", icon: "settings" },
+      { href: "/team", label: "Team & roles", icon: "shield", permission: "settings.manage" },
+      { href: "/audit", label: "Audit log", icon: "history", permission: "audit.view" },
+      { href: "/settings", label: "Settings", icon: "settings", permission: "settings.manage" },
     ],
   },
 ];
@@ -78,4 +80,29 @@ export const MOBILE_PRIMARY = [
 export function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * What a role is allowed to reach.
+ *
+ * A destination with no permission is for everyone. `*` is the owner. A
+ * "manage" grant implies the matching "view", which is the same rule the API
+ * applies, so the menu and the endpoint can never disagree about a door.
+ */
+export function canUse(permissions: string[], item: NavItem): boolean {
+  if (!item.permission) return true;
+  if (permissions.includes("*")) return true;
+  if (permissions.includes(item.permission)) return true;
+  if (item.permission.endsWith(".view")) {
+    return permissions.includes(item.permission.replace(".view", ".manage"));
+  }
+  return false;
+}
+
+/** The menu a role should see, with empty groups dropped entirely. */
+export function visibleGroups(permissions?: string[]): NavGroupData[] {
+  if (!permissions) return NAV_GROUPS;   // unknown role: show the console rather than an empty shell
+  return NAV_GROUPS
+    .map((group) => ({ ...group, items: group.items.filter((item) => canUse(permissions, item)) }))
+    .filter((group) => group.items.length > 0);
 }

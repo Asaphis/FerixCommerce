@@ -23,7 +23,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NAV_GROUPS, MOBILE_PRIMARY, isActivePath, type NavItem } from "@/components/ops/nav-data";
+import { MOBILE_PRIMARY, isActivePath, visibleGroups, type NavItem } from "@/components/ops/nav-data";
 
 /** Icons are the only React-bound part of the nav, so they live here. */
 const ICONS: Record<string, LucideIcon> = {
@@ -59,11 +59,12 @@ const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 focus-visible:ring-offset-panel";
 
 /** Grouped sidebar. Rendered at 1280px and up. */
-export function OpsSidebar() {
+export function OpsSidebar({ permissions }: { permissions?: string[] } = {}) {
+  const groups = visibleGroups(permissions);
   const pathname = usePathname();
   return (
     <nav aria-label="Platform console" className="flex flex-col gap-4 px-3 pb-4">
-      {NAV_GROUPS.map((group) => (
+      {groups.map((group) => (
         <div key={group.label}>
           <p className="px-3 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#9aa8ae]/70">
             {group.label}
@@ -97,7 +98,8 @@ export function OpsSidebar() {
 }
 
 /** Icon rail. Rendered from 768px until the sidebar takes over at 1280px. */
-export function OpsRail() {
+export function OpsRail({ permissions }: { permissions?: string[] } = {}) {
+  const groups = visibleGroups(permissions);
   const pathname = usePathname();
   return (
     <nav aria-label="Platform console" className="flex flex-col gap-1 px-2 py-1">
@@ -133,11 +135,11 @@ export function OpsRail() {
 }
 
 /** Phone bottom bar plus the "More" drawer. Rendered below 768px. */
-export function OpsBottomNav() {
+export function OpsBottomNav({ permissions }: { permissions?: string[] } = {}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const all = NAV_GROUPS.flatMap((group) => group.items);
+  const all = visibleGroups(permissions).flatMap((group) => group.items);
   const items = MOBILE_PRIMARY.map((href) => all.find((item) => item.href === href)).filter(
     (item): item is NavItem => Boolean(item),
   );
@@ -206,13 +208,14 @@ export function OpsBottomNav() {
           </li>
         </ul>
       </nav>
-      {open ? <MoreDrawer onClose={() => setOpen(false)} /> : null}
+      {open ? <MoreDrawer onClose={() => setOpen(false)} permissions={permissions} /> : null}
     </>
   );
 }
 
 /** Every destination, grouped, for the phone drawer. */
-function MoreDrawer({ onClose }: { onClose: () => void }) {
+function MoreDrawer({ onClose, permissions }: { onClose: () => void; permissions?: string[] }) {
+  const groups = visibleGroups(permissions);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -255,7 +258,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
           </button>
         </div>
         <div className="flex flex-col gap-4">
-          {NAV_GROUPS.map((group) => (
+          {groups.map((group) => (
             <div key={group.label}>
               <p className="px-1 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#9aa8ae]/70">
                 {group.label}
