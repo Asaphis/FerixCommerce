@@ -1948,3 +1948,59 @@ def product_section_remove(session: Optional[str] = Header(None, alias="X-Ferix-
         audit(db, "admin", staff.email, "product.section.remove", slug, payload.id)
         db.commit()
         return {"removed": payload.id}
+
+# ── Removing a seller account ──────────────────────────────────────────────
+# Owner only, and refused while the seller has orders. An order is a record of what
+# somebody bought and paid for; deleting the seller it belonged to would leave that
+# record attached to nobody. Suspending stops them trading and signing in, and keeps
+# the history - which is what most "delete this seller" requests actually want.
+
+
+class MerchantRefIn(BaseModel):
+    id: str
+
+
+@router.delete("/merchant")
+def delete_merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                    payload: MerchantRefIn = Body(...)):
+    """Take a seller account out: their sign-ins, their products, the store itself."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.approve")
+
+        # An administrator runs the platform; only an owner removes an account from it.
+        if "*" not in (staff.permissions or []):
+            raise HTTPException(403, "Only an owner can delete a seller account")
+
+        found = find_merchant(db, payload.id)
+        if not found:
+            raise HTTPException(404, "That seller does not exist")
+        merchant_id = found["id"]
+
+        placed = [row for row in db.scalars(select(Order)).all()
+                  if any((item or {}).get("merchantId") == merchant_id
+                         for item in (row.data or {}).get("items", []))]
+        if placed:
+            raise HTTPException(
+                409,
+                f"That seller has {len(placed)} order(s). Suspend the account instead — "
+                f"deleting it would leave those orders attached to nobody.",
+            )
+
+        products = [product for product in all_products(db)
+                    if product.get("merchantId") == merchant_id]
+        for product in products:
+            drop_row(db, "product", product["slug"])
+
+        sign_ins = db.scalars(select(StaffUser).where(
+            StaffUser.subject_type == "merchant", StaffUser.subject_id == merchant_id)).all()
+        for row in sign_ins:
+            for session_row in db.scalars(select(StaffSession).where(StaffSession.staff_id == row.id)).all():
+                db.delete(session_row)
+            db.delete(row)
+
+        drop_row(db, "merchant", found["slug"])
+        audit(db, "admin", staff.email, "merchant.delete", found["slug"], staff.role)
+        db.commit()
+        return {"removed": merchant_id, "name": found.get("name"),
+                "products": len(products), "signIns": len(sign_ins)}
