@@ -97,6 +97,47 @@ function tileWidth(across: number) {
   return widths[columns];
 }
 
+/** One brand: artwork edge to edge, its name beneath. Shared by the row and the grid. */
+function BrandTile({
+  record,
+  width,
+}: {
+  record: { slug: string; name: string; imageUrl?: string; logo?: string };
+  width?: string;
+}) {
+  const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
+  return (
+    <Link
+      href={`/brands/${record.slug}`}
+      className="group flex shrink-0 flex-col overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40"
+      style={width ? { width } : undefined}
+    >
+      <span className="block aspect-[4/3] w-full overflow-hidden bg-bone-soft">
+        {artwork ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={artwork}
+            alt={record.name}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <span className="grid h-full w-full place-items-center font-display text-[22px] font-bold text-ink-soft">
+            {record.name.slice(0, 1)}
+          </span>
+        )}
+      </span>
+      <span className="block px-3 py-2.5">
+        <span className="block truncate text-[12.5px] font-semibold text-ink group-hover:text-ember">
+          {record.name}
+        </span>
+        <span className="mt-0.5 block font-mono text-[9.4px] uppercase tracking-[0.12em] text-ink-soft">
+          View brand
+        </span>
+      </span>
+    </Link>
+  );
+}
+
 export default async function HomePage() {
   const [home, saved] = await Promise.all([getHome(), savedIds()]);
 
@@ -137,6 +178,9 @@ export default async function HomePage() {
   const brandSection = sections.find((item) => item.type === "brand_carousel") as { across?: number } | undefined;
   const brandAcross = Math.min(4, Math.max(1, Math.round(Number(brandSection?.across) || 2)));
   const brandTileWidth = `calc((100% - ${(brandAcross - 1) * 12}px) / ${brandAcross})`;
+  const brandGrid = String((brandSection as { layout?: string } | undefined)?.layout) === "grid";
+  // A switch is stored as the word, so only the word false hides anything.
+  const brandSeeAll = String((brandSection as { seeAll?: string } | undefined)?.seeAll) !== "false";
 
   function block(section: Section, index: number) {
     const limit = typeof section.limit === "number" ? section.limit : undefined;
@@ -202,15 +246,18 @@ export default async function HomePage() {
         // Departments default to sets of rows when the section does not say otherwise,
         // because that is the arrangement they are shaped for.
         const isGrouped = arrangement === "groups";
+        const seeAllDepartments = String((section as { seeAll?: string }).seeAll) !== "false";
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-1 pt-5 sm:px-6 sm:pt-7 lg:pt-8">
             <SectionHead
               eyebrow={section.eyebrow ?? "Find your next favourite"}
               title={section.title ?? "Shop by category"}
               action={
-                <Link href="/browse" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
-                  All departments <ArrowRight width={14} height={14} />
-                </Link>
+                seeAllDepartments ? (
+                  <Link href="/browse" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
+                    All departments <ArrowRight width={14} height={14} />
+                  </Link>
+                ) : null
               }
               className="mb-3"
             />
@@ -243,13 +290,20 @@ export default async function HomePage() {
               eyebrow={section.subtitle ?? "Verified makers across the marketplace"}
               title={section.title ?? "Shop by brand"}
               action={
-                <Link href="/browse" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
-                  All brands <ArrowRight width={14} height={14} />
-                </Link>
+                brandSeeAll ? (
+                  <Link href="/browse" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
+                    All brands <ArrowRight width={14} height={14} />
+                  </Link>
+                ) : null
               }
               className="mb-3 sm:mb-4"
             />
-            <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+            <div
+              className={brandGrid
+                ? "grid gap-3"
+                : "no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"}
+              style={brandGrid ? { gridTemplateColumns: `repeat(${brandAcross}, minmax(0, 1fr))` } : undefined}
+            >
               {shown.map((brand) => {
                 // A brand's artwork has been called imageUrl and logo in different
                 // places, so read whichever the record carries rather than pinning
@@ -259,37 +313,7 @@ export default async function HomePage() {
                 const record = brand;
                 const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
                 return (
-                  <Link
-                    key={record.slug}
-                    href={`/browse?brand=${record.slug}`}
-                    className="group flex shrink-0 flex-col overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40"
-                    style={{ width: brandTileWidth }}
-                  >
-                    {/* Edge to edge: the artwork fills the tile and the name sits beneath it, rather
-                        than the image being a picture inside a padded box. */}
-                    <span className="block aspect-[4/3] w-full overflow-hidden bg-bone-soft">
-                      {artwork ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={artwork}
-                          alt={record.name}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        />
-                      ) : (
-                        <span className="grid h-full w-full place-items-center font-display text-[22px] font-bold text-ink-soft">
-                          {record.name.slice(0, 1)}
-                        </span>
-                      )}
-                    </span>
-                    <span className="block px-3 py-2.5">
-                      <span className="block truncate text-[12.5px] font-semibold text-ink group-hover:text-ember">
-                        {record.name}
-                      </span>
-                      <span className="mt-0.5 block font-mono text-[9.4px] uppercase tracking-[0.12em] text-ink-soft">
-                        View brand
-                      </span>
-                    </span>
-                  </Link>
+                  <BrandTile key={record.slug} record={record} width={brandTileWidth} />
                 );
               })}
             </div>
