@@ -30,7 +30,6 @@ export const NAV_GROUPS: NavGroupData[] = [
     label: "Marketplace",
     items: [
       { href: "/cms", label: "CMS", icon: "palette" },
-      { href: "/cms/brands", label: "Brands", icon: "tag" },
       { href: "/catalog", label: "Catalogue", icon: "boxes" },
       { href: "/promotions", label: "Promotions", icon: "megaphone" },
     ],

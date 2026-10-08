@@ -12,7 +12,7 @@ const KEY = process.env.CODEWORDS_API_KEY ?? "";
 // renders without any environment setup. Point FERIX_API_BASE at the deployed
 // API in production.
 export const apiBase =
-  process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? "http://127.0.0.1:8000";
+  process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? requireLocalApiBase();
 
 /** Resolve backend-relative media paths such as /media/... for browser previews. */
 export function assetUrl(path: string | null | undefined): string {
@@ -682,3 +682,21 @@ export type AuditEvent = {
 
 export const getAudit = (session: string | null, limit = 120) =>
   call<{ events: AuditEvent[] }>("GET", "admin/audit", { params: { limit }, session });
+
+
+/**
+ * A hard-coded address is acceptable in exactly one place: local development.
+ *
+ * In production the environment must supply FERIX_API_BASE. Silently falling
+ * back to 127.0.0.1 makes a misconfigured deployment look healthy until the
+ * first request fails, so we fail loudly and name the variable instead.
+ */
+function requireLocalApiBase(): string {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "FERIX_API_BASE is not set. Set it in this app's environment (for example " +
+        "FERIX_API_BASE=https://api.ferixas.com) so every screen reads the live API.",
+    );
+  }
+  return "http://127.0.0.1:8003";
+}

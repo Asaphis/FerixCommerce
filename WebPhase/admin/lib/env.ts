@@ -1,6 +1,6 @@
 // Environment the console expects at runtime.
 //
-//   FERIX_API_BASE=http://127.0.0.1:8000
+//   FERIX_API_BASE=http://127.0.0.1:8003
 //
 // FERIX_API_BASE is the only API endpoint setting; change it per environment.
 
