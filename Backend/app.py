@@ -138,11 +138,22 @@ class ReviewPatchIn(BaseModel):
 
 
 class CheckoutIn(BaseModel):
-    addressId: str
+    # addressId is a saved address, which only a signed-in shopper has. A guest sends the
+    # address inline instead, and an email so the order can be confirmed.
+    addressId: str = ""
     shippingMethod: str = "standard"
     paymentMethod: str = "card"
     note: Optional[str] = None
     cartId: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    line1: Optional[str] = None
+    line2: Optional[str] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
+    postcode: Optional[str] = None
+    country: Optional[str] = None
 
 
 # ── App ────────────────────────────────────────────────────────────────────
@@ -1015,15 +1026,35 @@ def quote(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
 
 
 @app.post("/checkout/place")
-def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+          x_cart: Optional[str] = Header(None, alias="X-Ferix-Cart")):
     with SessionLocal() as db:
-        user = require_user(db, session)
-        cart = cart_for(db, user.id, None)
+        # Signing in is one way to check out; giving an email so the order can be confirmed
+        # is the other. Without either there is nobody to place the order for.
+        if session:
+            user = require_user(db, session)
+        elif p.email and "@" in p.email:
+            user = guest_shopper(db, p.email)
+        else:
+            raise HTTPException(401, "Sign in, or leave an email address so your order can be confirmed.")
+        cart = cart_for(db, user.id, x_cart)
         payload = cart_payload(db, cart)
         if not payload["lines"]:
             raise HTTPException(409, "Your cart is empty")
 
-        address = db.get(Address, p.addressId)
+        # A saved address belongs to the signed-in shopper. A guest sends theirs inline,
+        # and it is kept against the account so the confirmation can name it.
+        address = db.get(Address, p.addressId) if p.addressId else None
+        if address is None and p.line1:
+            address_data = {
+                "id": "adr_" + uuid.uuid4().hex[:10], "label": "Delivery",
+                "name": p.name or user.name, "phone": p.phone or "",
+                "line1": p.line1, "line2": p.line2 or "", "city": p.city or "",
+                "region": p.region or "", "postcode": p.postcode or "", "country": p.country or "",
+                "default": True,
+            }
+            address = Address(id=address_data["id"], user_id=user.id, data=address_data)
+            db.add(address)
         option = next((o for o in SHIPPING_OPTIONS if o["id"] == p.shippingMethod), SHIPPING_OPTIONS[0])
         cost = 0.0 if payload["subtotal"] >= FREE_SHIPPING_OVER else option["price"]
         placed = iso(now())
@@ -1040,6 +1071,7 @@ def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
             "payment": "paid", "fulfillment": "processing", "carrier": None, "tracking": None,
             "address": (address.data if address else None),
             "note": p.note, "shippingMethod": p.shippingMethod, "paymentMethod": p.paymentMethod,
+            "contactEmail": user.email, "guest": bool((user.settings or {}).get("guest")),
             "timeline": [{"label": "Order placed", "at": placed}],
         }
         db.add(Order(id=order["id"], user_id=user.id, data=order))
@@ -1058,6 +1090,31 @@ def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
         if (user.settings or {}).get("orderEmails", True):
             order_confirmation(to=user.email, name=user.name, number=order["number"], total=order["total"])
         return {"order": order}
+
+
+def guest_shopper(db: Session, email: str) -> User:
+    """The account behind a guest checkout.
+
+    A guest's order has to belong to somebody - the order table has no room for an
+    anonymous one - so an order placed without signing in gets a shopper record for the
+    email that was typed. It carries an unguessable password hash, so nobody can sign in
+    as them through this route. If they register with the same address later, the orders
+    they placed as a guest are already theirs.
+    """
+    normalised = email.strip().lower()
+    existing = db.scalar(select(User).where(User.email == normalised))
+    if existing:
+        return existing
+    user = User(
+        id="usr_" + uuid.uuid4().hex[:10],
+        name=(normalised.split("@")[0] or "Guest")[:60],
+        email=normalised,
+        password_hash=hash_password(secrets.token_urlsafe(32)),
+        settings={"language": "English", "currency": "USD", "orderEmails": True, "guest": True},
+    )
+    db.add(user)
+    db.flush()
+    return user
 
 
 # ── Mounted surfaces ───────────────────────────────────────────────────────
