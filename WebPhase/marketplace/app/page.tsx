@@ -93,7 +93,11 @@ export default async function HomePage() {
   const trending = uniqueProducts(home.trending).slice(0, 8);
   const arrivals = uniqueProducts(home.newArrivals).slice(0, 8);
   const flash = uniqueProducts(home.flashSale?.products ?? []);
-  const brands = home.brands ?? [];
+  // The payload carries brands - the backend has returned them since they were
+  // seeded - but HomeFeed does not declare them, and the storefront type for
+  // Brand describes a store's theming rather than a brand record.
+  type BrandRecord = { slug: string; name: string; imageUrl?: string; logo?: string };
+  const brands = ((home as unknown as { brands?: BrandRecord[] }).brands ?? []);
 
   // Adverts placed on the homepage. Only fetched when a slots section asks for
   // them, so a homepage without one costs nothing.
@@ -213,7 +217,7 @@ export default async function HomePage() {
                 // the page to one spelling.
                 // The Brand type here describes a store's theming, not a brand record, so the cast
                 // goes through unknown rather than pretending the shapes overlap.
-                const record = brand as unknown as { slug: string; name: string; imageUrl?: string; logo?: string };
+                const record = brand;
                 const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
                 return (
                   <Link
