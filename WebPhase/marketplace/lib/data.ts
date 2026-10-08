@@ -22,19 +22,32 @@ export async function currentUser(): Promise<api.AccountUser | null> {
   }
 }
 
-/** Sends anyone who is not signed in to the sign-in page. */
+/**
+ * Sends anyone who cannot be verified to the sign-in page.
+ *
+ * Anything unexpected used to be rethrown, which in a production build replaces
+ * the whole page with "This page stopped loading" and a reference number the
+ * shopper cannot act on. An account page is never useful without a verified
+ * session, so every failure path now ends at sign-in, carrying the way back:
+ *
+ *   no session      -> sign in
+ *   expired session -> sign in
+ *   unreachable API -> sign in
+ *   anything else   -> sign in
+ */
 export async function requireAccount(): Promise<api.Account> {
   const creds = await readCredentials();
-  // No cookie at all: this is a signed-out visitor, whatever the backend is
-  // doing, so send them straight to sign-in.
-  if (!creds.session) redirect("/login");
+  const signIn = () => redirect("/login?return=%2Faccount");
+
+  if (!creds.session) signIn();
+
   try {
     return await api.getAccount(creds);
   } catch (error) {
-    if (error instanceof api.ApiError && error.status === 401) redirect("/login");
-    // Anything else — including an unreachable backend — is surfaced to the
-    // account error boundary, which explains it without losing the shopper.
-    throw error;
+    if (error instanceof api.ApiError && error.status === 401) signIn();
+    console.error("[ferixas] account could not be loaded:", error);
+    signIn();
+    throw error; // unreachable: signIn always redirects, keeps the return type honest
   }
 }
 
