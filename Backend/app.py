@@ -313,32 +313,6 @@ def brands():
 
 
 
-# ── Price bands ────────────────────────────────────────────────────────────
-# Sent with the products so a shop builds its price filter from what it actually
-# stocks, instead of from bands written into the page that may match nothing at all.
-
-PRICE_BANDS = [
-    ("under-50", "Under $50", 0, 50),
-    ("50-150", "$50 \u2013 $150", 50, 150),
-    ("150-plus", "$150 and over", 150, None),
-]
-
-
-def price_facets(catalogue: list) -> list:
-    """Each price band, with how many products fall in it."""
-    bands = []
-    for band_id, label, low, high in PRICE_BANDS:
-        count = 0
-        for product in catalogue:
-            try:
-                price = float(product.get("price") or 0)
-            except (TypeError, ValueError):
-                continue
-            if price >= low and (high is None or price < high):
-                count += 1
-        bands.append({"id": band_id, "label": label, "count": count, "min": low, "max": high})
-    return bands
-
 def brand_facets(catalogue: list) -> list:
     """Every brand present in the catalogue, with how many products it holds."""
     names = {}
@@ -475,7 +449,6 @@ def products(search: Optional[str] = None,
             "items": items[start:start + per_page], "total": total, "page": page,
             "perPage": per_page, "pages": max(1, (total + per_page - 1) // per_page),
             "facets": {
-            "prices": price_facets(catalogue),
                 "categories": [
                     {"slug": c["slug"], "name": c.get("name", c["slug"]),
                      "count": sum(1 for p in catalogue if p.get("category") == c["slug"])}
