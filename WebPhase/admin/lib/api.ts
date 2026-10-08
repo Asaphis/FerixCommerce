@@ -358,6 +358,11 @@ export const getMerchant = (session: string | null, id: string) =>
   call<MerchantDetail>("GET", "admin/merchant", { params: { id }, session });
 
 export const updateMerchant = (session: string | null, body: Record<string, unknown>) =>
+
+/** Remove a seller account. The endpoint is the owner's alone and refuses while orders exist. */
+export const deleteMerchant = (session: string | null, id: string) =>
+  call<{ removed: string; name?: string; products: number; signIns: number }>(
+    "DELETE", "admin/merchant", { session, body: { id } });
   call<{ merchant: MerchantRow }>("PATCH", "admin/merchant", { body, session });
 
 export const listUsers = (session: string | null, params: Params = {}) =>

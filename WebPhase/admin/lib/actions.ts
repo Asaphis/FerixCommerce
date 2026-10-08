@@ -370,3 +370,61 @@ export async function deleteAdvertAction(_prev: FormState, formData: FormData): 
   refresh("/cms/adverts");
   return { message: "Deleted." };
 }
+
+// ── Seller accounts ────────────────────────────────────────────────────
+// Suspend stops them trading and signing in; restricting takes them out of the
+// marketplace without closing the account. Both are reversible. Deleting is not, and
+// is the owner's alone - the endpoint refuses an administrator, and a seller with
+// orders, which arrives here as the API's own sentence rather than a generic failure.
+
+export async function suspendMerchantAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const suspend = formData.get("suspend") !== "false";
+  if (!id) return { error: "That seller is missing." };
+  try {
+    await api.updateMerchant(session, { id, status: suspend ? "suspended" : "active" });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That seller could not be changed." };
+  }
+  refresh("/merchants");
+  return {
+    message: suspend
+      ? "Suspended. They cannot sign in or trade until this is lifted."
+      : "Active again. They can sign in and trade.",
+  };
+}
+
+export async function restrictMerchantAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const restricted = formData.get("restricted") !== "false";
+  if (!id) return { error: "That seller is missing." };
+  try {
+    await api.updateMerchant(session, { id, marketplaceEnabled: !restricted });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That seller could not be changed." };
+  }
+  refresh("/merchants");
+  return {
+    message: restricted
+      ? "Taken out of the marketplace. Their account and products are untouched."
+      : "Back in the marketplace.",
+  };
+}
+
+export async function deleteMerchantAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "That seller is missing." };
+  try {
+    await api.deleteMerchant(session, id);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That seller could not be deleted." };
+  }
+  refresh("/merchants");
+  return { message: "Seller account removed, along with their products and sign-ins." };
+}
