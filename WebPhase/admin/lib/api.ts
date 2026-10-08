@@ -519,6 +519,11 @@ export type Banner = {
   active: boolean;
   position: number;
   status: string;
+
+  // Whether this banner shows its words. Absent means shown, so every banner that
+  // already exists keeps behaving as it did.
+  showText?: boolean;
+  showButtons?: boolean;
 };
 
 export const listBanners = (session: string | null) =>

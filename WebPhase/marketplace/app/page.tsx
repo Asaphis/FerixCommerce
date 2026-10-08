@@ -37,6 +37,26 @@ type Section = {
   secondaryHref?: string;
   source?: string;
   limit?: number;
+  // How a section arranges what it holds, and when it is interrupted. These arrive from the
+  // database as JSON, so a switch may be the word rather than a boolean - which is why every
+  // use reads them through Number() or String() rather than trusting the shape.
+  across?: number | string;
+  layout?: string;
+  rowsPerSet?: number | string;
+  interruptAfter?: number | string;
+  seeAll?: boolean | string;
+  adEvery?: number | string;
+  placement?: string;
+  columns?: number;
+  perPage?: number;
+  showAsTile?: boolean | string;
+  showText?: boolean | string;
+  showButtons?: boolean | string;
+  collection?: string;
+  href?: string;
+  mediaUrl?: string;
+  kind?: string;
+  sponsor?: string;
 };
 
 function uniqueProducts(products: Product[]) {

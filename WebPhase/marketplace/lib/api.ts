@@ -125,6 +125,11 @@ export type Banner = {
   posterNote: string;
   duration: number;
   overlay: BannerOverlay;
+
+  // Whether this banner shows its words. Absent means shown, so every banner that
+  // already exists keeps behaving as it did.
+  showText?: boolean;
+  showButtons?: boolean;
 };
 
 export type HomeFeed = {
