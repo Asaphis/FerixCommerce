@@ -404,6 +404,17 @@ export type CatalogueSection = {
   placement?: string;
   position?: number;
   visible?: boolean;
+
+  // How a section arranges what it holds, as the listing reads it. JSON from the database,
+  // so a switch may be the word rather than a boolean.
+  across?: number | string;
+  layout?: string;
+  rowsPerSet?: number | string;
+  interruptAfter?: number | string;
+  seeAll?: boolean | string;
+  columns?: number;
+  perPage?: number;
+  showAsTile?: boolean | string;
 };
 
 export type CataloguePage = {
