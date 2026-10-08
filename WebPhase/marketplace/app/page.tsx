@@ -71,7 +71,7 @@ export default async function HomePage() {
           <div className="min-w-0">
             <PromoBanner
               banners={home.banners}
-              heightClassName="h-[236px] sm:h-[286px] lg:h-[350px]"
+              heightClassName="h-[300px] sm:h-[380px] lg:h-[440px]"
               className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
             />
             <div className="mt-2.5 grid grid-cols-3 divide-line-warm rounded-[3px] border border-line-warm bg-white py-2.5 sm:divide-x max-lg:mt-0 max-lg:rounded-none max-lg:border-x-0 max-lg:py-0">

@@ -155,57 +155,75 @@ export function CollectionCard({ collection }: { collection: Collection }) {
   );
 }
 
+/**
+ * A store, as a shopper sees it.
+ *
+ * Below tablet width the old card hid the tagline, the location and the rating,
+ * leaving a letter, a name and a number — and it printed the store's internal
+ * layout name, which no shopper should ever read.
+ *
+ * The card now carries the same information at every width: the store's own
+ * accent as a cover, the logo sitting on it, the tagline, the location, the
+ * rating and the product count, with a visit button that turns on hover.
+ */
 export function StoreCard({ store }: { store: Merchant }) {
   return (
     <Link
       href={`/store/${store.slug}`}
-      className="group relative overflow-hidden rounded-[2px] rounded-tr-[9px] border border-line-warm bg-white p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25 sm:p-4"
+      className="group relative flex flex-col overflow-hidden rounded-[14px] border border-line-warm bg-white transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25"
     >
-      <div className="flex items-start justify-between gap-3">
-        {store.logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={assetUrl(store.logo) ?? ""}
-            alt={store.name}
-            loading="lazy"
-            className="h-9 w-9 shrink-0 rounded-[2px] object-cover sm:h-11 sm:w-11"
-          />
-        ) : (
-          <span
-            className="grid h-9 w-9 place-items-center rounded-[2px] font-display text-[14px] font-extrabold sm:h-11 sm:w-11 sm:text-[16px]"
-            style={{ background: store.brand.accent, color: store.brand.accentInk }}
-          >
-            {store.name.slice(0, 1)}
-          </span>
-        )}
-        <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft sm:block">{store.brand.template}</span>
-      </div>
-      <p className="mt-2 flex items-center gap-1.5 truncate font-display text-[13px] font-semibold text-ink sm:mt-3.5 sm:text-[15.5px]">
-        {store.name}
-        {store.verified ? (
-          <span className="grid h-4 w-4 place-items-center rounded-full bg-pine text-white">
-            <Check width={10} height={10} />
-          </span>
+      <span aria-hidden className="relative block h-[60px] w-full" style={{ background: store.brand.accent }}>
+        <span
+          className="absolute inset-0 opacity-25"
+          style={{ background: "radial-gradient(circle at 88% 8%, #ffffff, transparent 62%)" }}
+        />
+        <span
+          className="absolute -bottom-[18px] left-3.5 grid h-11 w-11 place-items-center overflow-hidden rounded-[12px] border-[3px] border-white font-display text-[15px] font-extrabold sm:left-4"
+          style={{ background: store.brand.accent, color: store.brand.accentInk }}
+        >
+          {store.logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={assetUrl(store.logo) ?? ""} alt={store.name} loading="lazy" className="h-full w-full object-cover" />
+          ) : (
+            store.name.slice(0, 1)
+          )}
+        </span>
+      </span>
+
+      <span className="flex min-w-0 flex-1 flex-col px-3.5 pt-[26px] pb-3.5 sm:px-4">
+        <span className="flex items-center gap-1.5 font-display text-[14px] font-semibold text-ink sm:text-[15px]">
+          <span className="truncate">{store.name}</span>
+          {store.verified ? (
+            <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-pine text-white">
+              <Check width={10} height={10} />
+            </span>
+          ) : null}
+        </span>
+
+        {store.tagline ? (
+          <span className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">{store.tagline}</span>
         ) : null}
-      </p>
-      <p className="mt-1.5 hidden line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft sm:block">{store.tagline}</p>
-      <p className="mt-2 hidden items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft sm:flex">
-        <MapPin width={11} height={11} />
-        {store.location}
-      </p>
-      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-line-warm pt-2.5 sm:mt-3.5 sm:pt-3">
-        <span className="flex items-center gap-1.5">
-          <Stars value={store.rating} size={11} />
-          <span className="font-mono text-[10.5px] text-ink-soft">{store.rating.toFixed(1)}</span>
+
+        <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin width={11} height={11} />
+            {store.location}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Stars value={store.rating} size={11} />
+            {store.rating.toFixed(1)}
+          </span>
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
-          {store.productCount} products
+
+        <span className="mt-auto flex items-center justify-between gap-2 border-t border-line-warm pt-3">
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+            {store.productCount} products
+          </span>
+          <span className="rounded-[9px] bg-ink px-3 py-1.5 text-[11px] font-semibold text-bone transition-colors group-hover:bg-ember">
+            Visit store
+          </span>
         </span>
-      </div>
-      <span
-        className="absolute inset-x-0 bottom-0 h-[3px] scale-x-0 transition-transform duration-300 group-hover:scale-x-100"
-        style={{ background: store.brand.accent }}
-      />
+      </span>
     </Link>
   );
 }
