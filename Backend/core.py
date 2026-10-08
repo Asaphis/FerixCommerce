@@ -1019,32 +1019,89 @@ def seed(db: Session) -> None:
             "status": "published",
         })
 
-    # Homepage content document, so the CMS has something real to edit.
-    home = ContentDocument(
-        id="doc_marketplace_home", owner_type="platform", owner_id="platform",
-        document_type="marketplace_home", title="Marketplace homepage",
-        status="published",
-        data={
-            "sections": [
-                {"id": "sec_hero", "type": "hero_banner", "title": "Independent brands, properly stocked",
-                 "subtitle": "One catalogue, many sellers. Everything ships tracked.",
-                 "ctaLabel": "Shop the marketplace", "ctaHref": "/browse", "position": 1, "visible": True},
-                {"id": "sec_categories", "type": "category_grid", "title": "Shop by category",
-                 "subtitle": "Ten departments, one checkout", "position": 2, "visible": True},
-                {"id": "sec_flash", "type": "product_carousel", "title": "Flash sales",
-                 "subtitle": "Limited windows, limited stock", "position": 3, "visible": True},
-                {"id": "sec_trending", "type": "product_carousel", "title": "Trending this month",
-                 "subtitle": "What shoppers are buying", "position": 4, "visible": True},
-                {"id": "sec_collections", "type": "featured_collection", "title": "Collections",
-                 "subtitle": "Curated by the Ferixas team", "position": 5, "visible": True},
-                {"id": "sec_stores", "type": "featured_stores", "title": "Stores worth following",
-                 "subtitle": "Verified merchants across the platform", "position": 6, "visible": True},
-            ]
-        },
+    # ── Storefront pages ─────────────────────────────────────────────────
+    # One document per page. The CMS lists these, opens one, and edits the
+    # sections inside it; the storefront renders those sections in this order,
+    # dropping any that is switched off. Section fields are the ones the editor
+    # exposes: media, copy, buttons, position and visibility.
+    def storefront_page(doc_id: str, doc_type: str, title: str, sections: list) -> None:
+        document = ContentDocument(
+            id=doc_id, owner_type="platform", owner_id="platform",
+            document_type=doc_type, title=title, status="published",
+            data={"sections": sections},
+        )
+        db.add(document)
+        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=1,
+                              status="published", data=document.data,
+                              note="Initial content", created_by="seed"))
+
+    storefront_page(
+        "doc_marketplace_home", "marketplace_home", "Homepage",
+        [
+            {
+                "id": "sec_hero", "type": "hero_banner", "name": "Hero banner",
+                "eyebrow": "Autumn on Ferixas",
+                "title": "Seven merchants. One cart. One checkout.",
+                "subtitle": "Audio, tailoring, home, gaming and pantry goods, bought once and shipped by each seller.",
+                "ctaLabel": "Shop the marketplace", "ctaHref": "/browse",
+                "secondaryLabel": "Meet the stores", "secondaryHref": "/stores",
+                "bannerIds": ["bnr_launch", "bnr_delivery", "bnr_official"],
+                "align": "left", "vertical": "middle", "tone": "dark", "scrim": 55,
+                "showText": True, "showButtons": True, "duration": 7000, "width": 44,
+                "position": 1, "visible": True,
+            },
+            {"id": "sec_promo", "type": "promo_strip", "name": "Promo strip",
+             "message": "Free delivery over $120 · 30-day returns",
+             "position": 2, "visible": True},
+            {"id": "sec_categories", "type": "category_grid", "name": "Department tiles",
+             "title": "Shop by department", "subtitle": "Ten departments, one checkout",
+             "limit": 10, "showAsTile": True, "position": 3, "visible": True},
+            {"id": "sec_brands", "type": "brand_carousel", "name": "Brand row",
+             "title": "Shop by brand", "subtitle": "Verified makers across the marketplace",
+             "limit": 8, "layout": "slider", "position": 4, "visible": True},
+            {"id": "sec_flash", "type": "product_carousel", "name": "Today's deals",
+             "title": "Today's deals", "subtitle": "Limited windows, limited stock",
+             "source": "flash", "limit": 8, "position": 5, "visible": True},
+            {"id": "sec_trending", "type": "product_carousel", "name": "Trending",
+             "title": "Trending this week", "subtitle": "What shoppers are buying",
+             "source": "trending", "limit": 8, "position": 6, "visible": True},
+            {"id": "sec_stores", "type": "featured_stores", "name": "Stores worth following",
+             "title": "Stores worth following", "subtitle": "Verified merchants across the platform",
+             "limit": 3, "layout": "rows", "showFollow": True, "position": 7, "visible": True},
+            {"id": "sec_footer", "type": "footer", "name": "Footer",
+             "position": 8, "visible": True},
+        ],
     )
-    db.add(home)
-    db.add(ContentVersion(id=new_id("ver"), document_id=home.id, version=1, status="published",
-                          data=home.data, note="Initial marketplace content", created_by="seed"))
+
+    storefront_page(
+        "doc_marketplace_explore", "marketplace_explore", "Explore",
+        [
+            {"id": "sec_explore_hero", "type": "hero_slim", "name": "Explore banner",
+             "eyebrow": "This week on Ferixas", "title": "Audio, up to 30% off",
+             "ctaLabel": "Shop the deals", "ctaHref": "/browse?onSale=1",
+             "height": 150, "position": 1, "visible": True},
+            {"id": "sec_explore_grid", "type": "product_grid", "name": "Product list",
+             "columns": 4, "perPage": 24, "adEvery": 6, "position": 2, "visible": True},
+            {"id": "sec_explore_brands", "type": "brand_carousel", "name": "Brand row",
+             "title": "Shop by brand", "limit": 8, "position": 3, "visible": True},
+        ],
+    )
+
+    storefront_page(
+        "doc_marketplace_product", "marketplace_product", "Product page",
+        [
+            {"id": "sec_gallery", "type": "product_gallery", "name": "Gallery",
+             "position": 1, "visible": True},
+            {"id": "sec_buybox", "type": "buy_box", "name": "Buy box",
+             "position": 2, "visible": True},
+            {"id": "sec_delivery", "type": "delivery_block", "name": "Delivery and returns",
+             "position": 3, "visible": True},
+            {"id": "sec_reviews", "type": "reviews", "name": "Reviews", "verifiedOnly": True,
+             "position": 4, "visible": True},
+            {"id": "sec_related", "type": "product_carousel", "name": "More like this",
+             "source": "related", "limit": 8, "position": 5, "visible": True},
+        ],
+    )
 
     demo = User(id="usr_demo", name="Ferixas Demo Shopper", email="demo@ferixas.com",
                 password_hash=hash_password(DEMO_PASSWORD),
