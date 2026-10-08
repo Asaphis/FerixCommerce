@@ -267,9 +267,88 @@ def brands():
         return {"brands": rows}
 
 
+def brand_facets(catalogue: list) -> list:
+    """Every brand present in the catalogue, with how many products it holds."""
+    names = {}
+    counts = {}
+    for product in catalogue:
+        slug = brand_of(product)
+        if not slug:
+            continue
+        counts[slug] = counts.get(slug, 0) + 1
+        names.setdefault(slug, product.get("brandName") or product.get("merchantName") or slug)
+    return [
+        {"slug": slug, "name": names.get(slug, slug), "count": counts[slug]}
+        for slug in sorted(counts, key=lambda s: (-counts[s], s))
+    ]
+
+
+def spec_facets(catalogue: list) -> list:
+    """Specifications a shopper can filter on, taken from the product variants."""
+    index = {}
+    for product in catalogue:
+        for name, value in specs_of(product):
+            index.setdefault(name, {}).setdefault(value, 0)
+            index[name][value] += 1
+    return [
+        {"name": name,
+         "values": [{"value": value, "count": count} for value, count in sorted(values.items())]}
+        for name, values in sorted(index.items())
+    ]
+
+
+PRICE_BANDS = [
+    {"id": "under-50", "label": "Under 50", "min": None, "max": 50.0},
+    {"id": "50-150", "label": "50 - 150", "min": 50.0, "max": 150.0},
+    {"id": "150-400", "label": "150 - 400", "min": 150.0, "max": 400.0},
+    {"id": "400-plus", "label": "400 and up", "min": 400.0, "max": None},
+]
+
+
+def as_list(value):
+    """One value or many, as a clean list. Repeatable filters arrive as a list."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    return [item for item in value if item]
+
+
+def brand_of(product: dict) -> str:
+    """The brand a product belongs to.
+
+    Products may carry an explicit brand once the catalogue sets one; where they
+    do not, the seller is the brand, which is exactly how the storefront already
+    presents them. This is why a brand filter works today without a migration.
+    """
+    return str(
+        product.get("brandSlug")
+        or product.get("brandId")
+        or product.get("merchantSlug")
+        or product.get("merchantId")
+        or ""
+    )
+
+
+def specs_of(product: dict) -> list:
+    """Filterable attributes a product already carries: its variant values."""
+    pairs = []
+    for variant in product.get("variants") or []:
+        name = (variant or {}).get("name")
+        for value in (variant or {}).get("values") or []:
+            if name and value:
+                pairs.append((str(name), str(value)))
+    return pairs
+
+
 @app.get("/catalog/products")
-def products(search: Optional[str] = None, category: Optional[str] = None, collection: Optional[str] = None,
-             store: Optional[str] = None, minPrice: Optional[float] = None, maxPrice: Optional[float] = None,
+def products(search: Optional[str] = None,
+             category: Optional[list[str]] = None,
+             brand: Optional[list[str]] = None,
+             collection: Optional[str] = None,
+             store: Optional[list[str]] = None,
+             spec: Optional[list[str]] = None,
+             minPrice: Optional[float] = None, maxPrice: Optional[float] = None,
              rating: Optional[float] = None, inStock: Optional[bool] = None, onSale: Optional[bool] = None,
              sort: str = "relevance", page: int = 1, perPage: int = 24):
     with SessionLocal() as db:
@@ -278,12 +357,25 @@ def products(search: Optional[str] = None, category: Optional[str] = None, colle
         q = (search or "").lower()
         if q:
             items = [p for p in items if q in json.dumps(p).lower()]
-        if category:
-            items = [p for p in items if p.get("category") == category]
+        chosen_categories = as_list(category)
+        if chosen_categories:
+            items = [p for p in items if p.get("category") in chosen_categories]
+        chosen_brands = as_list(brand)
+        if chosen_brands:
+            items = [p for p in items if brand_of(p) in chosen_brands]
         if collection:
             items = [p for p in items if collection in (p.get("collections") or [])]
-        if store:
-            items = [p for p in items if p.get("merchantSlug") == store or p.get("merchantId") == store]
+        chosen_stores = as_list(store)
+        if chosen_stores:
+            items = [p for p in items if p.get("merchantSlug") in chosen_stores
+                     or p.get("merchantId") in chosen_stores]
+        wanted_specs = []
+        for raw in as_list(spec):
+            if ":" in raw:
+                name, value = raw.split(":", 1)
+                wanted_specs.append((name.strip(), value.strip()))
+        if wanted_specs:
+            items = [p for p in items if all(pair in specs_of(p) for pair in wanted_specs)]
         if minPrice is not None:
             items = [p for p in items if p["price"] >= minPrice]
         if maxPrice is not None:
@@ -321,7 +413,15 @@ def products(search: Optional[str] = None, category: Optional[str] = None, colle
                      "count": sum(1 for p in catalogue if p.get("merchantId") == m["id"])}
                     for m in sorted(merchant_rows(db), key=lambda m: m.get("name", ""))
                 ],
-                "priceBuckets": [],
+                "brands": brand_facets(catalogue),
+                "priceBuckets": [
+                    {"id": band["id"], "label": band["label"],
+                     "count": sum(1 for p in catalogue
+                                  if (band["min"] is None or p.get("price", 0) >= band["min"])
+                                  and (band["max"] is None or p.get("price", 0) <= band["max"]))}
+                    for band in PRICE_BANDS
+                ],
+                "specs": spec_facets(catalogue),
             },
         }
 
