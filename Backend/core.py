@@ -1070,6 +1070,23 @@ def seed(db: Session) -> None:
             "status": "published",
         })
 
+    # ── Brands ───────────────────────────────────────────────────────────
+    # The storefront's brand row and the CMS both read these, and nothing was
+    # creating them, so /catalog/home returned an empty list. Seeded from the
+    # merchants so a fresh install has a real brand row to edit.
+    for brand_index, merchant in enumerate(merchants(db), start=1):
+        put_row(db, "brand", merchant["slug"], {
+            "id": merchant["slug"],
+            "name": merchant["name"],
+            "slug": merchant["slug"],
+            "description": merchant.get("tagline") or f"{merchant['name']} on Ferixas.",
+            "image": merchant.get("logo") or "",
+            "imageUrl": merchant.get("logo") or "",
+            "featured": brand_index <= 4,
+            "visible": True,
+            "position": brand_index,
+        })
+
     # ── Storefront pages ─────────────────────────────────────────────────
     # One document per page. The CMS lists these, opens one, and edits the
     # sections inside it; the storefront renders those sections in this order,

@@ -446,7 +446,9 @@ def overview(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 def merchants(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
               search: Optional[str] = None, status: Optional[str] = None, plan: Optional[str] = None):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+
+        require_permission(staff, "merchant.view")
         rows = [_merchant_row(db, m) for m in all_merchants(db)]
         counts: dict[str, int] = {"all": len(rows)}
         for row in rows:
@@ -1343,7 +1345,9 @@ def payments(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 @router.get("/payouts")
 def payouts(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+
+        require_permission(staff, "payouts.view")
         stored = db.scalars(select(Payout)).all()
         rows = [{"id": p.id, "merchantId": p.merchant_id,
                  "merchantName": (find_merchant(db, p.merchant_id) or {}).get("name", p.merchant_id),
@@ -1398,7 +1402,9 @@ def update_payout(session: Optional[str] = Header(None, alias="X-Ferix-Session")
 @router.get("/staff")
 def staff_list(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+
+        require_permission(staff, "settings.manage")
         rows = db.scalars(select(StaffUser).where(StaffUser.subject_type == "admin")).all()
         return {"staff": [{"id": s.id, "name": s.name, "email": s.email, "role": s.role,
                            "permissions": s.permissions, "createdAt": iso(s.created_at)} for s in rows],
