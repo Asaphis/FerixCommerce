@@ -55,8 +55,52 @@ export default async function CategoriesPage() {
           Content
         </Link>
         <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Departments</h1>
-        
+        <p className="mt-1.5 max-w-[70ch] text-[13px] leading-relaxed text-chalk-dim">
+          The departments the shop is organised by. Each one can appear as an image tile, as a link in
+          the header menu, or both.
+        </p>
       </header>
+
+      {/* Adding used to live at the very bottom of this page, underneath every department, so
+          the only way to find it was to scroll past the whole list. It belongs at the top. */}
+      <Panel>
+        <PanelHead
+          title="Add a department"
+          hint="It appears on the shop once it is visible, in the position you give it."
+        />
+        <CmsActionForm action={saveCategoryAction} className="mt-4 grid gap-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Field title="Name">
+              <input name="name" required className={inputClass} placeholder="Audio" />
+            </Field>
+            <Field title="Slug">
+              <input name="slug" required className={inputClass} placeholder="audio" />
+            </Field>
+            <Field title="Icon glyph">
+              <input name="glyph" className={inputClass} placeholder="A" />
+            </Field>
+            <Field title="Position">
+              <input name="position" type="number" min={0} defaultValue={categories.length + 1} className={inputClass} />
+            </Field>
+            <Field title="Short description">
+              <input name="blurb" className={inputClass} placeholder="Headphones, speakers and studio gear" />
+            </Field>
+          </div>
+          <MediaUploadField
+            key="new-department-image"
+            urlName="imageUrl"
+            fileName="imageFile"
+            urlLabel="Department image URL"
+            fileLabel="Upload department image"
+            kind="image"
+            libraryAssets={libraryOptions}
+          />
+          <Switches defaults={{ showInNav: true, showAsTile: true, showAsText: false, visible: true }} />
+          <div>
+            <SubmitButton pendingLabel="Adding">Add department</SubmitButton>
+          </div>
+        </CmsActionForm>
+      </Panel>
 
       {categories.length === 0 ? (
         <Empty title="No departments yet" body="Add the first department below." />
