@@ -127,6 +127,10 @@ export async function saveBannerAction(_previous: FormState, form: FormData): Pr
     await api.saveBanner(session, {
       id: str(form, "id") || undefined,
       kind,
+      // Off means the banner shows its image or video alone: the headline, body and buttons
+      // all go with the overlay, scrim included. Absent means shown, so nothing that already
+      // exists changes behaviour.
+      showText: form.get("showText") === "on",
       eyebrow: str(form, "eyebrow"),
       headline,
       body: str(form, "body"),

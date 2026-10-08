@@ -66,6 +66,10 @@ export default async function BannersPage() {
                   Edit banner
                 </summary>
                 <CmsActionForm action={saveBannerAction} className="grid gap-3 border-t border-hairline p-4">
+          <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
+            <input type="checkbox" name="showText" defaultChecked={banner.showText !== false} className="size-4 accent-signal" />
+            Show the words — headline, body and buttons. Off leaves the image or video alone.
+          </label>
                   <input type="hidden" name="id" value={banner.id} />
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     <Field title="Media type">
@@ -147,6 +151,10 @@ export default async function BannersPage() {
       <Panel>
         <PanelHead title="New banner" />
         <CmsActionForm action={saveBannerAction} className="grid gap-3">
+          <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
+            <input type="checkbox" name="showText" defaultChecked className="size-4 accent-signal" />
+            Show the words — headline, body and buttons. Off leaves the image or video alone.
+          </label>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Media type">
               <select name="kind" defaultValue="image" className={selectClass}>
