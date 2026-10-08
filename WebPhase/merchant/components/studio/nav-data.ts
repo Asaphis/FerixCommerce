@@ -31,6 +31,7 @@ export const NAV_GROUPS: NavGroupData[] = [
     label: "Catalogue",
     items: [
       { href: "/products", label: "Products", icon: "package" },
+      { href: "/media", label: "Media", icon: "image" },
       { href: "/inventory", label: "Inventory", icon: "boxes" },
       { href: "/promotions", label: "Promotions", icon: "megaphone" },
     ],
