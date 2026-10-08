@@ -758,6 +758,7 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
             counts[row.get("status", "active")] = counts.get(row.get("status", "active"), 0) + 1
         counts["official"] = sum(p.get("merchantId") == "ferixas-official" for p in rows)
         counts["seller"] = len(rows) - counts["official"]
+        counts["scope"] = "seller" if owner == "seller" else ("all" if owner == "all" else "official")
         filtered = rows
         if search:
             q = search.lower()
@@ -766,10 +767,15 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
             filtered = [p for p in filtered if p.get("category") == category]
         if status and status != "all":
             filtered = [p for p in filtered if p.get("status") == status]
-        if owner == "official":
-            filtered = [p for p in filtered if p.get("merchantId") == "ferixas-official"]
-        elif owner == "seller":
+        # The catalogue is the platform's OWN stock. A seller's products belong to that
+        # seller and are managed from their page, so the default is our own rows and
+        # seeing everything takes asking for it explicitly.
+        if owner == "seller":
             filtered = [p for p in filtered if p.get("merchantId") != "ferixas-official"]
+        elif owner == "all":
+            pass
+        else:
+            filtered = [p for p in filtered if p.get("merchantId") == "ferixas-official"]
         return {
             "products": [{"id": p["id"], "slug": p["slug"], "title": p["title"], "sku": p.get("sku", ""),
                           "price": p.get("price", 0), "compareAt": p.get("compareAt"), "stock": p.get("stock", 0),
