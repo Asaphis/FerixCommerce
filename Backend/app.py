@@ -1007,10 +1007,18 @@ def shipping():
 
 
 @app.post("/checkout/quote")
-def quote(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+def quote(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+          x_cart: Optional[str] = Header(None, alias="X-Ferix-Cart")):
     with SessionLocal() as db:
-        user = require_user(db, session)
-        cart = cart_for(db, user.id, None)
+        # A guest may see their totals before committing to buy, and without an account
+        # the email is what the total belongs to.
+        if session:
+            user = require_user(db, session)
+        elif p.email and "@" in p.email:
+            user = guest_shopper(db, p.email)
+        else:
+            raise HTTPException(401, "Sign in, or leave an email address to see your total.")
+        cart = cart_for(db, user.id, x_cart)
         payload = cart_payload(db, cart)
         option = next((o for o in SHIPPING_OPTIONS if o["id"] == p.shippingMethod), SHIPPING_OPTIONS[0])
         cost = 0.0 if payload["subtotal"] >= FREE_SHIPPING_OVER else option["price"]
