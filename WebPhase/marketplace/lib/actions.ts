@@ -158,7 +158,7 @@ export async function saveForLaterAction(formData: FormData): Promise<void> {
   const key = String(formData.get("key") ?? "");
   if (!key) return;
   const creds = await readCredentials();
-  if (!creds.session) redirect("/login");
+  if (!creds.session) redirect(`/login?return=${encodeURIComponent("/cart")}`);
   await api.saveForLater({ key }, creds);
   refreshAll();
 }
@@ -168,7 +168,9 @@ export async function toggleWishlistAction(formData: FormData): Promise<void> {
   const back = String(formData.get("back") ?? "/account/wishlist");
   if (!productId) redirect(`${back}?error=Choose%20a%20product%20before%20saving%20it.`);
   const creds = await readCredentials();
-  if (!creds.session) redirect("/login");
+  // Keep the way back. A bare /login stranded a guest on a page they could not
+  // leave, with the product they were saving lost.
+  if (!creds.session) redirect(`/login?return=${encodeURIComponent(back)}`);
   try {
     await api.toggleWishlist(productId, creds);
   } catch (error) {

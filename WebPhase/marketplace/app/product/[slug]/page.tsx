@@ -4,8 +4,8 @@ import type { Metadata } from "next";
 import { ArrowRight, Check, Heart, MapPin, RotateCcw, ShieldCheck, Truck } from "lucide-react";
 import { getProduct, ApiError, assetUrl } from "@/lib/api";
 import { savedIds } from "@/lib/data";
-import { addToCartPageAction, toggleWishlistAction } from "@/lib/actions";
-import { AddToCartButton } from "@/components/ferix/add-to-cart";
+import { toggleWishlistAction } from "@/lib/actions";
+import { AddToCartButton, AddToCartForm } from "@/components/ferix/add-to-cart";
 import { ReviewForm } from "@/components/ferix/forms";
 import { ProductRail, RatingBars, ReviewList } from "@/components/ferix/cards";
 import { Eyebrow, LinkButton, Plate, Pill, Price, SectionHead, Stars, StockNote } from "@/components/ferix/marks";
@@ -131,7 +131,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <StockNote stock={product.stock} />
           </div>
 
-          <form action={addToCartPageAction} className="mt-5 grid gap-4">
+          <AddToCartForm
+            productId={product.id}
+            className="mt-5 grid gap-4"
+            showButton={false}
+          >
             <input type="hidden" name="productId" value={product.id} />
             {product.variants.length ? (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -196,7 +200,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 />
               </span>
             </div>
-          </form>
+          </AddToCartForm>
 
           <form action={toggleWishlistAction} className="mt-3">
             <input type="hidden" name="productId" value={product.id} />

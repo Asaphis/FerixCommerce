@@ -56,14 +56,51 @@ export function AddToCartButton({
 }
 
 /** A compact progressive-enhancement wrapper for product-card mutations. */
-export function AddToCartForm({ productId, className }: { productId: string; className?: string }) {
+/**
+ * The add-to-cart form.
+ *
+ * It reports what actually happened. A previous version of the product page
+ * posted to an action that discarded its own result, so the button flashed
+ * "Adding" and returned to normal whether the item was added or the request
+ * failed — the shopper was told nothing either way.
+ *
+ * It accepts children so the product page's variant selects, quantity control
+ * and both buttons live inside the same form and share one result. Pass
+ * showButton={false} when the children carry their own buttons.
+ */
+export function AddToCartForm({
+  productId,
+  className,
+  children,
+  label = "Add",
+  buttonClassName = "w-full py-2",
+  disabled,
+  showButton = true,
+}: {
+  productId: string;
+  className?: string;
+  children?: React.ReactNode;
+  label?: string;
+  buttonClassName?: string;
+  disabled?: boolean;
+  showButton?: boolean;
+}) {
   const [state, action] = useActionState<FormState, FormData>(async (_previous, formData) => addToCartAction(formData), {});
   return (
     <form action={action} className={cn("flex min-w-0 flex-1 flex-col gap-1.5", className)}>
       <input type="hidden" name="productId" value={productId} />
-      <AddToCartButton label="Add" className="w-full py-2" />
-      {state?.error ? <p role="alert" className="text-[10px] leading-tight text-ember">{state.error}</p> : null}
-      {state?.message ? <p role="status" className="text-[10px] leading-tight text-pine">{state.message}</p> : null}
+      {children}
+      {showButton ? <AddToCartButton label={label} className={buttonClassName} disabled={disabled} /> : null}
+      {state?.error ? (
+        <p role="alert" className="text-[11.5px] leading-tight font-medium text-ember">
+          {state.error}
+        </p>
+      ) : null}
+      {state?.message ? (
+        <p role="status" className="text-[11.5px] leading-tight font-medium text-pine">
+          {state.message}
+        </p>
+      ) : null}
     </form>
   );
 }
