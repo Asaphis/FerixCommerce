@@ -51,10 +51,11 @@ export function ProductForm({
     marketplace: product ? product.channels.marketplace : false,
   });
   const set = (key: keyof typeof draft) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const value = event.target instanceof HTMLInputElement && event.target.type === "checkbox"
-      ? event.target.checked
-      : event.target.value;
-    setDraft((current) => ({ ...current, [key]: value }));
+    const value: string | boolean =
+      event.target instanceof HTMLInputElement && event.target.type === "checkbox"
+        ? event.target.checked
+        : event.target.value;
+    setDraft((current) => ({ ...current, [key]: value }) as typeof current);
   };
 
   const lead = previews[0] ?? images[0] ?? null;
@@ -141,7 +142,7 @@ export function ProductForm({
             <PanelHead title="Price and stock" />
             <div className="grid gap-4 sm:grid-cols-3">
               <Field title="Price"><input name="price" type="number" step="0.01" min="0" value={draft.price} onChange={set("price")} className={inputClass} required /></Field>
-              <Field title="Was price" hint="Optional — shows a discount badge"><input name="compareAt" type="number" step="0.01" min="0" value={draft.compareAt} onChange={set("compareAt")} className={inputClass} placeholder="0.00" /></Field>
+              <Field title="Was price (optional)"><input name="compareAt" type="number" step="0.01" min="0" value={draft.compareAt} onChange={set("compareAt")} className={inputClass} placeholder="0.00" /></Field>
               <Field title="Units in stock"><input name="stock" type="number" min="0" defaultValue={product?.stock ?? 0} className={inputClass} /></Field>
             </div>
           </Panel>
