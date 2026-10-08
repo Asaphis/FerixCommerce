@@ -165,7 +165,33 @@ class CompatibleMediaFiles(StaticFiles):
         return await super().get_response(path, scope)
 
 
-app = FastAPI(title="Ferixas Commerce API", version="3.0.0")
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Prepare the database before the first request is served.
+
+    This is the modern equivalent of the startup event below, and it is the one
+    FastAPI guarantees to run. The event handler is kept as well because running
+    both is harmless - create_all, migrate and the seed are each idempotent - but
+    on a fresh deployment the tables, the migrations and the seed must happen, and
+    relying on a deprecated hook is how they ended up being run by hand.
+    """
+    Base.metadata.create_all(engine)
+    from core import migrate
+
+    migrate()
+    with SessionLocal() as db:
+        # Only seed a database that has nothing in it. Restarting a live platform
+        # must never write the starter content over real data.
+        if not db.scalar(select(Catalog.key).limit(1)):
+            seed(db)
+    print("[ferixas] startup: tables ready, migrations applied, content in place")
+    yield
+
+
+app = FastAPI(title="Ferixas Commerce API", version="3.0.0", lifespan=lifespan)
 app.mount("/media", CompatibleMediaFiles(str(MEDIA_ROOT), str(UPLOAD_ROOT)), name="media")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
 app.add_middleware(
@@ -213,6 +239,7 @@ async def carry_frontend_credentials(request: Request, call_next):
 
 @app.on_event("startup")
 def startup():
+    print("[ferixas] startup event fired")
     Base.metadata.create_all(engine)
     # create_all creates missing TABLES and never alters an existing one, so a
     # database provisioned before a column was added would break the moment that
