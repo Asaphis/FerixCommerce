@@ -1225,39 +1225,32 @@ def _seed_staff(db: Session) -> None:
 def migrate() -> None:
     """Bring an existing database up to what the models now expect.
 
-    create_all creates missing TABLES and nothing else: it will never alter a
-    table that already exists. The session tables gained last_seen_at, and on a
-    database provisioned before that change every session lookup would fail with
-    "no such column" - which is to say, nobody could sign in. This adds any
-    missing column, and does nothing when the column is already there.
+    create_all creates missing TABLES and nothing else - it never alters a table
+    that already exists. The session tables gained last_seen_at, and on a database
+    provisioned before that change every session lookup fails with "no such
+    column", which is to say nobody can sign in on any surface.
+
+    This attempts each change and treats "already there" as success. It does not
+    ask the database what columns exist first: a reflection-based version of this
+    silently decided the column was present and added nothing, which is worse
+    than failing, because the deploy then looks fine until the first sign-in.
     """
-    from sqlalchemy import inspect, text
-
-    wanted = {
-        "staff_sessions": [("last_seen_at", "TIMESTAMP")],
-        "sessions": [("last_seen_at", "TIMESTAMP")],
-    }
     stamp = "TIMESTAMP WITH TIME ZONE" if engine.dialect.name.startswith("postgres") else "TIMESTAMP"
-    inspector = inspect(engine)
-    tables = set(inspector.get_table_names())
-
-    with engine.begin() as connection:
-        for table, columns in wanted.items():
-            if table not in tables:
+    statements = [
+        f"ALTER TABLE staff_sessions ADD COLUMN last_seen_at {stamp}",
+        f"ALTER TABLE sessions ADD COLUMN last_seen_at {stamp}",
+    ]
+    for statement in statements:
+        try:
+            with engine.begin() as connection:
+                connection.execute(text(statement))
+            print(f"[ferixas] migrated: {statement}")
+        except Exception as error:
+            message = str(error).lower()
+            if "duplicate column" in message or "already exists" in message:
                 continue
-            present = {column["name"] for column in inspector.get_columns(table)}
-            for name, _ in columns:
-                if name in present:
-                    continue
-                try:
-                    connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {stamp}"))
-                    print(f"[ferixas] migrated: added {table}.{name}")
-                except Exception as error:
-                    # Startup can fire more than once - FastAPI merges the lifespan
-                    # of every included router - so a column added by the first run
-                    # must not abort the second. Anything else is a real failure.
-                    if "duplicate column" not in str(error).lower():
-                        raise
+            print(f"[ferixas] migration could not run ({statement}): {error}")
+
 
 def ensure_seed() -> None:
     Base.metadata.create_all(engine)
