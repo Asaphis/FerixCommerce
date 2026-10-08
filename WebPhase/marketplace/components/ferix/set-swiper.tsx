@@ -104,3 +104,49 @@ export function SetSwiper({
     </div>
   );
 }
+
+/**
+ * One row of products, running off the edge.
+ *
+ * The third arrangement a section can choose. It is not a set: there is a single row and it
+ * scrolls continuously, so the shopper drags sideways rather than turning a page. The items
+ * are sized from the section's "across", which is why a wider screen shows more of them
+ * rather than the same two, enormous.
+ */
+export function HorizontalRail({
+  products,
+  savedIds = [],
+  across = 2,
+  className,
+}: {
+  products: Product[];
+  savedIds?: string[];
+  across?: number;
+  className?: string;
+}) {
+  const visible = Math.min(4, Math.max(1, Math.round(Number(across) || 2)));
+
+  // A peek of the next card, so it is visibly draggable rather than looking cut off.
+  const basis: Record<number, string> = {
+    1: "w-[82%] sm:w-[46%] lg:w-[31%]",
+    2: "w-[46%] sm:w-[31%] lg:w-[23%]",
+    3: "w-[31%] sm:w-[23%] lg:w-[15%]",
+    4: "w-[23%] sm:w-[15%] lg:w-[12%]",
+  };
+
+  return (
+    <div className={className}>
+      <div
+        className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:gap-3.5 sm:px-0"
+        role="group"
+        aria-label="Products in a row, swipe sideways for more"
+      >
+        {products.map((product) => (
+          <div key={product.id} className={cn("shrink-0 snap-start", basis[visible])}>
+            <ProductCard product={product} saved={savedIds.includes(product.id)} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

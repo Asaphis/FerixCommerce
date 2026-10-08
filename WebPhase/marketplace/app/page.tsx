@@ -5,7 +5,7 @@ import { assetUrl, getHome, listAdverts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { PromoBanner } from "@/components/ferix/banner";
 import { CategoryTile, ProductGrid, ProductRail, StoreCard } from "@/components/ferix/cards";
-import { SetSwiper } from "@/components/ferix/set-swiper";
+import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { TileSwiper } from "@/components/ferix/tile-swiper";
 import { SectionHead } from "@/components/ferix/marks";
 
@@ -360,6 +360,12 @@ export default async function HomePage() {
                 savedIds={saved}
                 across={Number(section.across) || 2}
                 rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
+              />
+            ) : (section as { layout?: string }).layout === "horizontal" ? (
+              <HorizontalRail
+                products={shown}
+                savedIds={saved}
+                across={Number(section.across) || 2}
               />
             ) : (
               <ProductGrid products={shown} savedIds={saved} across={Number(section.across) || 2} />
