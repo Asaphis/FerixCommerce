@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { Search, Store } from "lucide-react";
+import { Search, Store, Trash2 } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listMerchants } from "@/lib/api";
-import { FilterForm } from "@/components/ops/controls";
+import { FilterForm, SubmitButton } from "@/components/ops/controls";
+import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Meter, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { CellLabel, DataTable, PageHeader, Row, Td, TdLead, TablePanel } from "@/components/ops/table";
 import { money, num, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { deleteMerchantAction, suspendMerchantAction } from "@/lib/actions";
 
 const FILTERS = [
   { id: "all", label: "Every merchant" },
@@ -27,7 +29,11 @@ export default async function MerchantsPage({
   searchParams: Promise<{ search?: string; status?: string; plan?: string }>;
 }) {
   const { search, status, plan } = await searchParams;
-  const { session } = await requireAdmin();
+  const { session, admin } = await requireAdmin();
+  // The endpoint deletes a seller only for an owner, so the button is offered only to an
+  // owner. The gate is the server's; this keeps the screen from promising something it
+  // would refuse.
+  const canDelete = (admin.permissions ?? []).includes("*");
   const data = await listMerchants(session, { search, status: status ?? "all", plan: plan ?? "all" });
   const maxGmv = Math.max(...data.merchants.map((m) => m.gmv), 1);
   const totalGmv = data.merchants.reduce((sum, m) => sum + m.gmv, 0);
@@ -101,7 +107,7 @@ export default async function MerchantsPage({
       {data.merchants.length ? (
         <TablePanel>
           <DataTable
-            head={["Merchant", "Standing", "Plan", "Commission", "Products", "Orders", "GMV", "Share"]}
+            head={["Merchant", "Standing", "Plan", "Commission", "Products", "Orders", "GMV", "Share", "Actions"]}
             minWidthClass="md:min-w-[1040px]"
           >
             {data.merchants.map((merchant) => (
@@ -156,6 +162,26 @@ export default async function MerchantsPage({
                     {Math.round((merchant.gmv / Math.max(1, totalGmv)) * 100)}% of platform
                   </p>
                 </Td>
+                <Td>
+                  <CellLabel>Actions</CellLabel>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CmsActionForm action={suspendMerchantAction} className="inline-flex">
+                      <input type="hidden" name="id" value={merchant.id} />
+                      <input type="hidden" name="suspend" value={merchant.status === "suspended" ? "false" : "true"} />
+                      <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
+                        {merchant.status === "suspended" ? "Reactivate" : "Suspend"}
+                      </SubmitButton>
+                    </CmsActionForm>
+                    {canDelete ? (
+                      <CmsActionForm action={deleteMerchantAction} className="inline-flex">
+                        <input type="hidden" name="id" value={merchant.id} />
+                        <SubmitButton variant="danger" pendingLabel="…" className="px-2.5 py-1.5">
+                          <Trash2 width={12} height={12} />
+                        </SubmitButton>
+                      </CmsActionForm>
+                    ) : null}
+                  </div>
+                </Td>
               </Row>
             ))}
           </DataTable>
@@ -177,7 +203,7 @@ export default async function MerchantsPage({
           </div>
           <div className="rounded-[2px] border border-hairline p-3.5">
             <Pill tone="rose">Suspended</Pill>
-            <p className="mt-2.5">Removed from the marketplace and flagged in the console.</p>
+            <p className="mt-2.5">Cannot sign in and cannot sell until this is lifted. Their products and orders stay as they are.</p>
           </div>
         </div>
       </Panel>
