@@ -105,7 +105,8 @@ export async function CatalogListing({
   // whether advertisements are woven into the results at all, how often, how many
   // and for which placement, so where they appear is a CMS decision rather than
   // something baked into this file.
-  const page = await getCataloguePage(PAGE_TYPE).catch(() => ({ page: null, sections: [] }));
+  const pageType = PAGE_TYPES[basePath] ?? "marketplace_explore";
+  const page = await getCataloguePage(pageType).catch(() => ({ page: null, sections: [] }));
   const slotSection = page.sections.find(
     (section) => section.type === "promo_slots" && section.visible !== false,
   );
