@@ -412,6 +412,34 @@ class ContentVersion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+
+class SectionPlacement(Base):
+    """A product placed in a named section of a page.
+
+    A product is not simply "on the homepage". It sits in a named section, and each
+    placement can carry its own price, quantity and window - which is how the same
+    product is $189 in Today's deals and $249 in Trending, and how a shopper pays
+    according to the section they bought from rather than the page they were on.
+
+    Types are inferred from the annotations, so this needs no new import.
+    """
+
+    __tablename__ = "section_placements"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    product_id: Mapped[str] = mapped_column(String(60), index=True)
+    product_slug: Mapped[str] = mapped_column(String(180), index=True)
+    document_id: Mapped[str] = mapped_column(String(60), index=True)
+    section_id: Mapped[str] = mapped_column(String(60), index=True)
+    section_type: Mapped[str] = mapped_column(String(40), default="")
+    price: Mapped[float] = mapped_column(default=0.0)
+    compare_at: Mapped[float] = mapped_column(default=0.0)
+    quantity: Mapped[int] = mapped_column(default=0)
+    position: Mapped[int] = mapped_column(default=1)
+    starts_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    ends_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    config: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
 class FlashSale(Base):
     __tablename__ = "flash_sales"
     id: Mapped[str] = mapped_column(String(40), primary_key=True)

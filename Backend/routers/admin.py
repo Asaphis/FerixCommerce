@@ -1814,3 +1814,137 @@ def cms_advert_remove(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         audit(db, "admin", staff.email, "cms.advert.delete", payload.id, staff.role)
         db.commit()
         return {"removed": payload.id}
+
+# ── Placing a product in a section ─────────────────────────────────────────
+# The form that uploads a product lists the sections it can go into, and each one
+# asks its own questions. That is what these three calls store and return.
+
+
+class PlacementIn(BaseModel):
+    productId: Optional[str] = None
+    slug: Optional[str] = None
+    documentId: str
+    sectionId: str
+    sectionType: Optional[str] = None
+    price: Optional[float] = None
+    compareAt: Optional[float] = None
+    quantity: Optional[int] = None
+    position: Optional[int] = None
+    startsAt: Optional[str] = None
+    endsAt: Optional[str] = None
+    config: Optional[dict] = None
+
+
+class PlacementRefIn(BaseModel):
+    id: str
+
+
+def _placement_json(row) -> dict:
+    return {
+        "id": row.id, "productId": row.product_id, "slug": row.product_slug,
+        "documentId": row.document_id, "sectionId": row.section_id,
+        "sectionType": row.section_type, "price": row.price, "compareAt": row.compare_at,
+        "quantity": row.quantity, "position": row.position,
+        "startsAt": iso(row.starts_at) if row.starts_at else None,
+        "endsAt": iso(row.ends_at) if row.ends_at else None,
+        "config": row.config or {},
+    }
+
+
+@router.get("/product/sections")
+def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                     slug: str = Query(...)):
+    """Where one product sits, and every section it could sit in.
+
+    The second half is what the upload form needs: every section in the CMS that
+    can hold a product, with the section it belongs to and what it already has.
+    """
+    from core import ContentDocument, SectionPlacement
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
+
+        placements = [_placement_json(row) for row in db.scalars(
+            select(SectionPlacement).where(SectionPlacement.product_slug == slug)).all()]
+
+        available = []
+        for document in db.scalars(select(ContentDocument)).all():
+            for section in (document.data or {}).get("sections", []):
+                if section.get("type") not in ("product_carousel", "product_grid", "featured_stores"):
+                    continue
+                used = [p for p in placements if p["sectionId"] == section.get("id")]
+                available.append({
+                    "documentId": document.id,
+                    "documentTitle": document.title,
+                    "sectionId": section.get("id"),
+                    "sectionName": section.get("name") or section.get("type"),
+                    "sectionType": section.get("type"),
+                    "source": section.get("source"),
+                    "placements": len(used),
+                })
+        return {"placements": placements, "available": available}
+
+
+@router.post("/product/section")
+def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                         payload: PlacementIn = Body(...)):
+    """Put a product into a section, on that section's terms."""
+    from core import SectionPlacement
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
+
+        product = next((p for p in all_products(db)
+                        if p.get("id") == payload.productId or p.get("slug") == payload.slug), None)
+        if not product:
+            raise HTTPException(404, "That product does not exist")
+
+        existing = db.scalar(select(SectionPlacement).where(
+            SectionPlacement.product_id == product["id"],
+            SectionPlacement.document_id == payload.documentId,
+            SectionPlacement.section_id == payload.sectionId,
+        ))
+        row = existing or SectionPlacement(
+            id=new_id("plc"), product_id=product["id"], product_slug=product["slug"],
+            document_id=payload.documentId, section_id=payload.sectionId,
+        )
+        row.section_type = payload.sectionType or row.section_type or ""
+        # A placement with no price of its own inherits the product's price, so a
+        # section only holds a different price when someone deliberately set one.
+        row.price = float(payload.price if payload.price is not None else product.get("price") or 0.0)
+        row.compare_at = float(payload.compareAt or row.compare_at or 0.0)
+        row.quantity = int(payload.quantity if payload.quantity is not None else product.get("stock") or 0)
+        row.position = int(payload.position or row.position or 1)
+        if payload.startsAt:
+            row.starts_at = parse(payload.startsAt, None)
+        if payload.endsAt:
+            row.ends_at = parse(payload.endsAt, None)
+        if payload.config:
+            row.config = payload.config
+        if existing is None:
+            db.add(row)
+        audit(db, "admin", staff.email, "product.section", product["slug"],
+              f"{payload.documentId}/{payload.sectionId}")
+        db.commit()
+        return {"placement": _placement_json(row)}
+
+
+@router.delete("/product/section")
+def product_section_remove(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                           payload: PlacementRefIn = Body(...)):
+    """Take a product out of a section. The product itself is untouched."""
+    from core import SectionPlacement
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
+        row = db.get(SectionPlacement, payload.id)
+        if not row:
+            raise HTTPException(404, "That placement does not exist")
+        slug = row.product_slug
+        db.delete(row)
+        audit(db, "admin", staff.email, "product.section.remove", slug, payload.id)
+        db.commit()
+        return {"removed": payload.id}
