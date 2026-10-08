@@ -1093,7 +1093,7 @@ def auth_refresh(session: Optional[str] = Header(None, alias="X-Ferix-Session"))
     from core import refresh_staff_session
 
     with SessionLocal() as db:
-        result = refresh_staff_session(db, session, "seller")
+        result = refresh_staff_session(db, session, "merchant")
         if not result:
             raise HTTPException(401, "That session has ended. Please sign in again.")
         return {"token": result["token"], "expiresAt": iso(result["expiresAt"]),
