@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Check, MapPin, Package, Star } from "lucide-react";
-import { getStore, ApiError } from "@/lib/api";
+import { assetUrl, getStore, ApiError } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
 import { Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
@@ -19,6 +19,9 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
   const { store, about, products, categories, stats, responseRate, fulfilmentRate } = data;
   const saved = await savedIds();
   const brand = store.brand;
+  // A seller's logo, under whichever name the record carries it.
+  const record = store as unknown as { logo?: string; imageUrl?: string; image?: string };
+  const storeArtwork = assetUrl(record.logo ?? record.imageUrl ?? record.image ?? null);
 
   return (
     <div>
@@ -35,11 +38,18 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
           </nav>
 
           <div className="mt-5 flex flex-wrap items-start gap-5">
+            {/* Their own artwork where they have one. A letter is the fallback, not the
+                default: a shop with a logo should show it. */}
             <span
-              className="grid h-16 w-16 shrink-0 place-items-center font-display text-[24px] font-extrabold"
+              className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden font-display text-[24px] font-extrabold"
               style={{ background: brand.accent, color: brand.accentInk, borderRadius: brand.radius }}
             >
-              {store.name.slice(0, 1)}
+              {storeArtwork ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={storeArtwork} alt="" className="h-full w-full object-cover" />
+              ) : (
+                store.name.slice(0, 1)
+              )}
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2.5">
@@ -49,9 +59,6 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                     <Check width={10} height={10} /> Verified
                   </span>
                 ) : null}
-                <span className="rounded-[2px] border border-line-warm px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
-                  {store.brand.template}
-                </span>
               </div>
               <p className="mt-2 max-w-[64ch] text-[14px] leading-relaxed text-ink-soft">{store.tagline}</p>
               <div className="mt-3 flex flex-wrap items-center gap-4 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">
