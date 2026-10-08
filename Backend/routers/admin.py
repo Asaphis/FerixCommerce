@@ -1465,10 +1465,12 @@ def audit_log(session: Optional[str] = Header(None, alias="X-Ferix-Session"), li
                             "at": iso(r.created_at)} for r in rows]}
 
 # ── CMS: pages of sections ─────────────────────────────────────────────────
-# The storefront is a document per page, and each document holds an ordered list
-# of sections. These four endpoints are what the CMS reads and writes: the pages
-# list, one page with its sections, a save that only ever writes a draft, and a
-# publish that is the single moment a shopper can see a change.
+# A page is a document holding an ordered list of sections. Editing must never
+# blank the shop, so a save writes a DRAFT VERSION and leaves the published
+# document exactly as it was; publishing is the single moment a shopper can see
+# a change. The first version of this wrote the draft straight onto the document
+# and switched it to "draft" — which emptied the storefront the moment an admin
+# opened the editor.
 
 
 class CmsPageIn(BaseModel):
@@ -1487,18 +1489,32 @@ def _section_summary(section: dict, index: int) -> dict:
     }
 
 
-def _ordered_sections(document) -> list:
-    sections = (document.data or {}).get("sections") or []
-    return sorted(sections, key=lambda s: s.get("position", 0))
+def _ordered(sections: list) -> list:
+    return sorted(sections or [], key=lambda s: s.get("position", 0))
 
 
-def _page_summary(document) -> dict:
-    sections = _ordered_sections(document)
+def _draft_version(db: Session, document_id: str):
+    """The newest unpublished version of a page, or None."""
+    from core import ContentVersion
+
+    return db.scalars(
+        select(ContentVersion)
+        .where(ContentVersion.document_id == document_id, ContentVersion.status == "draft")
+        .order_by(ContentVersion.version.desc())
+    ).first()
+
+
+def _page_summary(document, draft=None) -> dict:
+    """What the CMS lists. Section order and visibility come from the draft when
+    one exists, so reopening the editor resumes where you left off."""
+    source = (draft.data if draft else None) or (document.data or {})
+    sections = _ordered(source.get("sections"))
     return {
         "id": document.id,
         "title": document.title,
         "documentType": document.document_type,
         "status": document.status,
+        "hasDraft": draft is not None,
         "sectionCount": len(sections),
         "visibleCount": sum(1 for s in sections if s.get("visible", True)),
         "sections": [_section_summary(s, i) for i, s in enumerate(sections)],
@@ -1514,14 +1530,14 @@ def cms_pages(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         staff = require_staff(db, session, "admin")
         require_permission(staff, "cms.manage")
         rows = db.scalars(select(ContentDocument)).all()
-        pages = [_page_summary(d) for d in rows]
+        pages = [_page_summary(d, _draft_version(db, d.id)) for d in rows]
         pages.sort(key=lambda p: (p["documentType"] != "marketplace_home", p["title"] or ""))
         return {"pages": pages}
 
 
 @router.get("/cms/page")
 def cms_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str = ""):
-    """One page, with its sections exactly as the storefront will read them."""
+    """One page. Sections are the draft if there is one, otherwise published."""
     from core import ContentDocument
 
     with SessionLocal() as db:
@@ -1530,14 +1546,16 @@ def cms_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
         document = db.get(ContentDocument, id)
         if not document:
             raise HTTPException(404, "That page does not exist")
-        summary = _page_summary(document)
-        summary["sections"] = _ordered_sections(document)
+        draft = _draft_version(db, document.id)
+        summary = _page_summary(document, draft)
+        summary["sections"] = _ordered(((draft.data if draft else None) or document.data or {}).get("sections"))
+        summary["publishedSections"] = _ordered((document.data or {}).get("sections"))
         return {"page": summary}
 
 
 @router.patch("/cms/page")
 def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: CmsPageIn = Body(...)):
-    """Save a page as a draft. Nothing reaches a shopper until it is published."""
+    """Save a draft version. The published page, and therefore the shop, is untouched."""
     from core import ContentDocument, ContentVersion
 
     with SessionLocal() as db:
@@ -1547,7 +1565,10 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
         if not document:
             raise HTTPException(404, "That page does not exist")
 
-        data = dict(document.data or {})
+        draft = _draft_version(db, document.id)
+        data = {"sections": _ordered((draft.data or {}).get("sections"))} if draft else {
+            "sections": _ordered((document.data or {}).get("sections"))
+        }
         if payload.sections is not None:
             cleaned = []
             for index, section in enumerate(payload.sections):
@@ -1556,26 +1577,30 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
                 row.setdefault("visible", True)
                 cleaned.append(row)
             data["sections"] = cleaned
+
         if payload.title:
             document.title = payload.title
-        document.data = data
-        document.status = "draft"
 
-        existing = db.scalars(
-            select(ContentVersion.id).where(ContentVersion.document_id == document.id)
-        ).all()
-        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
-                              status="draft", data=data, note="Edited in the CMS",
-                              created_by=staff.email))
+        if draft:
+            draft.data = data
+            draft.created_by = staff.email
+        else:
+            existing = db.scalars(
+                select(ContentVersion.id).where(ContentVersion.document_id == document.id)
+            ).all()
+            db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
+                                  status="draft", data=data, note="Edited in the CMS",
+                                  created_by=staff.email))
+
         audit(db, "admin", staff.email, "cms.page.save", document.id, staff.role)
         db.commit()
-        return {"page": _page_summary(document)}
+        return {"page": _page_summary(document, _draft_version(db, document.id))}
 
 
 @router.post("/cms/page/publish")
 def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: CmsPageIn = Body(...)):
-    """Publish the page the storefront reads, and record the version."""
-    from core import ContentDocument, ContentVersion
+    """Make the draft the published page. This is the moment the shop changes."""
+    from core import ContentDocument
 
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
@@ -1584,13 +1609,13 @@ def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         if not document:
             raise HTTPException(404, "That page does not exist")
 
+        draft = _draft_version(db, document.id)
+        if draft:
+            document.data = draft.data
+            draft.status = "published"
+            draft.note = "Published"
         document.status = "published"
-        existing = db.scalars(
-            select(ContentVersion.id).where(ContentVersion.document_id == document.id)
-        ).all()
-        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
-                              status="published", data=document.data, note="Published",
-                              created_by=staff.email))
+
         audit(db, "admin", staff.email, "cms.page.publish", document.id, staff.role)
         db.commit()
         return {"page": _page_summary(document)}
