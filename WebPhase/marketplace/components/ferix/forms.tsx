@@ -20,7 +20,7 @@ import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const field =
-  "h-10 w-full rounded-[2px] border border-line-warm bg-white px-3 text-[13.5px] text-ink outline-none transition-colors placeholder:text-ink-soft/60 focus:border-ink";
+  "h-11 w-full rounded-[10px] border border-line-warm bg-white px-3.5 text-[13.5px] text-ink outline-none transition-colors placeholder:text-ink-soft/60 focus:border-ember focus:ring-2 focus:ring-ember/15";
 const label = "font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-soft";
 
 function Field({ title, children }: { title: string; children: React.ReactNode }) {
@@ -78,14 +78,14 @@ function PhoneField({ defaultValue }: { defaultValue?: string }) {
 function Notice({ state }: { state: FormState }) {
   if (state?.error)
     return (
-      <p className="flex items-start gap-2 rounded-[2px] border border-ember/40 bg-ember/8 px-3 py-2.5 text-[12.5px] text-ember">
+      <p className="flex items-start gap-2 rounded-[10px] border border-ember/40 bg-ember/8 px-3 py-2.5 text-[12.5px] text-ember">
         <AlertCircle width={14} height={14} className="mt-[1px] shrink-0" />
         {state.error}
       </p>
     );
   if (state?.message)
     return (
-      <p className="flex items-start gap-2 rounded-[2px] border border-pine/40 bg-pine/8 px-3 py-2.5 text-[12.5px] text-pine">
+      <p className="flex items-start gap-2 rounded-[10px] border border-pine/40 bg-pine/8 px-3 py-2.5 text-[12.5px] text-pine">
         <Check width={14} height={14} className="mt-[1px] shrink-0" />
         {state.message}
       </p>
@@ -251,11 +251,11 @@ export function SettingsForm({ user, settings }: { user: AccountUser; settings: 
         </Field>
       </div>
 
-      <div className="rounded-[3px] border border-line-warm bg-white p-4">
+      <div className="rounded-[14px] border border-line-warm bg-white p-4">
         <p className={label}>Notifications and privacy</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {toggles.map((item) => (
-            <label key={item.name} className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-line-warm p-3 transition-colors hover:border-ink/25">
+            <label key={item.name} className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line-warm p-3.5 transition-colors hover:border-ember/50">
               <input type="checkbox" name={item.name} defaultChecked={item.on} className="mt-[3px] h-4 w-4 accent-[#e4572e]" />
               <span>
                 <span className="block text-[13px] font-medium text-ink">{item.title}</span>
@@ -295,7 +295,7 @@ export function ShippingPicker({
         <label
           key={option.id}
           className={cn(
-            "flex cursor-pointer items-center gap-3 rounded-[2px] border p-3 transition-colors",
+            "flex cursor-pointer items-center gap-3 rounded-[10px] border p-3 transition-colors",
             option.id === selected ? "border-ink bg-bone-soft" : "border-line-warm hover:border-ink/30",
           )}
         >
@@ -316,7 +316,7 @@ export function ShippingPicker({
         </label>
       ))}
       <noscript>
-        <button type="submit" className="rounded-[2px] border border-ink/25 px-3 py-2 text-[12.5px] font-semibold text-ink">
+        <button type="submit" className="rounded-[10px] border border-ink/25 px-3.5 py-2.5 text-[12.5px] font-semibold text-ink transition-colors hover:border-ink">
           Update total
         </button>
       </noscript>
@@ -445,13 +445,13 @@ export function PreferencesForm({ settings }: { settings: Record<string, unknown
         </Field>
       </div>
 
-      <div className="rounded-[3px] border border-line-warm bg-white p-4">
+      <div className="rounded-[14px] border border-line-warm bg-white p-4">
         <p className={label}>Messages and privacy</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {toggles.map((item) => (
             <label
               key={item.name}
-              className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-line-warm p-3 transition-colors hover:border-ink/25"
+              className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line-warm p-3.5 transition-colors hover:border-ember/50"
             >
               <input
                 type="checkbox"
