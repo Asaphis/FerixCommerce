@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowUp, Pencil } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
 import { getCmsPage } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
-import { PageHeader } from "@/components/ops/table";
-import { SubmitButton } from "@/components/ops/controls";
-import { moveCmsSectionAction, publishCmsPageAction, toggleCmsSectionAction } from "@/lib/actions";
+import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { addCmsSectionAction, moveCmsSectionAction, publishCmsPageAction, removeCmsSectionAction, toggleCmsSectionAction } from "@/lib/actions";
 
 /** Section types in plain words. A type with no entry falls back to its own name. */
 const SECTION_LABELS: Record<string, string> = {
@@ -76,6 +76,35 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
         </div>
       ) : null}
 
+      {page ? (
+        <Panel>
+          <PanelHead
+            title="Add a section"
+            hint="It lands at the bottom of the draft, empty and switched on. Open it to fill it in, then publish."
+          />
+          <CmsActionForm action={addCmsSectionAction} className="mt-4 flex flex-wrap items-end gap-3">
+            <input type="hidden" name="id" value={page.id} />
+            <Field title="What kind of section">
+              <select name="type" defaultValue="category_grid" className={selectClass}>
+                <option value="hero_banner">Hero banner — the full campaign, with slides</option>
+                <option value="hero_slim">Banner — one short band with a button</option>
+                <option value="promo_strip">Message strip — one line of text</option>
+                <option value="category_grid">Department tiles</option>
+                <option value="brand_carousel">Brand row</option>
+                <option value="product_carousel">Product row</option>
+                <option value="featured_stores">Stores</option>
+                <option value="promo_slots">Promotion slots — adverts between content</option>
+                <option value="footer">Footer</option>
+              </select>
+            </Field>
+            <Field title="Name it (optional)">
+              <input name="name" className={inputClass} placeholder="Autumn picks" />
+            </Field>
+            <SubmitButton pendingLabel="Adding">Add section</SubmitButton>
+          </CmsActionForm>
+        </Panel>
+      ) : null}
+
       {page?.sections?.length ? (
         <Panel flush>
           <div className="p-4 pb-3 sm:p-5 sm:pb-3">
@@ -109,12 +138,36 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                   </SubmitButton>
                 </CmsActionForm>
 
+                <CmsActionForm action={moveCmsSectionAction} className="flex items-center gap-1">
+                  <input type="hidden" name="id" value={page.id} />
+                  <input type="hidden" name="sectionId" value={section.id} />
+                  <input type="hidden" name="direction" value="top" />
+                  <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
+                    Top
+                  </SubmitButton>
+                </CmsActionForm>
+                <CmsActionForm action={moveCmsSectionAction} className="flex items-center gap-1">
+                  <input type="hidden" name="id" value={page.id} />
+                  <input type="hidden" name="sectionId" value={section.id} />
+                  <input type="hidden" name="direction" value="bottom" />
+                  <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
+                    Bottom
+                  </SubmitButton>
+                </CmsActionForm>
                 <CmsActionForm action={toggleCmsSectionAction} className="flex items-center gap-2">
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="visible" value={section.visible ? "" : "on"} />
                   <SubmitButton variant="outline" pendingLabel="…" className="px-3 py-1.5">
                     {section.visible ? "Hide" : "Show"}
+                  </SubmitButton>
+                </CmsActionForm>
+
+                <CmsActionForm action={removeCmsSectionAction} className="flex items-center gap-1">
+                  <input type="hidden" name="id" value={page.id} />
+                  <input type="hidden" name="sectionId" value={section.id} />
+                  <SubmitButton variant="danger" pendingLabel="…" className="px-2.5 py-1.5">
+                    <Trash2 width={13} height={13} />
                   </SubmitButton>
                 </CmsActionForm>
 

@@ -216,22 +216,76 @@ export async function moveCmsSectionAction(_prev: FormState, formData: FormData)
   if (!session) redirect("/login");
   const id = String(formData.get("id") ?? "").trim();
   const sectionId = String(formData.get("sectionId") ?? "").trim();
-  const direction = String(formData.get("direction") ?? "up") === "down" ? 1 : -1;
+  const direction = String(formData.get("direction") ?? "up");
   if (!id || !sectionId) return { error: "That section is missing." };
   try {
     const { page } = await api.getCmsPage(session, id);
     const sections = [...page.sections];
     const from = sections.findIndex((section) => section.id === sectionId);
-    const to = from + direction;
-    if (from === -1 || to < 0 || to >= sections.length) return {};
-    const [moved] = sections.splice(from, 1);
-    sections.splice(to, 0, moved);
+    if (from === -1) return { error: "That section is no longer on this page." };
+
+    if (direction === "top" || direction === "bottom") {
+      // Straight to one end, keeping everything else in order.
+      const [moved] = sections.splice(from, 1);
+      if (direction === "top") sections.unshift(moved);
+      else sections.push(moved);
+    } else {
+      const to = from + (direction === "down" ? 1 : -1);
+      if (to < 0 || to >= sections.length) return {};
+      const [moved] = sections.splice(from, 1);
+      sections.splice(to, 0, moved);
+    }
     await api.saveCmsPage(session, { id, sections });
   } catch (error) {
     return { error: error instanceof api.ApiError ? error.message : "That section could not be moved." };
   }
   refresh(`/cms/pages/${id}`);
   return { message: "Order changed. Publish to put it on the storefront." };
+}
+
+/** Add a section to a page. It lands at the bottom, empty, as a draft. */
+export async function addCmsSectionAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const type = String(formData.get("type") ?? "").trim();
+  const label = String(formData.get("name") ?? "").trim();
+  if (!id || !type) return { error: "Choose what kind of section to add." };
+  try {
+    const { page } = await api.getCmsPage(session, id);
+    const sections = [...page.sections];
+    sections.push({
+      id: `sec_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+      type,
+      name: label || type.replace(/_/g, " "),
+      position: sections.length + 1,
+      visible: true,
+    } as api.CmsSection);
+    await api.saveCmsPage(session, { id, sections });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That section could not be added." };
+  }
+  refresh(`/cms/pages/${id}`);
+  return { message: "Added at the bottom of the draft. Open it to fill it in." };
+}
+
+/** Take a section off a page for good. */
+export async function removeCmsSectionAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  if (!id || !sectionId) return { error: "That section is missing." };
+  try {
+    const { page } = await api.getCmsPage(session, id);
+    const sections = page.sections.filter((section) => section.id !== sectionId);
+    if (sections.length === page.sections.length) return { error: "That section is no longer on this page." };
+    await api.saveCmsPage(session, { id, sections });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That section could not be removed." };
+  }
+  refresh(`/cms/pages/${id}`);
+  return { message: "Removed. Publish to take it off the storefront." };
 }
 
 /** Save the fields of one section. */
