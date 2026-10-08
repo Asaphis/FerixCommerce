@@ -714,6 +714,8 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
 def settings(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
+
+        require_permission(staff, "settings.manage")
         return {
             "settings": _settings(db),
             "admin": {"email": staff.email, "role": staff.role, "permissions": staff.permissions},
