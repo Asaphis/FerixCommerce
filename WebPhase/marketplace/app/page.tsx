@@ -199,24 +199,30 @@ export default async function HomePage() {
               className="mb-3 sm:mb-4"
             />
             <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-              {shown.map((brand) => (
-                <Link
-                  key={brand.slug}
-                  href={`/browse?brand=${brand.slug}`}
-                  className="flex w-[150px] shrink-0 flex-col items-center rounded-[14px] border border-line-warm bg-white p-4 text-center transition-colors hover:border-ember/40"
-                >
-                  {assetUrl(brand.imageUrl) ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={assetUrl(brand.imageUrl) ?? ""} alt={brand.name} className="h-[62px] w-full rounded-[10px] object-cover" />
-                  ) : (
-                    <span className="grid h-[62px] w-full place-items-center rounded-[10px] bg-bone-soft font-display text-[16px] font-bold text-ink-soft">
-                      {brand.name.slice(0, 1)}
-                    </span>
-                  )}
-                  <span className="mt-3 truncate text-[12.5px] font-semibold text-ink">{brand.name}</span>
-                  {brand.featured ? <span className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.12em] text-ember">Featured</span> : null}
-                </Link>
-              ))}
+              {shown.map((brand) => {
+                // A brand's artwork has been called imageUrl and logo in different
+                // places, so read whichever the record carries rather than pinning
+                // the page to one spelling.
+                const record = brand as { slug: string; name: string; imageUrl?: string; logo?: string };
+                const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
+                return (
+                  <Link
+                    key={record.slug}
+                    href={`/browse?brand=${record.slug}`}
+                    className="flex w-[150px] shrink-0 flex-col items-center rounded-[14px] border border-line-warm bg-white p-4 text-center transition-colors hover:border-ember/40"
+                  >
+                    {artwork ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={artwork} alt={record.name} className="h-[62px] w-full rounded-[10px] object-cover" />
+                    ) : (
+                      <span className="grid h-[62px] w-full place-items-center rounded-[10px] bg-bone-soft font-display text-[16px] font-bold text-ink-soft">
+                        {record.name.slice(0, 1)}
+                      </span>
+                    )}
+                    <span className="mt-3 truncate text-[12.5px] font-semibold text-ink">{record.name}</span>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         );
