@@ -1463,3 +1463,134 @@ def audit_log(session: Optional[str] = Header(None, alias="X-Ferix-Session"), li
         return {"events": [{"id": r.id, "actorType": r.actor_type, "actorId": r.actor_id,
                             "action": r.action, "target": r.target, "detail": r.detail,
                             "at": iso(r.created_at)} for r in rows]}
+
+# ── CMS: pages of sections ─────────────────────────────────────────────────
+# The storefront is a document per page, and each document holds an ordered list
+# of sections. These four endpoints are what the CMS reads and writes: the pages
+# list, one page with its sections, a save that only ever writes a draft, and a
+# publish that is the single moment a shopper can see a change.
+
+
+class CmsPageIn(BaseModel):
+    id: str
+    title: Optional[str] = None
+    sections: Optional[list] = None
+
+
+def _section_summary(section: dict, index: int) -> dict:
+    return {
+        "id": section.get("id"),
+        "name": section.get("name") or section.get("type") or "",
+        "type": section.get("type"),
+        "position": section.get("position", index + 1),
+        "visible": bool(section.get("visible", True)),
+    }
+
+
+def _ordered_sections(document) -> list:
+    sections = (document.data or {}).get("sections") or []
+    return sorted(sections, key=lambda s: s.get("position", 0))
+
+
+def _page_summary(document) -> dict:
+    sections = _ordered_sections(document)
+    return {
+        "id": document.id,
+        "title": document.title,
+        "documentType": document.document_type,
+        "status": document.status,
+        "sectionCount": len(sections),
+        "visibleCount": sum(1 for s in sections if s.get("visible", True)),
+        "sections": [_section_summary(s, i) for i, s in enumerate(sections)],
+    }
+
+
+@router.get("/cms/pages")
+def cms_pages(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Every storefront page, with the sections inside it."""
+    from core import ContentDocument
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        rows = db.scalars(select(ContentDocument)).all()
+        pages = [_page_summary(d) for d in rows]
+        pages.sort(key=lambda p: (p["documentType"] != "marketplace_home", p["title"] or ""))
+        return {"pages": pages}
+
+
+@router.get("/cms/page")
+def cms_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str = ""):
+    """One page, with its sections exactly as the storefront will read them."""
+    from core import ContentDocument
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        document = db.get(ContentDocument, id)
+        if not document:
+            raise HTTPException(404, "That page does not exist")
+        summary = _page_summary(document)
+        summary["sections"] = _ordered_sections(document)
+        return {"page": summary}
+
+
+@router.patch("/cms/page")
+def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: CmsPageIn = Body(...)):
+    """Save a page as a draft. Nothing reaches a shopper until it is published."""
+    from core import ContentDocument, ContentVersion
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        document = db.get(ContentDocument, payload.id)
+        if not document:
+            raise HTTPException(404, "That page does not exist")
+
+        data = dict(document.data or {})
+        if payload.sections is not None:
+            cleaned = []
+            for index, section in enumerate(payload.sections):
+                row = dict(section or {})
+                row["position"] = index + 1
+                row.setdefault("visible", True)
+                cleaned.append(row)
+            data["sections"] = cleaned
+        if payload.title:
+            document.title = payload.title
+        document.data = data
+        document.status = "draft"
+
+        existing = db.scalars(
+            select(ContentVersion.id).where(ContentVersion.document_id == document.id)
+        ).all()
+        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
+                              status="draft", data=data, note="Edited in the CMS",
+                              created_by=staff.email))
+        audit(db, "admin", staff.email, "cms.page.save", document.id, staff.role)
+        db.commit()
+        return {"page": _page_summary(document)}
+
+
+@router.post("/cms/page/publish")
+def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: CmsPageIn = Body(...)):
+    """Publish the page the storefront reads, and record the version."""
+    from core import ContentDocument, ContentVersion
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        document = db.get(ContentDocument, payload.id)
+        if not document:
+            raise HTTPException(404, "That page does not exist")
+
+        document.status = "published"
+        existing = db.scalars(
+            select(ContentVersion.id).where(ContentVersion.document_id == document.id)
+        ).all()
+        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
+                              status="published", data=document.data, note="Published",
+                              created_by=staff.email))
+        audit(db, "admin", staff.email, "cms.page.publish", document.id, staff.role)
+        db.commit()
+        return {"page": _page_summary(document)}
