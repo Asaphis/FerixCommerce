@@ -553,7 +553,11 @@ export const getShipping = () =>
     "shipping/options",
   );
 
-export const quoteCheckout = (body: { addressId: string; shippingMethod: string }, creds: Creds) =>
+// A guest has no saved address and no session: the email is what the total belongs to.
+export const quoteCheckout = (
+  body: { addressId: string; shippingMethod: string; email?: string },
+  creds: Creds,
+) =>
   call<CheckoutQuote>("POST", "checkout/quote", { body, creds });
 
 export const placeOrder = (

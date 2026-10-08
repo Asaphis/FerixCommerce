@@ -10,20 +10,32 @@ import { money } from "@/lib/format";
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ shipping?: string; address?: string }>;
+  searchParams: Promise<{ shipping?: string; address?: string; email?: string }>;
 }) {
-  const { shipping: shippingParam, address: addressParam } = await searchParams;
+  const { shipping: shippingParam, address: addressParam, email: emailParam } = await searchParams;
   const creds = await readCredentials();
-  if (!creds.session) redirect("/login");
+  // Signing in is one way to check out; leaving an email is the other. Nobody is sent to a
+  // sign-in page they did not ask for.
+  const isGuest = !creds.session;
+  const typedEmail = (emailParam ?? "").trim();
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail);
 
   const shippingMethod = shippingParam ?? "standard";
+  let quoteFailed: string | null = null;
   const [{ options, paymentMethods, freeShippingOver }, quote, account] = await Promise.all([
     getShipping(),
-    quoteCheckout({ addressId: addressParam ?? "", shippingMethod }, creds).catch((error) => {
-      if (error instanceof ApiError && (error.status === 409 || error.status === 422)) return null;
-      throw error;
+    quoteCheckout(
+      { addressId: addressParam ?? "", shippingMethod, email: emailLooksValid ? typedEmail : undefined },
+      creds,
+    ).catch((error) => {
+      // An empty cart, or a guest who has not given an email yet, is a step rather than a
+      // failure. Anything else is a real fault and is shown rather than thrown at the runtime.
+      if (error instanceof ApiError && [401, 409, 422].includes(error.status)) return null;
+      quoteFailed = error instanceof ApiError ? error.message : "The totals could not be worked out just now.";
+      return null;
     }),
-    getAddresses(creds),
+    // A guest has no saved addresses, and asking for them must not take the page down.
+    getAddresses(creds).catch(() => ({ addresses: [] })),
   ]);
 
   const addressList = account.addresses;
@@ -31,16 +43,78 @@ export default async function CheckoutPage({
     addressParam ?? addressList.find((address) => address.isDefault)?.id ?? addressList[0]?.id;
 
   if (!quote) {
+    const missingEmail = isGuest && !emailLooksValid;
+    const malformed = isGuest && typedEmail.length > 0 && !emailLooksValid;
+
     return (
-      <div className="mx-auto max-w-[720px] px-4 py-16">
+      <div className="mx-auto max-w-[720px] px-4 py-12">
         <Eyebrow>Checkout</Eyebrow>
-        <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">There is nothing to check out</h1>
-        <p className="mt-2.5 text-[13.5px] text-ink-soft">
-          Add something to your cart and it will show up here with delivery and totals worked out.
-        </p>
-        <LinkButton href="/browse" className="mt-6">
-          Browse the marketplace
-        </LinkButton>
+        <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">
+          {missingEmail ? "Your email, to begin" : "There is nothing to check out"}
+        </h1>
+
+        {quoteFailed ? (
+          <p
+            role="status"
+            className="mt-4 rounded-[3px] border border-[#c0392b]/40 bg-[#c0392b]/8 px-4 py-3 text-[13px] leading-relaxed text-[#a33022]"
+          >
+            <span className="font-semibold">We could not work out your totals.</span> {quoteFailed} Your cart is
+            untouched — try again in a moment.
+          </p>
+        ) : null}
+
+        {missingEmail ? (
+          <>
+            <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-soft">
+              No account needed. Leave an email address and your order confirmation goes there — and if you
+              register with the same address later, the order is already yours.
+            </p>
+
+            <form method="get" action="/checkout" className="mt-6 grid gap-3 rounded-[3px] border border-line-warm bg-white p-5">
+              <input type="hidden" name="shipping" value={shippingMethod} />
+              <label className="grid gap-1.5">
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">Email address</span>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  defaultValue={typedEmail}
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  aria-invalid={malformed}
+                  className="h-11 rounded-[2px] border border-line-warm bg-bone-soft px-3 text-[13.5px] text-ink outline-none focus:border-ink/40"
+                />
+              </label>
+
+              {malformed ? (
+                <p role="status" className="text-[12.5px] text-[#a33022]">
+                  That does not look like an email address — it needs an @ and a domain, like you@example.com.
+                </p>
+              ) : null}
+
+              <div>
+                <button
+                  type="submit"
+                  className="inline-flex min-h-11 items-center rounded-[3px] bg-ink px-4 text-[13px] font-semibold text-white"
+                >
+                  See my totals
+                </button>
+              </div>
+              <p className="text-[12px] text-ink-soft">
+                Delivery is asked for on the next step, and nothing is charged until you place the order.
+              </p>
+            </form>
+          </>
+        ) : (
+          <>
+            <p className="mt-2.5 text-[13.5px] text-ink-soft">
+              Add something to your cart and it will show up here with delivery and totals worked out.
+            </p>
+            <LinkButton href="/browse" className="mt-6">
+              Browse the marketplace
+            </LinkButton>
+          </>
+        )}
       </div>
     );
   }
