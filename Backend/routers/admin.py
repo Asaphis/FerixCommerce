@@ -1562,7 +1562,16 @@ def cms_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
         if not document:
             raise HTTPException(404, "That page does not exist")
         summary = _page_summary(document)
-        summary["sections"] = _ordered_sections(document)
+        # The editor shows the draft if there is one, because that is what the operator is
+        # working on. The document is what the shop is reading meanwhile.
+        draft = db.scalar(
+            select(ContentVersion)
+            .where(ContentVersion.document_id == id, ContentVersion.status == "draft")
+            .order_by(ContentVersion.version.desc())
+        )
+        source = (draft.data if draft is not None else document.data) or {}
+        summary["sections"] = sorted(source.get("sections") or [],
+                                     key=lambda section: section.get("position", 0))
         return {"page": summary}
 
 
@@ -1589,8 +1598,10 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
             data["sections"] = cleaned
         if payload.title:
             document.title = payload.title
-        document.data = data
-        document.status = "draft"
+        # The draft goes to a version and NOT onto the document. The document is what the
+        # storefront reads, and only a published one at that: writing the draft into it and
+        # marking it a draft took the whole page off the shop the moment anyone pressed Save,
+        # which is what emptied banners and promotions out of a live storefront.
 
         existing = db.scalars(
             select(ContentVersion.id).where(ContentVersion.document_id == document.id)
@@ -1615,7 +1626,18 @@ def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         if not document:
             raise HTTPException(404, "That page does not exist")
 
+        # Publishing is the moment the draft becomes the page. Until this runs the shop
+        # keeps reading whatever the document already held.
+        draft = db.scalar(
+            select(ContentVersion)
+            .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
+            .order_by(ContentVersion.version.desc())
+        )
+        if draft is not None and (draft.data or {}).get("sections") is not None:
+            document.data = draft.data
+            draft.status = "published"
         document.status = "published"
+
         existing = db.scalars(
             select(ContentVersion.id).where(ContentVersion.document_id == document.id)
         ).all()
