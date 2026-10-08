@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import { listProducts } from "@/lib/api";
+import { assetUrl, getCataloguePage, listAdverts, listProducts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
 import { AutoForm } from "@/components/ferix/add-to-cart";
@@ -20,6 +20,22 @@ import { cn } from "@/lib/utils";
  */
 
 export type Query = Record<string, string | string[] | undefined>;
+
+/** Which document a base path builds from. Add a line here for a new listing. */
+const PAGE_TYPES: Record<string, string> = {
+  "/browse": "marketplace_explore",
+  "/search": "marketplace_explore",
+};
+
+/** Splits the results so a promotion can sit after every group. */
+function productChunks<T>(items: T[], size: number): T[][] {
+  if (size <= 0) return [items];
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
 
 const SORTS = [
   { id: "relevance", label: "Most relevant" },
@@ -84,6 +100,20 @@ export async function CatalogListing({
   };
 
   const [feed, saved] = await Promise.all([listProducts(filters), savedIds()]);
+
+  // The listing builds itself from the page document. The slots section decides
+  // whether advertisements are woven into the results at all, how often, how many
+  // and for which placement, so where they appear is a CMS decision rather than
+  // something baked into this file.
+  const page = await getCataloguePage(PAGE_TYPE).catch(() => ({ page: null, sections: [] }));
+  const slotSection = page.sections.find(
+    (section) => section.type === "promo_slots" && section.visible !== false,
+  );
+  const slotEvery = Math.max(1, Number(slotSection?.adEvery) || 6);
+  const slotLimit = Math.max(0, Number(slotSection?.limit) || 3);
+  const adverts = slotSection && slotLimit > 0
+    ? (await listAdverts(slotSection.placement ?? "explore").catch(() => ({ adverts: [] }))).adverts.slice(0, slotLimit)
+    : [];
   const activeStore = feed.facets.stores.find((item) => item.slug === filters.store);
   const activeCategory = feed.facets.categories.find((item) => item.slug === filters.category);
   // Filtering by department renames the page, so the heading always matches the list.
@@ -230,7 +260,17 @@ export async function CatalogListing({
           ) : null}
 
           {feed.items.length ? (
-            <ProductGrid products={feed.items} savedIds={saved} />
+            <div className="grid gap-5">
+              {/* One block of products, then whatever promotion follows it. */}
+              {productChunks(feed.items, slotEvery).map((chunk, index) => (
+                <div key={chunk[0]?.id ?? index} className="grid gap-3.5">
+                  <ProductGrid products={chunk} savedIds={saved} />
+                  {adverts[index] ? (
+                    <AdvertSlot advert={adverts[index]} label={slotSection?.subtitle ?? "Advertisement"} />
+                  ) : null}
+                </div>
+              ))}
+            </div>
           ) : (
             <EmptyState
               title="Nothing matches those filters"
@@ -368,5 +408,40 @@ function FilterLink({ href, active, children }: { href: string; active?: boolean
     >
       {children}
     </Link>
+  );
+}
+
+/**
+ * One advertisement, in the flow of the results.
+ *
+ * Labelled, always: a promotion that cannot be told apart from a result is a
+ * trick, and it costs more trust than the slot earns. A sponsor line appears
+ * when the advert has one; without it the slot is house advertising.
+ */
+function AdvertSlot({ advert, label }: { advert: Advert; label: string }) {
+  const media = assetUrl(advert.mediaUrl);
+  const isVideo = advert.kind === "video";
+  return (
+    <a
+      href={advert.href || "/browse"}
+      className="group grid overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
+    >
+      <span className="relative block min-h-[132px] bg-gradient-to-br from-[#5b3a7a] via-[#8b63b0] to-[#c8a7e0]">
+        {media && !isVideo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={media} alt="" className="h-full w-full object-cover" />
+        ) : null}
+      </span>
+      <span className="flex flex-col justify-center gap-1.5 px-4 py-4">
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-ink-soft">{label}</span>
+        <span className="font-display text-[17px] font-bold leading-tight text-ink group-hover:text-ember">
+          {advert.headline || advert.name || "Something worth a look"}
+        </span>
+        {advert.body ? <span className="text-[12.5px] leading-relaxed text-ink-soft">{advert.body}</span> : null}
+        <span className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/80">
+          {advert.sponsor ? `Sponsored by ${advert.sponsor}` : "From Ferixas"}
+        </span>
+      </span>
+    </a>
   );
 }

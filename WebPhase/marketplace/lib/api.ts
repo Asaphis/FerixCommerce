@@ -380,6 +380,51 @@ async function call<T>(
 
 export const getHome = () => call<HomeFeed>("GET", "catalog/home");
 
+/** A published storefront page: title and the sections that build it. */
+export type CatalogueSection = {
+  id: string;
+  type: string;
+  name?: string;
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
+  ctaHref?: string;
+  eyebrow?: string;
+  mediaUrl?: string;
+  kind?: string;
+  href?: string;
+  sponsor?: string;
+  adEvery?: number;
+  limit?: number;
+  placement?: string;
+  position?: number;
+  visible?: boolean;
+};
+
+export type CataloguePage = {
+  page: { id: string; title: string; documentType: string } | null;
+  sections: CatalogueSection[];
+};
+
+export type Advert = {
+  id: string;
+  name?: string;
+  headline?: string;
+  body?: string;
+  mediaUrl?: string;
+  kind?: string;
+  href?: string;
+  sponsor?: string;
+  placement?: string;
+};
+
+export const getCataloguePage = (type: string) =>
+  call<CataloguePage>("GET", "catalog/page", { params: { type } });
+
+/** Advertisements running right now for one placement. */
+export const listAdverts = (placement: string) =>
+  call<{ adverts: Advert[]; count: number }>("GET", "catalog/adverts", { params: { placement } });
+
 export const listProducts = (params: Params) => call<ProductList>("GET", "catalog/products", { params });
 
 export const getProduct = (slug: string) => call<ProductDetail>("GET", "catalog/product", { params: { slug } });
