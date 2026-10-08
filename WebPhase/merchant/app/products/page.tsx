@@ -44,10 +44,7 @@ export default async function ProductsPage({
         <div className="min-w-0">
           <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
-          <p className="mt-1.5 max-w-[70ch] text-[13px] leading-relaxed text-chalk-dim">
-            One product record per item. Choose per product whether it sells in your own store, on the
-            Ferixas marketplace, or both.
-          </p>
+          
         </div>
         <Link
           href="/products/new"

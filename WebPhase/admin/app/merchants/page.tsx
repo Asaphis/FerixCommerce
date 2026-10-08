@@ -165,7 +165,7 @@ export default async function MerchantsPage({
       )}
 
       <Panel>
-        <PanelHead title="How standing affects selling" hint="What shoppers see when you change it" />
+        <PanelHead title="How standing affects selling" />
         <div className="grid gap-3 text-[12.5px] leading-relaxed text-chalk-dim sm:grid-cols-3">
           <div className="rounded-[2px] border border-hairline p-3.5">
             <Pill tone="mint">Active</Pill>

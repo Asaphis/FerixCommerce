@@ -21,10 +21,7 @@ export default async function PayoutsPage() {
       <header>
         <Eyebrow>Commerce</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Payouts</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          What the platform owes each merchant for a period, after commission. Marking a payout paid records the
-          settlement against the merchant's ledger.
-        </p>
+        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">

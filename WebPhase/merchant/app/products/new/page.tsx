@@ -24,7 +24,7 @@ export default async function NewProductPage() {
       <ProductForm categories={CATEGORIES} />
 
       <Panel>
-        <PanelHead title="How channels work" hint="This is the core Ferixas idea" />
+        <PanelHead title="How channels work" />
         <ul className="grid gap-3 text-[12.5px] leading-relaxed text-chalk-dim sm:grid-cols-3">
           <li className="rounded-[2px] border border-hairline p-3">
             <span className="block text-chalk">My store only</span>

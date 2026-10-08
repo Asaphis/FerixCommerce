@@ -46,9 +46,7 @@ export default async function StoreDesignPage() {
       <header>
         <Eyebrow>Storefront</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Store design</h1>
-        <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
-          Your storefront content, straight from the store backend.
-        </p>
+        
       </header>
 
       <Panel className="border-lime/25">
@@ -76,7 +74,7 @@ export default async function StoreDesignPage() {
 
         <div className="grid content-start gap-3">
           <Panel>
-            <PanelHead title="Document" hint="This is the record the storefront reads" />
+            <PanelHead title="Document" />
             <ul className="grid gap-2.5 text-[12.5px] text-chalk-dim">
               <li className="flex items-center justify-between gap-3">
                 <span>Status</span>
@@ -103,7 +101,7 @@ export default async function StoreDesignPage() {
           </Panel>
 
           <Panel>
-            <PanelHead title="Theme" hint="Read-only until the design engine arrives" />
+            <PanelHead title="Theme" />
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-2">
               {SWATCHES.map((swatch) => (
                 <div key={swatch.key} className="rounded-[2px] border border-hairline p-2.5">
@@ -133,7 +131,7 @@ export default async function StoreDesignPage() {
           </Panel>
 
           <Panel>
-            <PanelHead title="Pages" hint="Standalone pages on your storefront" />
+            <PanelHead title="Pages" />
             {pages.length ? (
               <ul className="grid gap-2.5">
                 {pages.map((page) => (

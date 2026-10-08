@@ -27,9 +27,7 @@ export default async function MediaPage() {
             Content
           </Link>
           <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Media</h1>
-          <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-            One library for banners, department tiles, collection covers and editorial imagery.
-          </p>
+          
         </div>
         <Pill tone={storage === "cloudinary" || storage === "local" ? "mint" : "amber"}>
           {storage === "cloudinary" ? "cloudinary connected" : "local MVP storage"}
@@ -46,7 +44,7 @@ export default async function MediaPage() {
       ) : null}
 
       <Panel>
-        <PanelHead title="Add media" hint="Upload a file or paste a hosted URL. Alt text keeps the storefront accessible." />
+        <PanelHead title="Add media" />
         <CmsActionForm action={addMediaAction} className="grid gap-3">
           <MediaUploadField urlName="url" fileName="file" kind="auto" urlLabel="Media URL" fileLabel="Upload image or video" />
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:gap-3 xl:grid-cols-3">

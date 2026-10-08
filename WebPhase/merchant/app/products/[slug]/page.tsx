@@ -70,7 +70,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <Panel>
         <PanelHead
           title="Where this sells"
-          hint="Changing a channel takes effect immediately on both surfaces"
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-[2px] border border-hairline p-3.5">

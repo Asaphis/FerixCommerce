@@ -40,7 +40,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
       </div>
 
       <Panel>
-        <PanelHead title="Ownership" hint="Ownership decides who can edit this product." />
+        <PanelHead title="Ownership" />
         <div className="flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 text-[13px] text-chalk">
             <Store width={14} height={14} className="text-signal" />
@@ -150,7 +150,6 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
       <Panel className="border-rose/25">
         <PanelHead
           title="Remove product"
-          hint="Removing a product takes it off the storefront immediately. Past orders keep their record."
         />
         <form action={deleteCatalogProductAction}>
           <input type="hidden" name="id" value={product.id} />

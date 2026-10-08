@@ -31,7 +31,7 @@ export default async function NewProductPage() {
 
       <form action={createCatalogProductAction} className="grid gap-4">
         <Panel className="grid gap-4">
-          <PanelHead title="Basics" hint="Title and price are required. The slug is generated when left blank." />
+          <PanelHead title="Basics" />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Title">
               <input name="title" placeholder="Studio monitor headphones" className={inputClass} required />
@@ -80,7 +80,7 @@ export default async function NewProductPage() {
         </Panel>
 
         <Panel className="grid gap-4">
-          <PanelHead title="Media and placement" hint="Paste image URLs, one per line. Channels control where it sells." />
+          <PanelHead title="Media and placement" />
           <Field title="Image URLs">
             <textarea name="images" placeholder={"https://\nhttps://"} className={textareaClass} />
           </Field>
@@ -104,7 +104,7 @@ export default async function NewProductPage() {
         </Panel>
 
         <Panel className="grid gap-4">
-          <PanelHead title="Search listing" hint="Leave blank to reuse the title and description." />
+          <PanelHead title="Search listing" />
           <div className="grid gap-3 md:grid-cols-2">
             <Field title="SEO title">
               <input name="seoTitle" className={inputClass} />

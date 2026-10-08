@@ -148,7 +148,7 @@ export default async function UsersPage({
       )}
 
       <Panel>
-        <PanelHead title="What the platform can and cannot see" hint="Operator access, not a back door" />
+        <PanelHead title="What the platform can and cannot see" />
         <p className="text-[12.5px] leading-relaxed text-chalk-dim">
           This view reads the accounts, orders, addresses and reviews that shoppers created on the backend.
           Passwords are stored only as salted hashes and are never exposed here, and there is no way to sign in

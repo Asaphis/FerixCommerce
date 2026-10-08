@@ -52,7 +52,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
       <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
         <div className="grid gap-3">
           <Panel>
-            <PanelHead title="Items" hint="Packed and shipped by you" />
+            <PanelHead title="Items" />
             <ul className="divide-y divide-hairline">
               {order.items.map((item) => (
                 <li key={`${item.productId}-${item.variant ?? ""}`} className="flex items-start justify-between gap-4 py-3 first:pt-0 last:pb-0">
@@ -93,7 +93,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           </Panel>
 
           <Panel>
-            <PanelHead title="Fulfilment" hint="Moving this forward updates the shopper's account" />
+            <PanelHead title="Fulfilment" />
             <OrderStatusForms orderId={order.id} carrier={order.carrier} tracking={order.tracking} carriers={carriers} />
             {order.tracking ? (
               <p className="mt-4 flex items-center gap-2 rounded-[2px] border border-hairline bg-panel-2 px-3 py-2.5 font-mono text-[11.5px] text-chalk">
@@ -109,7 +109,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
         <div className="grid gap-3">
           <Panel>
-            <PanelHead title="Customer" hint="They bought on the marketplace" />
+            <PanelHead title="Customer" />
             <p className="text-[14px] font-medium text-chalk">{order.customer.name}</p>
             <p className="mt-1 font-mono text-[11px] text-chalk-dim">{order.customer.phone}</p>
             <p className="mt-3 flex items-start gap-2 text-[12.5px] text-chalk-dim">
@@ -133,7 +133,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           ) : null}
 
           <Panel>
-            <PanelHead title="Channel" hint="Where this sale came from" />
+            <PanelHead title="Channel" />
             <p className="text-[13px] text-chalk">
               {order.channel === "marketplace" ? "Ferixas marketplace" : "Your own storefront"}
             </p>

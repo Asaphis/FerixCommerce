@@ -15,9 +15,7 @@ export default async function PayoutsPage() {
       <header className="shrinkable">
         <Eyebrow>Payouts</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Money</h1>
-        <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
-          What you have earned, what the platform has taken in commission, and when the next payout lands.
-        </p>
+        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -54,7 +52,7 @@ export default async function PayoutsPage() {
 
       <TablePanel>
         <div className="p-5 pb-3">
-          <PanelHead title="Payout history" hint="Most recent period first" />
+          <PanelHead title="Payout history" />
         </div>
         <DataTable
           head={["Period", "Orders", "Gross", "Commission", "Net", "Status", "Settled"]}

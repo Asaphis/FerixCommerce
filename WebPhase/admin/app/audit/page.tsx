@@ -30,10 +30,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
       <header>
         <Eyebrow>Control</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Audit log</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          An append-only record of every change made through the console and the seller workspace. It cannot be
-          edited from here.
-        </p>
+        
       </header>
 
       <div className="flex flex-wrap gap-1.5">

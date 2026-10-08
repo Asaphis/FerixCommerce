@@ -44,10 +44,7 @@ export default async function OrdersPage({
       <header>
         <Eyebrow>Order oversight</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Platform orders</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          Every order as the merchant responsible for it sees it. A shopper buying from two sellers is one order
-          to the buyer and two fulfilment lines here — which is exactly how the stock and commission move.
-        </p>
+        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -188,7 +185,7 @@ export default async function OrdersPage({
 
         <div className="grid gap-3 lg:sticky lg:top-4 lg:self-start">
           <Panel>
-            <PanelHead title="Pipeline" hint="In this view" />
+            <PanelHead title="Pipeline" />
             <Distribution
               rows={[
                 { label: "Awaiting action", value: data.counts.processing ?? 0, tone: "amber" },

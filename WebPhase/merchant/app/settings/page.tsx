@@ -14,9 +14,7 @@ export default async function SettingsPage() {
       <header>
         <Eyebrow>Store settings</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{data.settings.name}</h1>
-        <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
-          Your storefront identity, where your catalogue sells, and how you want to be told about orders.
-        </p>
+        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -36,7 +34,7 @@ export default async function SettingsPage() {
 
         <div className="grid gap-3">
           <Panel>
-            <PanelHead title="Addresses" hint="Where your store lives" />
+            <PanelHead title="Addresses" />
             <ul className="grid gap-3">
               <li className="flex items-start gap-3 rounded-[2px] border border-hairline p-3.5">
                 <Store width={15} height={15} className="mt-[3px] shrink-0 text-chalk-dim" />
@@ -72,7 +70,7 @@ export default async function SettingsPage() {
           </Panel>
 
           <Panel>
-            <PanelHead title="Account" hint="How you sign in here" />
+            <PanelHead title="Account" />
             <ul className="grid gap-2.5 text-[12.5px] text-chalk-dim">
               <li className="flex items-center justify-between gap-3">
                 <span>Sign-in email</span>

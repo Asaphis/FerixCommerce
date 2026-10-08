@@ -27,10 +27,7 @@ export default async function BannersPage() {
           Content
         </Link>
         <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Banners</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          Hero and promotional creatives. Position decides the order they rotate in; inactive banners stay saved
-          but never reach the storefront.
-        </p>
+        
       </header>
 
       {banners.length === 0 ? (
@@ -148,7 +145,7 @@ export default async function BannersPage() {
       )}
 
       <Panel>
-        <PanelHead title="New banner" hint="Saved as live unless you switch it off." />
+        <PanelHead title="New banner" />
         <CmsActionForm action={saveBannerAction} className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Media type">

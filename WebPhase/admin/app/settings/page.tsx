@@ -15,11 +15,7 @@ export default async function SettingsPage() {
       <header>
         <Eyebrow>Platform settings</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{settings.platformName} configuration</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          The settings that govern the whole platform. Commission and tax apply at checkout, marketplace
-          switches take effect for shoppers immediately, and everything is stored on the backend rather than in
-          this console.
-        </p>
+        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -34,7 +30,7 @@ export default async function SettingsPage() {
 
         <div className="grid gap-3">
           <Panel>
-            <PanelHead title="Operators" hint="Who can sign in to this console" />
+            <PanelHead title="Operators" />
             <ul className="grid gap-2.5">
               {admins.map((email) => (
                 <li key={email} className="flex items-center justify-between gap-3 rounded-[2px] border border-hairline px-3 py-2.5">
@@ -56,7 +52,7 @@ export default async function SettingsPage() {
           </Panel>
 
           <Panel>
-            <PanelHead title="Live switches" hint="What is currently in force" />
+            <PanelHead title="Live switches" />
             <ul className="grid gap-2.5 text-[12.5px]">
               <li className="flex items-center justify-between gap-3">
                 <span className="text-chalk-dim">Marketplace</span>
@@ -82,7 +78,7 @@ export default async function SettingsPage() {
           </Panel>
 
           <Panel>
-            <PanelHead title="Where this is stored" hint="Nothing lives in the console" />
+            <PanelHead title="Where this is stored" />
             <ul className="grid gap-2.5 text-[12.5px] text-chalk-dim">
               <li className="flex items-start gap-2.5">
                 <ServerCog width={14} height={14} className="mt-[3px] shrink-0 text-signal" />

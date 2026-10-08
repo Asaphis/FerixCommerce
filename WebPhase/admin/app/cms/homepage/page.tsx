@@ -35,7 +35,7 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
         <div className="min-w-0">
           <Link href="/cms" className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-chalk-dim transition-colors hover:text-signal"><ArrowLeft width={13} height={13} /> Content studio</Link>
           <h1 className="mt-2 font-display text-[23px] font-bold text-chalk sm:text-[27px]">Homepage sections</h1>
-          <p className="mt-1 text-[12px] text-chalk-dim">Choose a section, edit its content, then publish.</p>
+          
         </div>
         <div className="flex items-center gap-2"><Pill tone={document.status === "published" ? "mint" : "amber"}>{document.status}</Pill><form action={publishHomepageAction}><input type="hidden" name="documentId" value={DOCUMENT_ID} /><SubmitButton pendingLabel="Publishing">Publish changes</SubmitButton></form></div>
       </header>
@@ -80,7 +80,7 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
             </CmsActionForm>
           </Panel>
 
-          <Panel className="p-3.5 sm:p-4"><PanelHead title="Content for this section" hint="Edit the source content, then return here to adjust its placement." />{destination ? <Link href={destination.href} className="mt-2 flex min-h-11 items-center justify-between gap-3 rounded-[2px] border border-hairline bg-white px-3 text-[11px] font-semibold text-chalk transition-colors hover:border-signal"><span>{destination.label}</span><ArrowRight width={13} height={13} className="text-signal" /></Link> : <p className="mt-2 text-[11px] text-chalk-dim">Content editing for this section type is coming soon.</p>}</Panel>
+          <Panel className="p-3.5 sm:p-4"><PanelHead title="Content for this section" />{destination ? <Link href={destination.href} className="mt-2 flex min-h-11 items-center justify-between gap-3 rounded-[2px] border border-hairline bg-white px-3 text-[11px] font-semibold text-chalk transition-colors hover:border-signal"><span>{destination.label}</span><ArrowRight width={13} height={13} className="text-signal" /></Link> : <p className="mt-2 text-[11px] text-chalk-dim">Content editing for this section type is coming soon.</p>}</Panel>
         </div> : <Panel className="p-5"><Empty title="Choose a section" body="Select a homepage section to manage its content and placement." /></Panel>}
       </div>
 

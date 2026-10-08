@@ -59,10 +59,7 @@ export default async function CmsPage() {
       <header>
         <Eyebrow>Marketplace</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Content management</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          Everything a shopper sees on the storefront is edited here. Saving writes a draft; publishing makes it
-          live. Every save is versioned, so any change can be rolled back.
-        </p>
+        
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -93,7 +90,6 @@ export default async function CmsPage() {
       <Panel>
         <PanelHead
           title="Content documents"
-          hint="Each document is a page of the storefront that the CMS controls."
           action={
             <Link
               href="/cms/homepage"

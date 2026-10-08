@@ -29,10 +29,7 @@ export default async function PromotionsPage() {
       <header>
         <Eyebrow>Marketplace</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Promotions</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          Flash sales put a temporary price on a product without touching the product record. When the window ends
-          the original price returns by itself. Products here can come from any merchant.
-        </p>
+        
       </header>
 
       {sales.length === 0 ? (
@@ -177,7 +174,7 @@ export default async function PromotionsPage() {
       )}
 
       <Panel>
-        <PanelHead title="New flash sale" hint="Pick up to a handful of products to keep the sale focused." />
+        <PanelHead title="New flash sale" />
         <form action={savePromotionAction} className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Name">

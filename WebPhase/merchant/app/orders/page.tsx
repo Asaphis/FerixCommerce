@@ -37,9 +37,7 @@ export default async function OrdersPage({
       <header className="shrinkable">
         <Eyebrow>Orders</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Order queue</h1>
-        <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
-          Marketplace and storefront orders arrive in one queue.
-        </p>
+        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -176,7 +174,7 @@ export default async function OrdersPage({
       )}
 
       <Panel>
-        <PanelHead title="What the shopper sees" hint="Status changes are visible to the customer immediately" />
+        <PanelHead title="What the shopper sees" />
         <p className="text-[12.5px] leading-relaxed text-chalk-dim">
           Marking an order shipped adds the carrier and a tracking number to the customer&apos;s account.
           Delivered closes it out. Cancelling refunds the payment.

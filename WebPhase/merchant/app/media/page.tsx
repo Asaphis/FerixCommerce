@@ -16,9 +16,7 @@ export default async function MediaPage() {
         <div>
           <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Media</h1>
-          <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
-            Images and video for your products and your storefront, held against your seller account.
-          </p>
+          
         </div>
         <Pill tone={configured ? "success" : "warn"}>{data.storage === "cloudinary" ? "cloudinary connected" : "local MVP storage"}</Pill>
       </header>

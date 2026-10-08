@@ -98,7 +98,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
 
         <div className="grid gap-3">
           <Panel>
-            <PanelHead title="Order pipeline" hint="This merchant's orders, both channels" />
+            <PanelHead title="Order pipeline" />
             <Distribution
               rows={[
                 { label: "Awaiting action", value: statuses.processing ?? 0, tone: "amber" },
@@ -130,7 +130,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
 
       <Panel flush>
         <div className="p-5 pb-3">
-          <PanelHead title="Catalogue" hint="One product record per item, per channel" />
+          <PanelHead title="Catalogue" />
         </div>
         {catalog.length ? (
           <TablePanel>
@@ -181,7 +181,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
 
       <Panel flush>
         <div className="p-5 pb-3">
-          <PanelHead title="Recent orders" hint="Fulfilment this merchant is responsible for" action={
+          <PanelHead title="Recent orders" action={
             <Link href={`/orders?merchantId=${merchant.id}`} className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
               Filter the order view
             </Link>

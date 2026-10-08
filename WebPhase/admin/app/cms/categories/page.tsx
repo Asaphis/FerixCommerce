@@ -48,10 +48,7 @@ export default async function CategoriesPage() {
           Content
         </Link>
         <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Departments</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          Departments organise the catalogue. A department with an image and the tile switch on appears in the
-          homepage grid; one with only the text switch appears as a plain link. Position sets the order everywhere.
-        </p>
+        
       </header>
 
       {categories.length === 0 ? (
@@ -133,7 +130,7 @@ export default async function CategoriesPage() {
       )}
 
       <Panel>
-        <PanelHead title="New department" hint="The slug is generated from the name if you leave it blank." />
+        <PanelHead title="New department" />
         <CmsActionForm action={saveCategoryAction} className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Name">

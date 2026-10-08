@@ -16,10 +16,7 @@ export default async function TeamPage() {
       <header>
         <Eyebrow>Control</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Team and roles</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          Everyone who can sign into this console. A role decides what a person may change; the owner role has
-          every permission.
-        </p>
+        
       </header>
 
       <Panel>
@@ -83,7 +80,7 @@ export default async function TeamPage() {
       </Panel>
 
       <Panel>
-        <PanelHead title="What each role can do" hint="Permissions are applied on the backend, not only in the console." />
+        <PanelHead title="What each role can do" />
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {roles.map((role) => (
             <div key={role.role} className="rounded-[2px] border border-hairline bg-panel-2 p-4">
@@ -104,7 +101,7 @@ export default async function TeamPage() {
       </Panel>
 
       <Panel>
-        <PanelHead title="Add a team member" hint="They sign in with this email and password." />
+        <PanelHead title="Add a team member" />
         <form action={saveStaffAction} className="grid gap-3">
           <div className="grid grid-cols-2 gap-2.5 md:gap-3 xl:grid-cols-4">
             <Field title="Name">

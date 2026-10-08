@@ -25,10 +25,7 @@ export default async function CollectionsPage() {
           Content
         </Link>
         <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Collections</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          A collection is a curated grouping that cuts across departments — for example a gift guide. Products join
-          a collection when a merchant or the catalogue team tags them with its slug.
-        </p>
+        
       </header>
 
       {collections.length === 0 ? (
@@ -104,7 +101,7 @@ export default async function CollectionsPage() {
       )}
 
       <Panel>
-        <PanelHead title="New collection" hint="Tag products with the slug to add them." />
+        <PanelHead title="New collection" />
         <CmsActionForm action={saveCollectionAction} className="grid gap-3">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Name">

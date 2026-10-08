@@ -29,10 +29,7 @@ export default async function PublishingPage() {
             Content
           </Link>
           <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Publishing</h1>
-          <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-            Every save of the homepage is kept. Restoring a version replaces the current draft, so publish again
-            when you are happy with it.
-          </p>
+          
         </div>
         <Pill tone={document.status === "published" ? "mint" : "amber"}>{document.status}</Pill>
       </header>
@@ -70,7 +67,7 @@ export default async function PublishingPage() {
       </Panel>
 
       <Panel>
-        <PanelHead title="Content activity" hint="Who changed what, newest first." />
+        <PanelHead title="Content activity" />
         {cmsEvents.length === 0 ? (
           <Empty title="No content activity yet" body="CMS saves, publishes and restores are recorded here." />
         ) : (

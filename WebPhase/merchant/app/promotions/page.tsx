@@ -20,10 +20,7 @@ export default async function PromotionsPage() {
       <header>
         <Eyebrow>Catalogue</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Promotions</h1>
-        <p className="mt-1.5 max-w-[72ch] text-[13px] leading-relaxed text-chalk-dim">
-          A promotion does not change the product record — it adds a temporary price window on the products
-          you choose.
-        </p>
+        
       </header>
 
       <div className="grid gap-3 lg:grid-cols-[1.55fr_1fr]">
@@ -102,7 +99,7 @@ export default async function PromotionsPage() {
         <div className="grid content-start gap-3">
           <PromotionForm products={data.products} />
           <Panel>
-            <PanelHead title="How this works" hint="Nothing here edits your catalogue" />
+            <PanelHead title="How this works" />
             <ul className="grid gap-2.5 text-[12.5px] leading-relaxed text-chalk-dim">
               <li className="rounded-[2px] border border-hairline p-3">
                 <span className="block text-chalk">Price window</span>

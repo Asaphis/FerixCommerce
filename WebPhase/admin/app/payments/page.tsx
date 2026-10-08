@@ -20,10 +20,7 @@ export default async function PaymentsPage() {
       <header>
         <Eyebrow>Commerce</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Payments</h1>
-        <p className="mt-1.5 max-w-[74ch] text-[13px] leading-relaxed text-chalk-dim">
-          Every transaction the platform has recorded, with the commission it earned. An authorised payment is
-          captured at checkout; it settles when the order is delivered.
-        </p>
+        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">

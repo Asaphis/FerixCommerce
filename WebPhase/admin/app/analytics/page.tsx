@@ -71,7 +71,7 @@ export default async function AnalyticsPage({
 
         <div className="grid gap-3">
           <Panel>
-            <PanelHead title="Channel mix" hint="Marketplace versus merchant storefronts" />
+            <PanelHead title="Channel mix" />
             <div className="space-y-4">
               <div className="grid gap-1.5">
                 <div className="flex items-center justify-between gap-3">
@@ -95,7 +95,7 @@ export default async function AnalyticsPage({
           </Panel>
 
           <Panel>
-            <PanelHead title="Merchants by plan" hint="How the platform is distributed" />
+            <PanelHead title="Merchants by plan" />
             <ul className="space-y-2.5">
               {data.plans.map((row) => (
                 <li key={row.plan} className="flex items-center justify-between gap-3">
@@ -125,7 +125,7 @@ export default async function AnalyticsPage({
       </div>
 
       <Panel>
-        <PanelHead title="Merchant leaderboard" hint="Gross merchandise value, with the platform's share" />
+        <PanelHead title="Merchant leaderboard" />
         <div className="space-y-4">
           {data.byMerchant.map((merchant) => (
             <div key={merchant.id} className="grid gap-1.5">
@@ -147,7 +147,7 @@ export default async function AnalyticsPage({
 
       <Panel flush>
         <div className="min-w-0 px-4 pb-3 pt-4 md:px-5 md:pt-5">
-          <PanelHead title="Best performing products" hint="Platform-wide, by revenue" />
+          <PanelHead title="Best performing products" />
         </div>
         {data.topProducts.length ? (
           <div className="min-w-0 px-4 pb-4 md:overflow-x-auto md:px-5 md:pb-5">

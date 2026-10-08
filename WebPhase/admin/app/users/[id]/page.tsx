@@ -61,7 +61,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
         <Panel flush>
           <div className="p-5 pb-3">
-            <PanelHead title="Order history" hint="Every order across every merchant" />
+            <PanelHead title="Order history" />
           </div>
           {orders.length ? (
             <div className="min-w-0 px-4 pb-4 md:overflow-x-auto md:px-5 md:pb-5">
@@ -161,7 +161,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       </div>
 
       <Panel>
-        <PanelHead title="Account state" hint="Straight from the backend, not a copy" />
+        <PanelHead title="Account state" />
         <ul className="grid gap-2.5 text-[12.5px] sm:grid-cols-3">
           <KeyValue label="Addresses" value={stats.addresses} />
           <KeyValue label="Followed stores" value={follows.length} />

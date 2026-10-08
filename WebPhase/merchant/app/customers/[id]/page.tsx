@@ -61,7 +61,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       <div className="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
         <Panel flush>
           <div className="p-5 pb-3">
-            <PanelHead title="Order history" hint="Newest first" />
+            <PanelHead title="Order history" />
           </div>
           <div className="overflow-x-auto px-5 pb-5">
             <table className="w-full min-w-[520px] border-collapse text-left">
@@ -117,7 +117,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           </Panel>
 
           <Panel>
-            <PanelHead title="Delivery address" hint="From their most recent order" />
+            <PanelHead title="Delivery address" />
             <p className="text-[13px] text-chalk">{address.name}</p>
             <p className="mt-1.5 text-[12.5px] leading-relaxed text-chalk-dim">
               {address.line1}
