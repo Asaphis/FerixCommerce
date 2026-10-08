@@ -131,6 +131,13 @@ export default async function HomePage() {
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const sections = stored.length ? stored : BUILT_IN;
 
+  // How wide a brand tile is, from the section that carries it. Two across on a phone
+  // becomes four on a desktop, so a large screen does not show two enormous tiles.
+  // Declared here, after the sections, because it reads them.
+  const brandSection = sections.find((item) => item.type === "brand_carousel") as { across?: number } | undefined;
+  const brandAcross = Math.min(4, Math.max(1, Math.round(Number(brandSection?.across) || 2)));
+  const brandTileWidth = `calc((100% - ${(brandAcross - 1) * 12}px) / ${brandAcross})`;
+
   function block(section: Section, index: number) {
     const limit = typeof section.limit === "number" ? section.limit : undefined;
 
@@ -255,17 +262,33 @@ export default async function HomePage() {
                   <Link
                     key={record.slug}
                     href={`/browse?brand=${record.slug}`}
-                    className="flex w-[150px] shrink-0 flex-col items-center rounded-[14px] border border-line-warm bg-white p-4 text-center transition-colors hover:border-ember/40"
+                    className="group flex shrink-0 flex-col overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40"
+                    style={{ width: brandTileWidth }}
                   >
-                    {artwork ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img src={artwork} alt={record.name} className="h-[62px] w-full rounded-[10px] object-cover" />
-                    ) : (
-                      <span className="grid h-[62px] w-full place-items-center rounded-[10px] bg-bone-soft font-display text-[16px] font-bold text-ink-soft">
-                        {record.name.slice(0, 1)}
+                    {/* Edge to edge: the artwork fills the tile and the name sits beneath it, rather
+                        than the image being a picture inside a padded box. */}
+                    <span className="block aspect-[4/3] w-full overflow-hidden bg-bone-soft">
+                      {artwork ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={artwork}
+                          alt={record.name}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        />
+                      ) : (
+                        <span className="grid h-full w-full place-items-center font-display text-[22px] font-bold text-ink-soft">
+                          {record.name.slice(0, 1)}
+                        </span>
+                      )}
+                    </span>
+                    <span className="block px-3 py-2.5">
+                      <span className="block truncate text-[12.5px] font-semibold text-ink group-hover:text-ember">
+                        {record.name}
                       </span>
-                    )}
-                    <span className="mt-3 truncate text-[12.5px] font-semibold text-ink">{record.name}</span>
+                      <span className="mt-0.5 block font-mono text-[9.4px] uppercase tracking-[0.12em] text-ink-soft">
+                        View brand
+                      </span>
+                    </span>
                   </Link>
                 );
               })}
