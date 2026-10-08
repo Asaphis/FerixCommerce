@@ -490,10 +490,16 @@ class AuditLog(Base):
 
 ROLE_PERMISSIONS: dict[str, list[str]] = {
     "owner": ["*"],
+    # The administrator runs the platform; the owner governs it. Everything
+    # operational is here, but "settings.manage" is deliberately NOT: that one
+    # permission is what opens Team and roles and Settings, so creating accounts,
+    # granting roles and changing the platform's own configuration stay with the
+    # owner. Without this difference the two roles were indistinguishable, since
+    # the administrator's list was otherwise the owner's.
     "admin": [
         "cms.manage", "catalog.manage", "media.manage", "merchant.approve",
         "merchant.view", "customer.view", "orders.view", "orders.manage",
-        "payments.view", "payouts.view", "analytics.view", "settings.manage",
+        "payments.view", "payouts.view", "analytics.view",
         "promotions.manage", "audit.view",
     ],
     "content": ["cms.manage", "catalog.manage", "media.manage", "promotions.manage", "analytics.view"],
