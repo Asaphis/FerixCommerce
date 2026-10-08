@@ -2004,3 +2004,82 @@ def delete_merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session
         db.commit()
         return {"removed": merchant_id, "name": found.get("name"),
                 "products": len(products), "signIns": len(sign_ins)}
+
+# ── Acting on an order ─────────────────────────────────────────────────────
+# Cancelling, refunding and resending a confirmation. Each one is refused when it would
+# be wrong - cancelling an order already on its way, refunding one that was never paid -
+# and each leaves a line in the order's own timeline, so what was done and when is part
+# of the order rather than something someone has to remember.
+
+
+class OrderRefIn(BaseModel):
+    id: str
+    reason: Optional[str] = None
+
+
+@router.post("/order/{action}")
+def order_action(action: str, session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                 payload: OrderRefIn = Body(...)):
+    """Cancel, refund or resend. One endpoint, because they share their guards."""
+    from notifications import order_confirmation
+
+    if action not in ("cancel", "refund", "resend"):
+        raise HTTPException(400, "That is not something that can be done to an order")
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "orders.manage")
+
+        order = db.get(Order, payload.id)
+        if not order:
+            raise HTTPException(404, "That order does not exist")
+
+        data = dict(order.data or {})
+        timeline = list(data.get("timeline") or [])
+        paid = str(data.get("payment") or "").lower() == "paid"
+        done = str(data.get("fulfillment") or "").lower() in ("delivered", "completed")
+        cancelled = str(data.get("fulfillment") or "").lower() == "cancelled"
+
+        if action == "cancel":
+            if cancelled:
+                raise HTTPException(409, "That order was already cancelled")
+            if done:
+                raise HTTPException(409, "That order has already been delivered, so it cannot be cancelled. Refund it instead.")
+            data["fulfillment"] = "cancelled"
+            if paid:
+                data["payment"] = "refunded"
+            timeline.append({"label": "Cancelled", "at": iso(now()), "by": staff.email,
+                             **({"note": payload.reason} if payload.reason else {})})
+            message = "Order cancelled" + (" and the payment refunded." if paid else ".")
+
+        elif action == "refund":
+            if not paid:
+                raise HTTPException(409, "That order was never paid, so there is nothing to refund.")
+            data["payment"] = "refunded"
+            timeline.append({"label": "Refunded", "at": iso(now()), "by": staff.email,
+                             **({"note": payload.reason} if payload.reason else {})})
+            message = "Refunded. The buyer keeps the order in their history."
+
+        else:
+            to = str(data.get("contactEmail") or "")
+            if not to:
+                buyer = db.get(User, order.user_id)
+                to = buyer.email if buyer else ""
+            if not to:
+                raise HTTPException(409, "That order has no email address to send to.")
+            try:
+                order_confirmation(to=to, name=to.split("@")[0],
+                                   number=str(data.get("number") or order.id),
+                                   total=float(data.get("total") or 0))
+            except Exception as error:
+                raise HTTPException(502, f"The confirmation could not be sent: {error}")
+            timeline.append({"label": "Confirmation resent", "at": iso(now()), "by": staff.email})
+            message = f"Confirmation sent to {to}."
+
+        data["timeline"] = timeline
+        order.data = data
+        audit(db, "admin", staff.email, f"order.{action}", order.id, staff.role)
+        db.commit()
+        return {"order": {"id": order.id, "payment": data.get("payment"),
+                          "fulfillment": data.get("fulfillment"), "timeline": timeline},
+                "message": message}

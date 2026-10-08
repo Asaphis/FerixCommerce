@@ -383,6 +383,14 @@ export const getUser = (session: string | null, id: string) =>
 export const listOrders = (session: string | null, params: Params = {}) =>
   call<OrderList>("GET", "admin/orders", { params, session });
 
+
+/** Cancel, refund or resend. The endpoint decides whether each is allowed. */
+export const actOnOrder = (
+  session: string | null,
+  action: "cancel" | "refund" | "resend",
+  body: { id: string; reason?: string },
+) => call<{ order: { id: string; payment: string; fulfillment: string }; message: string }>(
+  "POST", `admin/order/${action}`, { body, session });
 export const getAnalytics = (session: string | null, days = 30) =>
   call<Analytics>("GET", "admin/analytics", { params: { days }, session });
 
