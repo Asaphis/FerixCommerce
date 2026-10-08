@@ -893,6 +893,25 @@ def reviews(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 def add_review(p: ReviewIn, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         user = require_user(db, session)
+
+        # A review is only for a shopper who has received the product. The
+        # verified flag used to be hardcoded True here, so every review - from
+        # anyone, about anything - was stamped as verified and carried no
+        # purchase behind it.
+        received = False
+        for past in db.scalars(select(Order).where(Order.user_id == user.id)).all():
+            order = past.data or {}
+            if str(order.get("fulfillment") or "").lower() != "delivered":
+                continue
+            for item in order.get("items") or []:
+                line = item or {}
+                if p.productId in (line.get("productId"), line.get("product_id"), line.get("id")):
+                    received = True
+                    break
+            if received:
+                break
+        if not received:
+            raise HTTPException(403, "You can review this once your order has been delivered")
         data = {**p.model_dump(), "id": "rev_" + uuid.uuid4().hex[:10], "date": iso(now()), "verified": True, "helpful": 0}
         db.add(Review(id=data["id"], user_id=user.id, product_id=p.productId, data=data))
         db.commit()
