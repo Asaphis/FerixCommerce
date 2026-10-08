@@ -16,10 +16,10 @@ function statusTone(status: string) {
 }
 
 const adminLinks = [
-  { href: "/orders", title: "Orders", detail: "Review recorded transactions", Icon: Receipt },
-  { href: "/merchants", title: "Merchants", detail: "Manage marketplace sellers", Icon: Store },
-  { href: "/catalog", title: "Catalogue", detail: "Products and inventory", Icon: Package },
-  { href: "/cms/homepage", title: "Content studio", detail: "Manage storefront content", Icon: Boxes },
+  { href: "/orders", title: "Orders", Icon: Receipt },
+  { href: "/merchants", title: "Merchants", Icon: Store },
+  { href: "/catalog", title: "Catalogue", Icon: Package },
+  { href: "/cms", title: "Content studio", Icon: Boxes },
 ];
 
 export default async function OverviewPage() {
@@ -38,7 +38,7 @@ export default async function OverviewPage() {
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div><Eyebrow>Platform operations</Eyebrow><h1 className="mt-1.5 font-display text-[23px] font-bold leading-tight text-chalk sm:text-[28px]">Overview</h1><p className="mt-1 text-[12px] text-chalk-dim">Orders, merchants and catalogue.</p></div>
+        <div><Eyebrow>Platform</Eyebrow><h1 className="mt-1.5 font-display text-[23px] font-bold leading-tight text-chalk sm:text-[28px]">Overview</h1></div>
         <form action={signOutAction}><SubmitButton variant="outline" pendingLabel="Signing out">Sign out</SubmitButton></form>
       </header>
 
@@ -50,16 +50,16 @@ export default async function OverviewPage() {
       </div>
 
       <nav aria-label="Platform quick actions" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {adminLinks.map(({ href, title, detail, Icon }) => <Link key={href} href={href} className="group flex min-h-[62px] items-center gap-2.5 rounded-[3px] rounded-tr-[11px] border border-hairline bg-panel px-3 py-2.5 transition-colors hover:border-signal/50 hover:bg-white">
+        {adminLinks.map(({ href, title, Icon }) => <Link key={href} href={href} className="group flex min-h-[62px] items-center gap-2.5 rounded-[3px] rounded-tr-[11px] border border-hairline bg-panel px-3 py-2.5 transition-colors hover:border-signal/50 hover:bg-white">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[2px] bg-[#fff0e9] text-signal"><Icon width={15} height={15} /></span>
-          <span className="min-w-0"><span className="block truncate text-[12px] font-bold text-chalk group-hover:text-signal">{title}</span><span className="mt-0.5 block truncate text-[10px] text-chalk-dim">{detail}</span></span>
+          <span className="min-w-0 truncate text-[12px] font-bold text-chalk group-hover:text-signal">{title}</span>
           <ArrowRight width={13} height={13} className="ml-auto shrink-0 text-chalk-dim" />
         </Link>)}
       </nav>
 
       <div className="grid min-w-0 gap-3 xl:grid-cols-[1.4fr_1fr]">
         <Panel>
-          <PanelHead title="Channel activity" hint="GMV from recorded orders" />
+          <PanelHead title="Channel activity" />
           <div className="grid grid-cols-2 gap-2.5">
             <div className="rounded-[3px] rounded-tr-[10px] border border-hairline bg-white p-3"><Eyebrow>Ferixas marketplace</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{money(channels.marketplace, { cents: false })}</p><p className="text-[10px] text-chalk-dim">GMV</p></div>
             <div className="rounded-[3px] rounded-tr-[10px] border border-hairline bg-white p-3"><Eyebrow>Merchant stores</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{money(channels.store, { cents: false })}</p><p className="text-[10px] text-chalk-dim">GMV</p></div>
@@ -74,7 +74,7 @@ export default async function OverviewPage() {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
           <Panel>
-            <PanelHead title="Order pipeline" hint="Current recorded order status" />
+            <PanelHead title="Order pipeline" />
             {totals.orders ? <div className="grid grid-cols-2 gap-2">
               {orderPipeline.map((row) => <div key={row.label} className="flex items-center justify-between gap-2 rounded-[2px] border border-hairline px-2.5 py-2"><span className="text-[10px] text-chalk-dim">{row.label}</span><Pill tone={row.tone}>{row.value}</Pill></div>)}
             </div> : <p className="text-[12px] text-chalk-dim">Order activity will appear when transactions are recorded.</p>}
@@ -88,13 +88,13 @@ export default async function OverviewPage() {
 
       <div className="grid gap-3 xl:grid-cols-2">
         <Panel>
-          <PanelHead title="Top merchants" hint="By recorded order value" action={<Link href="/merchants" className="text-[11px] font-bold text-signal">View all <ArrowRight className="inline" width={12} height={12} /></Link>} />
+          <PanelHead title="Top merchants" action={<Link href="/merchants" className="text-[11px] font-bold text-signal">View all <ArrowRight className="inline" width={12} height={12} /></Link>} />
           {topMerchants.some((merchant) => merchant.gmv > 0) ? <ul className="grid gap-3">{topMerchants.slice(0, 5).map((merchant) => <li key={merchant.id}>
             <div className="mb-1 flex items-center justify-between gap-2"><Link href={`/merchants/${merchant.id}`} className="truncate text-[12px] font-medium text-chalk hover:text-signal">{merchant.name}</Link><span className="font-mono text-[11px] font-semibold text-chalk">{money(merchant.gmv, { cents: false })}</span></div><Meter value={merchant.gmv} max={merchantMax} /><p className="mt-1 text-[9px] text-chalk-dim">{merchant.orders} recorded orders</p>
           </li>)}</ul> : <p className="text-[12px] text-chalk-dim">No recorded sales yet.</p>}
         </Panel>
         <Panel>
-          <PanelHead title="Platform health" hint="Live operational counts" />
+          <PanelHead title="Platform health" />
           <div className="grid grid-cols-2 gap-2">
             {[{ label: "Customers", value: data.registeredUsers, Icon: Users }, { label: "Suspended", value: totals.suspendedMerchants, Icon: Building2 }, { label: "Review queue", value: totals.reviewMerchants, Icon: AlertTriangle }, { label: "Units ordered", value: totals.soldUnits, Icon: Boxes }].map(({ label, value, Icon }) => <div key={label} className="flex min-h-[58px] items-center gap-2 rounded-[2px] border border-hairline bg-white px-2.5 py-2"><span className="grid h-7 w-7 place-items-center rounded-[2px] bg-[#fff0e9] text-signal"><Icon width={14} height={14} /></span><span className="min-w-0"><span className="block font-mono text-[13px] font-bold text-chalk">{num(value)}</span><span className="block truncate text-[9px] text-chalk-dim">{label}</span></span></div>)}
           </div>
@@ -102,7 +102,7 @@ export default async function OverviewPage() {
       </div>
 
       <Panel flush>
-        <div className="flex items-center justify-between gap-3 p-4 pb-3 sm:p-5 sm:pb-4"><PanelHead title="Recent orders" hint="Newest recorded transactions" /><Link href="/orders" className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[11px] font-bold text-signal">All orders <ArrowRight width={13} height={13} /></Link></div>
+        <div className="flex items-center justify-between gap-3 p-4 pb-3 sm:p-5 sm:pb-4"><PanelHead title="Recent orders" /><Link href="/orders" className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[11px] font-bold text-signal">All orders <ArrowRight width={13} height={13} /></Link></div>
         {recentOrders.length ? <>
           <ul className="grid gap-2 px-3 pb-3 sm:hidden">{recentOrders.slice(0, 5).map((order) => <li key={order.id}><Link href={`/orders/${order.id}`} className="flex items-center justify-between gap-2 rounded-[3px] border border-hairline bg-white p-3"><span className="min-w-0"><span className="block truncate text-[12px] font-bold text-chalk">{order.number}</span><span className="mt-1 block truncate text-[10px] text-chalk-dim">{order.merchantName} · {order.customer.name}</span></span><span className="shrink-0 text-right"><span className="block font-mono text-[12px] font-bold text-chalk">{money(order.total)}</span><span className="mt-1 block"><Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill></span></span></Link></li>)}</ul>
           <div className="hidden overflow-x-auto px-5 pb-4 sm:block"><table className="w-full min-w-[760px] border-collapse text-left"><thead><tr>{["Order", "Merchant", "Customer", "Channel", "Date", "Status", "Total"].map((head) => <th key={head} className="border-b border-hairline pb-2.5 font-mono text-[9px] font-medium uppercase tracking-[0.13em] text-chalk-dim">{head}</th>)}</tr></thead><tbody>{recentOrders.slice(0, 6).map((order) => <tr key={order.id} className="border-b border-hairline/60 last:border-0"><td className="py-3 pr-3"><Link href={`/orders/${order.id}`} className="font-mono text-[12px] font-bold text-chalk hover:text-signal">{order.number}</Link></td><td className="py-3 pr-3 text-[11px] text-chalk-dim">{order.merchantName}</td><td className="py-3 pr-3 text-[11px] text-chalk-dim">{order.customer.name}</td><td className="py-3 pr-3"><Pill tone={order.channel === "marketplace" ? "violet" : "neutral"}>{order.channel}</Pill></td><td className="py-3 pr-3 font-mono text-[10px] text-chalk-dim">{dateShort(order.placedAt)} · {relative(order.placedAt)}</td><td className="py-3 pr-3"><Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill></td><td className="py-3 font-mono text-[12px] font-semibold text-chalk">{money(order.total)}</td></tr>)}</tbody></table></div>
