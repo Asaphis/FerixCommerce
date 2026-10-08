@@ -343,11 +343,11 @@ def specs_of(product: dict) -> list:
 
 @app.get("/catalog/products")
 def products(search: Optional[str] = None,
-             category: Optional[list[str]] = None,
-             brand: Optional[list[str]] = None,
+             category: Optional[list[str]] = Query(None),
+             brand: Optional[list[str]] = Query(None),
              collection: Optional[str] = None,
-             store: Optional[list[str]] = None,
-             spec: Optional[list[str]] = None,
+             store: Optional[list[str]] = Query(None),
+             spec: Optional[list[str]] = Query(None),
              minPrice: Optional[float] = None, maxPrice: Optional[float] = None,
              rating: Optional[float] = None, inStock: Optional[bool] = None, onSale: Optional[bool] = None,
              sort: str = "relevance", page: int = 1, perPage: int = 24):
