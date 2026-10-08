@@ -23,10 +23,6 @@ const PAGE_LOCATION: Record<string, string> = {
   marketplace_store: "Every store page",
 };
 
-function sectionSummary(page: CmsPage) {
-  return `${page.sectionCount} section${page.sectionCount === 1 ? "" : "s"} · ${page.visibleCount} on the storefront`;
-}
-
 export default async function CmsPage() {
   const { session } = await requireAdmin();
 
@@ -72,25 +68,36 @@ export default async function CmsPage() {
         {pages.length ? (
           <ul className="grid gap-2">
             {pages.map((page) => (
-              <li key={page.id}>
+              <li key={page.id} className="min-w-0">
                 <Link
                   href={`/cms/pages/${page.id}`}
-                  className="group flex flex-wrap items-center gap-3 rounded-[12px] border border-hairline bg-panel px-4 py-3 transition-colors hover:border-signal/40 hover:bg-white"
+                  className="group flex w-full min-w-0 items-center gap-3 rounded-[12px] border border-hairline bg-panel px-3.5 py-3 transition-colors hover:border-signal/40 hover:bg-white sm:px-4"
                 >
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-panel-2 text-signal">
                     <Layers width={16} height={16} />
                   </span>
+                  {/* Everything that can be long lives in this one shrinking column, so a phone
+                      cannot push the row past the panel edge and clip the sentence. */}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-[14px] font-semibold text-chalk group-hover:text-signal">
                       {page.title}
                     </span>
-                    <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                      {PAGE_LOCATION[page.documentType] ?? page.title} · {sectionSummary(page)}
+                    <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.1em] text-chalk-dim">
+                      <span className="hidden md:inline">
+                        {PAGE_LOCATION[page.documentType] ?? page.title} ·{" "}
+                      </span>
+                      {page.sectionCount} sections · {page.visibleCount} live
                     </span>
                   </span>
-                  {page.hasDraft ? <Pill tone="amber">Draft</Pill> : null}
-                  <Pill tone={page.status === "published" ? "mint" : "amber"}>{page.status}</Pill>
-                  <ArrowRight width={15} height={15} className="shrink-0 text-chalk-dim transition-transform group-hover:translate-x-0.5" />
+                  <span className="flex shrink-0 items-center gap-2">
+                    {page.hasDraft ? <Pill tone="amber">Draft</Pill> : null}
+                    <Pill tone={page.status === "published" ? "mint" : "amber"}>{page.status}</Pill>
+                  </span>
+                  <ArrowRight
+                    width={15}
+                    height={15}
+                    className="hidden shrink-0 text-chalk-dim transition-transform group-hover:translate-x-0.5 sm:block"
+                  />
                 </Link>
               </li>
             ))}
