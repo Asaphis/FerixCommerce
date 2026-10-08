@@ -78,17 +78,33 @@ export function ProductGrid({
   savedIds = [],
   className,
   columns = 4,
+  across,
 }: {
   products: Product[];
   savedIds?: string[];
   className?: string;
   columns?: 3 | 4;
+  /**
+   * How many sit side by side on a phone, set per section in the CMS.
+   *
+   * The phone width was fixed at two, so a section could not be told to show three or
+   * one. Wider screens take proportionally more, so two across on a phone is four on a
+   * desktop - a large screen showing two enormous cards reads as a mistake.
+   */
+  across?: number;
 }) {
+  const phone = Math.min(4, Math.max(1, Math.round(Number(across) || (columns === 3 ? 3 : 2))));
+  const width: Record<number, string> = {
+    1: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+    2: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+    3: "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6",
+    4: "grid-cols-4 sm:grid-cols-6 lg:grid-cols-6",
+  };
   return (
     <div
       className={cn(
-        "grid grid-cols-2 gap-x-2.5 gap-y-4 sm:gap-x-3.5 sm:gap-y-6",
-        columns === 4 ? "sm:grid-cols-3 lg:grid-cols-4" : "sm:grid-cols-2 lg:grid-cols-3",
+        "grid gap-x-2.5 gap-y-4 sm:gap-x-3.5 sm:gap-y-6",
+        width[phone],
         className,
       )}
     >

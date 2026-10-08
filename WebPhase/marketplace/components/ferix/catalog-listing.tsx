@@ -122,6 +122,9 @@ export async function CatalogListing({
   const hero = page.sections.find(
     (section) => (section.type === "hero_slim" || section.type === "hero_banner") && section.visible !== false,
   );
+  const gridSection = page.sections.find(
+    (section) => (section.type === "product_grid" || section.type === "product_carousel") && section.visible !== false,
+  );
   const brandRow = page.sections.find(
     (section) => section.type === "brand_carousel" && section.visible !== false,
   );
@@ -306,7 +309,7 @@ export async function CatalogListing({
               {/* One block of products, then whatever promotion follows it. */}
               {productChunks(feed.items, slotEvery).map((chunk, index) => (
                 <div key={chunk[0]?.id ?? index} className="grid gap-3.5">
-                  <ProductGrid products={chunk} savedIds={saved} />
+                  <ProductGrid products={chunk} savedIds={saved} across={Number(gridSection?.across) || 2} />
                   {adverts[index] ? (
                     <AdvertSlot advert={adverts[index]} label={slotSection?.subtitle ?? "Advertisement"} />
                   ) : null}

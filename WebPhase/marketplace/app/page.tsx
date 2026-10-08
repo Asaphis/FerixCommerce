@@ -275,7 +275,7 @@ export default async function HomePage() {
               }
               className="mb-3 sm:mb-4"
             />
-            <ProductGrid products={shown} savedIds={saved} />
+            <ProductGrid products={shown} savedIds={saved} across={Number(section.across) || 2} />
           </section>
         );
       }
