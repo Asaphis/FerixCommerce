@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useActionState } from "react";
+import React, { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Loader2, ShoppingBag } from "lucide-react";
+import { Check, Heart, Loader2, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { addToCartAction, toggleWishlistAction, type FormState } from "@/lib/actions";
 
@@ -11,12 +11,15 @@ export function AddToCartButton({
   addedLabel = "Added",
   className,
   disabled,
+  added = false,
   tone = "solid",
 }: {
   label?: string;
   addedLabel?: string;
   className?: string;
   disabled?: boolean;
+  /** Set briefly after a successful add, so the button says so itself. */
+  added?: boolean;
   tone?: "solid" | "light" | "lime";
 }) {
   const { pending } = useFormStatus();
@@ -31,11 +34,16 @@ export function AddToCartButton({
       disabled={pending || disabled}
       className={cn(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-[2px] px-4 py-2.5 text-[13px] font-semibold transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60",
-        tones[tone],
+        added ? "bg-pine text-white" : tones[tone],
         className,
       )}
     >
-      {pending ? (
+      {added ? (
+        <>
+          <Check width={14} height={14} />
+          {addedLabel}
+        </>
+      ) : pending ? (
         <>
           <Loader2 width={14} height={14} className="animate-spin" />
           Adding
@@ -86,19 +94,29 @@ export function AddToCartForm({
   showButton?: boolean;
 }) {
   const [state, action] = useActionState<FormState, FormData>(async (_previous, formData) => addToCartAction(formData), {});
+  // The button reports the result and then goes back to offering. Nothing is written
+  // underneath it: a line of text appearing below a button pushes the layout around and
+  // says what the button has already said.
+  const [justAdded, setJustAdded] = useState(false);
+
+  useEffect(() => {
+    if (!state?.message) return;
+    setJustAdded(true);
+    const timer = window.setTimeout(() => setJustAdded(false), 1800);
+    return () => window.clearTimeout(timer);
+  }, [state]);
+
   return (
     <form action={action} className={cn("flex min-w-0 flex-1 flex-col gap-1.5", className)}>
       <input type="hidden" name="productId" value={productId} />
       {children}
-      {showButton ? <AddToCartButton label={label} className={buttonClassName} disabled={disabled} /> : null}
+      {showButton ? (
+        <AddToCartButton label={label} className={buttonClassName} disabled={disabled} added={justAdded} />
+      ) : null}
+      {/* A failure still has to be readable, and cannot live inside the button. */}
       {state?.error ? (
         <p role="alert" className="text-[11.5px] leading-tight font-medium text-ember">
           {state.error}
-        </p>
-      ) : null}
-      {state?.message ? (
-        <p role="status" className="text-[11.5px] leading-tight font-medium text-pine">
-          {state.message}
         </p>
       ) : null}
     </form>
@@ -111,11 +129,20 @@ export function WishlistForm({ productId, back, saved }: { productId: string; ba
     <form action={toggleWishlistAction} className="flex flex-col items-center gap-1">
       <input type="hidden" name="productId" value={productId} />
       <input type="hidden" name="back" value={back} />
-      <button type="submit" aria-label={saved ? "Remove from saved" : "Save for later"} className={cn(
-        "grid h-9 w-9 cursor-pointer place-items-center rounded-[2px] border transition-colors",
-        saved ? "border-ember/40 bg-ember/10 text-ember" : "border-line-warm text-ink-soft hover:border-ink/40 hover:text-ink",
-      )}>
-        <span aria-hidden="true">♡</span>
+      <button
+        type="submit"
+        aria-label={saved ? "Remove from saved" : "Save for later"}
+        aria-pressed={saved}
+        className={cn(
+          "grid h-9 w-9 cursor-pointer place-items-center rounded-[10px] border transition-colors",
+          saved
+            ? "border-ember bg-ember text-white"
+            : "border-line-warm bg-white text-ink-soft hover:border-ember/50 hover:text-ember",
+        )}
+      >
+        {/* A drawn heart, filled when it is saved - not the text character, which sits on
+            its own baseline and reads as a stray glyph rather than a control. */}
+        <Heart width={16} height={16} strokeWidth={2} fill={saved ? "currentColor" : "none"} />
       </button>
     </form>
   );
