@@ -72,6 +72,11 @@ export async function createCatalogProductAction(form: FormData): Promise<void> 
   if (!session) redirect("/login");
   const payload = productPayload(form);
   if (!payload.title) return;
+  // The picture, resolved the way every other upload in this file resolves one: a file from
+  // the device, an asset from the library, or a pasted address, in that order.
+  const uploaded = await uploadedMediaUrl(session, form, "mediaFile", "image", String(payload.title), "products");
+  const chosen = uploaded || str(form, "mediaLibraryUrl") || str(form, "imageUrl");
+  if (chosen) payload.images = [chosen];
   try {
     await api.createCatalogProduct(session, payload as unknown as Record<string, unknown>);
   } catch {
@@ -86,8 +91,12 @@ export async function updateCatalogProductAction(form: FormData): Promise<void> 
   if (!session) redirect("/login");
   const id = str(form, "id");
   if (!id) return;
+  const payload = productPayload(form);
+  const uploaded = await uploadedMediaUrl(session, form, "mediaFile", "image", String(payload.title ?? "Product"), "products");
+  const chosen = uploaded || str(form, "mediaLibraryUrl") || str(form, "imageUrl");
+  if (chosen) payload.images = [chosen];
   try {
-    await api.updateCatalogProduct(session, { id, ...productPayload(form) } as unknown as Record<string, unknown>);
+    await api.updateCatalogProduct(session, { id, ...payload } as unknown as Record<string, unknown>);
   } catch {
     return;
   }

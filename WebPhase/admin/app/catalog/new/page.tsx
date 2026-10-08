@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listCatalog } from "@/lib/api";
+import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
 import { Eyebrow, Panel, PanelHead } from "@/components/ops/bits";
@@ -81,9 +82,14 @@ export default async function NewProductPage() {
 
         <Panel className="grid gap-4">
           <PanelHead title="Media and placement" />
-          <Field title="Image URLs">
-            <textarea name="images" placeholder={"https://\nhttps://"} className={textareaClass} />
-          </Field>
+          <MediaUploadField
+            key="product-image"
+            urlName="imageUrl"
+            fileName="mediaFile"
+            kind="image"
+            urlLabel="Product image URL"
+            fileLabel="Upload a product image"
+          />
           <div className="grid gap-2 sm:grid-cols-3">
             <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
               <input type="checkbox" name="store" defaultChecked className="size-4 accent-signal" />
