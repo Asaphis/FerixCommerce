@@ -31,7 +31,7 @@ function categoryFallback(products: Product[]): Category[] {
     slug,
     name: slug.split(/[-_\s]+/).map((part) => part ? part[0].toUpperCase() + part.slice(1) : "").join(" "),
     glyph: slug.slice(0, 1).toUpperCase(),
-    blurb: "Shop the collection",
+    blurb: "",
     count: row.count,
     image: row.image,
   }));
@@ -57,7 +57,7 @@ export default async function HomePage() {
           <aside className="hidden rounded-[3px] rounded-tr-[14px] border border-line-warm bg-white p-3.5 lg:block">
             <div className="mb-2 flex items-center gap-2 border-b border-line-warm px-1 pb-3">
               <span className="grid h-8 w-8 place-items-center rounded-[2px] bg-[#fff0e9] text-ember"><Boxes width={16} height={16} /></span>
-              <div><p className="text-[12px] font-bold text-ink">Departments</p><p className="text-[10px] text-ink-soft">Browse the marketplace</p></div>
+              <p className="text-[12px] font-bold text-ink">Departments</p>
             </div>
             <nav aria-label="Shop departments" className="grid gap-0.5">
               {categories.slice(0, 8).map((category) => (

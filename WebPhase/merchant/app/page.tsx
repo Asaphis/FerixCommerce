@@ -15,10 +15,10 @@ function statusTone(status: string) {
 }
 
 const quickLinks = [
-  { href: "/products", title: "Products", detail: "Add or update listings", Icon: Package },
-  { href: "/orders", title: "Orders", detail: "Review and fulfil", Icon: ShoppingCart },
-  { href: "/inventory", title: "Inventory", detail: "Adjust stock levels", Icon: Boxes },
-  { href: "/analytics", title: "Analytics", detail: "Recorded sales only", Icon: ChartNoAxesCombined },
+  { href: "/products", title: "Products", Icon: Package },
+  { href: "/orders", title: "Orders", Icon: ShoppingCart },
+  { href: "/inventory", title: "Inventory", Icon: Boxes },
+  { href: "/analytics", title: "Analytics", Icon: ChartNoAxesCombined },
 ];
 
 export default async function DashboardPage() {
@@ -39,7 +39,6 @@ export default async function DashboardPage() {
         <div className="min-w-0">
           <Eyebrow>Seller centre</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-bold leading-tight text-chalk sm:text-[28px]">Welcome back, {merchant.name}</h1>
-          <p className="mt-1 text-[12px] text-chalk-dim">Your store, at a glance.</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/products" className="inline-flex min-h-10 items-center gap-2 rounded-[2px] rounded-tr-[9px] bg-signal px-3.5 text-[12px] font-bold text-white transition-colors hover:bg-[#e4572e]">
@@ -57,10 +56,10 @@ export default async function DashboardPage() {
       </div>
 
       <nav aria-label="Seller quick actions" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {quickLinks.map(({ href, title, detail, Icon }) => (
+        {quickLinks.map(({ href, title, Icon }) => (
           <Link key={href} href={href} className="group flex min-h-[62px] items-center gap-2.5 rounded-[3px] rounded-tr-[11px] border border-hairline bg-panel px-3 py-2.5 transition-colors hover:border-signal/50 hover:bg-white">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[2px] bg-[#fff0e9] text-signal"><Icon width={15} height={15} /></span>
-            <span className="min-w-0"><span className="block truncate text-[12px] font-bold text-chalk group-hover:text-signal">{title}</span><span className="mt-0.5 block truncate text-[10px] text-chalk-dim">{detail}</span></span>
+            <span className="min-w-0 truncate text-[12px] font-bold text-chalk group-hover:text-signal">{title}</span>
             <ArrowRight width={13} height={13} className="ml-auto shrink-0 text-chalk-dim" />
           </Link>
         ))}
@@ -69,7 +68,7 @@ export default async function DashboardPage() {
       <div className="grid min-w-0 gap-3 xl:grid-cols-[1.45fr_1fr]">
         <Panel flush>
           <div className="flex items-center justify-between gap-3 p-4 pb-3 sm:p-5 sm:pb-4">
-            <PanelHead title="Recent orders" hint="Recorded orders across both channels" />
+            <PanelHead title="Recent orders" />
             <Link href="/orders" className="inline-flex min-h-9 shrink-0 items-center gap-1 text-[11px] font-bold text-signal">All orders <ArrowRight width={13} height={13} /></Link>
           </div>
           {recentOrders.length ? (
@@ -105,7 +104,7 @@ export default async function DashboardPage() {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
           <Panel>
-            <PanelHead title="Order pipeline" hint="Current recorded order status" />
+            <PanelHead title="Order pipeline" />
             {summary.ordersTotal ? <div className="grid gap-3">
               {orderMix.map((row) => <div key={row.label}>
                 <div className="mb-1 flex items-center justify-between gap-3"><span className="text-[11px] text-chalk-dim">{row.label}</span><span className="font-mono text-[11px] font-bold text-chalk">{row.value}</span></div>
@@ -128,7 +127,7 @@ export default async function DashboardPage() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Panel>
-          <PanelHead title="Store and marketplace" hint="Order totals from recorded transactions" />
+          <PanelHead title="Store and marketplace" />
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Your store</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.storeOrders)}</p><p className="text-[10px] text-chalk-dim">orders</p></div>
             <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Marketplace</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.marketplaceOrders)}</p><p className="text-[10px] text-chalk-dim">orders</p></div>
