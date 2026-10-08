@@ -255,7 +255,7 @@ export function SettingsForm({ user, settings }: { user: AccountUser; settings: 
         <p className={label}>Notifications and privacy</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {toggles.map((item) => (
-            <label key={item.name} className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line-warm p-3.5 transition-colors hover:border-ember/50">
+            <label key={item.name} className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line-warm p-3.5 transition-colors hover:border-ember/60 has-[:checked]:border-ember has-[:checked]:bg-ember/5 has-[:checked]:ring-1 has-[:checked]:ring-ember">
               <input type="checkbox" name={item.name} defaultChecked={item.on} className="mt-[3px] h-4 w-4 accent-[#e4572e]" />
               <span>
                 <span className="block text-[13px] font-medium text-ink">{item.title}</span>
@@ -349,13 +349,35 @@ export function PlaceOrderForm({
         </select>
       </Field>
       <Field title="Pay with">
-        <select name="paymentMethod" defaultValue={paymentMethods[0]?.id ?? "card"} className={field}>
-          {paymentMethods.map((method) => (
-            <option key={method.id} value={method.id}>
-              {method.label} — {method.detail}
-            </option>
+        {/* Choose-one cards rather than a dropdown. Two or three payment methods do not
+            need hiding behind a native select, and a card can show the name and what it
+            means at the same time - which a one-line option cannot. */}
+        <div className="grid gap-2.5 sm:grid-cols-2">
+          {paymentMethods.map((method, index) => (
+            <label
+              key={method.id}
+              className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line-warm bg-white p-3.5 transition-colors hover:border-ember/60 has-[:checked]:border-ember has-[:checked]:bg-ember/5 has-[:checked]:ring-1 has-[:checked]:ring-ember"
+            >
+              <input
+                type="radio"
+                name="paymentMethod"
+                value={method.id}
+                defaultChecked={index === 0}
+                className="mt-0.5 size-4 shrink-0 accent-ember"
+              />
+              <span className="min-w-0">
+                <span className="block text-[13.5px] font-semibold leading-tight text-ink">
+                  {method.label}
+                </span>
+                {method.detail ? (
+                  <span className="mt-1 block text-[12px] leading-relaxed text-ink-soft">
+                    {method.detail}
+                  </span>
+                ) : null}
+              </span>
+            </label>
           ))}
-        </select>
+        </div>
       </Field>
       <Field title="Note for the seller (optional)">
         <textarea name="note" className={cn(field, "h-[70px] resize-y py-2")} placeholder="Leave with the concierge" />
@@ -451,7 +473,7 @@ export function PreferencesForm({ settings }: { settings: Record<string, unknown
           {toggles.map((item) => (
             <label
               key={item.name}
-              className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line-warm p-3.5 transition-colors hover:border-ember/50"
+              className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-line-warm p-3.5 transition-colors hover:border-ember/60 has-[:checked]:border-ember has-[:checked]:bg-ember/5 has-[:checked]:ring-1 has-[:checked]:ring-ember"
             >
               <input
                 type="checkbox"
