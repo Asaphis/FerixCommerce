@@ -124,34 +124,65 @@ export default async function CheckoutPage({
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8">
       <Eyebrow>Checkout</Eyebrow>
-      <h1 className="mt-2 font-display text-[28px] font-semibold text-ink">
+      <h1 className="mt-2 font-display text-[28px] font-semibold leading-tight tracking-[-0.02em] text-ink">
         {step === 1 ? "Where should this go?" : "Review and pay"}
       </h1>
       <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
-        {quote.totals.itemCount} items from {quote.cart.merchants.length} sellers. Each seller ships separately, but
-        this is one payment and one order number.
+        {quote.totals.itemCount === 1 ? "One item" : `${quote.totals.itemCount} items`} from{" "}
+        {quote.cart.merchants.length === 1 ? "one seller" : `${quote.cart.merchants.length} sellers`}. Each seller
+        ships separately, but this is one payment and one order number.
       </p>
 
-      <ol className="mt-6 flex flex-wrap gap-2">
-        {["Delivery address", "Shipping and payment", "Confirmation"].map((label, index) => (
-          <li
-            key={label}
-            className={`rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] ${
-              index < step ? "border-pine/40 bg-pine/10 text-pine" : "border-line-warm text-ink-soft"
-            }`}
-          >
-            {index + 1}. {label}
-          </li>
-        ))}
+      {/* Three steps, drawn as one progression rather than three loose tags: a done step
+          carries a tick, the step you are on is the only dark one, and the ones ahead are
+          quiet. A shopper should be able to see how much is left without reading. */}
+      <ol className="mt-6 grid grid-cols-3 gap-2 sm:gap-3" aria-label="Checkout progress">
+        {["Delivery address", "Shipping and payment", "Confirmation"].map((label, index) => {
+          const position = index + 1;
+          const done = position < step;
+          const current = position === step;
+          return (
+            <li key={label} className="min-w-0" aria-current={current ? "step" : undefined}>
+              <div
+                className={`h-1 rounded-full ${
+                  done ? "bg-pine" : current ? "bg-ember" : "bg-line-warm"
+                }`}
+              />
+              <div className="mt-2 flex items-center gap-1.5">
+                <span
+                  className={`grid h-4 w-4 shrink-0 place-items-center rounded-full font-mono text-[9px] font-medium ${
+                    done
+                      ? "bg-pine text-white"
+                      : current
+                        ? "bg-ember text-white"
+                        : "bg-line-warm text-ink-soft"
+                  }`}
+                >
+                  {done ? "✓" : position}
+                </span>
+                <span
+                  className={`truncate font-mono text-[9.5px] uppercase tracking-[0.12em] ${
+                    current ? "text-ink" : "text-ink-soft"
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+            </li>
+          );
+        })}
       </ol>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
           {!addressList.length ? (
-            <section className="rounded-[3px] border border-line-warm bg-white p-5">
+            <section className="rounded-[14px] border border-line-warm bg-white p-5 shadow-[0_1px_2px_rgba(15,35,56,0.04)]">
               <Eyebrow>Step 1 · Delivery address</Eyebrow>
-              <p className="mt-1.5 text-[13px] text-ink-soft">Add the address this order should be delivered to.</p>
-              <div className="mt-4">
+              <p className="mt-1.5 max-w-[56ch] text-[13px] leading-relaxed text-ink-soft">
+                Where this order should arrive. If you are signed in, it is saved to your account and
+                offered again next time.
+              </p>
+              <div className="mt-5">
                 <AddressForm />
               </div>
             </section>
