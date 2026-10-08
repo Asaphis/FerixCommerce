@@ -6,6 +6,11 @@
  * components can read the same list. Add a destination here once and the
  * grouped sidebar (1280px+), the tablet rail (768px+), the phone bottom bar
  * and its "More" drawer all pick it up.
+ *
+ * Order is deliberate: grouped by the job being done, most frequent first, and
+ * the same word is used for the same thing in every Ferixas surface.
+ * Actions (add, upload, publish) are never destinations — they live on the
+ * page that owns them.
  */
 
 export type NavItem = {
@@ -23,30 +28,30 @@ export const NAV_GROUPS: NavGroupData[] = [
     label: "Business",
     items: [
       { href: "/", label: "Dashboard", icon: "dashboard" },
-      { href: "/analytics", label: "Analytics", icon: "chart" },
-      { href: "/payouts", label: "Payouts", icon: "wallet" },
+      { href: "/orders", label: "Orders", icon: "cart" },
+      { href: "/customers", label: "Customers", icon: "users" },
     ],
   },
   {
     label: "Catalogue",
     items: [
       { href: "/products", label: "Products", icon: "package" },
-      { href: "/media", label: "Media", icon: "image" },
       { href: "/inventory", label: "Inventory", icon: "boxes" },
+      { href: "/media", label: "Media", icon: "image" },
       { href: "/promotions", label: "Promotions", icon: "megaphone" },
     ],
   },
   {
-    label: "Orders",
+    label: "Money",
     items: [
-      { href: "/orders", label: "Orders", icon: "cart" },
-      { href: "/customers", label: "Customers", icon: "users" },
+      { href: "/payouts", label: "Payouts", icon: "wallet" },
+      { href: "/analytics", label: "Analytics", icon: "chart" },
     ],
   },
   {
     label: "Storefront",
     items: [
-      { href: "/store-design", label: "Store Design", icon: "paintbrush", soon: true },
+      { href: "/store-design", label: "Store design", icon: "paintbrush", soon: true },
       { href: "/settings", label: "Store settings", icon: "settings" },
     ],
   },
@@ -55,7 +60,12 @@ export const NAV_GROUPS: NavGroupData[] = [
 export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
 
 /** The four destinations worth a permanent slot in the phone thumb zone. */
-export const MOBILE_PRIMARY = ["/", "/products", "/orders", "/inventory"];
+export const MOBILE_PRIMARY = [
+  "/",
+  "/orders",
+  "/products",
+  "/payouts",
+];
 
 export function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
