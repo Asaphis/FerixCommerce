@@ -363,6 +363,15 @@ export const updateMerchant = (session: string | null, body: Record<string, unkn
 export const deleteMerchant = (session: string | null, id: string) =>
   call<{ removed: string; name?: string; products: number; signIns: number }>(
     "DELETE", "admin/merchant", { session, body: { id } });
+
+/** Products waiting on the platform, with what each submission is waiting for. */
+export type ReviewItem = {
+  id: string; title: string; slug: string; merchantId: string; merchantName: string;
+  price: number; stock: number; reviewStatus: string; reviewNote: string;
+  submittedBy: string; submittedAt: string;
+};
+export const listReviewQueue = (session: string | null) =>
+  call<{ items: ReviewItem[]; counts: Record<string, number> }>("GET", "admin/review/queue", { session });
   call<{ merchant: MerchantRow }>("PATCH", "admin/merchant", { body, session });
 
 export const listUsers = (session: string | null, params: Params = {}) =>

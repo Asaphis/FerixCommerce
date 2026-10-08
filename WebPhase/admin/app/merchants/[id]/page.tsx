@@ -2,9 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, AlertTriangle, ExternalLink, MapPin, Percent, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { getMerchant, ApiError } from "@/lib/api";
+import { getMerchant, listReviewQueue, ApiError } from "@/lib/api";
 import { MerchantForm } from "@/components/ops/merchant-form";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { CmsActionForm } from "@/components/ops/cms-action-form";
+import { SubmitButton } from "@/components/ops/controls";
+import { Trash2 } from "lucide-react";
+import { deleteMerchantAction, restrictMerchantAction, suspendMerchantAction } from "@/lib/actions";
 import { Distribution, KeyValue } from "@/components/ops/marks";
 import { CellLabel, DataTable, Row, Td, TdLead, TablePanel } from "@/components/ops/table";
 import { compact, dateLong, money, num, relative, titleCase } from "@/lib/format";
@@ -17,7 +21,10 @@ function statusTone(status: string) {
 
 export default async function MerchantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { session } = await requireAdmin();
+  const { session, admin } = await requireAdmin();
+  // The endpoint removes a seller only for an owner, so the control is offered only to an
+  // owner. The gate is the server's; this keeps the screen from promising a refusal.
+  const canDelete = (admin.permissions ?? []).includes("*");
   let detail;
   try {
     detail = await getMerchant(session, id);
@@ -26,6 +33,9 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
     throw error;
   }
   const { merchant, about, summary, statuses, catalog, orders, commissionEarned } = detail;
+  // Only this seller's submissions, from the queue the platform has.
+  const queue = await listReviewQueue(session).catch(() => ({ items: [], counts: {} }));
+  const waiting = queue.items.filter((item) => item.merchantId === merchant.id);
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -239,6 +249,72 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
             <Empty title="No orders yet" body="This merchant has not sold anything yet." />
           </div>
         )}
+      </Panel>
+
+      <Panel>
+        <PanelHead
+          title="Waiting on the platform"
+          hint="What this seller has submitted, and what each one is waiting for."
+          action={<Pill tone={waiting.length ? "amber" : "mint"}>{waiting.length} waiting</Pill>}
+        />
+        {waiting.length ? (
+          <div className="grid gap-2.5">
+            {waiting.map((item) => (
+              <div key={item.id} className="rounded-[12px] border border-hairline px-3.5 py-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-semibold text-chalk">{item.title}</span>
+                    <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
+                      {money(item.price)} · stock {item.stock} · by {item.submittedBy || "the store"}
+                    </span>
+                  </span>
+                  <Pill tone={item.reviewStatus === "in_review" ? "amber" : "neutral"}>{item.reviewStatus}</Pill>
+                </div>
+                {item.reviewNote ? (
+                  <p className="mt-2 text-[12px] leading-relaxed text-chalk-dim">{item.reviewNote}</p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Empty title="Nothing waiting" body="This seller has no products in review." />
+        )}
+      </Panel>
+
+      <Panel>
+        <PanelHead
+          title="Account controls"
+          hint="Suspending stops them signing in and selling. Restricting takes them out of the marketplace. Neither deletes anything."
+        />
+        <div className="mt-4 flex flex-wrap items-center gap-2.5">
+          <CmsActionForm action={suspendMerchantAction} className="inline-flex">
+            <input type="hidden" name="id" value={merchant.id} />
+            <input type="hidden" name="suspend" value={merchant.status === "suspended" ? "false" : "true"} />
+            <SubmitButton variant="outline" pendingLabel="Saving">
+              {merchant.status === "suspended" ? "Reactivate this seller" : "Suspend this seller"}
+            </SubmitButton>
+          </CmsActionForm>
+
+          <CmsActionForm action={restrictMerchantAction} className="inline-flex">
+            <input type="hidden" name="id" value={merchant.id} />
+            <input type="hidden" name="restricted" value={merchant.marketplaceEnabled ? "true" : "false"} />
+            <SubmitButton variant="outline" pendingLabel="Saving">
+              {merchant.marketplaceEnabled ? "Take out of the marketplace" : "Put back in the marketplace"}
+            </SubmitButton>
+          </CmsActionForm>
+
+          {canDelete ? (
+            <CmsActionForm action={deleteMerchantAction} className="grid w-full gap-2 border-t border-hairline pt-3">
+              <input type="hidden" name="id" value={merchant.id} />
+              <p className="text-[12px] leading-relaxed text-chalk-dim">
+                {"Deleting removes the account, its products and its sign-ins. A seller with orders cannot be deleted — suspend them instead, which stops them trading and keeps the history."}
+              </p>
+              <SubmitButton variant="danger" pendingLabel="Deleting">
+                <Trash2 width={13} height={13} /> Delete this seller
+              </SubmitButton>
+            </CmsActionForm>
+          ) : null}
+        </div>
       </Panel>
     </div>
   );
