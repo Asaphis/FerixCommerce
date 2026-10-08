@@ -1221,7 +1221,39 @@ def _seed_staff(db: Session) -> None:
     db.commit()
 
 
+
+def migrate() -> None:
+    """Bring an existing database up to what the models now expect.
+
+    create_all creates missing TABLES and nothing else: it will never alter a
+    table that already exists. The session tables gained last_seen_at, and on a
+    database provisioned before that change every session lookup would fail with
+    "no such column" - which is to say, nobody could sign in. This adds any
+    missing column, and does nothing when the column is already there.
+    """
+    from sqlalchemy import inspect, text
+
+    wanted = {
+        "staff_sessions": [("last_seen_at", "TIMESTAMP")],
+        "sessions": [("last_seen_at", "TIMESTAMP")],
+    }
+    stamp = "TIMESTAMP WITH TIME ZONE" if engine.dialect.name.startswith("postgres") else "TIMESTAMP"
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+
+    with engine.begin() as connection:
+        for table, columns in wanted.items():
+            if table not in tables:
+                continue
+            present = {column["name"] for column in inspector.get_columns(table)}
+            for name, _ in columns:
+                if name in present:
+                    continue
+                connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {stamp}"))
+                print(f"[ferixas] migrated: added {table}.{name}")
+
 def ensure_seed() -> None:
     Base.metadata.create_all(engine)
+    migrate()
     with SessionLocal() as db:
         seed(db)
