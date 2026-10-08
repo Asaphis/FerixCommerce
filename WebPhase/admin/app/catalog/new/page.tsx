@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCatalog, listMedia } from "@/lib/api";
+import { listCatalog, listMedia, getProductSections } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
@@ -18,6 +18,7 @@ export default async function NewProductPage() {
     const row = asset as { url: string; label?: string; alt?: string; name?: string };
     return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
   });
+  const { available: sections, placements } = await getProductSections(session, "").catch(() => ({ available: [], placements: [] }));
   const { categories, collections } = await listCatalog(session, {});
 
   return (
@@ -98,6 +99,54 @@ export default async function NewProductPage() {
             urlLabel="Product image URL"
             fileLabel="Upload a product image"
           />
+          <Field title="Where it appears">
+            {sections.length ? (
+              <div className="grid gap-2.5">
+                {sections.map((section) => {
+                  const slot = `${section.documentId}__${section.sectionId}`;
+                  const placed = placements.some(
+                    (row) => row.documentId === section.documentId && row.sectionId === section.sectionId,
+                  );
+                  return (
+                    <div
+                      key={slot}
+                      className="group rounded-[10px] border border-hairline p-3 transition-colors has-[:checked]:border-signal has-[:checked]:bg-signal/5"
+                    >
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          name={`section__${slot}`}
+                          defaultChecked={placed}
+                          className="mt-0.5 size-4 shrink-0 accent-signal"
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName}</span>
+                          <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
+                            {section.documentTitle} · {section.sectionType}{section.placements ? ` · ${section.placements} already` : ""}
+                          </span>
+                        </span>
+                      </label>
+                      {/* The questions this section asks, shown when it is ticked - by CSS, so it
+                          is right before the page hydrates and cannot disagree with the checkbox. */}
+                      <div className="mt-3 hidden gap-3 group-has-[:checked]:grid sm:grid-cols-2">
+                        <Field title="Its price there">
+                          <input name={`price__${slot}`} type="number" min={0} step="0.01" className={inputClass} placeholder="Leave blank to use the product's price" />
+                        </Field>
+                        <Field title="Its quantity there">
+                          <input name={`qty__${slot}`} type="number" min={0} className={inputClass} placeholder="Leave blank to use its stock" />
+                        </Field>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[12px] text-chalk-dim">
+                No sections can hold a product yet. Add a product row to a page in the CMS first.
+              </p>
+            )}
+          </Field>
+
           <div className="grid gap-2 sm:grid-cols-3">
             <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
               <input type="checkbox" name="store" defaultChecked className="size-4 accent-signal" />
