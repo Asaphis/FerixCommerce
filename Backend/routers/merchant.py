@@ -265,6 +265,17 @@ def login(payload: LoginIn):
         staff = db.scalar(select(StaffUser).where(StaffUser.email == email, StaffUser.subject_type == "merchant"))
         if not staff or not verify_password(payload.password, staff.password_hash):
             raise HTTPException(401, "Those credentials do not match a seller account")
+
+        # A store that has been suspended or blocked may not trade, and signing in
+        # to a workspace you are barred from is the first thing a suspension is
+        # meant to stop. A store still under review may sign in and prepare its
+        # catalogue; it simply cannot go live until it is approved.
+        from core import find_merchant
+
+        store = find_merchant(db, staff.subject_id)
+        status = str((store or {}).get("status") or "").lower()
+        if status in ("suspended", "blocked", "disabled"):
+            raise HTTPException(403, "That store is not active. Contact the platform.")
         merchant = _merchant_or_404(db, staff.subject_id)
         token = issue_staff_session(db, staff)
         db.commit()

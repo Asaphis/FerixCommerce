@@ -362,6 +362,11 @@ def login(payload: LoginIn):
         staff = db.scalar(select(StaffUser).where(StaffUser.email == email, StaffUser.subject_type == "admin"))
         if not staff or not verify_password(payload.password, staff.password_hash):
             raise HTTPException(401, "Those credentials do not match an operator account")
+        # A correct password is not the same as permission. An account created
+        # without a role, or had one withdrawn, holds no permissions at all - and
+        # must be told so rather than signed in to an empty console.
+        if not (staff.permissions or []):
+            raise HTTPException(403, "That account has no access. Ask an owner to grant it a role.")
         token = issue_staff_session(db, staff)
         audit(db, "admin", staff.email, "session.login", "platform", staff.role)
         db.commit()
