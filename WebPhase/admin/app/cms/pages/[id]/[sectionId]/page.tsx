@@ -48,6 +48,35 @@ const FALLBACK: EditorField[] = [
 ];
 
 /** The choices each kind of section carries. */
+
+/** How a section arranges what it holds. Shared by everything that shows products. */
+const ARRANGEMENT: EditorField[] = [
+  { key: "across", title: "Across on a phone", options: [
+    { value: "1", label: "One" },
+    { value: "2", label: "Two" },
+    { value: "3", label: "Three" },
+    { value: "4", label: "Four" },
+  ] },
+  { key: "layout", title: "Arrangement", options: [
+    { value: "grid", label: "Grid, wrapping down the page" },
+    { value: "groups", label: "Sets of rows, swiped for the next set" },
+    { value: "horizontal", label: "One row, running off the edge" },
+  ] },
+  { key: "swipe", title: "Swipe for more", options: [
+    { value: "true", label: "Yes — swiped" },
+    { value: "false", label: "No — everything at once" },
+  ] },
+  { key: "seeAll", title: "See all link", options: [
+    { value: "true", label: "Show it" },
+    { value: "false", label: "Hide it" },
+  ] },
+];
+
+/** How far a shopper scrolls before the next section appears. */
+const INTERRUPT: EditorField[] = [
+  { key: "rowsPerSet", title: "Rows before a swipe", numeric: true },
+  { key: "interruptAfter", title: "Rows before the next section", numeric: true },
+];
 const CHOICES: Record<string, EditorField[]> = {
   product_carousel: [
     { key: "source", title: "Which products", options: [
@@ -56,17 +85,35 @@ const CHOICES: Record<string, EditorField[]> = {
       { value: "new", label: "New arrivals" },
       { value: "related", label: "Related to a product" },
     ] },
+    ...ARRANGEMENT,
   ],
+  product_grid: [...ARRANGEMENT],
   category_grid: [
     { key: "showAsTile", title: "Show as", options: [
       { value: "true", label: "Image tiles" },
       { value: "false", label: "Text links" },
     ] },
+    ...ARRANGEMENT.filter((field) => field.key !== "layout"),
+    { key: "layout", title: "Arrangement", options: [
+      { value: "groups", label: "Sets of rows, swiped for the next set" },
+      { value: "grid", label: "Grid, everything at once" },
+      { value: "horizontal", label: "One row, running off the edge" },
+    ] },
   ],
   brand_carousel: [
+    { key: "across", title: "Across on a phone", options: [
+      { value: "1", label: "One" },
+      { value: "2", label: "Two" },
+      { value: "3", label: "Three" },
+    ] },
     { key: "layout", title: "How they sit", options: [
       { value: "slider", label: "A sliding row" },
       { value: "wrap", label: "Wrapped rows" },
+      { value: "groups", label: "Sets of rows, swiped for the next set" },
+    ] },
+    { key: "seeAll", title: "See all link", options: [
+      { value: "true", label: "Show it — to the brand page" },
+      { value: "false", label: "Hide it" },
     ] },
   ],
   featured_stores: [
@@ -90,9 +137,10 @@ const CHOICES: Record<string, EditorField[]> = {
 
 /** The numbers each kind of section carries. */
 const COUNTS: Record<string, EditorField[]> = {
-  category_grid: [{ key: "limit", title: "How many departments", numeric: true }],
-  product_carousel: [{ key: "limit", title: "How many products", numeric: true }],
-  brand_carousel: [{ key: "limit", title: "How many brands", numeric: true }],
+  category_grid: [{ key: "limit", title: "How many departments", numeric: true }, ...INTERRUPT],
+  product_carousel: [{ key: "limit", title: "How many products", numeric: true }, ...INTERRUPT],
+  product_grid: [{ key: "limit", title: "How many products", numeric: true }, ...INTERRUPT],
+  brand_carousel: [{ key: "limit", title: "How many brands", numeric: true }, ...INTERRUPT],
   featured_stores: [{ key: "limit", title: "How many stores", numeric: true }],
   promo_slots: [
     { key: "adEvery", title: "One advert every … products", numeric: true },
