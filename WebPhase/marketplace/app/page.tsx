@@ -71,13 +71,13 @@ export default async function HomePage() {
           <div className="min-w-0">
             <PromoBanner
               banners={home.banners}
-              heightClassName="h-[208px] sm:h-[286px] lg:h-[350px]"
+              heightClassName="h-[236px] sm:h-[286px] lg:h-[350px]"
               className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
             />
-            <div className="mt-2.5 grid grid-cols-3 divide-x divide-line-warm rounded-[3px] border border-line-warm bg-white py-2.5 max-lg:mt-0 max-lg:rounded-none max-lg:border-x-0">
-              <div className="flex items-center justify-center gap-1.5 px-1 text-center text-[9px] font-semibold text-ink-soft sm:gap-2 sm:text-[11px]"><ShoppingBag width={14} height={14} className="shrink-0 text-ember" />One cart, many stores</div>
-              <div className="flex items-center justify-center gap-1.5 px-1 text-center text-[9px] font-semibold text-ink-soft sm:gap-2 sm:text-[11px]"><BadgeCheck width={14} height={14} className="shrink-0 text-ember" />Seller profiles</div>
-              <div className="flex items-center justify-center gap-1.5 px-1 text-center text-[9px] font-semibold text-ink-soft sm:gap-2 sm:text-[11px]"><StoreIcon width={14} height={14} className="shrink-0 text-ember" />{home.stats.merchants} stores</div>
+            <div className="mt-2.5 grid grid-cols-3 divide-line-warm rounded-[3px] border border-line-warm bg-white py-2.5 sm:divide-x max-lg:mt-0 max-lg:rounded-none max-lg:border-x-0 max-lg:py-0">
+              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[10px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><ShoppingBag width={14} height={14} className="shrink-0 text-ember" />One cart, many stores</div>
+              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[10px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><BadgeCheck width={14} height={14} className="shrink-0 text-ember" />Seller profiles</div>
+              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[10px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><StoreIcon width={14} height={14} className="shrink-0 text-ember" />{home.stats.merchants} stores</div>
             </div>
           </div>
         </div>

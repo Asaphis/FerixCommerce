@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Boxes, Image as ImageIcon, Layers, Megaphone, Palette, Tag, UploadCloud } from "lucide-react";
-import { requireAdmin } from "@/lib/data";
+import { requireAdmin, explain } from "@/lib/data";
 import { listDocuments } from "@/lib/api";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { relative, titleCase } from "@/lib/format";
@@ -52,7 +52,17 @@ const SECTIONS = [
 
 export default async function CmsPage() {
   const { session } = await requireAdmin();
-  const { documents } = await listDocuments(session);
+
+  // The tools below are the point of this screen. If the content API cannot be
+  // reached, say so and keep every destination on the page usable — an
+  // unreachable API must never replace the CMS with an error screen.
+  let documents: Awaited<ReturnType<typeof listDocuments>>["documents"] = [];
+  let loadError: string | null = null;
+  try {
+    documents = (await listDocuments(session)).documents;
+  } catch (error) {
+    loadError = explain(error);
+  }
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -61,6 +71,13 @@ export default async function CmsPage() {
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Content management</h1>
         
       </header>
+
+      {loadError ? (
+        <div role="status" className="rounded-[.5rem] border border-[#e34d32]/40 bg-[#e34d32]/8 px-4 py-3 text-[13px] leading-relaxed text-[#b23a24]">
+          <span className="font-semibold">The content API could not be reached.</span> Every tool below still opens;
+          nothing has been lost. {loadError}
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {SECTIONS.map(({ href, label, detail, Icon }) => (

@@ -36,6 +36,7 @@ export const NAV_GROUPS: NavGroupData[] = [
     items: [
       { href: "/catalog", label: "Catalogue", icon: "boxes" },
       { href: "/cms", label: "CMS", icon: "palette" },
+      { href: "/cms/brands", label: "Brands", icon: "tag" },
       { href: "/promotions", label: "Promotions", icon: "megaphone" },
     ],
   },
