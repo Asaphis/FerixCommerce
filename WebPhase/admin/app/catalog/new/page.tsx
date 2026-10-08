@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
-import { requireAdmin } from "@/lib/data";
+import { requireAdmin } from "@/lib/data";m "@/lib/data";
 import { listCatalog, listMedia } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
@@ -17,7 +17,7 @@ export default async function NewProductPage() {
   const libraryOptions = library.assets.map((asset) => {
     const row = asset as { url: string; label?: string; alt?: string; name?: string };
     return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
-  });ireAdmin();
+  });
   const { categories, collections } = await listCatalog(session, {});
 
   return (
