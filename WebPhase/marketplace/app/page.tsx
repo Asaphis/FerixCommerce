@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Boxes, ShoppingBag, Store as StoreIcon } from "lucide-react";
 import type { Category, Product } from "@/lib/api";
-import { assetUrl, getHome } from "@/lib/api";
+import { assetUrl, getHome, listAdverts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { PromoBanner } from "@/components/ferix/banner";
 import { CategoryTile, ProductGrid, ProductRail, StoreCard } from "@/components/ferix/cards";
@@ -95,7 +95,15 @@ export default async function HomePage() {
   const flash = uniqueProducts(home.flashSale?.products ?? []);
   const brands = home.brands ?? [];
 
+  // Adverts placed on the homepage. Only fetched when a slots section asks for
+  // them, so a homepage without one costs nothing.
   const document = (home.content ?? {}) as { sections?: Section[] };
+  const wantsSlots = (document.sections ?? []).some(
+    (section) => section?.type === "promo_slots" && section.visible !== false,
+  );
+  const homeAdverts = wantsSlots
+    ? (await listAdverts("home").catch(() => ({ adverts: [] as Advert[] }))).adverts
+    : [];
   const stored = (document.sections ?? [])
     .filter((section) => section && typeof section.type === "string" && section.visible !== false)
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
@@ -268,6 +276,21 @@ export default async function HomePage() {
         );
       }
 
+      /* ── A promotion between content sections ───────────────────── */
+      case "promo_slots": {
+        const slots = homeAdverts.slice(0, limit ?? 2);
+        if (!slots.length) return null;
+        return (
+          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 sm:py-6">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {slots.map((advert) => (
+                <HomeAdvert key={advert.id} advert={advert} label={section.subtitle ?? "Advertisement"} />
+              ))}
+            </div>
+          </section>
+        );
+      }
+
       /* ── Stores worth following ─────────────────────────────────── */
       case "featured_stores": {
         if (!home.stores.length) return null;
@@ -312,4 +335,39 @@ export default async function HomePage() {
   }
 
   return <div className="pb-10">{sections.map((section, index) => block(section, index))}</div>;
+}
+
+/**
+ * One advertisement, in the flow of the homepage.
+ *
+ * Labelled, always, and it says who paid when anyone did: a promotion that cannot
+ * be told apart from content is a trick, and it costs more trust than the slot
+ * earns.
+ */
+function HomeAdvert({ advert, label }: { advert: Advert; label: string }) {
+  const media = assetUrl(advert.mediaUrl);
+  const isVideo = advert.kind === "video";
+  return (
+    <a
+      href={advert.href || "/browse"}
+      className="group grid overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40 sm:grid-cols-[minmax(0,120px)_minmax(0,1fr)]"
+    >
+      <span className="relative block min-h-[104px] bg-gradient-to-br from-[#5b3a7a] via-[#8b63b0] to-[#c8a7e0]">
+        {media && !isVideo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={media} alt="" className="h-full w-full object-cover" />
+        ) : null}
+      </span>
+      <span className="flex flex-col justify-center gap-1.5 px-4 py-3.5">
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.16em] text-ink-soft">{label}</span>
+        <span className="font-display text-[15.5px] font-bold leading-tight text-ink group-hover:text-ember">
+          {advert.headline || advert.name || "Something worth a look"}
+        </span>
+        {advert.body ? <span className="text-[12px] leading-relaxed text-ink-soft">{advert.body}</span> : null}
+        <span className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/80">
+          {advert.sponsor ? `Sponsored by ${advert.sponsor}` : "From Ferixas"}
+        </span>
+      </span>
+    </a>
+  );
 }
