@@ -398,7 +398,14 @@ def products(search: Optional[str] = None,
              rating: Optional[float] = None, inStock: Optional[bool] = None, onSale: Optional[bool] = None,
              sort: str = "relevance", page: int = 1, perPage: int = 24):
     with SessionLocal() as db:
-        catalogue = decorate(db, product_rows(db))
+        # Only what has been approved belongs in the shop. A seller's listing sits in this table
+        # while it is being reviewed, and a draft was reaching the public catalogue and its counts.
+        catalogue = decorate(db, [
+            row for row in product_rows(db)
+            if str(row.get("status") or "active").lower() not in ("draft", "rejected")
+            and str(row.get("reviewStatus") or "").lower()
+            not in ("in_review", "pending", "changes_requested", "rejected")
+        ])
         items = list(catalogue)
         q = (search or "").lower()
         if q:

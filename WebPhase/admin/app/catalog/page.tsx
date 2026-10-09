@@ -52,6 +52,32 @@ export default async function CatalogPage({
         </Link>
       </header>
 
+      /* Where a seller's stock lives, said where someone would look for it. */
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-hairline bg-panel-2 px-4 py-3">
+
+        <p className="text-[12.5px] leading-relaxed text-chalk-dim">
+
+          Looking for a seller's products? They are not on this shelf — each seller's stock lives on
+
+          their own page, with what they have submitted waiting for review.
+
+        </p>
+
+        <Link
+
+          href="/merchants"
+
+          className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel"
+
+        >
+
+          Open their page →
+
+        </Link>
+
+      </div>
+
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <Readout label="Products" value={num(data.total)} sub={`${data.counts.active ?? 0} active`} icon={<Boxes width={15} height={15} />} />
         <Readout label="Ferixas Official" value={num(official)} sub="Owned by the platform" tone="violet" />
