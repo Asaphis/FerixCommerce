@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { useActionState } from "react";
 import { Save } from "lucide-react";
 import { Panel, PanelHead } from "@/components/ops/bits";
-import { Field, SubmitButton, inputClass, textareaClass } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
+import { inputClass, textareaClass } from "@/components/ops/table";
 import { createCmsSectionAction, type FormState } from "@/lib/actions";
 
 export function CreateCmsSectionForm() {

@@ -98,24 +98,6 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
             <p className="mt-2.5 max-w-[70ch] text-[14px] leading-relaxed text-ink-soft">{about}</p>
             
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {store.phone && (
-                <div className="flex items-start gap-2">
-                  <Phone width={14} height={14} className="mt-0.5 text-ink-soft" />
-                  <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">Phone</p>
-                    <p className="mt-1 text-[13px] text-ink">{store.phone}</p>
-                  </div>
-                </div>
-              )}
-              {store.email && (
-                <div className="flex items-start gap-2">
-                  <Mail width={14} height={14} className="mt-0.5 text-ink-soft" />
-                  <div>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">Email</p>
-                    <p className="mt-1 text-[13px] text-ink">{store.email}</p>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
