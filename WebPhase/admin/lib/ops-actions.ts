@@ -164,10 +164,11 @@ export async function saveBannerAction(_previous: FormState, form: FormData): Pr
   const session = await readSession();
   if (!session) redirect("/login");
   const headline = str(form, "headline");
-  if (!headline) return { error: "Enter a banner headline before saving." };
+  const showText = bool(form, "showText");
+  if (!headline && showText) return { error: "Enter a banner headline, or turn off copy to use media only." };
   const kind = str(form, "kind", "image");
   try {
-    const uploadedUrl = await uploadedMediaUrl(session, form, "mediaFile", kind, headline, "banners");
+    const uploadedUrl = await uploadedMediaUrl(session, form, "mediaFile", kind, headline || "Ferixas campaign", "banners");
     const libraryUrl = str(form, "mediaLibraryUrl");
     const mediaUrl = uploadedUrl || libraryUrl || str(form, "mediaUrl");
     if (!mediaUrl) return { error: "Choose a media-library asset, paste a URL, or upload a banner file." };
@@ -178,7 +179,7 @@ export async function saveBannerAction(_previous: FormState, form: FormData): Pr
       // Off means the banner shows its image or video alone: the headline, body and buttons
       // all go with the overlay, scrim included. Absent means shown, so nothing that already
       // exists changes behaviour.
-      showText: form.get("showText") === "on",
+      showText,
       eyebrow: str(form, "eyebrow"),
       headline,
       body: str(form, "body"),

@@ -3,6 +3,8 @@ import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { assetUrl, getCataloguePage, getHome, listAdverts, listProducts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
+import { PromoBanner } from "@/components/ferix/banner";
+import { MediaHero } from "@/components/ferix/media-hero";
 import { AutoForm } from "@/components/ferix/add-to-cart";
 import { EmptyState, Eyebrow, LinkButton } from "@/components/ferix/marks";
 import { money } from "@/lib/format";
@@ -125,13 +127,22 @@ export async function CatalogListing({
   const gridSection = page.sections.find(
     (section) => (section.type === "product_grid" || section.type === "product_carousel") && section.visible !== false,
   );
+  const heroMediaOnly = Boolean(
+    hero &&
+      (hero.mediaOnly === true ||
+        String(hero.mediaOnly) === "true" ||
+        hero.showText === false ||
+        String(hero.showText) === "false"),
+  );
   const brandRow = page.sections.find(
     (section) => section.type === "brand_carousel" && section.visible !== false,
   );
+  const needsHomeData = Boolean(brandRow) || Boolean(hero?.type === "hero_banner" && !hero.mediaUrl);
+  const homeData = needsHomeData ? await getHome().catch(() => null) : null;
   const brands = brandRow
     // The payload carries brands, but HomeFeed does not declare them and the
     // Brand type describes a store's theming rather than a brand record.
-    ? (((await getHome().catch(() => null)) as unknown as {
+    ? ((homeData as unknown as {
         brands?: { slug: string; name: string; imageUrl?: string; logo?: string }[];
       } | null)?.brands ?? []).slice(0, Math.max(1, Number(brandRow.limit) || 8))
     : [];
@@ -181,27 +192,35 @@ export async function CatalogListing({
       ) : null}
 
       {hero ? (
-        <section className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-[16px] bg-gradient-to-r from-[#b8542a] via-[#e0703a] to-[#f3a877] px-5 py-5">
-          <div className="min-w-0">
-            {hero.eyebrow ? (
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/85">{hero.eyebrow}</span>
-            ) : null}
-            <p className="mt-1.5 font-display text-[19px] font-bold leading-tight text-white sm:text-[23px]">
-              {hero.title ?? "This week on Ferixas"}
-            </p>
-            {hero.subtitle ? (
-              <p className="mt-1 max-w-[56ch] text-[12.5px] leading-relaxed text-white/85">{hero.subtitle}</p>
-            ) : null}
-          </div>
-          {hero.ctaLabel ? (
-            <Link
-              href={hero.ctaHref ?? basePath}
-              className="shrink-0 rounded-[10px] bg-white px-4 py-2.5 text-[12.5px] font-bold text-[#c2441a]"
-            >
-              {hero.ctaLabel}
-            </Link>
-          ) : null}
-        </section>
+        <div className="mx-auto mt-4 max-w-[1440px]">
+          {hero.type === "hero_banner" && !hero.mediaUrl ? (
+            <PromoBanner
+              banners={homeData?.banners ?? []}
+              mediaOnly={heroMediaOnly}
+              heightClassName="h-[190px] sm:h-[250px] lg:h-[320px]"
+              className="rounded-[3px] rounded-tr-[16px] shadow-[0_8px_22px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
+            />
+          ) : (
+            <MediaHero
+              mediaUrl={hero.mediaUrl}
+              kind={hero.kind}
+              mediaOnly={heroMediaOnly}
+              eyebrow={hero.eyebrow}
+              title={hero.title ?? "This week on Ferixas"}
+              description={hero.subtitle}
+              ctaLabel={hero.ctaLabel}
+              ctaHref={hero.ctaHref ?? basePath}
+              secondaryLabel={hero.secondaryLabel}
+              secondaryHref={hero.secondaryHref}
+              align={hero.align}
+              vertical={hero.vertical}
+              tone={hero.tone}
+              scrim={hero.scrim}
+              heightClassName="h-[190px] sm:h-[250px] lg:h-[320px]"
+              className="rounded-[3px] rounded-tr-[16px] shadow-[0_8px_22px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
+            />
+          )}
+        </div>
       ) : null}
 
       <div className="mt-3 flex flex-wrap items-end justify-between gap-3">

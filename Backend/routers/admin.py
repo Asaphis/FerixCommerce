@@ -122,6 +122,7 @@ class BannerIn(BaseModel):
     mediaUrl: Optional[str] = None
     image: Optional[str] = None
     videoUrl: Optional[str] = None
+    showText: Optional[bool] = None
     accent: Optional[str] = None
     audience: Optional[str] = None
     active: Optional[bool] = None
@@ -1007,6 +1008,7 @@ def cms_banner(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
             "secondaryHref": payload.secondaryHref if payload.secondaryHref is not None else existing.get("secondaryHref"),
             "mediaUrl": media, "image": media, "imageUrl": media,
             "videoUrl": payload.videoUrl if payload.videoUrl is not None else (media if (payload.kind == "video") else existing.get("videoUrl")),
+            "showText": payload.showText if payload.showText is not None else existing.get("showText", True),
             "accent": payload.accent if payload.accent is not None else existing.get("accent", "#c8ff3d"),
             "audience": payload.audience if payload.audience is not None else existing.get("audience", "everyone"),
             "active": payload.active if payload.active is not None else existing.get("active", True),

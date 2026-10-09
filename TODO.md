@@ -12,3 +12,9 @@
 - [ ] Resolve incorrect/broken campaign asset paths; do not use decorative fallback artwork to imply unavailable content is real.
 - [ ] Run all three production builds, backend regression tests, screenshot comparison, responsive overflow checks, and broken-image checks.
 - [ ] Commit and push verified changes to GitHub `main`; state what is pushed versus what still requires production deployment.
+
+## Current focused work
+- [ ] Departments render as responsive poster tiles; phone groups are configurable by across × rows, swipe position dots/count work, all departments show unless a limit is set, and desktop/tablet groups match visible columns.
+- [ ] Remove dead category CMS controls and make the remaining arrangement, row, limit, and See all settings persist and affect the storefront.
+- [ ] Homepage hero section and Explore hero both support image/video upload and preview; media-only mode removes all text, buttons, shading, controls, and fallback color.
+- [ ] Verify the CMS draft/publish behavior, phone/tablet/desktop layouts, Marketplace/Admin builds, and backend regressions before pushing.

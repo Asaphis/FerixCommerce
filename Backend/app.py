@@ -598,15 +598,15 @@ def store(slug: str):
         if not merchant:
             raise HTTPException(404, "No store at that address")
         # A seller's shop shows what has been approved, on the same terms as the marketplace: a
-    # draft or a listing waiting on review is the seller's business and the platform's, not a
-    # customer's. A row with no status is an old one and counts as active.
-    owned = decorate(db, [
-        p for p in product_rows(db)
-        if p.get("merchantId") == merchant["id"]
-        and str(p.get("status") or "active").lower() not in ("draft", "rejected")
-        and str(p.get("reviewStatus") or "").lower()
-        not in ("in_review", "pending", "changes_requested", "rejected")
-    ])
+        # draft or a listing waiting on review is the seller's business and the platform's, not a
+        # customer's. A row with no status is an old one and counts as active.
+        owned = decorate(db, [
+            p for p in product_rows(db)
+            if p.get("merchantId") == merchant["id"]
+            and str(p.get("status") or "active").lower() not in ("draft", "rejected")
+            and str(p.get("reviewStatus") or "").lower()
+            not in ("in_review", "pending", "changes_requested", "rejected")
+        ])
         doc = db.get(ContentDocument, f"doc_store_{merchant['id']}")
         return {
             "store": store_card(db, merchant), "about": merchant.get("about", ""),

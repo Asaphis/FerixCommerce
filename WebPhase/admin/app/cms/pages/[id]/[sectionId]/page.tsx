@@ -2,12 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
-import { getCmsPage, type CmsSection } from "@/lib/api";
+import { assetUrl, getCmsPage, listBanners, listMedia, type Banner, type CmsSection, type MediaAsset } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { saveCmsSectionAction } from "@/lib/actions";
+import { MediaUploadField } from "@/components/ops/media-upload-field";
 
 /** The fields each section type can be managed by, in the order they read. */
 type Choice = { value: string; label: string };
@@ -35,6 +36,7 @@ const TEXT_FIELDS: Record<string, EditorField[]> = {
   hero_slim: [
     { key: "eyebrow", title: "Eyebrow" },
     { key: "title", title: "Title" },
+    { key: "subtitle", title: "Description", long: true },
     { key: "ctaLabel", title: "Button label" },
     { key: "ctaHref", title: "Button link" },
   ],
@@ -89,17 +91,35 @@ const CHOICES: Record<string, EditorField[]> = {
   ],
   product_grid: [...ARRANGEMENT],
   category_grid: [
-    { key: "showAsTile", title: "Show as", options: [
-      { value: "true", label: "Image tiles" },
-      { value: "false", label: "Text links" },
+    { key: "across", title: "Across on a phone", options: [
+      { value: "1", label: "One" },
+      { value: "2", label: "Two" },
+      { value: "3", label: "Three" },
+      { value: "4", label: "Four" },
     ] },
-    ...ARRANGEMENT.filter((field) => field.key !== "layout"),
+    { key: "rowsPerSet", title: "Rows per face", options: [
+      { value: "1", label: "One" },
+      { value: "2", label: "Two" },
+      { value: "3", label: "Three" },
+    ] },
     { key: "layout", title: "Arrangement", options: [
-      { value: "groups", label: "Sets of rows, swiped for the next set" },
-      { value: "grid", label: "Grid, everything at once" },
-      { value: "horizontal", label: "One row, running off the edge" },
+      { value: "groups", label: "Groups, swiped" },
+      { value: "grid", label: "One grid" },
+      { value: "horizontal", label: "One row" },
+    ] },
+    { key: "seeAll", title: "See all link", options: [
+      { value: "true", label: "Show it" },
+      { value: "false", label: "Hide it" },
     ] },
   ],
+  hero_banner: [{ key: "mediaOnly", title: "Hero display", options: [
+    { value: "false", label: "Text and button over the media" },
+    { value: "true", label: "Media only — no copy, buttons or shading" },
+  ] }],
+  hero_slim: [{ key: "mediaOnly", title: "Banner display", options: [
+    { value: "false", label: "Text and button over the media" },
+    { value: "true", label: "Media only — no copy, buttons or shading" },
+  ] }],
   brand_carousel: [
     { key: "across", title: "Across on a phone", options: [
       { value: "1", label: "One" },
@@ -137,7 +157,7 @@ const CHOICES: Record<string, EditorField[]> = {
 
 /** The numbers each kind of section carries. */
 const COUNTS: Record<string, EditorField[]> = {
-  category_grid: [{ key: "limit", title: "How many departments", numeric: true }, ...INTERRUPT],
+  category_grid: [{ key: "limit", title: "How many departments (blank = all)", numeric: true }],
   product_carousel: [{ key: "limit", title: "How many products", numeric: true }, ...INTERRUPT],
   product_grid: [{ key: "limit", title: "How many products", numeric: true }, ...INTERRUPT],
   brand_carousel: [{ key: "limit", title: "How many brands", numeric: true }, ...INTERRUPT],
@@ -183,7 +203,15 @@ const DRAW_FROM: Record<string, { href: string; label: string }> = {
 
 function fieldsFor(section: CmsSection): EditorField[] {
   const key = String(section.type ?? "");
-  const text = TEXT_FIELDS[key] ?? (TITLED.includes(key) ? [...FALLBACK] : []);
+  const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true";
+  const hasDirectMedia = Boolean(String(section.mediaUrl ?? "").trim());
+  const text = key === "hero_banner"
+    ? hasDirectMedia && !mediaOnly ? TEXT_FIELDS[key] : []
+    : key === "category_grid"
+      ? [{ key: "title", title: "Title" }]
+    : key === "hero_slim"
+      ? mediaOnly ? [] : TEXT_FIELDS[key]
+      : TEXT_FIELDS[key] ?? (TITLED.includes(key) ? [...FALLBACK] : []);
   // Everything the section can carry: its words, then its choices, then its
   // counts. Each kind only ever sees fields it can act on.
   return [
@@ -197,6 +225,17 @@ function fieldsFor(section: CmsSection): EditorField[] {
 function asOption(field: EditorField, value: unknown) {
   if (typeof value === "boolean") return value ? "true" : "false";
   return value === undefined || value === null ? "" : String(value);
+}
+
+function initialOption(field: EditorField, section: CmsSection) {
+  const value = section[field.key];
+  if (value !== undefined && value !== null) return asOption(field, value);
+  const defaults: Record<string, Record<string, string>> = {
+    category_grid: { across: "2", rowsPerSet: "2", layout: "groups", seeAll: "true" },
+    hero_banner: { mediaOnly: "false" },
+    hero_slim: { mediaOnly: "false" },
+  };
+  return defaults[String(section.type ?? "")]?.[field.key] ?? "";
 }
 
 export default async function CmsSectionEditor({
@@ -218,6 +257,39 @@ export default async function CmsSectionEditor({
   if (!loadError && (!page || !section)) notFound();
 
   const fields = section ? fieldsFor(section) : [];
+  const isHeroSection = Boolean(section && ["hero_banner", "hero_slim"].includes(String(section.type)));
+  const mediaOnly = section?.mediaOnly === true || String(section?.mediaOnly) === "true";
+  const sectionMediaUrl = section ? assetUrl(String(section.mediaUrl ?? "")) : "";
+
+  let mediaAssets: MediaAsset[] = [];
+  if (isHeroSection) {
+    try {
+      mediaAssets = (await listMedia(session)).assets.map((asset) => ({ ...asset, url: assetUrl(asset.url) }));
+    } catch {
+      // Upload and URL fields still work if the media library cannot be reached.
+    }
+  }
+
+  // A hero with no direct media renders the shared banner carousel, so the preview
+  // shows that carousel's first active slide instead of an unrelated mock.
+  let bannerPreview: Banner | null = null;
+  if (section?.type === "hero_banner" && !sectionMediaUrl) {
+    try {
+      bannerPreview = (await listBanners(session)).banners.find((banner) => banner.active) ?? null;
+    } catch {
+      // The rest of the section editor stays usable when the banner list is unavailable.
+    }
+  }
+  const previewMediaUrl = sectionMediaUrl || (bannerPreview ? assetUrl(bannerPreview.mediaUrl || bannerPreview.image || bannerPreview.videoUrl) : "");
+  const previewVideo = String(section?.kind ?? bannerPreview?.kind) === "video" || /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(previewMediaUrl);
+  const previewMediaOnly = mediaOnly || bannerPreview?.showText === false;
+  const previewEyebrow = sectionMediaUrl ? section?.eyebrow : bannerPreview?.eyebrow ?? section?.eyebrow;
+  const previewTitle = sectionMediaUrl ? section?.title : bannerPreview?.headline ?? section?.title ?? section?.name;
+  const previewDescription = sectionMediaUrl ? section?.subtitle : bannerPreview?.body ?? section?.subtitle;
+  const previewCtaLabel = sectionMediaUrl ? section?.ctaLabel : bannerPreview?.ctaLabel ?? section?.ctaLabel;
+  const previewCtaHref = sectionMediaUrl ? section?.ctaHref : bannerPreview?.ctaHref ?? section?.ctaHref;
+  const previewSecondaryLabel = sectionMediaUrl ? section?.secondaryLabel : bannerPreview?.secondaryLabel;
+  const previewSecondaryHref = sectionMediaUrl ? section?.secondaryHref : bannerPreview?.secondaryHref;
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -248,6 +320,12 @@ export default async function CmsSectionEditor({
           <div className="grid min-w-0 gap-5">
             <Panel>
               <PanelHead title="Content" hint="Saved as a draft. Nothing reaches a shopper until you publish." />
+              {String(section.type) === "hero_banner" && !sectionMediaUrl ? (
+                <p className="mb-4 rounded-[10px] border border-hairline bg-panel-2 px-3.5 py-3 text-[12px] leading-relaxed text-chalk-dim">The carousel's headline and button are set on each banner. Upload direct media here to add section-level title and description controls.</p>
+              ) : null}
+              {isHeroSection && mediaOnly ? (
+                <p className="mb-4 rounded-[10px] border border-hairline bg-panel-2 px-3.5 py-3 text-[12px] leading-relaxed text-chalk-dim">Media-only mode hides copy, buttons and shading. Choose text mode to edit the overlay content and placement.</p>
+              ) : null}
               {fields.length ? (
                 <CmsActionForm action={saveCmsSectionAction} className="grid gap-4">
                   <input type="hidden" name="id" value={id} />
@@ -257,7 +335,7 @@ export default async function CmsSectionEditor({
                       <Field key={field.key} title={field.title}>
                         <select
                           name={`field_${field.key}`}
-                          defaultValue={asOption(field, section[field.key])}
+                          defaultValue={initialOption(field, section)}
                           className={selectClass}
                         >
                           {field.options.map((option) => (
@@ -286,6 +364,24 @@ export default async function CmsSectionEditor({
                       </Field>
                     ),
                   )}
+                  {isHeroSection ? (
+                    <div className="grid gap-2 border-t border-hairline pt-4">
+                      <p className="text-[12.5px] font-semibold text-chalk">Hero image or video</p>
+                      <p className="-mt-1 text-[11.5px] leading-relaxed text-chalk-dim">Upload or choose the media here. Media-only mode shows this image/video with no copy, button, or shading.</p>
+                      <MediaUploadField
+                        urlName="field_mediaUrl"
+                        fileName="field_mediaFile"
+                        kind="auto"
+                        kindName="field_kind"
+                        defaultUrl={sectionMediaUrl}
+                        libraryName="field_mediaLibraryUrl"
+                        urlLabel="Media URL"
+                        fileLabel="Upload image or video"
+                        libraryAssets={mediaAssets.map((asset) => ({ url: asset.url, label: `${asset.kind} · ${asset.alt || asset.id}` }))}
+                        selectedLibraryUrl={mediaAssets.some((asset) => asset.url === sectionMediaUrl) ? sectionMediaUrl : ""}
+                      />
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap items-center gap-2">
                     <SubmitButton pendingLabel="Saving">Save draft</SubmitButton>
                   </div>
@@ -297,16 +393,16 @@ export default async function CmsSectionEditor({
 
             {String(section.type) === "hero_banner" ? (
               <Panel>
-                <PanelHead title="Slide media" hint="Images and video live in Banners, so one creative can be reused by any section." />
+                <PanelHead title="Carousel slides" hint="The image/video above takes priority. Clear it to use the active banners from the shared library." />
                 <div className="grid gap-3">
                   <div className="flex items-center gap-3 rounded-[12px] border border-dashed border-hairline bg-panel-2 px-4 py-3.5">
                     <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px] border border-hairline bg-panel text-signal">
                       <ImagePlus width={18} height={18} />
                     </span>
                     <span className="min-w-0 flex-1 text-[12.5px] text-chalk-dim">
-                      {Array.isArray(section.bannerIds) && section.bannerIds.length
-                        ? `${section.bannerIds.length} banners linked to this hero.`
-                        : "No banner linked yet — the hero will show its built-in artwork."}
+                      {section.mediaUrl
+                        ? "Direct hero media is set. It will show instead of the carousel."
+                        : "No direct media is set. Active banners from the shared library will show here."}
                     </span>
                     <Link href="/cms/banners" className="shrink-0 rounded-[9px] border border-hairline px-3 py-1.5 text-[11px] font-semibold text-chalk transition-colors hover:bg-panel-2">
                       Manage banners
@@ -316,72 +412,98 @@ export default async function CmsSectionEditor({
               </Panel>
             ) : null}
 
-            <Panel>
-              <PanelHead title="Placement" hint="Where the text sits over the image, and how the overlay reads." />
-              <CmsActionForm action={saveCmsSectionAction} className="grid gap-4 sm:grid-cols-2">
-                <input type="hidden" name="id" value={id} />
-                <input type="hidden" name="sectionId" value={section.id} />
-                <Field title="Text across">
-                  <select name="field_align" defaultValue={String(section.align ?? "left")} className={selectClass}>
-                    <option value="left">Left</option>
-                    <option value="center">Centre</option>
-                    <option value="right">Right</option>
-                  </select>
-                </Field>
-                <Field title="Text height">
-                  <select name="field_vertical" defaultValue={String(section.vertical ?? "middle")} className={selectClass}>
-                    <option value="top">Top</option>
-                    <option value="middle">Middle</option>
-                    <option value="bottom">Bottom</option>
-                  </select>
-                </Field>
-                <Field title="Overlay tone">
-                  <select name="field_tone" defaultValue={String(section.tone ?? "dark")} className={selectClass}>
-                    <option value="dark">Dark behind light text</option>
-                    <option value="light">Light behind dark text</option>
-                  </select>
-                </Field>
-                <Field title="Overlay strength">
-                  <input name="field_scrim" type="number" min={0} max={100} defaultValue={String(section.scrim ?? 55)} className={inputClass} />
-                </Field>
-                <Field title="Slide duration (ms)">
-                  <input name="field_duration" type="number" min={2000} step={500} defaultValue={String(section.duration ?? 7000)} className={inputClass} />
-                </Field>
-                <Field title="Text width (characters)">
-                  <input name="field_width" type="number" min={18} max={64} defaultValue={String(section.width ?? 44)} className={inputClass} />
-                </Field>
-                <div className="sm:col-span-2"><SubmitButton pendingLabel="Saving">Save placement</SubmitButton></div>
-              </CmsActionForm>
-            </Panel>
+            {isHeroSection && !mediaOnly ? (
+              <Panel>
+                <PanelHead title="Placement" hint="Where text sits over the media and how its overlay reads." />
+                <CmsActionForm action={saveCmsSectionAction} className="grid gap-4 sm:grid-cols-2">
+                  <input type="hidden" name="id" value={id} />
+                  <input type="hidden" name="sectionId" value={section.id} />
+                  <Field title="Text across">
+                    <select name="field_align" defaultValue={String(section.align ?? "left")} className={selectClass}>
+                      <option value="left">Left</option>
+                      <option value="center">Centre</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </Field>
+                  <Field title="Text height">
+                    <select name="field_vertical" defaultValue={String(section.vertical ?? "middle")} className={selectClass}>
+                      <option value="top">Top</option>
+                      <option value="middle">Middle</option>
+                      <option value="bottom">Bottom</option>
+                    </select>
+                  </Field>
+                  <Field title="Overlay tone">
+                    <select name="field_tone" defaultValue={String(section.tone ?? "dark")} className={selectClass}>
+                      <option value="dark">Dark behind light text</option>
+                      <option value="light">Light behind dark text</option>
+                    </select>
+                  </Field>
+                  <Field title="Overlay strength">
+                    <input name="field_scrim" type="number" min={0} max={100} defaultValue={String(section.scrim ?? 55)} className={inputClass} />
+                  </Field>
+                  <Field title="Text width (characters)">
+                    <input name="field_width" type="number" min={18} max={64} defaultValue={String(section.width ?? 44)} className={inputClass} />
+                  </Field>
+                  <div className="sm:col-span-2"><SubmitButton pendingLabel="Saving">Save placement</SubmitButton></div>
+                </CmsActionForm>
+              </Panel>
+            ) : null}
           </div>
 
           <aside className="grid gap-5 xl:sticky xl:top-4">
             <Panel>
               <PanelHead title="Preview" action={<Pill tone="neutral">as it will render</Pill>} />
               <div className="overflow-hidden rounded-[14px] border border-hairline">
-                <div className="relative flex min-h-[180px] flex-col justify-center bg-gradient-to-br from-[#8d5a3c] via-[#c98a5e] to-[#ecc4a3] px-5 py-6">
-                  {section.eyebrow ? (
-                    <span className="inline-flex w-fit items-center gap-2 rounded-full border border-white/40 bg-white/20 px-2.5 py-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-white">
-                      {String(section.eyebrow)}
-                    </span>
-                  ) : null}
-                  <span className="mt-3 block max-w-[26ch] font-display text-[21px] font-extrabold leading-tight text-white drop-shadow">
-                    {String(section.title ?? section.name ?? "")}
-                  </span>
-                  {section.subtitle ? (
-                    <span className="mt-2 block max-w-[34ch] text-[12px] leading-relaxed text-white/85">
-                      {String(section.subtitle)}
-                    </span>
-                  ) : null}
-                  {section.ctaLabel ? (
-                    <span className="mt-4 inline-flex w-fit rounded-[10px] bg-white px-3.5 py-2 text-[12px] font-semibold text-[#c2441a]">
-                      {String(section.ctaLabel)}
-                    </span>
-                  ) : null}
-                </div>
+                {isHeroSection ? (
+                  <div className="relative aspect-[16/8] min-h-[180px] overflow-hidden bg-transparent">
+                    {previewMediaUrl ? (
+                      previewVideo ? (
+                        // eslint-disable-next-line jsx-a11y/media-has-caption
+                        <video src={previewMediaUrl} controls muted playsInline preload="metadata" className="absolute inset-0 h-full w-full bg-[#17232b] object-cover" />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={previewMediaUrl} alt="Hero media preview" className="absolute inset-0 h-full w-full object-cover" />
+                      )
+                    ) : null}
+                    {!previewMediaOnly ? (
+                      <>
+                        {previewMediaUrl ? (
+                          <div aria-hidden className="absolute inset-0" style={{ background: String(section.tone ?? "dark") === "light" ? "linear-gradient(90deg,rgba(255,255,255,.65),rgba(255,255,255,0))" : "linear-gradient(90deg,rgba(7,20,35,.64),rgba(7,20,35,0))" }} />
+                        ) : (
+                          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-[#e85022] via-[#f17446] to-[#ffd6bd]" />
+                        )}
+                        <div className="absolute inset-0 z-10 flex flex-col justify-center p-5">
+                          {previewEyebrow ? <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/80">{String(previewEyebrow)}</span> : null}
+                          {previewTitle ? <span className="mt-2 block max-w-[26ch] font-display text-[21px] font-extrabold leading-tight text-white">{String(previewTitle)}</span> : null}
+                          {previewDescription ? <span className="mt-2 block max-w-[34ch] text-[12px] leading-relaxed text-white/85">{String(previewDescription)}</span> : null}
+                          {previewCtaLabel || previewSecondaryLabel ? (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {previewCtaLabel ? <span className="inline-flex w-fit bg-white px-3.5 py-2 text-[12px] font-semibold text-[#c2441a]">{String(previewCtaLabel)}</span> : null}
+                              {previewSecondaryLabel ? <span className="inline-flex w-fit border border-white/60 px-3.5 py-2 text-[12px] font-semibold text-white">{String(previewSecondaryLabel)}</span> : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : !previewMediaUrl ? (
+                      <div className="absolute inset-0 grid place-items-center bg-[#f4f6f8] px-5 text-center text-[12px] text-chalk-dim">Upload or choose an image/video to preview media-only mode.</div>
+                    ) : null}
+                  </div>
+                ) : String(section.type) === "category_grid" ? (
+                  <div className="grid min-h-[140px] place-items-center bg-[#f4f6f8] p-5 text-center">
+                    <div>
+                      <p className="font-display text-[16px] font-semibold text-chalk">Department faces</p>
+                      <p className="mt-1 text-[12px] text-chalk-dim">{Number(section.across) || 2} across × {Number(section.rowsPerSet) || 2} rows = {(Number(section.across) || 2) * (Number(section.rowsPerSet) || 2)} departments per swipe.</p>
+                      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-chalk-dim">{String(section.layout ?? "groups")} · {String(section.seeAll) === "false" ? "no See all link" : "See all link on"}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid min-h-[140px] place-items-center bg-[#f4f6f8] px-5 py-6 text-center text-[12px] text-chalk-dim">
+                    {DRAW_FROM[String(section.type)] ? `This section draws from your ${DRAW_FROM[String(section.type)].label}. The storefront uses its live content and layout settings.` : "This section is rendered from its own content and the page's published settings."}
+                  </div>
+                )}
               </div>
               <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                Text {String(section.align ?? "left")} · {String(section.vertical ?? "middle")} · overlay {String(section.tone ?? "dark")} {String(section.scrim ?? 55)}%
+                {isHeroSection ? previewMediaOnly ? "Media only · no copy, button or shading" : `Text ${String(section.align ?? "left")} · ${previewMediaUrl ? "media overlay" : "brand fallback"}` : String(section.type) === "category_grid" ? "The actual department imagery and swipe faces appear on the storefront" : "Preview depends on the section's live content"}
               </p>
             </Panel>
 

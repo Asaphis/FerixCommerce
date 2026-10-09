@@ -4,6 +4,7 @@ import type { Category, Product } from "@/lib/api";
 import { assetUrl, getHome, listAdverts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { PromoBanner } from "@/components/ferix/banner";
+import { MediaHero } from "@/components/ferix/media-hero";
 import { CategoryTile, ProductGrid, ProductRail, StoreCard } from "@/components/ferix/cards";
 import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { TileSwiper } from "@/components/ferix/tile-swiper";
@@ -56,6 +57,11 @@ type Section = {
   href?: string;
   mediaUrl?: string;
   kind?: string;
+  mediaOnly?: boolean | string;
+  align?: string;
+  vertical?: string;
+  tone?: string;
+  scrim?: number | string;
   sponsor?: string;
 };
 
@@ -110,11 +116,22 @@ function tileWidth(across: number) {
   const columns = Math.min(4, Math.max(1, Math.round(across || 2)));
   const widths: Record<number, string> = {
     1: "grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4",
-    2: "grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-5",
+    2: "grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-4",
     3: "grid grid-cols-3 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6",
     4: "grid grid-cols-4 gap-2 sm:grid-cols-5 sm:gap-3 md:grid-cols-6 lg:grid-cols-6",
   };
   return widths[columns];
+}
+
+function horizontalTileWidth(across: number) {
+  const columns = Math.min(4, Math.max(1, Math.round(across || 2)));
+  const widths: Record<number, string> = {
+    1: "w-[82%] sm:w-[48%] lg:w-[32%]",
+    2: "w-[47%] sm:w-[32%] lg:w-[24%]",
+    3: "w-[31%] sm:w-[24%] lg:w-[16%]",
+    4: "w-[23%] sm:w-[16%] lg:w-[16%]",
+  };
+  return `shrink-0 snap-start ${widths[columns]}`;
 }
 
 /** One brand: artwork edge to edge, its name beneath. Shared by the row and the grid. */
@@ -170,7 +187,7 @@ export default async function HomePage() {
     ...home.official,
     ...home.under100,
   ]);
-  const categories = (home.categories.length ? home.categories : categoryFallback(catalogue)).slice(0, 10);
+  const categories = home.categories.length ? home.categories : categoryFallback(catalogue);
   const trending = uniqueProducts(home.trending).slice(0, 8);
   const arrivals = uniqueProducts(home.newArrivals).slice(0, 8);
   const flash = uniqueProducts(home.flashSale?.products ?? []);
@@ -209,18 +226,42 @@ export default async function HomePage() {
   const brandSeeAll = String((brandSection as { seeAll?: string } | undefined)?.seeAll) !== "false";
 
   function block(section: Section, index: number) {
-    const limit = typeof section.limit === "number" ? section.limit : undefined;
+    const parsedLimit = Number(section.limit);
+    const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.floor(parsedLimit) : undefined;
 
     switch (section.type) {
       /* ── The campaign ───────────────────────────────────────────── */
       case "hero_banner": {
+        const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] sm:px-5 sm:pt-5">
-            <PromoBanner
-              banners={home.banners}
-              heightClassName="h-[300px] sm:h-[380px] lg:h-[440px]"
-              className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
-            />
+            {section.mediaUrl ? (
+              <MediaHero
+                mediaUrl={section.mediaUrl}
+                kind={section.kind}
+                mediaOnly={mediaOnly}
+                eyebrow={section.eyebrow}
+                title={section.title}
+                description={section.subtitle}
+                ctaLabel={section.ctaLabel}
+                ctaHref={section.ctaHref}
+                secondaryLabel={section.secondaryLabel}
+                secondaryHref={section.secondaryHref}
+                align={section.align}
+                vertical={section.vertical}
+                tone={section.tone}
+                scrim={section.scrim}
+                heightClassName="h-[250px] sm:h-[340px] lg:h-[420px]"
+                className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
+              />
+            ) : (
+              <PromoBanner
+                banners={home.banners}
+                mediaOnly={mediaOnly}
+                heightClassName="h-[300px] sm:h-[380px] lg:h-[440px]"
+                className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
+              />
+            )}
             <div className="mt-2.5 grid grid-cols-3 divide-line-warm rounded-[3px] border border-line-warm bg-white py-2.5 sm:divide-x max-lg:mt-0 max-lg:rounded-none max-lg:border-x-0 max-lg:py-0">
               <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[10px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><ShoppingBag width={14} height={14} className="shrink-0 text-ember" />One cart, many stores</div>
               <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[10px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><BadgeCheck width={14} height={14} className="shrink-0 text-ember" />Seller profiles</div>
@@ -267,7 +308,7 @@ export default async function HomePage() {
 
       /* ── Departments ────────────────────────────────────────────── */
       case "category_grid": {
-        const shown = limit ? categories.slice(0, limit) : categories.slice(0, 8);
+        const shown = limit ? categories.slice(0, limit) : categories;
         const arrangement = String((section as { layout?: string }).layout ?? "groups");
         // Departments default to sets of rows when the section does not say otherwise,
         // because that is the arrangement they are shaped for.
@@ -276,12 +317,12 @@ export default async function HomePage() {
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-1 pt-5 sm:px-6 sm:pt-7 lg:pt-8">
             <SectionHead
-              eyebrow={section.eyebrow ?? "Find your next favourite"}
-              title={section.title ?? "Shop by category"}
+              title={section.title ?? "Shop by department"}
+              eyebrow={section.eyebrow ?? (isGrouped ? "Four to a face" : "Browse departments")}
               action={
                 seeAllDepartments ? (
                   <Link href="/browse" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
-                    All departments <ArrowRight width={14} height={14} />
+                    See all <ArrowRight width={14} height={14} />
                   </Link>
                 ) : null
               }
@@ -299,6 +340,14 @@ export default async function HomePage() {
                   rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
                   size="large"
                 />
+              ) : arrangement === "horizontal" ? (
+                <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:gap-3 sm:px-0">
+                  {shown.map((category) => (
+                    <div key={category.slug} className={horizontalTileWidth(Number(section.across) || 2)}>
+                      <CategoryTile category={category} size="large" />
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className={tileWidth(Number((section as { across?: number }).across) || 2)}>
                   {shown.map((category) => <CategoryTile key={category.slug} category={category} size="large" />)}

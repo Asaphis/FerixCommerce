@@ -24,6 +24,7 @@ type Props = {
   fileLabel?: string;
   defaultUrl?: string;
   kind?: "image" | "video" | "auto";
+  kindName?: string;
   libraryAssets?: LibraryAsset[];
   libraryName?: string;
   selectedLibraryUrl?: string;
@@ -40,6 +41,7 @@ export function MediaUploadField({
   fileLabel = "Upload from device",
   defaultUrl = "",
   kind = "image",
+  kindName,
   libraryAssets,
   libraryName = "mediaLibraryUrl",
   selectedLibraryUrl = "",
@@ -80,6 +82,7 @@ export function MediaUploadField({
 
   return (
     <div className="grid min-w-0 gap-3">
+      {kindName ? <input type="hidden" name={kindName} value={isVideo ? "video" : "image"} /> : null}
       {libraryAssets ? (
         <input type="hidden" name={libraryName} value={libraryUrl} />
       ) : null}

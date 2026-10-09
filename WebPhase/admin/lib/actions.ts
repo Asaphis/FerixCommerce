@@ -297,14 +297,70 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
   if (!id || !sectionId) return { error: "That section is missing." };
   try {
     const { page } = await api.getCmsPage(session, id);
-    const sections = page.sections.map((section) => {
-      if (section.id !== sectionId) return section;
-      const next: Record<string, unknown> = { ...section };
-      for (const [field, value] of formData.entries()) {
-        if (field.startsWith("field_")) next[field.slice("field_".length)] = String(value);
+    const current = page.sections.find((section) => section.id === sectionId);
+    if (!current) return { error: "That section is no longer on this page." };
+
+    const numericFields = new Set(["across", "rowsPerSet", "interruptAfter", "limit", "adEvery", "height", "duration", "width", "scrim", "columns", "perPage"]);
+    const booleanFields = new Set(["mediaOnly", "seeAll", "swipe", "showAsTile", "showAsText", "showFollow", "showText", "showButtons", "verifiedOnly"]);
+    const next: Record<string, unknown> = { ...current };
+    for (const [field, value] of formData.entries()) {
+      if (!field.startsWith("field_") || value instanceof File) continue;
+      const key = field.slice("field_".length);
+      if (["mediaUrl", "mediaLibraryUrl", "mediaFile", "kind"].includes(key)) continue;
+      const text = String(value).trim();
+      if (numericFields.has(key)) {
+        if (!text) {
+          delete next[key];
+        } else {
+          const number = Number(text);
+          if (!Number.isFinite(number)) return { error: `Enter a valid number for ${key}.` };
+          next[key] = number;
+        }
+      } else if (booleanFields.has(key)) {
+        next[key] = text === "true" || text === "on";
+      } else {
+        next[key] = text;
       }
-      return next as api.CmsSection;
-    });
+    }
+
+    const mediaFile = formData.get("field_mediaFile");
+    let uploadedMediaUrl = "";
+    let uploadedKind = "";
+    if (mediaFile instanceof File && mediaFile.size > 0) {
+      uploadedKind = mediaFile.type.startsWith("video/") ? "video" : "image";
+      const alt = String(formData.get("field_title") ?? current.title ?? current.name ?? "Ferixas hero media").trim();
+      const uploaded = await api.uploadMedia(session, mediaFile, {
+        kind: uploadedKind,
+        alt: alt || "Ferixas hero media",
+        folder: "banners",
+      });
+      uploadedMediaUrl = uploaded.asset.url;
+    }
+
+    const hasMediaFields = formData.has("field_mediaUrl") || formData.has("field_mediaLibraryUrl") || uploadedMediaUrl;
+    if (hasMediaFields) {
+      const libraryUrl = String(formData.get("field_mediaLibraryUrl") ?? "").trim();
+      const typedUrl = String(formData.get("field_mediaUrl") ?? "").trim();
+      const mediaUrl = uploadedMediaUrl || libraryUrl || typedUrl;
+      const selectedKind = String(formData.get("field_kind") ?? "image").toLowerCase();
+      const kind = uploadedKind || (selectedKind === "video" || /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(mediaUrl) ? "video" : "image");
+      next.mediaUrl = mediaUrl;
+      next.kind = kind;
+    }
+
+    const isMediaOnly = next.mediaOnly === true || String(next.mediaOnly) === "true";
+    const savedMediaUrl = String(next.mediaUrl ?? "").trim();
+    if (isMediaOnly && current.type === "hero_slim" && !savedMediaUrl) {
+      return { error: "Choose an image or video before setting this Explore banner to media-only." };
+    }
+    if (isMediaOnly && current.type === "hero_banner" && !savedMediaUrl) {
+      const { banners } = await api.listBanners(session);
+      if (!banners.some((banner) => banner.active && (banner.mediaUrl || banner.image || banner.videoUrl))) {
+        return { error: "Add an active banner image or video, or upload direct media, before using media-only mode." };
+      }
+    }
+
+    const sections = page.sections.map((section) => section.id === sectionId ? next as api.CmsSection : section);
     await api.saveCmsPage(session, { id, sections });
   } catch (error) {
     return { error: error instanceof api.ApiError ? error.message : "Those changes could not be saved." };

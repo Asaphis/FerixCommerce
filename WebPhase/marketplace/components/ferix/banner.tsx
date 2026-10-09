@@ -13,10 +13,13 @@ import { cn } from "@/lib/utils";
  */
 export function PromoBanner({
   banners,
+  mediaOnly = false,
   className,
   heightClassName = "h-[300px] sm:h-[380px] lg:h-[440px]",
 }: {
   banners: Banner[];
+  /** Force every slide to show media alone, regardless of its copy settings. */
+  mediaOnly?: boolean;
   className?: string;
   heightClassName?: string;
 }) {
@@ -55,6 +58,10 @@ export function PromoBanner({
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, []);
 
+  const activeMediaOnly = mediaOnly || slides[index]?.showText === false;
+
+  if (!slides.length && mediaOnly) return null;
+
   if (!slides.length) {
     return (
       <div className={cn("flex items-center justify-center bg-[#fff0e9] px-4", heightClassName, className)}>
@@ -69,7 +76,7 @@ export function PromoBanner({
     <section
       aria-roledescription="carousel"
       aria-label="Promotions"
-      className={cn("relative isolate w-full overflow-hidden bg-[#f05a28]", heightClassName, className)}
+      className={cn("relative isolate w-full overflow-hidden", activeMediaOnly ? "bg-transparent" : "bg-[#f05a28]", heightClassName, className)}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
@@ -93,13 +100,13 @@ export function PromoBanner({
             i === index ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
           )}
         >
-          <SlideMedia slide={slide} />
-          {slide.overlay?.enabled ? <Scrim overlay={slide.overlay} accent={slide.accent} /> : null}
-          <SlideCopy slide={slide} active={i === index} />
+          <SlideMedia slide={slide} mediaOnly={mediaOnly || slide.showText === false} />
+          {!mediaOnly && slide.showText !== false && slide.overlay?.enabled ? <Scrim overlay={slide.overlay} accent={slide.accent} /> : null}
+          {!mediaOnly && slide.showText !== false ? <SlideCopy slide={slide} active={i === index} /> : null}
         </article>
       ))}
 
-      <div className="absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/70 to-transparent">
+      <div className={cn("absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/70 to-transparent", activeMediaOnly ? "hidden" : "")}>
         <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-4 py-2.5">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
             {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
@@ -170,7 +177,7 @@ export function PromoBanner({
   );
 }
 
-function SlideMedia({ slide }: { slide: Banner }) {
+function SlideMedia({ slide, mediaOnly = false }: { slide: Banner; mediaOnly?: boolean }) {
   const media = assetUrl(slide.mediaUrl);
   if (media && slide.kind === "video") {
     return (
@@ -189,6 +196,7 @@ function SlideMedia({ slide }: { slide: Banner }) {
     // eslint-disable-next-line @next/next/no-img-element
     return <img src={media} alt="" className="absolute inset-0 h-full w-full object-cover" />;
   }
+  if (mediaOnly) return null;
   return (
     <div
       className="absolute inset-0"

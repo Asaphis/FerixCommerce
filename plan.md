@@ -31,6 +31,11 @@ A high-trust operations console with role-specific navigation, a crisp overview,
 - Never create sample payments/orders/payouts to make a screen look populated. Empty states must remain honest and useful.
 - Use existing approved/local catalogue media where available; correct broken hero/category asset references rather than masking them with invented business content.
 
+## Active follow-up: departments and campaign heroes
+- Departments default to poster tiles, two across and two rows per swipe face on phones; the CMS controls phone columns, rows per face, grouping/grid/horizontal layout, item limit, and the See all link. Wider layouts adapt without losing the 2-row grouping, and the face dots/count track the actual viewport grouping.
+- Homepage and Explore hero sections must accept a real image or video upload with an in-CMS preview. A media-only mode renders the media alone: no copy, CTA, scrim, controls, or fallback color. Text-overlay mode remains available when desired.
+- Persist every exposed setting through the existing draft/publish flow. Remove or implement controls that currently have no effect; do not alter live CMS content during local verification.
+
 ## Implementation sequence
 1. Create shared acceptance checklist and audit route/component ownership.
 2. Rebuild app-wide tokens, shells, navigation and reusable commerce/workspace components.

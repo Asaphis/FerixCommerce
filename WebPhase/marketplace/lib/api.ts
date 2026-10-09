@@ -395,8 +395,16 @@ export type CatalogueSection = {
   ctaLabel?: string;
   ctaHref?: string;
   eyebrow?: string;
+  secondaryLabel?: string;
+  secondaryHref?: string;
   mediaUrl?: string;
   kind?: string;
+  mediaOnly?: boolean | string;
+  showText?: boolean | string;
+  align?: string;
+  vertical?: string;
+  tone?: string;
+  scrim?: number | string;
   href?: string;
   sponsor?: string;
   adEvery?: number;

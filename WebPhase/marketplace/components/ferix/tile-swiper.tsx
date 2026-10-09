@@ -5,40 +5,55 @@ import type { Category } from "@/lib/api";
 import { CategoryTile } from "@/components/ferix/cards";
 import { cn } from "@/lib/utils";
 
-/**
- * Departments in sets of rows, swiped for the next set.
- *
- * The same arrangement the product rows use, for tiles: the band stands exactly as tall
- * as the rows it was told to show, and the remaining departments wait one swipe away
- * rather than pushing everything below them down the page.
- *
- * As with the products, the swipe is the platform's own - a scroll container with snap
- * points - so no touch handling is written by hand, and the dots follow the scroll.
- */
+function columnsAtWidth(phoneColumns: number, width: number) {
+  if (width >= 1024) return phoneColumns <= 2 ? 4 : 6;
+  if (width >= 640) {
+    if (phoneColumns === 1) return 2;
+    if (phoneColumns === 2) return 3;
+    if (phoneColumns === 3) return 4;
+    return 6;
+  }
+  return phoneColumns;
+}
+
+function numberWord(value: number) {
+  const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+  return words[value] ?? String(value);
+}
+
+/** Departments grouped into full responsive faces with scroll-snap pagination. */
 export function TileSwiper({
   categories,
-  across = 3,
+  across = 2,
   rowsPerSet = 2,
   size = "default",
   className,
 }: {
   categories: Category[];
+  /** Number of tiles per row on a phone; larger breakpoints scale up. */
   across?: number;
   rowsPerSet?: number;
   size?: "default" | "large";
   className?: string;
 }) {
-  const columns = Math.min(4, Math.max(1, Math.round(Number(across) || 3)));
-  const rows = Math.min(6, Math.max(1, Math.round(Number(rowsPerSet) || 2)));
-  const perSet = columns * rows;
-
+  const phoneColumns = Math.min(4, Math.max(1, Math.round(Number(across) || 2)));
+  const rows = Math.min(3, Math.max(1, Math.round(Number(rowsPerSet) || 2)));
+  const [visibleColumns, setVisibleColumns] = useState(phoneColumns);
+  const perFace = visibleColumns * rows;
   const sets: Category[][] = [];
-  for (let index = 0; index < categories.length; index += perSet) {
-    sets.push(categories.slice(index, index + perSet));
+  for (let index = 0; index < categories.length; index += perFace) {
+    sets.push(categories.slice(index, index + perFace));
   }
 
   const rail = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const update = () => setVisibleColumns(columnsAtWidth(phoneColumns, window.innerWidth));
+    update();
+    window.addEventListener("resize", update, { passive: true });
+    return () => window.removeEventListener("resize", update);
+  }, [phoneColumns]);
 
   const onScroll = useCallback(() => {
     const element = rail.current;
@@ -50,25 +65,24 @@ export function TileSwiper({
   useEffect(() => {
     setActive(0);
     if (rail.current) rail.current.scrollLeft = 0;
-  }, [categories.length, perSet]);
+  }, [categories.length, perFace]);
 
-  const width: Record<number, string> = {
-    1: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-    2: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
-    3: "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6",
-    4: "grid-cols-4 sm:grid-cols-6 lg:grid-cols-6",
-  };
-  const grid = cn("grid gap-2 sm:gap-3", width[columns]);
+  const gridStyle = { gridTemplateColumns: `repeat(${visibleColumns}, minmax(0, 1fr))` };
+  const grid = cn("grid gap-2 sm:gap-3");
 
   if (sets.length <= 1) {
     return (
-      <div className={cn(grid, className)}>
-        {categories.map((category) => (
-          <CategoryTile key={category.slug} category={category} size={size} />
-        ))}
+      <div className={cn(grid, className)} style={gridStyle}>
+        {categories.map((category) => <CategoryTile key={category.slug} category={category} size={size} />)}
       </div>
     );
   }
+
+  const goToFace = (index: number) => {
+    const element = rail.current;
+    if (!element) return;
+    element.scrollTo({ left: index * element.clientWidth, behavior: "smooth" });
+  };
 
   return (
     <div className={className}>
@@ -77,25 +91,38 @@ export function TileSwiper({
         onScroll={onScroll}
         className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto pb-1"
         role="group"
-        aria-label={`Departments in ${sets.length} sets`}
+        aria-label={`Departments in ${sets.length} swipe faces`}
       >
         {sets.map((set, index) => (
           <div key={index} className="w-full shrink-0 snap-start pr-3 last:pr-0">
-            <div className={grid}>
-              {set.map((category) => (
-                <CategoryTile key={category.slug} category={category} size={size} />
-              ))}
+            <div className={grid} style={gridStyle}>
+              {set.map((category) => <CategoryTile key={category.slug} category={category} size={size} />)}
             </div>
           </div>
         ))}
       </div>
-      <div className="mt-3 flex items-center justify-center gap-1.5">
-        {sets.map((_, index) => (
-          <span
-            key={index}
-            className={index === active ? "h-1.5 w-[18px] rounded-full bg-ember" : "h-1.5 w-1.5 rounded-full bg-line-warm"}
-          />
-        ))}
+
+      <div className="mt-2.5 flex flex-col items-center gap-1.5 text-center">
+        <div className="flex items-center justify-center" role="group" aria-label="Choose department face">
+          {sets.map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => goToFace(index)}
+              aria-label={`Show face ${index + 1} of ${sets.length}`}
+              aria-current={index === active ? "page" : undefined}
+              className="grid h-7 w-7 cursor-pointer place-items-center"
+            >
+              <span className={index === active ? "h-1.5 w-4 rounded-full bg-ember" : "h-1.5 w-1.5 rounded-full bg-line-warm"} />
+            </button>
+          ))}
+        </div>
+        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-soft" aria-live="polite">
+          Face {active + 1} of {sets.length}
+        </p>
+        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-soft">
+          Swipe for the next {numberWord(perFace)}
+        </p>
       </div>
     </div>
   );

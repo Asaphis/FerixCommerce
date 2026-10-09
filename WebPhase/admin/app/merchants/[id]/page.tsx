@@ -6,11 +6,11 @@ import { getMerchant, listReviewQueue, ApiError } from "@/lib/api";
 import { MerchantForm } from "@/components/ops/merchant-form";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
-import { SubmitButton } from "@/components/ops/controls";
+import { Field, SubmitButton } from "@/components/ops/controls";
 import { Trash2 } from "lucide-react";
 import { deleteMerchantAction, editMerchantAction, restrictMerchantAction, suspendMerchantAction } from "@/lib/actions";
 import { Distribution, KeyValue } from "@/components/ops/marks";
-import { CellLabel, DataTable, Row, Td, TdLead, TablePanel } from "@/components/ops/table";
+import { CellLabel, DataTable, Row, Td, TdLead, TablePanel, inputClass } from "@/components/ops/table";
 import { compact, dateLong, money, num, relative, titleCase } from "@/lib/format";
 
 function statusTone(status: string) {
