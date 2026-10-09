@@ -202,7 +202,7 @@ export type Dashboard = {
 export type ProductList = {
   items: Product[];
   total: number;
-  counts: { all: number; active: number; draft: number; archived: number; lowStock: number };
+  counts: { all: number; approved: number; pending_review: number; rejected: number; draft: number; archived: number; lowStock: number };
   categories: string[];
   lowStockAt: number;
 };

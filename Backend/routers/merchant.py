@@ -437,7 +437,9 @@ def products(
             "total": len(items),
             "counts": {
                 "all": len(all_owned),
-                "active": sum(p.get("status") == "active" for p in all_owned),
+                "approved": sum(p.get("status") == "approved" for p in all_owned),
+                "pending_review": sum(p.get("status") == "pending_review" for p in all_owned),
+                "rejected": sum(p.get("status") == "rejected" for p in all_owned),
                 "draft": sum(p.get("status") == "draft" for p in all_owned),
                 "archived": sum(p.get("status") == "archived" for p in all_owned),
                 "lowStock": sum(p.get("stock", 0) <= low_at for p in all_owned),

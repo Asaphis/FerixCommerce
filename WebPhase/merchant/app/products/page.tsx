@@ -33,7 +33,7 @@ export default async function ProductsPage({
 
   const filters = [
     { id: "all", label: "All", count: data.counts.all },
-    { id: "approved", label: "Published", count: data.counts.approved || data.counts.active },
+    { id: "approved", label: "Published", count: data.counts.approved },
     { id: "draft", label: "Drafts", count: data.counts.draft },
     { id: "archived", label: "Archived", count: data.counts.archived },
   ];
