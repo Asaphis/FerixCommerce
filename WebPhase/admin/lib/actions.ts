@@ -599,3 +599,28 @@ export async function requestChangesAction(_prev: FormState, formData: FormData)
 export async function rejectProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
   return decideOnProduct("reject", formData);
 }
+
+
+export async function createCmsSectionAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2) return { error: "Section name is required." };
+  
+  try {
+    await api.createCmsSection(session, {
+      name,
+      slug: String(formData.get("slug") ?? "").trim() || undefined,
+      description: String(formData.get("description") ?? "").trim() || undefined,
+      is_active: formData.get("is_active") === "true",
+      sort_order: Number(formData.get("sort_order") ?? 0),
+    });
+    revalidatePath("/cms/sections");
+    return { message: "Section created successfully." };
+  } catch (error) {
+    if (error instanceof api.ApiError) return { error: error.message };
+    return { error: "Failed to create section." };
+  }
+}
+

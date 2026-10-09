@@ -879,3 +879,14 @@ export const saveCmsPage = (session: string | null, body: { id: string; title?: 
 
 export const publishCmsPage = (session: string | null, id: string) =>
   call<{ page: CmsPage }>("POST", "admin/cms/page/publish", { session, body: { id } });
+
+
+export async function listCmsSections(session: string): Promise<{ sections: { id: string; name: string; slug: string; description: string; is_active: boolean; sort_order: number }[] }> {
+  return call<{ sections: { id: string; name: string; slug: string; description: string; is_active: boolean; sort_order: number }[] }>("GET", "admin/cms/sections", { session });
+}
+
+
+export async function createCmsSection(session: string, data: { name: string; slug?: string; description?: string; is_active: boolean; sort_order: number }): Promise<{ section: { id: string; name: string; slug: string } }> {
+  return call<{ section: { id: string; name: string; slug: string } }>("POST", "admin/cms/sections", { session, body: data });
+}
+

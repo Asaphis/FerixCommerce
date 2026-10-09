@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Check, MapPin, Package, Star } from "lucide-react";
+import { ArrowRight, Check, Heart, Mail, MapPin, Package, Phone, Star } from "lucide-react";
 import { assetUrl, getStore, ApiError } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
@@ -19,38 +19,28 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
   const { store, about, products, categories, stats, responseRate, fulfilmentRate } = data;
   const saved = await savedIds();
   const brand = store.brand;
-  // A seller's logo, under whichever name the record carries it.
   const record = store as unknown as { logo?: string; imageUrl?: string; image?: string };
   const storeArtwork = assetUrl(record.logo ?? record.imageUrl ?? record.image ?? null);
 
   return (
     <div>
-      {/* Their page, in their colour: the band across the top is the seller's own accent, so a
-            shopper can see at a glance whose shop they are in. */}
       <section
         style={{ background: brand.canvas, borderTop: `4px solid ${brand.accent}` }}
         className="border-b border-line-warm"
       >
         <div className="mx-auto max-w-[1240px] px-4 py-10">
           <nav className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
-            <Link href="/" className="transition-colors hover:text-ember">
-              Ferixas
-            </Link>
+            <Link href="/" className="transition-colors hover:text-ember">Ferixas</Link>
             <span>/</span>
-            <Link href="/stores" className="transition-colors hover:text-ember">
-              Stores
-            </Link>
+            <Link href="/stores" className="transition-colors hover:text-ember">Stores</Link>
           </nav>
 
           <div className="mt-5 flex flex-wrap items-start gap-5">
-            {/* Their own artwork where they have one. A letter is the fallback, not the
-                default: a shop with a logo should show it. */}
             <span
               className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden font-display text-[22px] font-extrabold sm:h-16 sm:w-16 sm:text-[24px]"
               style={{ background: brand.accent, color: brand.accentInk, borderRadius: brand.radius }}
             >
               {storeArtwork ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={storeArtwork} alt="" className="h-full w-full object-cover" />
               ) : (
                 store.name.slice(0, 1)
@@ -81,12 +71,15 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                 </span>
                 <span>Trading since {dateLong(store.since)}</span>
               </div>
-              <p className="mt-3 max-w-[62ch] text-[12.5px] leading-relaxed text-ink-soft">
-                Their own website is on its way. Until it opens, this is their shop on Ferixas — one
-                cart and one checkout, with everything else in the marketplace.
-              </p>
             </div>
             <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
+              <button
+                className="inline-flex items-center gap-2 rounded-full border border-line-warm bg-white px-4 py-2 text-[13px] font-medium text-ink transition-colors hover:border-ember hover:text-ember"
+                disabled
+              >
+                <Heart width={14} height={14} />
+                Follow ({compact(stats.followers)})
+              </button>
               <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">
                 {store.customDomain ?? store.domain}
               </p>
@@ -103,6 +96,27 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
           <div>
             <Eyebrow>About the store</Eyebrow>
             <p className="mt-2.5 max-w-[70ch] text-[14px] leading-relaxed text-ink-soft">{about}</p>
+            
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {store.phone && (
+                <div className="flex items-start gap-2">
+                  <Phone width={14} height={14} className="mt-0.5 text-ink-soft" />
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">Phone</p>
+                    <p className="mt-1 text-[13px] text-ink">{store.phone}</p>
+                  </div>
+                </div>
+              )}
+              {store.email && (
+                <div className="flex items-start gap-2">
+                  <Mail width={14} height={14} className="mt-0.5 text-ink-soft" />
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">Email</p>
+                    <p className="mt-1 text-[13px] text-ink">{store.email}</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
@@ -147,9 +161,23 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
           <ProductGrid products={products} savedIds={saved} />
         </div>
 
+        <div className="mt-12 border-t border-line-warm pt-8">
+          <SectionHead
+            eyebrow="More from Ferixas"
+            title="You might also like"
+          />
+          <p className="mt-2 text-[13px] text-ink-soft">
+            Discover more products from other verified sellers on the Ferixas marketplace.
+          </p>
+          <div className="mt-4">
+            <LinkButton href="/browse" variant="outline">
+              Browse marketplace
+            </LinkButton>
+          </div>
+        </div>
+
         <p className="mt-10 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
-          {store.name} sells here and on {store.customDomain ?? store.domain} from one product record · same cart and
-          checkout
+          {store.name} sells here and on {store.customDomain ?? store.domain} from one product record · same cart and checkout
         </p>
       </section>
     </div>
