@@ -132,16 +132,19 @@ function BrandTile({
       className="group flex shrink-0 flex-col overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40"
       style={width ? { width } : undefined}
     >
-      <span className="block aspect-[4/3] w-full overflow-hidden bg-bone-soft">
+      {/* Small, the way a department tile is small: the mark rather than a poster. Brands are
+          a row of names to scan, and a full-width picture for each one made the band taller
+          than the products beneath it. */}
+      <span className="grid aspect-square w-full place-items-center overflow-hidden bg-bone-soft p-2.5">
         {artwork ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={artwork}
             alt={record.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className="h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-[1.06]"
           />
         ) : (
-          <span className="grid h-full w-full place-items-center font-display text-[22px] font-bold text-ink-soft">
+          <span className="grid h-12 w-12 place-items-center rounded-[10px] bg-white font-display text-[15px] font-bold text-ink-soft">
             {record.name.slice(0, 1)}
           </span>
         )}
@@ -197,7 +200,9 @@ export default async function HomePage() {
   // Declared here, after the sections, because it reads them.
   const brandSection = sections.find((item) => item.type === "brand_carousel") as { across?: number } | undefined;
   const brandAcross = Math.min(4, Math.max(1, Math.round(Number(brandSection?.across) || 2)));
-  const brandTileWidth = `calc((100% - ${(brandAcross - 1) * 12}px) / ${brandAcross})`;
+  // A small mark: narrow enough that several fit across a phone, which is what makes the row
+  // feel like a row rather than a set of cards.
+  const brandTileWidth = `calc((100% - ${(brandAcross - 1) * 10}px) / ${brandAcross} - 14px)`;
   const brandGrid = String((brandSection as { layout?: string } | undefined)?.layout) === "grid";
   // A switch is stored as the word, so only the word false hides anything.
   const brandSeeAll = String((brandSection as { seeAll?: string } | undefined)?.seeAll) !== "false";
