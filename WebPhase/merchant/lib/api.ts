@@ -87,6 +87,9 @@ export type Product = {
   package_weight?: number;
   package_dimensions?: string;
   shipping_origin?: string;
+  brandId?: string | null;
+  brandName?: string | null;
+  brandSlug?: string | null;
 };
 
 export type Summary = {
@@ -270,7 +273,7 @@ export type Payout = {
   net: number;
   status: string;
   date: string;
-  method: string;
+  method: string | null;
 };
 
 export type Payouts = {
@@ -280,7 +283,8 @@ export type Payouts = {
   paidToDate: number;
   commissionPct: number;
   cadence: string;
-  method: string;
+  method: string | null;
+  available: boolean;
 };
 
 export class ApiError extends Error {
@@ -393,6 +397,15 @@ export const listProducts = (session: string | null, params: Params = {}) =>
 export const getProduct = (session: string | null, slug: string) =>
   call<ProductDetail>("GET", "merchant/product", { params: { slug }, session });
 
+export type ProductOptions = {
+  categories: { id?: string; slug: string; name: string }[];
+  brands: { id: string; slug: string; name: string }[];
+  sections: { value: string; name: string; documentTitle: string }[];
+};
+
+export const getProductOptions = (session: string | null) =>
+  call<ProductOptions>("GET", "merchant/product/options", { session });
+
 export const createProduct = (
   session: string | null,
   body: {
@@ -404,6 +417,13 @@ export const createProduct = (
     status: string;
     store: boolean;
     marketplace: boolean;
+    brandId?: string | null;
+    section_tags?: string[];
+    shipping_amount?: number;
+    estimated_delivery_days?: number;
+    package_weight?: number;
+    package_dimensions?: string;
+    shipping_origin?: string;
     description?: string | null;
   },
 ) => call<{ product: Product }>("POST", "merchant/product", { body: body as unknown as Record<string, unknown>, session });

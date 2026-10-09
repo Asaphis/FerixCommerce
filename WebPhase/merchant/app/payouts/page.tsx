@@ -21,21 +21,17 @@ export default async function PayoutsPage() {
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile
           label="Net lifetime"
-          value={money(data.balance, { cents: false })}
-          sub="After platform commission"
+          value={data.available ? money(data.balance, { cents: false }) : "Coming soon"}
+          sub={data.available ? "From recorded payouts" : "Settlement is not connected"}
           icon={<Wallet width={15} height={15} />}
         />
-        <StatTile label="Pending payout" value={money(data.pending, { cents: false })} sub={`${data.cadence} payouts`} accent="sand" />
-        <StatTile label="Paid to date" value={money(data.paidToDate, { cents: false })} sub="Settled to your bank" accent="lime" />
+        <StatTile label="Pending payout" value={data.available ? money(data.pending, { cents: false }) : "Coming soon"} sub={data.available ? `${data.cadence} payouts` : "No payout record yet"} accent="sand" />
+        <StatTile label="Paid to date" value={data.available ? money(data.paidToDate, { cents: false }) : "Coming soon"} sub={data.available ? "Recorded as settled" : "No settlement record yet"} accent="lime" />
         <StatTile label="Commission rate" value={`${data.commissionPct}%`} sub="On marketplace sales only" accent="azure" />
       </div>
 
       <Panel>
-        <PanelHead
-          title="Payout schedule"
-          hint={`${data.cadence === "weekly" ? "Weekly" : data.cadence} settlement to ${data.method}`}
-          action={<Pill tone="info">{data.method}</Pill>}
-        />
+        <PanelHead title="Payout schedule" hint={data.available ? `${data.cadence} settlement` : "Payout settlement is not configured yet"} action={<Pill tone={data.available ? "info" : "neutral"}>{data.available ? "Configured record" : "Coming soon"}</Pill>} />
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             { label: "Sale value", body: "The full value of the order, including delivery and tax." },
@@ -54,7 +50,7 @@ export default async function PayoutsPage() {
         <div className="p-5 pb-3">
           <PanelHead title="Payout history" />
         </div>
-        <DataTable
+        {data.payouts.length ? <DataTable
           head={["Period", "Orders", "Gross", "Commission", "Net", "Status", "Settled"]}
           minWidth={820}
           className="p-5 pt-0"
@@ -92,7 +88,7 @@ export default async function PayoutsPage() {
               </TdEnd>
             </Row>
           ))}
-        </DataTable>
+        </DataTable> : <p className="px-5 pb-5 text-[13px] text-chalk-dim">No payout records have been created. Order totals are not shown as money received.</p>}
       </TablePanel>
 
       <Panel>
@@ -102,15 +98,14 @@ export default async function PayoutsPage() {
             <Landmark width={16} height={16} />
           </span>
           <div>
-            <p className="text-[13px] text-chalk">{data.method}</p>
+            <p className="text-[13px] text-chalk">{data.method ?? "Not configured"}</p>
             <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">
               Store {merchant.name} · {merchant.plan} plan · {data.cadence} settlement
             </p>
           </div>
         </div>
         <p className="mt-4 rounded-[2px] border border-hairline bg-panel-2 px-3 py-2.5 text-[12px] leading-relaxed text-chalk-dim">
-          Payouts are worked out from the orders on this backend. When the production backend replaces it, the
-          same figures will come from your settlement ledger without any change to this page.
+          Only recorded payout entries appear here. Payment capture and settlement are not connected, so order value is not treated as seller income.
         </p>
       </Panel>
     </div>

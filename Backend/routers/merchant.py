@@ -15,8 +15,8 @@ from sqlalchemy import select
 
 from core import (
     DEMO_PASSWORD, ContentDocument, ContentVersion, FlashSale, FlashSaleItem,
-    InventoryLog, LedgerEntry, MediaAsset, Order, Payout, SessionLocal, StaffSession,
-    audit, aware, collections as all_collections, find_category, find_merchant, find_product,
+    InventoryLog, MediaAsset, Order, Payout, SessionLocal, StaffSession,
+    audit, aware, collections as all_collections, categories as all_categories, find_category, find_merchant, find_product,
     hash_password, iso, issue_staff_session, merchants as all_merchants, new_id, now,
     permissions_for, placeholder, products as all_products, put_row, remove_media_blob,
     require_permission, require_staff, rows_of, storage_info, sync_pending_media,
@@ -68,6 +68,7 @@ class ProductIn(BaseModel):
     package_dimensions: Optional[str] = None
     shipping_origin: Optional[str] = None
     section_tags: Optional[list[str]] = None
+    brandId: Optional[str] = None
 
 
 class StockIn(BaseModel):
@@ -146,6 +147,23 @@ def _own_products(db, merchant_id: str) -> list[dict]:
     return [p for p in all_products(db) if p.get("merchantId") == merchant_id]
 
 
+def _product_options(db) -> dict:
+    categories = [c for c in all_categories(db) if c.get("visible", True)]
+    brands = [b for b in rows_of(db, "brand") if b.get("visible", True)]
+    sections = []
+    for document in db.scalars(select(ContentDocument)).all():
+        if document.owner_type != "platform":
+            continue
+        for section in (document.data or {}).get("sections", []):
+            if section.get("type") in ("product_carousel", "product_grid") and section.get("visible", True):
+                sections.append({
+                    "value": f"{document.id}__{section.get('id')}",
+                    "name": section.get("name") or section.get("title") or section.get("type"),
+                    "documentTitle": document.title,
+                })
+    return {"categories": categories, "brands": brands, "sections": sections}
+
+
 def _merchant_orders(db, merchant_id: str) -> list[Order]:
     rows = db.scalars(select(Order).order_by(Order.placed_at.desc())).all()
     return [r for r in rows if any(i.get("merchantId") == merchant_id for i in (r.data or {}).get("items", []))]
@@ -208,7 +226,7 @@ def _merchant_order(db, row: Order, merchant_id: str) -> dict:
         "items": items,
         "subtotal": subtotal, "shipping": shipping, "tax": tax, "total": total,
         "commission": round(subtotal * commission_pct / 100, 2),
-        "payment": data.get("payment", "paid"),
+        "payment": data.get("payment", "pending"),
         "fulfillment": data.get("fulfillment", "processing"),
         "carrier": data.get("carrier"), "tracking": data.get("tracking"),
         "address": data.get("address") or {
@@ -449,6 +467,14 @@ def products(
         }
 
 
+@router.get("/product/options")
+def product_options(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "merchant")
+        _merchant_or_404(db, staff.subject_id)
+        return _product_options(db)
+
+
 @router.get("/product")
 def product(session: Optional[str] = Header(None, alias="X-Ferix-Session"), slug: str = Query(...)):
     with SessionLocal() as db:
@@ -493,6 +519,17 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         # Until seller websites are launched, marketplace tagging is mandatory
         if not payload.marketplace:
             raise HTTPException(400, "Products must be tagged to Marketplace until your store website is ready. Enable the marketplace channel to continue.")
+        options = _product_options(db)
+        category = next((c for c in options["categories"] if c.get("slug") == payload.category), None) if payload.category else None
+        if payload.category and not category:
+            raise HTTPException(400, "Choose a category managed by Ferixas, or leave it unassigned.")
+        brand = next((b for b in options["brands"] if b.get("id") == payload.brandId or b.get("slug") == payload.brandId), None) if payload.brandId else None
+        if payload.brandId and not brand:
+            raise HTTPException(400, "Choose a brand managed by Ferixas, or leave it unassigned.")
+        allowed_sections = {section["value"] for section in options["sections"]}
+        section_tags = list(dict.fromkeys(payload.section_tags or []))
+        if any(section not in allowed_sections for section in section_tags):
+            raise HTTPException(400, "Choose only active product sections from the Ferixas CMS.")
         slug = payload.slug or _slugify(payload.title)
         if find_product(db, slug):
             slug = f"{slug}-{new_id('x', 4)}"
@@ -500,7 +537,10 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         product = {
             "id": new_id("prd"), "slug": slug, "title": payload.title,
             "merchantId": merchant["id"], "merchantName": merchant["name"], "merchantSlug": merchant["slug"],
-            "category": payload.category or "home",
+            "category": payload.category or "",
+            "brandId": brand.get("id") if brand else None,
+            "brandSlug": brand.get("slug") if brand else None,
+            "brandName": brand.get("name") if brand else None,
             "description": payload.description or "",
             "bullets": payload.bullets or [], "tags": payload.tags or [],
             "collections": payload.collections or [],
@@ -511,7 +551,8 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "stock": int(payload.stock or 0), "lowStockAt": payload.lowStockAt or 8,
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
             "variants": payload.variants or [], "status": "pending_review",
-            "channels": {"store": bool(payload.store), "marketplace": bool(payload.marketplace)},
+            "reviewStatus": "in_review", "reviewNote": "",
+            "channels": {"store": False, "marketplace": True},
             "createdAt": iso(now()), "updatedAt": iso(now()), "sold30d": 0, "views30d": 0,
             "seoTitle": payload.seoTitle or payload.title,
             "seoDescription": payload.seoDescription or (payload.description or "")[:155],
@@ -521,7 +562,8 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "package_weight": payload.package_weight,
             "package_dimensions": payload.package_dimensions,
             "shipping_origin": payload.shipping_origin,
-            "section_tags": payload.section_tags or [],
+            "section_tags": section_tags,
+            "submittedAt": iso(now()), "submittedBy": staff.email,
         }
         put_row(db, "product", slug, product)
         audit(db, "merchant", staff.email, "product.create", product["slug"], product["title"])
@@ -539,10 +581,21 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         if not target or target.get("merchantId") != merchant["id"]:
             raise HTTPException(404, "Product not found in your catalogue")
         updated = dict(target)
-
-        if updated.get("status") == "approved" or updated.get("reviewStatus") == "approved":
-            updated["status"] = "pending_review"
-            updated["reviewStatus"] = "in_review"
+        options = _product_options(db)
+        category = next((c for c in options["categories"] if c.get("slug") == payload.category), None) if payload.category else None
+        if payload.category and not category:
+            raise HTTPException(400, "Choose a category managed by Ferixas, or leave it unassigned.")
+        brand = next((b for b in options["brands"] if b.get("id") == payload.brandId or b.get("slug") == payload.brandId), None) if payload.brandId else None
+        if payload.brandId and not brand:
+            raise HTTPException(400, "Choose a brand managed by Ferixas, or leave it unassigned.")
+        allowed_sections = {section["value"] for section in options["sections"]}
+        if payload.section_tags is not None and any(section not in allowed_sections for section in payload.section_tags):
+            raise HTTPException(400, "Choose only active product sections from the Ferixas CMS.")
+        updated["status"] = "pending_review"
+        updated["reviewStatus"] = "in_review"
+        updated["reviewNote"] = ""
+        updated["submittedAt"] = iso(now())
+        updated["submittedBy"] = staff.email
 
         for field in ("title", "category", "description", "sku", "compareAt",
                       "bullets", "tags", "collections", "images", "variants",
@@ -556,13 +609,13 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             updated["price"] = float(payload.price)
         if payload.stock is not None:
             updated["stock"] = int(payload.stock)
-        if payload.store is not None or payload.marketplace is not None:
-            channels = dict(updated.get("channels") or {})
-            if payload.store is not None:
-                channels["store"] = payload.store
-            if payload.marketplace is not None:
-                channels["marketplace"] = payload.marketplace
-            updated["channels"] = channels
+        if payload.category is not None:
+            updated["category"] = payload.category or ""
+        if payload.brandId is not None:
+            updated["brandId"] = brand.get("id") if brand else None
+            updated["brandSlug"] = brand.get("slug") if brand else None
+            updated["brandName"] = brand.get("name") if brand else None
+        updated["channels"] = {"store": False, "marketplace": True}
         updated["updatedAt"] = iso(now())
         updated["id"] = target.get("id")
         updated["merchantId"] = merchant["id"]
@@ -724,9 +777,8 @@ def set_status(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
                 timeline.append({"label": f"Marked {payload.fulfillment}", "at": iso(now())})
                 data["timeline"] = timeline
                 row.data = data
-                if payload.fulfillment == "delivered":
-                    db.add(LedgerEntry(id=new_id("led"), merchant_id=merchant["id"], order_id=row.id,
-                                       kind="sale", amount=round(data.get("total", 0), 2), note="Order delivered"))
+                # Fulfilment is not evidence of payment capture. Ledger sales
+                # entries must be written by a verified payment/settlement flow.
                 audit(db, "merchant", staff.email, "order.status", data.get("number", row.id), payload.fulfillment)
                 db.commit()
                 customer = db.get(User, row.user_id)
@@ -866,22 +918,13 @@ def payouts(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         rows = [{"id": p.id, "period": p.period, "orders": p.orders, "gross": p.gross,
                  "commission": p.commission, "net": p.net, "status": p.status,
                  "date": p.date, "method": p.method} for p in stored]
-        if not rows:
-            for index, (period, bucket) in enumerate(sorted(buckets.items(), reverse=True)):
-                net = round(bucket["gross"] - bucket["commission"], 2)
-                rows.append({
-                    "id": f"pay_{merchant['slug']}_{period}", "period": period,
-                    "orders": bucket["orders"], "gross": bucket["gross"],
-                    "commission": bucket["commission"], "net": net,
-                    "status": "paid" if index > 0 else "pending",
-                    "date": f"{period}-28", "method": "Bank transfer",
-                })
         paid = round(sum(r["net"] for r in rows if r["status"] == "paid"), 2)
         pending = round(sum(r["net"] for r in rows if r["status"] != "paid"), 2)
         return {
             "payouts": rows, "balance": round(paid + pending, 2), "pending": pending,
             "paidToDate": paid, "commissionPct": commission_pct,
-            "cadence": _merchant_settings(db, merchant)["payoutCadence"], "method": "Bank transfer",
+            "cadence": _merchant_settings(db, merchant)["payoutCadence"], "method": None,
+            "available": bool(rows),
         }
 
 

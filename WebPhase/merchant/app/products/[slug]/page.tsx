@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
-import { getProduct, ApiError } from "@/lib/api";
+import { getProduct, getProductOptions, ApiError } from "@/lib/api";
 import { ProductDeleteForm } from "@/components/studio/product-delete-form";
 import { ProductForm } from "@/components/studio/product-form";
 import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
@@ -12,6 +12,7 @@ import { dateShort, money, num, titleCase } from "@/lib/format";
 export default async function ProductDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { session, merchant } = await requireMerchant();
+  const options = await getProductOptions(session);
   let data;
   try {
     data = await getProduct(session, slug);
@@ -19,7 +20,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
   }
-  const { product, sold, lowStockAt, categories } = data;
+  const { product, sold, lowStockAt } = data;
 
   return (
     <div className="grid gap-5">
@@ -94,7 +95,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <StatTile label="Product views" value="Coming soon" sub="Visitor tracking is not connected" accent="sand" />
       </div>
 
-      <ProductForm product={product} categories={categories.length ? categories : [product.category]} />
+      <ProductForm product={product} categories={options.categories.map((item) => item.slug)} brands={options.brands} sections={options.sections} />
 
       <Panel>
         <PanelHead

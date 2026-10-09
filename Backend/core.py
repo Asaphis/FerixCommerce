@@ -962,7 +962,16 @@ def find_collection(db: Session, value: str) -> Optional[dict]:
 
 def approved_products(db: Session) -> list[dict]:
     """Only approved products for public marketplace display."""
-    return [p for p in products(db) if p.get("status") == "approved"]
+    return [p for p in products(db) if is_publicly_sellable(p)]
+
+
+def is_publicly_sellable(product: dict) -> bool:
+    """Whether a product may be discovered and purchased on the marketplace."""
+    channels = product.get("channels") or {}
+    return (
+        str(product.get("status") or "").lower() == "approved"
+        and bool(channels.get("marketplace", True))
+    )
 
 
 def platform_products(db: Session) -> list[dict]:
@@ -989,7 +998,7 @@ def rejected_products(db: Session, merchant_id: Optional[str] = None) -> list[di
 
 
 def store_card(db: Session, merchant: dict) -> dict:
-    owned = [p for p in products(db) if p.get("merchantId") == merchant.get("id")]
+    owned = [p for p in products(db) if p.get("merchantId") == merchant.get("id") and is_publicly_sellable(p)]
     # Fetch catalog row for merchant stats if available
     cat_row = db.get(Catalog, f"merchant:{merchant.get('slug')}")
     stats = {}
@@ -1001,11 +1010,17 @@ def store_card(db: Session, merchant: dict) -> dict:
             "success_rate": cat_row.success_rate or 0.0,
             "delivery_rate": cat_row.delivery_rate or 0.0,
         }
+    public_fields = (
+        "id", "slug", "name", "tagline", "location", "rating", "reviewCount",
+        "verified", "brand", "domain", "customDomain", "since", "logo", "image",
+        "about", "website", "payment_methods",
+    )
     return {
-        **merchant,
+        **{key: merchant[key] for key in public_fields if key in merchant},
         "productCount": len(owned),
         "categories": sorted({p.get("category") for p in owned if p.get("category")}),
-        **stats,
+        "followers": (cat_row.follower_count or 0) if cat_row else merchant.get("followers", 0),
+        **{key: value for key, value in stats.items() if key not in ("success_rate", "delivery_rate")},
     }
 
 
@@ -1057,7 +1072,7 @@ def cart_payload(db: Session, cart: Optional[Cart]) -> dict:
     if cart:
         for raw in cart.lines or []:
             product = find_product(db, raw["productId"])
-            if not product:
+            if not product or not is_publicly_sellable(product):
                 continue
             item = {
                 "key": line_key(raw), "product": product, "productId": product["id"],

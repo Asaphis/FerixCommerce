@@ -470,8 +470,8 @@ export const getStore = (slug: string) =>
   call<{
     store: Merchant;
     about: string;
-    responseRate: number;
-    fulfilmentRate: number;
+    responseRate: number | null;
+    fulfilmentRate: number | null;
     products: Product[];
     categories: { slug: string; name: string; count: number }[];
     stats: { products: number; rating: number; reviewCount: number; followers: number };
@@ -631,7 +631,10 @@ function resolveApiBase(): string {
           "Set FERIX_API_BASE in the environment to point at the commerce API.",
       );
     }
-    return "";
+    // Server-side fetch requires an absolute URL; a relative path throws before
+    // the graceful service-down handling can run. This fallback is for builds
+    // and local preview only—the deployed API URL should be explicitly set.
+    return "http://127.0.0.1:8003";
   }
 
   return "http://127.0.0.1:8003";

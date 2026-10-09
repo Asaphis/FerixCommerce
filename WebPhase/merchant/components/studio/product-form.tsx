@@ -25,10 +25,14 @@ import { money } from "@/lib/format";
 export function ProductForm({
   product,
   categories,
+  brands = [],
+  sections = [],
   storeName,
 }: {
   product?: Product;
   categories: string[];
+  brands?: { id: string; slug: string; name: string }[];
+  sections?: { value: string; name: string; documentTitle: string }[];
   storeName?: string;
 }) {
   const [state, action] = useActionState<FormState, FormData>(
@@ -42,13 +46,13 @@ export function ProductForm({
 
   const [draft, setDraft] = useState({
     title: product?.title ?? "",
-    category: product?.category ?? categories[0],
-    status: product?.status ?? "draft",
+    category: product?.category ?? "",
+    status: product?.status ?? "pending_review",
     price: product?.price != null ? String(product.price) : "",
     compareAt: product?.compareAt != null ? String(product.compareAt) : "",
     description: product?.description ?? "",
-    store: product ? product.channels.store : true,
-    marketplace: product ? product.channels.marketplace : false,
+    store: false,
+    marketplace: true,
   });
   const set = (key: keyof typeof draft) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const value: string | boolean =
@@ -67,7 +71,7 @@ export function ProductForm({
     { ok: draft.title.trim().length > 0, label: "Title" },
     { ok: previews.length + images.length > 0, label: "At least one image" },
     { ok: price > 0, label: "Price" },
-    { ok: draft.store || draft.marketplace, label: "A sales channel" },
+    { ok: true, label: "Marketplace submission" },
   ];
   const ready = checks.every((check) => check.ok);
 
@@ -92,17 +96,18 @@ export function ProductForm({
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field title="Department">
                   <select name="category" value={draft.category} onChange={set("category")} className={selectClass}>
+                    <option value="">No category</option>
                     {categories.map((category) => <option key={category} value={category}>{category}</option>)}
                   </select>
                 </Field>
-                <Field title="Status">
-                  <select name="status" value={draft.status} onChange={set("status")} className={selectClass}>
-                    <option value="draft">Draft — not selling yet</option>
-                    <option value="approved">Published — on sale</option>
-                    <option value="archived">Archived — retired</option>
+                <Field title="Brand (optional)">
+                  <select name="brandId" defaultValue={product?.brandId ?? ""} className={selectClass}>
+                    <option value="">No brand</option>
+                    {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
                   </select>
                 </Field>
               </div>
+              <p className="-mt-2 text-[11.5px] text-chalk-dim">Categories and brands are managed by Ferixas. Leave these unassigned if no suitable option exists.</p>
               <Field title="Description">
                 <textarea name="description" value={draft.description} onChange={set("description")} className={textareaClass} placeholder="What it is, who it is for, what makes it worth buying" />
               </Field>
@@ -149,9 +154,27 @@ export function ProductForm({
 
           <Panel>
             <PanelHead title="Where it sells" />
+            <p className="text-[12.5px] leading-relaxed text-chalk-dim">For now, seller listings are submitted to the Ferixas marketplace only. Your product stays hidden until an admin approves it. A dedicated seller storefront is not enabled yet.</p>
+            <input type="hidden" name="marketplace" value="on" />
+          </Panel>
+
+          <Panel>
+            <PanelHead title="Product sections (optional)" />
+            <p className="mb-3 text-[12px] text-chalk-dim">Request placement in active CMS product sections. Your choices take effect after review.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {sections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[10px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="block text-[10.5px] text-chalk-dim">{section.documentTitle}</span></span></label>)}
+              {!sections.length ? <p className="text-[12px] text-chalk-dim">No active CMS product sections are available.</p> : null}
+            </div>
+          </Panel>
+
+          <Panel>
+            <PanelHead title="Shipping and package details" />
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-hairline p-3.5 transition-colors hover:border-ember"><input type="checkbox" name="store" checked={draft.store} onChange={set("store")} className="mt-[3px] h-4 w-4 accent-[#e4572e]" /><span><span className="block text-[13px] font-medium text-chalk">My own storefront</span><span className="block text-[12px] text-chalk-dim">Sells on your branded shop</span></span></label>
-              <label className="flex cursor-pointer items-start gap-3 rounded-[12px] border border-hairline p-3.5 transition-colors hover:border-ember"><input type="checkbox" name="marketplace" checked={draft.marketplace} onChange={set("marketplace")} className="mt-[3px] h-4 w-4 accent-[#e4572e]" /><span><span className="block text-[13px] font-medium text-chalk">Ferixas marketplace</span><span className="block text-[12px] text-chalk-dim">Listed to every shopper on the platform</span></span></label>
+              <Field title="Shipping amount"><input name="shipping_amount" type="number" min="0" step="0.01" defaultValue={product?.shipping_amount ?? 0} className={inputClass} /></Field>
+              <Field title="Estimated delivery (days)"><input name="estimated_delivery_days" type="number" min="0" defaultValue={product?.estimated_delivery_days ?? 0} className={inputClass} /></Field>
+              <Field title="Package weight"><input name="package_weight" type="number" min="0" step="0.01" defaultValue={product?.package_weight ?? 0} className={inputClass} /></Field>
+              <Field title="Package dimensions"><input name="package_dimensions" defaultValue={product?.package_dimensions ?? ""} className={inputClass} placeholder="Length × width × height" /></Field>
+              <Field title="Ships from"><input name="shipping_origin" defaultValue={product?.shipping_origin ?? ""} className={inputClass} placeholder="City / region" /></Field>
             </div>
           </Panel>
         </div>

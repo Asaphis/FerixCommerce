@@ -385,6 +385,10 @@ export type ReviewItem = {
   status: string;
   rejection_reason?: string;
   section_tags?: string[];
+  category?: string; brandName?: string;
+  shipping_amount?: number | null; estimated_delivery_days?: number | null;
+  package_weight?: number | null; package_dimensions?: string; shipping_origin?: string;
+  image?: string; sku?: string;
 };
 export const listReviewQueue = (session: string | null) =>
   call<{ items: ReviewItem[]; counts: Record<string, number> }>("GET", "admin/review/queue", { session });
@@ -889,4 +893,3 @@ export async function listCmsSections(session: string): Promise<{ sections: { id
 export async function createCmsSection(session: string, data: { name: string; slug?: string; description?: string; is_active: boolean; sort_order: number }): Promise<{ section: { id: string; name: string; slug: string } }> {
   return call<{ section: { id: string; name: string; slug: string } }>("POST", "admin/cms/sections", { session, body: data });
 }
-

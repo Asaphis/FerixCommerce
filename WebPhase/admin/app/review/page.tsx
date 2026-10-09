@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/data";
 import { listReviewQueue } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
-import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
+import { PageHeader, inputClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { approveProductAction, rejectProductAction, requestChangesAction } from "@/lib/actions";
 import { money } from "@/lib/format";
@@ -53,18 +53,16 @@ export default async function ReviewPage() {
                   <span className="text-chalk">Your last note:</span> {item.reviewNote}
                 </p>
               ) : null}
+              <div className="mt-3 grid gap-2 rounded-[10px] border border-hairline bg-panel-2 p-3 text-[12px] sm:grid-cols-2">
+                <p><span className="text-chalk-dim">Category:</span> {item.category || "Unassigned"} · <span className="text-chalk-dim">Brand:</span> {item.brandName || "Unassigned"}</p>
+                <p><span className="text-chalk-dim">Shipping:</span> {item.shipping_amount == null ? "Not supplied" : money(item.shipping_amount)} · {item.estimated_delivery_days ? `${item.estimated_delivery_days} day estimate` : "no ETA"}</p>
+                <p><span className="text-chalk-dim">Package:</span> {[item.package_weight ? `${item.package_weight} kg` : "", item.package_dimensions, item.shipping_origin].filter(Boolean).join(" · ") || "Not supplied"}</p>
+                <p><span className="text-chalk-dim">Submitted:</span> {item.submittedAt || "—"} by {item.submittedBy || "seller"}</p>
+                <p className="sm:col-span-2"><span className="text-chalk-dim">Requested CMS sections:</span> {item.section_tags?.length ? item.section_tags.join(", ") : "No section request"}</p>
+              </div>
 
               <CmsActionForm action={approveProductAction} className="mt-3 flex flex-wrap items-end gap-3">
                 <input type="hidden" name="id" value={item.id} />
-                <Field title="Put it where">
-                  <select name="placement" defaultValue="" className={selectClass}>
-                    <option value="">The seller&rsquo;s own shop only</option>
-                    <option value="homepage">Also the homepage</option>
-                    <option value="deals">Today&rsquo;s deals</option>
-                    <option value="brand">Its brand row</option>
-                    <option value="store">Its store page</option>
-                  </select>
-                </Field>
                 <SubmitButton pendingLabel="Approving">
                   <Check width={14} height={14} /> Approve
                 </SubmitButton>

@@ -805,13 +805,17 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             slug = f"{slug}-{new_id('x', 4)}"
         owner_id = payload.get("merchantId") or "ferixas-official"
         is_platform = (owner_id == "ferixas-official")
-        owner = find_merchant(db, owner_id) or {"id": owner_id, "name": "Ferixas Official", "slug": "ferixas-official"}
+        owner = find_merchant(db, owner_id)
+        if not owner and is_platform:
+            owner = {"id": "ferixas-official", "name": "Ferixas Official", "slug": "ferixas-official"}
+        if not owner:
+            raise HTTPException(404, "Choose an existing seller for this product")
         price = float(payload.get("price") or 0)
         
-        # If admin creates for a seller, it's origin=seller and auto-approved.
-        # If for platform, origin=platform and uses provided status (default draft).
+        # Seller-owned catalog records always enter the same admin review gate,
+        # including products created on a seller's behalf by an operator.
         origin = "platform" if is_platform else "seller"
-        default_status = "draft" if is_platform else "approved"
+        default_status = "draft" if is_platform else "pending_review"
         
         product = {
             "id": new_id("prd"), "slug": slug, "title": title,
@@ -826,7 +830,8 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "sku": payload.get("sku") or f"FX-{new_id('', 5).upper()}",
             "stock": int(payload.get("stock") or 0), "lowStockAt": 8,
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
-            "variants": payload.get("variants") or [], "status": payload.get("status") or default_status,
+            "variants": payload.get("variants") or [], "status": (payload.get("status") or default_status) if is_platform else "pending_review",
+            "reviewStatus": "in_review" if not is_platform else None,
             "channels": {"store": bool(payload.get("store", True)), "marketplace": bool(payload.get("marketplace", True))},
             "featured": bool(payload.get("featured")),
             "createdAt": iso(now()), "updatedAt": iso(now()), "sold30d": 0, "views30d": 0,
@@ -990,6 +995,7 @@ def review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Session"))
                 "merchantName": p.get("merchantName", ""),
                 "price": p.get("price", 0), "stock": p.get("stock", 0),
                 "category": p.get("category", ""), "sku": p.get("sku", ""),
+                "brandName": p.get("brandName") or "",
                 "image": (p.get("images") or [placeholder(p["slug"])])[0],
                 "channels": p.get("channels") or {},
                 "shipping_amount": p.get("shipping_amount"),
@@ -1000,8 +1006,11 @@ def review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Session"))
                 "section_tags": p.get("section_tags", []),
                 "status": p.get("status", "pending_review"),
                 "createdAt": p.get("createdAt", ""),
-                "reviewStatus": "pending",
-                "reviewNote": None,
+                "reviewStatus": p.get("reviewStatus") or "in_review",
+                "reviewNote": p.get("reviewNote") or "",
+                "section_tags": p.get("section_tags") or [],
+                "submittedAt": p.get("submittedAt") or "",
+                "submittedBy": p.get("submittedBy") or "",
             } for p in pending],
             "counts": {
                 "pending_review": sum(p.get("status") == "pending_review" for p in pending),
@@ -1035,10 +1044,40 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
         updated = dict(target)
         if decision == "approve":
             updated["status"] = "approved"
+            updated["reviewStatus"] = "approved"
+            updated["reviewNote"] = ""
+            updated.pop("rejection_reason", None)
+            updated.pop("rejectionReason", None)
             if placement:
                 updated["section_tags"] = updated.get("section_tags", []) or []
                 if placement not in updated["section_tags"]:
                     updated["section_tags"].append(placement)
+            from core import ContentDocument, SectionPlacement
+            for request in updated.get("section_tags") or []:
+                if "__" not in request:
+                    continue
+                document_id, section_id = request.split("__", 1)
+                document = db.get(ContentDocument, document_id)
+                if not document or document.owner_type != "platform":
+                    continue
+                section = next((item for item in (document.data or {}).get("sections", [])
+                                if item.get("id") == section_id
+                                and item.get("type") in ("product_grid", "product_carousel")
+                                and item.get("visible", True)), None)
+                if not section:
+                    continue
+                existing = db.scalar(select(SectionPlacement).where(
+                    SectionPlacement.product_id == target["id"],
+                    SectionPlacement.document_id == document_id,
+                    SectionPlacement.section_id == section_id,
+                ))
+                if not existing:
+                    db.add(SectionPlacement(
+                        id=new_id("plc"), product_id=target["id"], product_slug=target["slug"],
+                        document_id=document_id, section_id=section_id, section_type=section.get("type", ""),
+                        price=float(target.get("price") or 0), compare_at=float(target.get("compareAt") or 0),
+                        quantity=int(target.get("stock") or 0), position=1,
+                    ))
         elif decision == "changes":
             updated["reviewStatus"] = "changes_requested"
             updated["reviewNote"] = note
@@ -1046,6 +1085,7 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
         else:
             updated["status"] = "rejected"
             updated["rejectionReason"] = note or "Admin rejected"
+            updated["rejection_reason"] = note or "Admin rejected"
             updated["reviewStatus"] = "rejected"
         
         updated["updatedAt"] = iso(now())
@@ -1869,7 +1909,8 @@ def review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Session"))
         staff = require_staff(db, session, "admin")
         require_permission(staff, "catalog.manage")
         rows = all_products(db)
-        waiting = [p for p in rows if _review_state(p) in ("in_review", "changes_requested")]
+        waiting = [p for p in rows if p.get("status") == "pending_review"
+                   or _review_state(p) in ("in_review", "changes_requested")]
         waiting.sort(key=lambda p: p.get("submittedAt") or "")
         return {
             "items": [
@@ -1910,6 +1951,8 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
         if decision == "approve":
             product["reviewStatus"] = "approved"
             product["status"] = "approved"
+            product.pop("rejection_reason", None)
+            product["reviewNote"] = ""
             if payload.placement:
                 product["placement"] = payload.placement
             if payload.section_tags is not None:

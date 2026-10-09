@@ -7,6 +7,7 @@ import {
   Package,
   RotateCcw,
   Star,
+  Store,
   Truck,
   Wallet,
 } from "lucide-react";

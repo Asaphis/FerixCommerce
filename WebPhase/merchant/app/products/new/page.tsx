@@ -1,14 +1,11 @@
 import { requireMerchant } from "@/lib/data";
 import { ProductForm } from "@/components/studio/product-form";
 import { Eyebrow } from "@/components/studio/bits";
-
-const CATEGORIES = [
-  "electronics", "audio", "computing", "gaming", "phones",
-  "fashion", "home", "beauty", "sports", "pantry",
-];
+import { getProductOptions } from "@/lib/api";
 
 export default async function NewProductPage() {
-  const { merchant } = await requireMerchant();
+  const { merchant, session } = await requireMerchant();
+  const options = await getProductOptions(session);
 
   return (
     <div className="grid gap-4">
@@ -17,7 +14,7 @@ export default async function NewProductPage() {
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">New product</h1>
       </header>
 
-      <ProductForm categories={CATEGORIES} storeName={merchant.name} />
+      <ProductForm categories={options.categories.map((item) => item.slug)} brands={options.brands} sections={options.sections} storeName={merchant.name} />
     </div>
   );
 }

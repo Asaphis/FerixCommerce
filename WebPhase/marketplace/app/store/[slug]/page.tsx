@@ -1,90 +1,13 @@
-"use client";
-
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Check, Heart, Mail, MapPin, Package, Phone, Star, UserPlus } from "lucide-react";
-import { assetUrl, getStore, ApiError, followSeller, unfollowSeller, checkFollowing } from "@/lib/api";
+import { ArrowRight, Check, MapPin, Package, Star } from "lucide-react";
+import { assetUrl, getStore, ApiError, checkFollowing } from "@/lib/api";
 import { savedIds } from "@/lib/data";
-import { toggleFollowAction } from "@/lib/actions";
 import { ProductGrid } from "@/components/ferix/cards";
 import { Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
 import { compact, dateLong } from "@/lib/format";
-import { use, useEffect, useState } from "react";
 import { readCredentials } from "@/lib/session";
-
-function StoreHeader({
-  store,
-  stats,
-  initialFollowing,
-}: {
-  store: any;
-  stats: any;
-  initialFollowing: boolean;
-}) {
-  const [following, setFollowing] = useState(initialFollowing);
-  const [followers, setFollowers] = useState(stats.followers);
-  const [loading, setLoading] = useState(false);
-  const { session } = use(readCredentials());
-
-  const handleSubmit = async (formData: FormData) => {
-    setLoading(true);
-    await toggleFollowAction(formData);
-  };
-
-  useEffect(() => {
-    if (session) {
-      checkFollowing(store.slug, { session, cartId: "" })
-        .then((r) => setFollowing(r.following))
-        .catch(() => {});
-    }
-  }, [session, store.slug]);
-
-  const onToggle = async () => {
-    if (!session) {
-      window.location.href = `/login?return=${encodeURIComponent(`/store/${store.slug}`)}`;
-      return;
-    }
-    setLoading(true);
-    try {
-      const action = following ? unfollowSeller : followSeller;
-      const result = await action(store.slug, { session, cartId: "" });
-      setFollowing(!following);
-      setFollowers((f) => following ? f - 1 : f + 1);
-    } catch {
-      // Leave state unchanged on error
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
-      <form action={handleSubmit}>
-        <input type="hidden" name="slug" value={store.slug} />
-        <input type="hidden" name="follow" value={!following} />
-        <button
-          type="button"
-          onClick={onToggle}
-          disabled={loading}
-          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-colors ${
-            following
-              ? "border border-ink bg-ink text-bone hover:border-ink hover:text-bone"
-              : "border border-line-warm bg-white text-ink transition-colors hover:border-ember hover:text-ember"
-          } ${loading ? "opacity-60 cursor-wait" : ""}`}
-        >
-          <UserPlus width={14} height={14} />
-          {following ? "Following" : `Follow (${compact(followers)})`}
-        </button>
-      </form>
-      <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">
-        {store.customDomain ?? store.domain}
-      </p>
-      <LinkButton href={`/browse?store=${store.slug}`} variant="outline">
-        Shop on the marketplace
-      </LinkButton>
-    </div>
-  );
-}
+import { StoreHeader } from "@/components/ferix/store-header";
 
 export default async function StorePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -97,6 +20,10 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
   }
   const { store, about, products, categories, stats, responseRate, fulfilmentRate } = data;
   const saved = await savedIds();
+  const credentials = await readCredentials();
+  const following = credentials.session
+    ? await checkFollowing(store.slug, credentials).then((result) => result.following).catch(() => false)
+    : false;
   const brand = store.brand;
   const record = store as unknown as { logo?: string; imageUrl?: string; image?: string };
   const storeArtwork = assetUrl(record.logo ?? record.imageUrl ?? record.image ?? null);
@@ -151,7 +78,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                 <span>Trading since {dateLong(store.since)}</span>
               </div>
             </div>
-            <StoreHeader store={store} stats={stats} initialFollowing={false} />
+            <StoreHeader store={store} followers={stats.followers} initialFollowing={following} />
           </div>
         </div>
       </section>
@@ -167,8 +94,8 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
-              { label: "Response rate", value: `${responseRate}%` },
-              { label: "Fulfilment rate", value: `${fulfilmentRate}%` },
+              { label: "Response rate", value: responseRate == null ? "Not yet measured" : `${responseRate}%` },
+              { label: "Fulfilment rate", value: fulfilmentRate == null ? "Not yet measured" : `${fulfilmentRate}%` },
               { label: "Followers", value: compact(stats.followers) },
             ].map((item) => (
               <div key={item.label} className="rounded-[3px] border border-line-warm bg-white p-3.5">
