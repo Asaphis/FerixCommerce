@@ -386,6 +386,12 @@ export type ReviewItem = {
 export const listReviewQueue = (session: string | null) =>
   call<{ items: ReviewItem[]; counts: Record<string, number> }>("GET", "admin/review/queue", { session });
 
+/** Approve, ask for changes, or reject. Approving is what puts a product on sale. */
+export const decideProduct = (
+  session: string | null,
+  body: { id: string; decision: "approve" | "changes" | "reject"; note?: string; placement?: string },
+) => call<{ product: Record<string, unknown> }>("POST", "admin/review/decision", { session, body });
+
 export const listUsers = (session: string | null, params: Params = {}) =>
   call<UserList>("GET", "admin/users", { params, session });
 

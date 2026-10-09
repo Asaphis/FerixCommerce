@@ -36,7 +36,8 @@ export const NAV_GROUPS: NavGroupData[] = [
   {
     label: "Marketplace",
     items: [
-      { href: "/catalog", label: "Catalogue", icon: "boxes", permission: "catalog.manage" },
+      { href: "/catalog", label: "Catalogue", icon: "boxes", permission: "catalog.manage" }
+      { href: "/review", label: "Review queue", icon: "shield", permission: "catalog.manage" },,
       { href: "/cms", label: "CMS", icon: "palette", permission: "cms.manage" },
       { href: "/brands", label: "Brands", icon: "tag", permission: "catalog.manage" },
       { href: "/departments", label: "Departments", icon: "dashboard", permission: "catalog.manage" },

@@ -492,3 +492,54 @@ export async function editMerchantAction(_prev: FormState, formData: FormData): 
   refresh(`/merchants/${id}`);
   return { message: "Saved. The change applies from the next order." };
 }
+
+// ── The review queue ────────────────────────────────────────────────────
+// Approving is the moment a seller's listing goes on sale: the endpoint sets it active, so
+// nothing reaches a customer until someone here says so. A reason travels with the other two,
+// because "changes requested" without a reason is a message nobody can act on.
+
+async function decideOnProduct(
+  decision: "approve" | "changes" | "reject",
+  formData: FormData,
+): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "That product is missing." };
+  const note = String(formData.get("note") ?? "").trim();
+  if (decision !== "approve" && !note) {
+    return { error: "Say why, so the seller knows what to change." };
+  }
+  const placement = String(formData.get("placement") ?? "").trim();
+  try {
+    await api.decideProduct(session, {
+      id,
+      decision,
+      ...(note ? { note } : {}),
+      ...(decision === "approve" && placement ? { placement } : {}),
+    });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That could not be decided." };
+  }
+  refresh("/review");
+  return {
+    message:
+      decision === "approve"
+        ? "Approved. It is on sale now."
+        : decision === "changes"
+          ? "Sent back to the seller with your note."
+          : "Rejected. The seller keeps it in their own catalogue.",
+  };
+}
+
+export async function approveProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  return decideOnProduct("approve", formData);
+}
+
+export async function requestChangesAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  return decideOnProduct("changes", formData);
+}
+
+export async function rejectProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  return decideOnProduct("reject", formData);
+}
