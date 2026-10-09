@@ -292,12 +292,14 @@ export default async function HomePage() {
               isGrouped ? (
                 <TileSwiper
                   categories={shown}
-                  across={Number((section as { across?: number }).across) || 3}
+                  /* Four to a face unless the section says otherwise: two across, two down. The
+                     next four are a swipe away rather than another screenful of scrolling. */
+                  across={Number((section as { across?: number }).across) || 2}
                   rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
                   size="large"
                 />
               ) : (
-                <div className={tileWidth(Number(section.across) || 2)}>
+                <div className={tileWidth(Number((section as { across?: number }).across) || 2)}>
                   {shown.map((category) => <CategoryTile key={category.slug} category={category} size="large" />)}
                 </div>
               )
