@@ -8,7 +8,7 @@ import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/op
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { SubmitButton } from "@/components/ops/controls";
 import { Trash2 } from "lucide-react";
-import { deleteMerchantAction, restrictMerchantAction, suspendMerchantAction } from "@/lib/actions";
+import { deleteMerchantAction, editMerchantAction, restrictMerchantAction, suspendMerchantAction } from "@/lib/actions";
 import { Distribution, KeyValue } from "@/components/ops/marks";
 import { CellLabel, DataTable, Row, Td, TdLead, TablePanel } from "@/components/ops/table";
 import { compact, dateLong, money, num, relative, titleCase } from "@/lib/format";
@@ -279,6 +279,45 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
         ) : (
           <Empty title="Nothing waiting" body="This seller has no products in review." />
         )}
+      </Panel>
+
+      <Panel>
+        <PanelHead
+          title="Edit this seller"
+          hint="Name, where they are, what they pay the platform, and whether they sell on the marketplace. Only what you type is changed."
+        />
+        <CmsActionForm action={editMerchantAction} className="mt-4 grid gap-3">
+          <input type="hidden" name="id" value={merchant.id} />
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field title="Store name">
+              <input name="name" defaultValue={merchant.name} className={inputClass} />
+            </Field>
+            <Field title="Where they are">
+              <input name="location" defaultValue={merchant.location} className={inputClass} />
+            </Field>
+          </div>
+          <Field title="Tagline">
+            <input name="tagline" defaultValue={merchant.tagline} className={inputClass} />
+          </Field>
+          <Field title="About the store">
+            <input name="about" defaultValue={about} className={inputClass} />
+          </Field>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Field title="Commission %">
+              <input name="commissionPct" type="number" min={0} max={40} step="0.5" defaultValue={merchant.commissionPct} className={inputClass} />
+            </Field>
+            <Field title="Plan">
+              <input name="plan" defaultValue={merchant.plan} className={inputClass} />
+            </Field>
+            <label className="flex items-center gap-2 pt-6 text-[12.5px] text-chalk">
+              <input type="checkbox" name="marketplaceEnabled" defaultChecked={(merchant as { marketplaceEnabled?: boolean }).marketplaceEnabled !== false} className="size-4 accent-signal" />
+              Sells on the marketplace
+            </label>
+          </div>
+          <div>
+            <SubmitButton pendingLabel="Saving">Save the details</SubmitButton>
+          </div>
+        </CmsActionForm>
       </Panel>
 
       <Panel>

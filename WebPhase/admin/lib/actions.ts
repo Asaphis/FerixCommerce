@@ -462,3 +462,33 @@ export async function refundOrderAction(_prev: FormState, formData: FormData): P
 export async function resendOrderAction(_prev: FormState, formData: FormData): Promise<FormState> {
   return orderAction("resend", formData);
 }
+
+/** Change a seller's own details. Every field is optional: only what was typed is sent. */
+export async function editMerchantAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "That seller is missing." };
+
+  const body: Record<string, unknown> = { id };
+  for (const field of ["name", "tagline", "location", "about"]) {
+    const value = String(formData.get(field) ?? "").trim();
+    if (value) body[field] = value;
+  }
+  const commission = String(formData.get("commissionPct") ?? "").trim();
+  if (commission) body.commissionPct = Number(commission);
+  const plan = String(formData.get("plan") ?? "").trim();
+  if (plan) body.plan = plan;
+  // The marketplace switch always states itself: a switch has two states, and silence would
+  // mean one of them by accident.
+  body.marketplaceEnabled = formData.get("marketplaceEnabled") === "on";
+
+  try {
+    await api.updateMerchant(session, body);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "That seller could not be saved." };
+  }
+  refresh("/merchants");
+  refresh(`/merchants/${id}`);
+  return { message: "Saved. The change applies from the next order." };
+}
