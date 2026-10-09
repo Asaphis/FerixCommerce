@@ -382,6 +382,9 @@ export type ReviewItem = {
   id: string; title: string; slug: string; merchantId: string; merchantName: string;
   price: number; stock: number; reviewStatus: string; reviewNote: string;
   submittedBy: string; submittedAt: string;
+  status: string;
+  rejection_reason?: string;
+  section_tags?: string[];
 };
 export const listReviewQueue = (session: string | null) =>
   call<{ items: ReviewItem[]; counts: Record<string, number> }>("GET", "admin/review/queue", { session });

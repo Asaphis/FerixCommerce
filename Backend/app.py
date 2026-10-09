@@ -597,19 +597,38 @@ def store(slug: str):
         merchant = find_merchant(db, slug)
         if not merchant:
             raise HTTPException(404, "No store at that address")
-        # A seller's shop shows what has been approved, on the same terms as the marketplace: a
-        # draft or a listing waiting on review is the seller's business and the platform's, not a
-        # customer's. A row with no status is an old one and counts as active.
+        
+        # STRICT CATALOG ISOLATION: Only display APPROVED products belonging to this specific merchant_id.
+        # Platform products must NOT mix in.
         owned = decorate(db, [
             p for p in product_rows(db)
             if p.get("merchantId") == merchant["id"]
-            and str(p.get("status") or "active").lower() not in ("draft", "rejected")
-            and str(p.get("reviewStatus") or "").lower()
-            not in ("in_review", "pending", "changes_requested", "rejected")
+            and str(p.get("status") or "").lower() == "approved"
         ])
+        
+        # Fetch catalog row for merchant stats
+        cat_row = db.get(Catalog, f"merchant:{slug}")
+        stats = {
+            "products": len(owned),
+            "rating": merchant.get("rating", 0.0),
+            "reviewCount": merchant.get("reviewCount", 0),
+            "followers": merchant.get("followers", 0),
+            "follower_count": cat_row.follower_count if cat_row else 0,
+            "total_reviews": cat_row.total_reviews if cat_row else 0,
+            "average_rating": cat_row.average_rating if cat_row else 0.0,
+            "success_rate": cat_row.success_rate if cat_row else 0.0,
+            "delivery_rate": cat_row.delivery_rate if cat_row else 0.0,
+        }
+        
         doc = db.get(ContentDocument, f"doc_store_{merchant['id']}")
         return {
-            "store": store_card(db, merchant), "about": merchant.get("about", ""),
+            "store": store_card(db, merchant), 
+            "about": merchant.get("about", ""),
+            "location": merchant.get("location", ""),
+            "phone": merchant.get("phone", ""),
+            "email": merchant.get("email", ""),
+            "website": merchant.get("website", ""),
+            "payment_methods": merchant.get("payment_methods", []),
             "responseRate": merchant.get("responseRate", 0),
             "fulfilmentRate": merchant.get("fulfilmentRate", 0),
             "products": owned,
@@ -620,8 +639,7 @@ def store(slug: str):
                 if any(p.get("category") == c["slug"] for p in owned)
             ],
             "content": (doc.data if doc and doc.status == "published" else None),
-            "stats": {"products": len(owned), "rating": merchant.get("rating", 0),
-                      "reviewCount": merchant.get("reviewCount", 0), "followers": merchant.get("followers", 0)},
+            "stats": stats,
         }
 
 

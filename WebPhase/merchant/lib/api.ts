@@ -72,13 +72,21 @@ export type Product = {
   rating: number;
   reviewCount: number;
   variants: Variant[];
-  status: "active" | "draft" | "archived";
+  status: "pending_review" | "approved" | "rejected" | "draft" | "archived";
+  reviewStatus?: string;
+  rejection_reason?: string;
   channels: Channels;
   tags: string[];
+  section_tags?: string[];
   createdAt: string;
   sold30d: number;
   views30d: number | null;
   images?: string[];
+  shipping_amount?: number;
+  estimated_delivery_days?: number;
+  package_weight?: number;
+  package_dimensions?: string;
+  shipping_origin?: string;
 };
 
 export type Summary = {

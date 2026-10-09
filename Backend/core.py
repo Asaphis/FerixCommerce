@@ -801,10 +801,71 @@ def rows_of(db: Session, kind: str) -> list[dict]:
 def put_row(db: Session, kind: str, slug: str, data: dict) -> None:
     key = f"{kind}:{slug}"
     row = db.get(Catalog, key)
+    
+    # Extract fields that belong to Catalog columns to keep them in sync
+    status = data.get("status")
+    owner_type = data.get("owner_type") or data.get("origin")
+    rejection_reason = data.get("rejection_reason")
+    shipping_amount = data.get("shipping_amount")
+    estimated_delivery_days = data.get("estimated_delivery_days")
+    package_weight = data.get("package_weight")
+    package_dimensions = data.get("package_dimensions")
+    shipping_origin = data.get("shipping_origin")
+    follower_count = data.get("follower_count")
+    total_reviews = data.get("total_reviews")
+    average_rating = data.get("average_rating")
+    success_rate = data.get("success_rate")
+    delivery_rate = data.get("delivery_rate")
+
     if row:
-        row.data = data
+        # Merge existing data with new data to prevent wiping out old fields (Fix Data Wipeout Bug)
+        merged_data = {**(row.data or {}), **data}
+        row.data = merged_data
+        
+        # Update specific columns if present in data
+        if status is not None:
+            row.status = status
+        if owner_type is not None:
+            row.owner_type = owner_type
+        if rejection_reason is not None:
+            row.rejection_reason = rejection_reason
+        if shipping_amount is not None:
+            row.shipping_amount = shipping_amount
+        if estimated_delivery_days is not None:
+            row.estimated_delivery_days = estimated_delivery_days
+        if package_weight is not None:
+            row.package_weight = package_weight
+        if package_dimensions is not None:
+            row.package_dimensions = package_dimensions
+        if shipping_origin is not None:
+            row.shipping_origin = shipping_origin
+        if follower_count is not None:
+            row.follower_count = follower_count
+        if total_reviews is not None:
+            row.total_reviews = total_reviews
+        if average_rating is not None:
+            row.average_rating = average_rating
+        if success_rate is not None:
+            row.success_rate = success_rate
+        if delivery_rate is not None:
+            row.delivery_rate = delivery_rate
     else:
-        db.add(Catalog(key=key, kind=kind, slug=slug, data=data))
+        db.add(Catalog(
+            key=key, kind=kind, slug=slug, data=data,
+            status=status or ("pending_review" if kind == "product" else None),
+            owner_type=owner_type,
+            rejection_reason=rejection_reason,
+            shipping_amount=shipping_amount,
+            estimated_delivery_days=estimated_delivery_days,
+            package_weight=package_weight,
+            package_dimensions=package_dimensions,
+            shipping_origin=shipping_origin,
+            follower_count=follower_count or 0,
+            total_reviews=total_reviews or 0,
+            average_rating=average_rating or 0.0,
+            success_rate=success_rate or 0.0,
+            delivery_rate=delivery_rate or 0.0,
+        ))
 
 
 def drop_row(db: Session, kind: str, slug: str) -> bool:
@@ -899,10 +960,22 @@ def find_collection(db: Session, value: str) -> Optional[dict]:
 
 def store_card(db: Session, merchant: dict) -> dict:
     owned = [p for p in products(db) if p.get("merchantId") == merchant.get("id")]
+    # Fetch catalog row for merchant stats if available
+    cat_row = db.get(Catalog, f"merchant:{merchant.get('slug')}")
+    stats = {}
+    if cat_row:
+        stats = {
+            "follower_count": cat_row.follower_count or 0,
+            "total_reviews": cat_row.total_reviews or 0,
+            "average_rating": cat_row.average_rating or 0.0,
+            "success_rate": cat_row.success_rate or 0.0,
+            "delivery_rate": cat_row.delivery_rate or 0.0,
+        }
     return {
         **merchant,
         "productCount": len(owned),
         "categories": sorted({p.get("category") for p in owned if p.get("category")}),
+        **stats,
     }
 
 
