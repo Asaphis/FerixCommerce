@@ -129,32 +129,31 @@ function BrandTile({
   return (
     <Link
       href={`/brands/${record.slug}`}
-      className="group flex shrink-0 flex-col overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40"
+      className="group flex shrink-0 flex-col items-center rounded-[14px] transition-colors"
       style={width ? { width } : undefined}
     >
-      {/* Small, the way a department tile is small: the mark rather than a poster. Brands are
-          a row of names to scan, and a full-width picture for each one made the band taller
-          than the products beneath it. */}
-      <span className="grid aspect-square w-full place-items-center overflow-hidden bg-bone-soft p-2.5">
+      {/* Circled, and small. A brand is a badge in a row of badges: the mark in a circle, the
+          name under it. The square panel it had made each one as tall as a product card and the
+          band competed with the rows beneath it. */}
+      <span className="flex justify-center pt-3">
         {artwork ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={artwork}
-            alt={record.name}
-            className="h-12 w-12 object-contain transition-transform duration-300 group-hover:scale-[1.06]"
-          />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={artwork}
+              alt={record.name}
+              className="h-[52px] w-[52px] rounded-full object-cover ring-1 ring-line-warm transition-transform duration-300 group-hover:scale-[1.05]"
+            />
+          </>
         ) : (
-          <span className="grid h-12 w-12 place-items-center rounded-[10px] bg-white font-display text-[15px] font-bold text-ink-soft">
+          <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-bone-soft font-display text-[16px] font-bold text-ink-soft ring-1 ring-line-warm">
             {record.name.slice(0, 1)}
           </span>
         )}
       </span>
-      <span className="block px-3 py-2.5">
-        <span className="block truncate text-[12.5px] font-semibold text-ink group-hover:text-ember">
+      <span className="block px-2 pb-3 pt-2 text-center">
+        <span className="block truncate text-[12px] font-semibold text-ink group-hover:text-ember">
           {record.name}
-        </span>
-        <span className="mt-0.5 block font-mono text-[9.4px] uppercase tracking-[0.12em] text-ink-soft">
-          View brand
         </span>
       </span>
     </Link>
@@ -202,7 +201,9 @@ export default async function HomePage() {
   const brandAcross = Math.min(4, Math.max(1, Math.round(Number(brandSection?.across) || 2)));
   // A small mark: narrow enough that several fit across a phone, which is what makes the row
   // feel like a row rather than a set of cards.
-  const brandTileWidth = `calc((100% - ${(brandAcross - 1) * 10}px) / ${brandAcross} - 14px)`;
+  // Narrow: a badge is a name you can read at a glance, not a card. Capped as well, so a wide
+  // screen does not stretch four badges across the whole band.
+  const brandTileWidth = `min(110px, calc((100% - ${(brandAcross - 1) * 10}px) / ${brandAcross} - 20px))`;
   const brandGrid = String((brandSection as { layout?: string } | undefined)?.layout) === "grid";
   // A switch is stored as the word, so only the word false hides anything.
   const brandSeeAll = String((brandSection as { seeAll?: string } | undefined)?.seeAll) !== "false";
