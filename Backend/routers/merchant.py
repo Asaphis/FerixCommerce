@@ -485,6 +485,14 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         merchant = _merchant_or_404(db, staff.subject_id)
         if not payload.title:
             raise HTTPException(400, "A product needs a title")
+        
+        # CRITICAL: Sellers must tag products to marketplace since they don't have websites yet
+        if not payload.marketplace and not payload.store:
+            raise HTTPException(400, "Product must be tagged for at least one sales channel (marketplace or store)")
+        
+        # Until seller websites are launched, marketplace tagging is mandatory
+        if not payload.marketplace:
+            raise HTTPException(400, "Products must be tagged to Marketplace until your store website is ready. Enable the marketplace channel to continue.")
         slug = payload.slug or _slugify(payload.title)
         if find_product(db, slug):
             slug = f"{slug}-{new_id('x', 4)}"

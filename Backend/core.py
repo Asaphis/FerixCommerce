@@ -958,6 +958,36 @@ def find_collection(db: Session, value: str) -> Optional[dict]:
     return next((c for c in collections(db) if c.get("slug") == value or c.get("id") == value), None)
 
 
+# ── Product filtering helpers ──────────────────────────────────────────────
+
+def approved_products(db: Session) -> list[dict]:
+    """Only approved products for public marketplace display."""
+    return [p for p in products(db) if p.get("status") == "approved"]
+
+
+def platform_products(db: Session) -> list[dict]:
+    """Only platform-owned products for admin catalog (Ferixas Official products)."""
+    return [p for p in products(db) if p.get("origin") == "platform" or p.get("owner_type") == "platform"]
+
+
+def seller_products(db: Session, merchant_id: str) -> list[dict]:
+    """Only products owned by a specific seller."""
+    return [p for p in products(db) if p.get("merchantId") == merchant_id]
+
+
+def pending_products(db: Session) -> list[dict]:
+    """All products awaiting admin review (for admin review queue)."""
+    return [p for p in products(db) if p.get("status") == "pending_review"]
+
+
+def rejected_products(db: Session, merchant_id: Optional[str] = None) -> list[dict]:
+    """All rejected products, optionally filtered by merchant."""
+    rejected = [p for p in products(db) if p.get("status") == "rejected"]
+    if merchant_id:
+        rejected = [p for p in rejected if p.get("merchantId") == merchant_id]
+    return rejected
+
+
 def store_card(db: Session, merchant: dict) -> dict:
     owned = [p for p in products(db) if p.get("merchantId") == merchant.get("id")]
     # Fetch catalog row for merchant stats if available

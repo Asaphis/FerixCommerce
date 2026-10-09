@@ -655,6 +655,78 @@ def search(q: str = ""):
                 "suggestions": []}
 
 
+# ── Seller Follow System ───────────────────────────────────────────────────
+
+@app.post("/sellers/{merchant_id}/follow")
+def follow_seller(merchant_id: str, x_session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Follow a seller to get updates about their products."""
+    with SessionLocal() as db:
+        user = require_user(db, x_session)
+        merchant = find_merchant(db, merchant_id)
+        if not merchant:
+            raise HTTPException(404, "Seller not found")
+        
+        # Get or create user's followed sellers list
+        followed = (user.settings or {}).get("followed_sellers", [])
+        if merchant["id"] not in followed:
+            followed.append(merchant["id"])
+            user.settings = {**(user.settings or {}), "followed_sellers": followed}
+            
+            # Increment seller's follower count in Catalog table
+            slug = merchant.get("slug")
+            cat_row = db.get(Catalog, f"merchant:{slug}")
+            if cat_row:
+                cat_row.follower_count = (cat_row.follower_count or 0) + 1
+            else:
+                # Create catalog row if it doesn't exist
+                merchant["follower_count"] = (merchant.get("follower_count", 0) + 1)
+                put_row(db, "merchant", slug, merchant)
+            
+            db.commit()
+            return {"following": True, "follower_count": cat_row.follower_count if cat_row else merchant.get("follower_count", 1)}
+        
+        return {"following": True, "message": "Already following this seller"}
+
+
+@app.delete("/sellers/{merchant_id}/follow")
+def unfollow_seller(merchant_id: str, x_session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Unfollow a seller."""
+    with SessionLocal() as db:
+        user = require_user(db, x_session)
+        merchant = find_merchant(db, merchant_id)
+        if not merchant:
+            raise HTTPException(404, "Seller not found")
+        
+        # Remove from user's followed sellers list
+        followed = (user.settings or {}).get("followed_sellers", [])
+        if merchant["id"] in followed:
+            followed.remove(merchant["id"])
+            user.settings = {**(user.settings or {}), "followed_sellers": followed}
+            
+            # Decrement seller's follower count in Catalog table
+            slug = merchant.get("slug")
+            cat_row = db.get(Catalog, f"merchant:{slug}")
+            if cat_row and cat_row.follower_count > 0:
+                cat_row.follower_count -= 1
+            
+            db.commit()
+            return {"following": False, "follower_count": cat_row.follower_count if cat_row else 0}
+        
+        return {"following": False, "message": "Not following this seller"}
+
+
+@app.get("/sellers/{merchant_id}/following")
+def check_following(merchant_id: str, x_session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Check if current user is following a seller."""
+    with SessionLocal() as db:
+        user = get_user(db, x_session)
+        if not user:
+            return {"following": False}
+        
+        followed = (user.settings or {}).get("followed_sellers", [])
+        return {"following": merchant_id in followed}
+
+
 # ── Shopper session ────────────────────────────────────────────────────────
 
 @app.post("/auth/register")

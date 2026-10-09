@@ -885,6 +885,94 @@ def catalog_delete(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         return {"removed": target["id"]}
 
 
+# ── Product Approval Workflow ──────────────────────────────────────────────
+
+@router.get("/catalog/products/pending")
+def pending_review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Get all products awaiting admin review."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.approve")
+        from core import pending_products
+        pending = pending_products(db)
+        return {
+            "products": [{
+                "id": p["id"], "slug": p["slug"], "title": p["title"],
+                "merchantId": p.get("merchantId", ""), "merchantName": p.get("merchantName", ""),
+                "category": p.get("category", ""), "price": p.get("price", 0),
+                "stock": p.get("stock", 0), "sku": p.get("sku", ""),
+                "image": (p.get("images") or [placeholder(p["slug"])])[0],
+                "channels": p.get("channels") or {},
+                "shipping_amount": p.get("shipping_amount"),
+                "estimated_delivery_days": p.get("estimated_delivery_days"),
+                "section_tags": p.get("section_tags", []),
+                "createdAt": p.get("createdAt", ""),
+                "updatedAt": p.get("updatedAt", ""),
+            } for p in pending],
+            "total": len(pending),
+        }
+
+
+@router.patch("/catalog/products/approve")
+def approve_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
+    """Approve a seller product for public marketplace display."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.approve")
+        product_id = str(payload.get("id") or payload.get("slug") or "")
+        target = find_product(db, product_id)
+        if not target:
+            raise HTTPException(404, "Product not found")
+        if target.get("status") == "approved":
+            return {"product": target, "message": "Product is already approved"}
+        
+        # Update product status to approved
+        updated = dict(target)
+        updated["status"] = "approved"
+        updated["updatedAt"] = iso(now())
+        
+        # Admin can override section tags during approval
+        if "section_tags" in payload:
+            updated["section_tags"] = payload["section_tags"]
+        
+        put_row(db, "product", target["slug"], updated)
+        audit(db, "admin", staff.email, "product.approve", target["slug"], 
+              f"Approved {target.get('title', '')} from {target.get('merchantName', '')}")
+        db.commit()
+        
+        return {"product": updated, "message": "Product approved successfully"}
+
+
+@router.patch("/catalog/products/reject")
+def reject_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
+    """Reject a seller product with a reason."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.approve")
+        product_id = str(payload.get("id") or payload.get("slug") or "")
+        reason = str(payload.get("reason") or "").strip()
+        
+        if not reason:
+            raise HTTPException(400, "A rejection reason is required")
+        
+        target = find_product(db, product_id)
+        if not target:
+            raise HTTPException(404, "Product not found")
+        
+        # Update product status to rejected with reason
+        updated = dict(target)
+        updated["status"] = "rejected"
+        updated["rejection_reason"] = reason
+        updated["updatedAt"] = iso(now())
+        
+        put_row(db, "product", target["slug"], updated)
+        audit(db, "admin", staff.email, "product.reject", target["slug"], 
+              f"Rejected {target.get('title', '')}: {reason}")
+        db.commit()
+        
+        return {"product": updated, "message": "Product rejected"}
+
+
 # ── Categories ─────────────────────────────────────────────────────────────
 
 @router.get("/catalog/categories")
