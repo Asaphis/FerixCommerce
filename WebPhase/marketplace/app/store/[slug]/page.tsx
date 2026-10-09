@@ -25,7 +25,12 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
 
   return (
     <div>
-      <section style={{ background: brand.canvas }} className="border-b border-line-warm">
+      {/* Their page, in their colour: the band across the top is the seller's own accent, so a
+            shopper can see at a glance whose shop they are in. */}
+      <section
+        style={{ background: brand.canvas, borderTop: `4px solid ${brand.accent}` }}
+        className="border-b border-line-warm"
+      >
         <div className="mx-auto max-w-[1240px] px-4 py-10">
           <nav className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
             <Link href="/" className="transition-colors hover:text-ember">
@@ -55,7 +60,10 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
               <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className="font-display text-[22px] font-semibold leading-tight text-ink sm:text-[28px]">{store.name}</h1>
                 {store.verified ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-[2px] border border-pine/40 bg-pine/10 px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em] text-pine">
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em]"
+                    style={{ borderColor: `${brand.accent}66`, background: `${brand.accent}1a`, color: brand.accent }}
+                  >
                     <Check width={10} height={10} /> Verified
                   </span>
                 ) : null}
@@ -73,6 +81,10 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                 </span>
                 <span>Trading since {dateLong(store.since)}</span>
               </div>
+              <p className="mt-3 max-w-[62ch] text-[12.5px] leading-relaxed text-ink-soft">
+                Their own website is on its way. Until it opens, this is their shop on Ferixas — one
+                cart and one checkout, with everything else in the marketplace.
+              </p>
             </div>
             <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
               <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">
