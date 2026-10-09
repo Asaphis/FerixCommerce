@@ -294,10 +294,11 @@ export default async function HomePage() {
                   categories={shown}
                   across={Number((section as { across?: number }).across) || 3}
                   rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
+                  size="large"
                 />
               ) : (
                 <div className={tileWidth(Number(section.across) || 2)}>
-                  {shown.map((category) => <CategoryTile key={category.slug} category={category} />)}
+                  {shown.map((category) => <CategoryTile key={category.slug} category={category} size="large" />)}
                 </div>
               )
             ) : null}

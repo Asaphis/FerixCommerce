@@ -125,7 +125,41 @@ export function ProductRail({ products, savedIds = [] }: { products: Product[]; 
   );
 }
 
-export function CategoryTile({ category }: { category: Category }) {
+export function CategoryTile({
+  category,
+  size = "default",
+}: {
+  category: Category;
+  /** "large" is the poster: artwork filling the tile, the name beneath it. */
+  size?: "default" | "large";
+}) {
+  if (size === "large") {
+    return (
+      <Link
+        href={`/browse?category=${category.slug}`}
+        className="group flex flex-col overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40"
+      >
+        <span className="block aspect-[4/3] w-full overflow-hidden">
+          <Plate
+            seed={category.slug}
+            accent="#e4572e"
+            src={assetUrl(category.image)}
+            alt={category.name}
+            className="h-full w-full"
+          />
+        </span>
+        <span className="block px-3 py-2.5">
+          <span className="block truncate font-display text-[13px] font-semibold text-ink group-hover:text-ember">
+            {category.name}
+          </span>
+          <span className="mt-0.5 block font-mono text-[9.4px] uppercase tracking-[0.12em] text-ink-soft">
+            {category.count} listed
+          </span>
+        </span>
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={`/browse?category=${category.slug}`}

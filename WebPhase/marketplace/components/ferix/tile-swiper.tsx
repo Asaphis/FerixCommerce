@@ -19,11 +19,13 @@ export function TileSwiper({
   categories,
   across = 3,
   rowsPerSet = 2,
+  size = "default",
   className,
 }: {
   categories: Category[];
   across?: number;
   rowsPerSet?: number;
+  size?: "default" | "large";
   className?: string;
 }) {
   const columns = Math.min(4, Math.max(1, Math.round(Number(across) || 3)));
@@ -62,7 +64,7 @@ export function TileSwiper({
     return (
       <div className={cn(grid, className)}>
         {categories.map((category) => (
-          <CategoryTile key={category.slug} category={category} />
+          <CategoryTile key={category.slug} category={category} size={size} />
         ))}
       </div>
     );
@@ -81,7 +83,7 @@ export function TileSwiper({
           <div key={index} className="w-full shrink-0 snap-start pr-3 last:pr-0">
             <div className={grid}>
               {set.map((category) => (
-                <CategoryTile key={category.slug} category={category} />
+                <CategoryTile key={category.slug} category={category} size={size} />
               ))}
             </div>
           </div>
