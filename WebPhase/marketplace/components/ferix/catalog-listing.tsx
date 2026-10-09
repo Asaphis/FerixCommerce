@@ -346,18 +346,27 @@ export async function CatalogListing({
                   return (
                     <Link
                       key={record.slug}
-                      href={`/browse?brand=${record.slug}`}
-                      className="flex shrink-0 items-center gap-2.5 rounded-[12px] border border-line-warm bg-white px-3 py-2.5 transition-colors hover:border-ember/40"
+                      href={`/brands/${record.slug}`}
+                      className="group flex shrink-0 flex-col items-center"
+                      style={{ width: "104px" }}
                     >
+                      {/* The same badge the homepage draws: the mark in a circle, the name under
+                          it. One brand should look like one brand wherever it appears. */}
                       {artwork ? (
                         /* eslint-disable-next-line @next/next/no-img-element */
-                        <img src={artwork} alt="" className="h-8 w-8 rounded-[8px] object-cover" />
+                        <img
+                          src={artwork}
+                          alt={record.name}
+                          className="h-[52px] w-[52px] rounded-full object-cover ring-1 ring-line-warm transition-transform duration-300 group-hover:scale-[1.05]"
+                        />
                       ) : (
-                        <span className="grid h-8 w-8 place-items-center rounded-[8px] bg-bone-soft font-display text-[12px] font-bold text-ink-soft">
+                        <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-bone-soft font-display text-[16px] font-bold text-ink-soft ring-1 ring-line-warm">
                           {record.name.slice(0, 1)}
                         </span>
                       )}
-                      <span className="text-[12.5px] font-semibold text-ink">{record.name}</span>
+                      <span className="mt-2 block w-full truncate text-center text-[12px] font-semibold text-ink group-hover:text-ember">
+                        {record.name}
+                      </span>
                     </Link>
                   );
                 })}
