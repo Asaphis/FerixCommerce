@@ -400,11 +400,10 @@ def products(search: Optional[str] = None,
     with SessionLocal() as db:
         # Only what has been approved belongs in the shop. A seller's listing sits in this table
         # while it is being reviewed, and a draft was reaching the public catalogue and its counts.
+        # STRICT FILTER: Only approved products appear in public catalogs
         catalogue = decorate(db, [
             row for row in product_rows(db)
-            if str(row.get("status") or "active").lower() not in ("draft", "rejected")
-            and str(row.get("reviewStatus") or "").lower()
-            not in ("in_review", "pending", "changes_requested", "rejected")
+            if str(row.get("status") or "").lower() == "approved"
         ])
         items = list(catalogue)
         q = (search or "").lower()
@@ -506,7 +505,9 @@ def product(slug: str):
 def home():
     """The marketplace homepage. Everything here is CMS-managed."""
     with SessionLocal() as db:
-        items = product_rows(db)
+        # STRICT FILTER: Only approved products appear on homepage
+        all_items = product_rows(db)
+        items = [p for p in all_items if str(p.get("status") or "").lower() == "approved"]
         decorated = decorate(db, items)
         cats = category_rows(db)
         cols = collection_rows(db)
@@ -1315,28 +1316,3 @@ def unfollow_seller(merchant_id: str, session: Optional[str] = Header(None, alia
 
 # ── Public Catalog: strictly approved only ─────────────────────────────────
 
-@app.get("/catalog/home")
-def catalog_home():
-    with SessionLocal() as db:
-        all_prods = product_rows(db)
-        approved = [p for p in all_prods if p.get("status") == "approved" or p.get("reviewStatus") == "approved"]
-        return {
-            "banners": banner_rows(db), "categories": category_rows(db),
-            "brands": brand_rows(db), "collections": collection_rows(db),
-            "products": decorate(db, approved),
-        }
-
-
-@app.get("/catalog/products")
-def catalog_products_public(search: Optional[str] = None, category: Optional[str] = None, merchant_id: Optional[str] = None):
-    with SessionLocal() as db:
-        all_prods = product_rows(db)
-        filtered = [p for p in all_prods if p.get("status") == "approved" or p.get("reviewStatus") == "approved"]
-        if search:
-            q = search.lower()
-            filtered = [p for p in filtered if q in p.get("title", "").lower() or q in p.get("sku", "").lower()]
-        if category and category != "all":
-            filtered = [p for p in filtered if p.get("category") == category]
-        if merchant_id:
-            filtered = [p for p in filtered if p.get("merchantId") == merchant_id]
-        return {"products": decorate(db, filtered), "total": len(filtered)}

@@ -804,8 +804,15 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         if find_product(db, slug):
             slug = f"{slug}-{new_id('x', 4)}"
         owner_id = payload.get("merchantId") or "ferixas-official"
+        is_platform = (owner_id == "ferixas-official")
         owner = find_merchant(db, owner_id) or {"id": owner_id, "name": "Ferixas Official", "slug": "ferixas-official"}
         price = float(payload.get("price") or 0)
+        
+        # If admin creates for a seller, it's origin=seller and auto-approved.
+        # If for platform, origin=platform and uses provided status (default draft).
+        origin = "platform" if is_platform else "seller"
+        default_status = "draft" if is_platform else "approved"
+        
         product = {
             "id": new_id("prd"), "slug": slug, "title": title,
             "merchantId": owner["id"], "merchantName": owner["name"], "merchantSlug": owner["slug"],
@@ -819,13 +826,13 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "sku": payload.get("sku") or f"FX-{new_id('', 5).upper()}",
             "stock": int(payload.get("stock") or 0), "lowStockAt": 8,
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
-            "variants": payload.get("variants") or [], "status": payload.get("status") or "draft",
+            "variants": payload.get("variants") or [], "status": payload.get("status") or default_status,
             "channels": {"store": bool(payload.get("store", True)), "marketplace": bool(payload.get("marketplace", True))},
             "featured": bool(payload.get("featured")),
             "createdAt": iso(now()), "updatedAt": iso(now()), "sold30d": 0, "views30d": 0,
             "seoTitle": payload.get("seoTitle") or title,
             "seoDescription": payload.get("seoDescription") or (payload.get("description") or "")[:155],
-            "origin": "platform",
+            "origin": origin,
         }
         put_row(db, "product", slug, product)
         audit(db, "admin", staff.email, "catalog.create", slug, title)
