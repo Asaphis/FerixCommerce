@@ -883,11 +883,13 @@ def account(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         rows = [o.data for o in orders]
         spent = round(sum(o.get("total", 0) for o in rows), 2)
         reviews = user_reviews(db, user.id)
+        # Return the list of seller slugs this user is following
+        followed = (user.settings or {}).get("followed_sellers", [])
         return {
             "user": public_user(user), "orders": rows[:5],
             "activeOrders": sum(o.get("fulfillment") not in {"delivered", "cancelled"} for o in rows),
             "wishlist": wishlist, "addresses": [a.data for a in addresses],
-            "reviews": reviews, "follows": [],
+            "reviews": reviews, "follows": followed,
             "stats": {"orderCount": len(rows), "spent": spent,
                       "averageOrder": round(spent / len(rows), 2) if rows else 0,
                       "wishlistCount": len(wishlist), "addressCount": len(addresses),
@@ -1354,36 +1356,6 @@ def public_seller_profile(merchant_id: str):
             },
             "products": approved_products,
         }
-
-
-@app.post("/sellers/{merchant_id}/follow")
-def follow_seller(merchant_id: str, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
-    with SessionLocal() as db:
-        user = require_user(db, session)
-        merchant_row = db.get(Catalog, f"merchant:{merchant_id}")
-        if not merchant_row:
-            raise HTTPException(404, "Seller not found")
-        merchant_row.follower_count = (merchant_row.follower_count or 0) + 1
-        d = merchant_row.data or {}
-        d["follower_count"] = merchant_row.follower_count
-        merchant_row.data = d
-        db.commit()
-        return {"ok": True, "follower_count": merchant_row.follower_count}
-
-
-@app.post("/sellers/{merchant_id}/unfollow")
-def unfollow_seller(merchant_id: str, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
-    with SessionLocal() as db:
-        user = require_user(db, session)
-        merchant_row = db.get(Catalog, f"merchant:{merchant_id}")
-        if not merchant_row:
-            raise HTTPException(404, "Seller not found")
-        merchant_row.follower_count = max(0, (merchant_row.follower_count or 0) - 1)
-        d = merchant_row.data or {}
-        d["follower_count"] = merchant_row.follower_count
-        merchant_row.data = d
-        db.commit()
-        return {"ok": True, "follower_count": merchant_row.follower_count}
 
 
 # ── Public Catalog: strictly approved only ─────────────────────────────────

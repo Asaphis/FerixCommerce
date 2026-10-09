@@ -973,6 +973,89 @@ def reject_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         return {"product": updated, "message": "Product rejected"}
 
 
+# ── Review Queue API (consumed by WebPhase/admin) ─────────────────────────────
+
+@router.get("/review/queue")
+def review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Get the admin review queue for all pending seller submissions."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.approve")
+        from core import pending_products
+        pending = pending_products(db)
+        return {
+            "items": [{
+                "id": p["id"], "slug": p["slug"], "title": p["title"],
+                "merchantId": p.get("merchantId", ""),
+                "merchantName": p.get("merchantName", ""),
+                "price": p.get("price", 0), "stock": p.get("stock", 0),
+                "category": p.get("category", ""), "sku": p.get("sku", ""),
+                "image": (p.get("images") or [placeholder(p["slug"])])[0],
+                "channels": p.get("channels") or {},
+                "shipping_amount": p.get("shipping_amount"),
+                "estimated_delivery_days": p.get("estimated_delivery_days"),
+                "package_weight": p.get("package_weight"),
+                "package_dimensions": p.get("package_dimensions"),
+                "shipping_origin": p.get("shipping_origin"),
+                "section_tags": p.get("section_tags", []),
+                "status": p.get("status", "pending_review"),
+                "createdAt": p.get("createdAt", ""),
+                "reviewStatus": "pending",
+                "reviewNote": None,
+            } for p in pending],
+            "counts": {
+                "pending_review": sum(p.get("status") == "pending_review" for p in pending),
+                "all": len(pending),
+            },
+        }
+
+
+@router.post("/review/decision")
+def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
+    """Approve, ask for changes, or reject a pending product."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.approve")
+        product_id = str(payload.get("id") or "")
+        decision = str(payload.get("decision") or "").strip()
+        note = str(payload.get("note") or "").strip()
+        placement = payload.get("placement")
+        
+        if not product_id:
+            raise HTTPException(400, "Which product?")
+        if decision not in ("approve", "changes", "reject"):
+            raise HTTPException(400, "Unrecognised decision")
+        
+        target = find_product(db, product_id)
+        if not target:
+            raise HTTPException(404, "Product not found")
+        if target.get("status") != "pending_review":
+            raise HTTPException(409, "Product is no longer pending review")
+        
+        updated = dict(target)
+        if decision == "approve":
+            updated["status"] = "approved"
+            if placement:
+                updated["section_tags"] = updated.get("section_tags", []) or []
+                if placement not in updated["section_tags"]:
+                    updated["section_tags"].append(placement)
+        elif decision == "changes":
+            updated["reviewStatus"] = "changes_requested"
+            updated["reviewNote"] = note
+            # stays pending_review so it stays out of the shop
+        else:
+            updated["status"] = "rejected"
+            updated["rejectionReason"] = note or "Admin rejected"
+            updated["reviewStatus"] = "rejected"
+        
+        updated["updatedAt"] = iso(now())
+        put_row(db, "product", target["slug"], updated)
+        audit(db, "admin", staff.email, f"product.{decision}", target["slug"], note or f"Decision: {decision}")
+        db.commit()
+        
+        return {"product": updated}
+
+
 # ── Categories ─────────────────────────────────────────────────────────────
 
 @router.get("/catalog/categories")
@@ -1237,7 +1320,10 @@ def cms_save_document(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         if payload.title is not None:
             doc.title = payload.title
         if payload.data is not None:
-            doc.data = payload.data
+            # CRITICAL FIX: Merge new data with existing data instead of replacing
+            # This prevents wiping out other sections when updating one section
+            existing_data = doc.data or {}
+            doc.data = {**existing_data, **payload.data}
         if payload.status is not None:
             doc.status = payload.status
         doc.updated_at = now()

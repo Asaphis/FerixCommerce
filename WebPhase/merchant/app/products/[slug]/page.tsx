@@ -53,6 +53,35 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <ProductDeleteForm id={product.id} />
       </header>
 
+      {product.status === "rejected" && product.rejection_reason ? (
+        <Panel>
+          <div className="border-l-2 border-rose bg-rose/5 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-rose">Product Rejected</p>
+                <p className="mt-2 text-[13px] text-chalk">{product.rejection_reason}</p>
+                <p className="mt-2 font-mono text-[10.5px] text-chalk-dim">
+                  Edit this product and resubmit to send it back for review.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Panel>
+      ) : product.status === "pending_review" ? (
+        <Panel>
+          <div className="border-l-2 border-amber bg-amber/5 p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-amber">Pending Admin Review</p>
+                <p className="mt-2 text-[13px] text-chalk">
+                  Your product is being reviewed by our team. It will appear on the marketplace once approved.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Panel>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile label="Price" value={money(product.price)} sub={product.compareAt ? `was ${money(product.compareAt)}` : "no discount"} />
         <StatTile

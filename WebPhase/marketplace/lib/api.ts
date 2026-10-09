@@ -552,6 +552,16 @@ export const getWishlist = (creds: Creds) => call<{ wishlist: Product[] }>("GET"
 export const toggleWishlist = (productId: string, creds: Creds) =>
   call<{ saved: boolean; wishlist: Product[] }>("POST", "account/wishlist/toggle", { body: { productId }, creds });
 
+/** Follow / unfollow a seller. Only signed-in shoppers can follow. */
+export const followSeller = (slug: string, creds: Creds) =>
+  call<{ following: boolean; follower_count: number }>("POST", `sellers/${slug}/follow`, { creds });
+
+export const unfollowSeller = (slug: string, creds: Creds) =>
+  call<{ following: boolean; follower_count: number }>("DELETE", `sellers/${slug}/follow`, { creds });
+
+export const checkFollowing = (slug: string, creds: Creds) =>
+  call<{ following: boolean }>("GET", `sellers/${slug}/following`, { creds });
+
 export const getMyReviews = (creds: Creds) => call<{ reviews: Review[] }>("GET", "account/reviews", { creds });
 
 export const createReview = (body: { productId: string; rating: number; title: string; body: string }, creds: Creds) =>

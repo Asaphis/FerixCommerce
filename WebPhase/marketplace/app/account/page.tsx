@@ -200,6 +200,69 @@ export default async function AccountPage() {
         ))}
       </section>
 
+      {/* ── followed stores ─────────────────────────────────────────── */}
+      <section className="mt-7">
+        <div className="flex items-end justify-between gap-3">
+          <h2 className="font-display text-[17px] font-semibold text-ink sm:text-[19px]">
+            Stores you follow
+          </h2>
+          <Link
+            href="/account/following"
+            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
+          >
+            View all {account.follows.length} <ArrowRight width={13} height={13} />
+          </Link>
+        </div>
+
+        {account.follows.length ? (
+          <div className="mt-3 grid grid-cols-2 gap-2.5 rounded-[3px] border border-line-warm bg-white p-3 sm:grid-cols-3 lg:gap-3 lg:p-4">
+            {account.follows.slice(0, 3).map((slug) => (
+              <Link
+                key={slug}
+                href={`/store/${slug}`}
+                className="flex items-center gap-2.5 rounded-[2px] p-2 hover:bg-bone-soft transition-colors"
+              >
+                <span
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink font-display text-[12px] font-bold text-lime"
+                >
+                  {slug.slice(0, 1).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-[12.5px] font-medium text-ink">
+                    {slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+                  </p>
+                  <p className="truncate font-mono text-[9px] text-ink-soft">Followed seller</p>
+                </div>
+              </Link>
+            ))}
+            {account.follows.length > 3 ? (
+              <Link
+                href="/account/following"
+                className="flex items-center justify-center gap-1.5 rounded-[2px] p-2 text-[12px] font-mono text-ink-soft hover:bg-bone-soft hover:text-ink"
+              >
+                See all {account.follows.length}
+              </Link>
+            ) : null}
+          </div>
+        ) : (
+          <div className="mt-3 rounded-[3px] border border-dashed border-line-warm bg-white p-6 text-center sm:p-8">
+            <Store width={20} height={20} className="mx-auto text-ink-soft" />
+            <p className="mt-2.5 font-display text-[14px] font-semibold text-ink">
+              You are not following any stores yet
+            </p>
+            <p className="mx-auto mt-1.5 max-w-[44ch] text-[13px] leading-relaxed text-ink-soft">
+              Follow sellers you love and see their newest products here.
+            </p>
+            <Link
+              href="/stores"
+              className="mt-4 inline-flex items-center gap-2 rounded-[2px] bg-ink px-4 py-2 text-[12.5px] font-medium text-bone transition-colors hover:bg-ember"
+            >
+              Find stores to follow <ArrowRight width={13} height={13} />
+            </Link>
+          </div>
+        )}
+      </section>
+
       {/* ── recent orders ──────────────────────────────────────────── */}
       <section className="mt-7">
         <div className="flex items-end justify-between gap-3">

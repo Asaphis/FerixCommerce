@@ -180,6 +180,29 @@ export async function toggleWishlistAction(formData: FormData): Promise<void> {
   refreshAll();
 }
 
+/** Follow or unfollow a seller. Only signed-in users can follow; guests are
+ * redirected to sign in and land back on the store page they came from. */
+export async function toggleFollowAction(formData: FormData): Promise<void> {
+  const slug = String(formData.get("slug") ?? "");
+  const follow = String(formData.get("follow") ?? "") === "true";
+  if (!slug) return;
+  const creds = await readCredentials();
+  if (!creds.session) redirect(`/login?return=${encodeURIComponent(`/store/${slug}`)}`);
+  try {
+    if (follow) {
+      await api.followSeller(slug, creds);
+    } else {
+      await api.unfollowSeller(slug, creds);
+    }
+  } catch (error) {
+    const msg = error instanceof api.ApiError ? error.message : "We could not update your following.";
+    redirect(`/store/${slug}?error=${encodeURIComponent(msg)}`);
+  }
+  revalidatePath(`/store/${slug}`, "page");
+  revalidatePath("/", "layout");
+  revalidatePath("/account/following", "page");
+}
+
 export async function reorderAction(formData: FormData): Promise<void> {
   const orderId = String(formData.get("orderId") ?? "");
   if (!orderId) return;
