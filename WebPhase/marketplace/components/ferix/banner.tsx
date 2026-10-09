@@ -225,8 +225,13 @@ function Scrim({ overlay, accent }: { overlay: Banner["overlay"]; accent: string
 function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
   const overlay = slide.overlay;
   const light = overlay.tone !== "dark";
-  const showText = overlay.enabled && overlay.showText;
-  const showButtons = overlay.enabled && overlay.showButtons;
+  // Two ways to say it, because the switch on a banner and the overlay a banner carries were
+  // written in different places: a banner's own showText is the operator's choice from the
+  // console, and the overlay's is what the record has always held. An explicit off on the
+  // banner wins, so switching the words off actually switches them off; anything else falls
+  // through to the overlay, so nothing that exists today changes behaviour.
+  const showText = slide.showText === false ? false : overlay.enabled && overlay.showText;
+  const showButtons = slide.showButtons === false ? false : overlay.enabled && overlay.showButtons;
 
   const horizontal = overlay.align === "center" ? "items-center text-center" : overlay.align === "right" ? "items-end text-right" : "items-start text-left";
   const vertical = overlay.vertical === "top" ? "items-start pt-10" : overlay.vertical === "bottom" ? "items-end pb-16" : "items-center";
