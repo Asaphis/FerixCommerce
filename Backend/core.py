@@ -331,6 +331,25 @@ class Catalog(Base):
     slug: Mapped[str] = mapped_column(String(180), index=True)
     data: Mapped[dict] = mapped_column(JSON)
 
+    # Approval workflow & isolation
+    status: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, default="pending_review")
+    owner_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    rejection_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Shipping & Product Details
+    shipping_amount: Mapped[Optional[float]] = mapped_column(nullable=True)
+    estimated_delivery_days: Mapped[Optional[int]] = mapped_column(nullable=True)
+    package_weight: Mapped[Optional[float]] = mapped_column(nullable=True)
+    package_dimensions: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    shipping_origin: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+
+    # Seller Profile fields (if kind == "merchant")
+    follower_count: Mapped[int] = mapped_column(default=0)
+    total_reviews: Mapped[int] = mapped_column(default=0)
+    average_rating: Mapped[float] = mapped_column(default=0.0)
+    success_rate: Mapped[float] = mapped_column(default=0.0)
+    delivery_rate: Mapped[float] = mapped_column(default=0.0)
+
 
 class Address(Base):
     __tablename__ = "addresses"
@@ -1318,6 +1337,19 @@ def migrate() -> None:
     statements = [
         f"ALTER TABLE staff_sessions ADD COLUMN last_seen_at {stamp}",
         f"ALTER TABLE sessions ADD COLUMN last_seen_at {stamp}",
+        "ALTER TABLE catalog_records ADD COLUMN status VARCHAR(30) DEFAULT 'pending_review'",
+        "ALTER TABLE catalog_records ADD COLUMN owner_type VARCHAR(20)",
+        "ALTER TABLE catalog_records ADD COLUMN rejection_reason TEXT",
+        "ALTER TABLE catalog_records ADD COLUMN shipping_amount FLOAT",
+        "ALTER TABLE catalog_records ADD COLUMN estimated_delivery_days INT",
+        "ALTER TABLE catalog_records ADD COLUMN package_weight FLOAT",
+        "ALTER TABLE catalog_records ADD COLUMN package_dimensions VARCHAR(100)",
+        "ALTER TABLE catalog_records ADD COLUMN shipping_origin VARCHAR(200)",
+        "ALTER TABLE catalog_records ADD COLUMN follower_count INT DEFAULT 0",
+        "ALTER TABLE catalog_records ADD COLUMN total_reviews INT DEFAULT 0",
+        "ALTER TABLE catalog_records ADD COLUMN average_rating FLOAT DEFAULT 0.0",
+        "ALTER TABLE catalog_records ADD COLUMN success_rate FLOAT DEFAULT 0.0",
+        "ALTER TABLE catalog_records ADD COLUMN delivery_rate FLOAT DEFAULT 0.0",
     ]
     for statement in statements:
         try:

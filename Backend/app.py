@@ -1231,3 +1231,94 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
             "page": {"id": document.id, "title": document.title, "documentType": document.document_type},
             "sections": sections,
         }
+
+# ── Public Seller Profile & Follow System ──────────────────────────────────
+
+@app.get("/sellers/{merchant_id}")
+def public_seller_profile(merchant_id: str):
+    """Public Seller Profile: ONLY approved products for that merchant."""
+    with SessionLocal() as db:
+        merchant = find_merchant(db, merchant_id)
+        if not merchant:
+            raise HTTPException(404, "Seller not found")
+        all_prods = product_rows(db)
+        approved_products = [
+            p for p in all_prods
+            if p.get("merchantId") == merchant_id
+            and (p.get("status") == "approved" or p.get("reviewStatus") == "approved")
+        ]
+        return {
+            "merchant": {
+                "id": merchant.get("id"), "slug": merchant.get("slug"),
+                "name": merchant.get("name"), "about": merchant.get("about", ""),
+                "location": merchant.get("location", ""), "phone": merchant.get("phone", ""),
+                "email": merchant.get("email", ""), "website": merchant.get("website", ""),
+                "payment_methods": merchant.get("payment_methods", []),
+                "follower_count": merchant.get("follower_count", 0),
+                "total_reviews": merchant.get("total_reviews", 0),
+                "average_rating": merchant.get("average_rating", 0.0),
+                "success_rate": merchant.get("success_rate", 95.0),
+                "delivery_rate": merchant.get("delivery_rate", 98.0),
+                "verified": merchant.get("verified", False),
+            },
+            "products": approved_products,
+        }
+
+
+@app.post("/sellers/{merchant_id}/follow")
+def follow_seller(merchant_id: str, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    with SessionLocal() as db:
+        user = require_user(db, session)
+        merchant_row = db.get(Catalog, f"merchant:{merchant_id}")
+        if not merchant_row:
+            raise HTTPException(404, "Seller not found")
+        merchant_row.follower_count = (merchant_row.follower_count or 0) + 1
+        d = merchant_row.data or {}
+        d["follower_count"] = merchant_row.follower_count
+        merchant_row.data = d
+        db.commit()
+        return {"ok": True, "follower_count": merchant_row.follower_count}
+
+
+@app.post("/sellers/{merchant_id}/unfollow")
+def unfollow_seller(merchant_id: str, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    with SessionLocal() as db:
+        user = require_user(db, session)
+        merchant_row = db.get(Catalog, f"merchant:{merchant_id}")
+        if not merchant_row:
+            raise HTTPException(404, "Seller not found")
+        merchant_row.follower_count = max(0, (merchant_row.follower_count or 0) - 1)
+        d = merchant_row.data or {}
+        d["follower_count"] = merchant_row.follower_count
+        merchant_row.data = d
+        db.commit()
+        return {"ok": True, "follower_count": merchant_row.follower_count}
+
+
+# ── Public Catalog: strictly approved only ─────────────────────────────────
+
+@app.get("/catalog/home")
+def catalog_home():
+    with SessionLocal() as db:
+        all_prods = product_rows(db)
+        approved = [p for p in all_prods if p.get("status") == "approved" or p.get("reviewStatus") == "approved"]
+        return {
+            "banners": banner_rows(db), "categories": category_rows(db),
+            "brands": brand_rows(db), "collections": collection_rows(db),
+            "products": decorate(db, approved),
+        }
+
+
+@app.get("/catalog/products")
+def catalog_products_public(search: Optional[str] = None, category: Optional[str] = None, merchant_id: Optional[str] = None):
+    with SessionLocal() as db:
+        all_prods = product_rows(db)
+        filtered = [p for p in all_prods if p.get("status") == "approved" or p.get("reviewStatus") == "approved"]
+        if search:
+            q = search.lower()
+            filtered = [p for p in filtered if q in p.get("title", "").lower() or q in p.get("sku", "").lower()]
+        if category and category != "all":
+            filtered = [p for p in filtered if p.get("category") == category]
+        if merchant_id:
+            filtered = [p for p in filtered if p.get("merchantId") == merchant_id]
+        return {"products": decorate(db, filtered), "total": len(filtered)}

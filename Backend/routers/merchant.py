@@ -62,6 +62,12 @@ class ProductIn(BaseModel):
     seoDescription: Optional[str] = None
     lowStockAt: Optional[int] = None
     slug: Optional[str] = None
+    shipping_amount: Optional[float] = None
+    estimated_delivery_days: Optional[int] = None
+    package_weight: Optional[float] = None
+    package_dimensions: Optional[str] = None
+    shipping_origin: Optional[str] = None
+    section_tags: Optional[list[str]] = None
 
 
 class StockIn(BaseModel):
@@ -494,12 +500,18 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "sku": payload.sku or f"{merchant['slug'][:3].upper()}-{new_id('', 5).upper()}",
             "stock": int(payload.stock or 0), "lowStockAt": payload.lowStockAt or 8,
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
-            "variants": payload.variants or [], "status": payload.status or "draft",
+            "variants": payload.variants or [], "status": "pending_review",
             "channels": {"store": bool(payload.store), "marketplace": bool(payload.marketplace)},
             "createdAt": iso(now()), "updatedAt": iso(now()), "sold30d": 0, "views30d": 0,
             "seoTitle": payload.seoTitle or payload.title,
             "seoDescription": payload.seoDescription or (payload.description or "")[:155],
             "origin": "merchant",
+            "shipping_amount": payload.shipping_amount,
+            "estimated_delivery_days": payload.estimated_delivery_days,
+            "package_weight": payload.package_weight,
+            "package_dimensions": payload.package_dimensions,
+            "shipping_origin": payload.shipping_origin,
+            "section_tags": payload.section_tags or [],
         }
         put_row(db, "product", slug, product)
         audit(db, "merchant", staff.email, "product.create", product["slug"], product["title"])
@@ -517,9 +529,16 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         if not target or target.get("merchantId") != merchant["id"]:
             raise HTTPException(404, "Product not found in your catalogue")
         updated = dict(target)
-        for field in ("title", "category", "description", "sku", "status", "compareAt",
+
+        if updated.get("status") == "approved" or updated.get("reviewStatus") == "approved":
+            updated["status"] = "pending_review"
+            updated["reviewStatus"] = "in_review"
+
+        for field in ("title", "category", "description", "sku", "compareAt",
                       "bullets", "tags", "collections", "images", "variants",
-                      "seoTitle", "seoDescription", "lowStockAt"):
+                      "seoTitle", "seoDescription", "lowStockAt", "shipping_amount",
+                      "estimated_delivery_days", "package_weight", "package_dimensions",
+                      "shipping_origin", "section_tags"):
             value = getattr(payload, field, None)
             if value is not None:
                 updated[field] = value
@@ -535,6 +554,9 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
                 channels["marketplace"] = payload.marketplace
             updated["channels"] = channels
         updated["updatedAt"] = iso(now())
+        updated["id"] = target.get("id")
+        updated["merchantId"] = merchant["id"]
+        updated["slug"] = target.get("slug")
         put_row(db, "product", target["slug"], updated)
         audit(db, "merchant", staff.email, "product.update", target["slug"], updated.get("title", ""))
         db.commit()
@@ -615,6 +637,9 @@ def adjust(session: Optional[str] = Header(None, alias="X-Ferix-Session"), paylo
         updated = dict(target)
         updated["stock"] = max(0, int(target.get("stock", 0)) + payload.delta)
         updated["updatedAt"] = iso(now())
+        updated["id"] = target.get("id")
+        updated["merchantId"] = merchant["id"]
+        updated["slug"] = target.get("slug")
         put_row(db, "product", target["slug"], updated)
         db.add(InventoryLog(id=new_id("inv"), product_id=target["id"], merchant_id=merchant["id"],
                              delta=payload.delta, stock_after=updated["stock"],

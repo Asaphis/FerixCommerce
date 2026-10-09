@@ -772,11 +772,11 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         # seller and are managed from their page, so the default is our own rows and
         # seeing everything takes asking for it explicitly.
         if owner == "seller":
-            filtered = [p for p in filtered if p.get("merchantId") != "ferixas-official"]
+            filtered = [p for p in filtered if p.get("merchantId") != "ferixas-official" and p.get("origin") != "platform"]
         elif owner == "all":
             pass
         else:
-            filtered = [p for p in filtered if p.get("merchantId") == "ferixas-official"]
+            filtered = [p for p in filtered if p.get("merchantId") == "ferixas-official" or p.get("origin") == "platform"]
         return {
             "products": [{"id": p["id"], "slug": p["slug"], "title": p["title"], "sku": p.get("sku", ""),
                           "price": p.get("price", 0), "compareAt": p.get("compareAt"), "stock": p.get("stock", 0),
@@ -1672,7 +1672,9 @@ class ReviewDecisionIn(BaseModel):
     id: str
     decision: str                      # approve | changes | reject
     note: Optional[str] = None
-    placement: Optional[str] = None    # homepage | deals | brand | store
+    rejection_reason: Optional[str] = None
+    placement: Optional[str] = None
+    section_tags: Optional[list[str]] = None
 
 
 def _review_state(product: dict) -> str:
@@ -1726,25 +1728,32 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
 
         if decision == "approve":
             product["reviewStatus"] = "approved"
-            product["status"] = "active"          # this is what puts it on sale
+            product["status"] = "approved"
             if payload.placement:
                 product["placement"] = payload.placement
+            if payload.section_tags is not None:
+                product["section_tags"] = payload.section_tags
         elif decision == "changes":
             product["reviewStatus"] = "changes_requested"
-            product["status"] = "draft"
+            product["status"] = "pending_review"
             product["reviewNote"] = payload.note or "Please review the listing and resubmit."
         else:
             product["reviewStatus"] = "rejected"
-            product["status"] = "archived"
-            product["reviewNote"] = payload.note or "This listing was not accepted."
+            product["status"] = "rejected"
+            product["rejection_reason"] = payload.rejection_reason or payload.note or "This listing was not accepted."
 
         product["reviewedBy"] = staff.email
         product["reviewedAt"] = now().isoformat()
-        put_row(db, "product", product["id"], product)
-        audit(db, "admin", staff.email, f"product.{decision}", product["id"], staff.role)
+        put_row(db, "product", product["slug"], product)
+        cat = db.get(Catalog, f"product:{product['slug']}")
+        if cat:
+            cat.status = product["status"]
+            cat.rejection_reason = product.get("rejection_reason")
+        audit(db, "admin", staff.email, f"product.{decision}", product["slug"], staff.role)
         db.commit()
         return {"product": {"id": product["id"], "reviewStatus": product["reviewStatus"],
                             "status": product["status"], "placement": product.get("placement"),
+                            "rejection_reason": product.get("rejection_reason"),
                             "reviewNote": product.get("reviewNote") or ""}}
 
 # ── Advertisements ─────────────────────────────────────────────────────────
