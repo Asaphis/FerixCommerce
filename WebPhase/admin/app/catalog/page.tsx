@@ -102,7 +102,7 @@ export default async function CatalogPage({
           </select>
           <select name="status" defaultValue={status ?? "all"} className={selectClass}>
             <option value="all">Every status</option>
-            <option value="active">Active</option>
+            <option value="approved">Approved</option>
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
           </select>

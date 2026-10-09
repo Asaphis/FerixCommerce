@@ -39,7 +39,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <Eyebrow>{titleCase(product.category)}</Eyebrow>
             <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{product.title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Pill tone={product.status === "active" ? "success" : product.status === "draft" ? "warn" : "neutral"}>
+              <Pill tone={product.status === "approved" ? "success" : product.status === "pending_review" ? "warn" : product.status === "rejected" ? "neutral" : "neutral"}>
                 {product.status}
               </Pill>
               {product.channels.store ? <Pill tone="lime">My store</Pill> : null}

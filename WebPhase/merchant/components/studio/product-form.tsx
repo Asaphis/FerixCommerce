@@ -98,7 +98,7 @@ export function ProductForm({
                 <Field title="Status">
                   <select name="status" value={draft.status} onChange={set("status")} className={selectClass}>
                     <option value="draft">Draft — not selling yet</option>
-                    <option value="active">Published — on sale</option>
+                    <option value="approved">Published — on sale</option>
                     <option value="archived">Archived — retired</option>
                   </select>
                 </Field>
@@ -158,7 +158,7 @@ export function ProductForm({
 
         <aside className="grid gap-4 xl:sticky xl:top-4">
           <Panel>
-            <PanelHead title="Preview" action={<Pill tone={draft.status === "active" ? "success" : "amber"}>{draft.status === "active" ? "On sale" : draft.status}</Pill>} />
+            <PanelHead title="Preview" action={<Pill tone={draft.status === "approved" ? "success" : draft.status === "pending_review" ? "amber" : "neutral"}>{draft.status === "approved" ? "On sale" : draft.status}</Pill>} />
             <div className="overflow-hidden rounded-[14px] border border-hairline bg-panel">
               <div className="aspect-[4/3] w-full bg-panel-2">
                 {lead ? (

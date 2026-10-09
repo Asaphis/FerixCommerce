@@ -72,7 +72,7 @@ export default async function NewProductPage() {
             <Field title="Status">
               <select name="status" defaultValue="draft" className={selectClass}>
                 <option value="draft">Draft — not sellable</option>
-                <option value="active">Active — sellable</option>
+                <option value="approved">Approved — sellable</option>
                 <option value="archived">Archived</option>
               </select>
             </Field>

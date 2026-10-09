@@ -33,7 +33,7 @@ export default async function ProductsPage({
 
   const filters = [
     { id: "all", label: "All", count: data.counts.all },
-    { id: "active", label: "Published", count: data.counts.active },
+    { id: "approved", label: "Published", count: data.counts.approved || data.counts.active },
     { id: "draft", label: "Drafts", count: data.counts.draft },
     { id: "archived", label: "Archived", count: data.counts.archived },
   ];
@@ -171,7 +171,7 @@ export default async function ProductsPage({
                 </Td>
                 <Td>
                   <Pill
-                    tone={product.status === "active" ? "success" : product.status === "draft" ? "warn" : "neutral"}
+                    tone={product.status === "approved" ? "success" : product.status === "pending_review" ? "warn" : product.status === "rejected" ? "neutral" : "neutral"}
                   >
                     {product.status}
                   </Pill>

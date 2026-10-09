@@ -174,7 +174,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
                     </div>
                   </Td>
                   <Td className="ml-auto md:ml-0">
-                    <Pill tone={product.status === "active" ? "mint" : product.status === "draft" ? "amber" : "neutral"}>
+                    <Pill tone={product.status === "approved" ? "mint" : product.status === "pending_review" ? "amber" : "neutral"}>
                       {product.status}
                     </Pill>
                   </Td>

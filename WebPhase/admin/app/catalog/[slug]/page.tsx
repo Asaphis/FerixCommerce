@@ -103,7 +103,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
             <Field title="Status">
               <select name="status" defaultValue={product.status} className={selectClass}>
                 <option value="draft">Draft — not sellable</option>
-                <option value="active">Active — sellable</option>
+                <option value="approved">Approved — sellable</option>
                 <option value="archived">Archived</option>
               </select>
             </Field>
