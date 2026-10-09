@@ -41,7 +41,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
             {/* Their own artwork where they have one. A letter is the fallback, not the
                 default: a shop with a logo should show it. */}
             <span
-              className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden font-display text-[24px] font-extrabold"
+              className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden font-display text-[22px] font-extrabold sm:h-16 sm:w-16 sm:text-[24px]"
               style={{ background: brand.accent, color: brand.accentInk, borderRadius: brand.radius }}
             >
               {storeArtwork ? (
@@ -51,9 +51,9 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                 store.name.slice(0, 1)
               )}
             </span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 w-full sm:w-auto sm:flex-1">
               <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="font-display text-[28px] font-semibold leading-tight text-ink">{store.name}</h1>
+                <h1 className="font-display text-[22px] font-semibold leading-tight text-ink sm:text-[28px]">{store.name}</h1>
                 {store.verified ? (
                   <span className="inline-flex items-center gap-1.5 rounded-[2px] border border-pine/40 bg-pine/10 px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em] text-pine">
                     <Check width={10} height={10} /> Verified
@@ -74,7 +74,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                 <span>Trading since {dateLong(store.since)}</span>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-3">
+            <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
               <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">
                 {store.customDomain ?? store.domain}
               </p>
