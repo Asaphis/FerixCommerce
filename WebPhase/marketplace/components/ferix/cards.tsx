@@ -261,7 +261,7 @@ export function StoreCard({ store }: { store: Merchant }) {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <Stars value={store.rating} size={11} />
-            {store.rating.toFixed(1)}
+            {typeof store.rating === "number" ? store.rating.toFixed(1) : "—"}
           </span>
         </span>
 
@@ -282,7 +282,7 @@ export function RatingBars({ breakdown, total, rating }: { breakdown: Record<str
   return (
     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[auto_1fr]">
       <div className="sm:w-[130px]">
-        <p className="font-display text-[34px] font-extrabold leading-none text-ink">{rating.toFixed(1)}</p>
+        <p className="font-display text-[34px] font-extrabold leading-none text-ink">{typeof rating === "number" ? rating.toFixed(1) : "—"}</p>
         <Stars value={rating} size={13} className="mt-2" />
         <p className="mt-1.5 font-mono text-[10.5px] text-ink-soft">{compact(total)} reviews</p>
       </div>

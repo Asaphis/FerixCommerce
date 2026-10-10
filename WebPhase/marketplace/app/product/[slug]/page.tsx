@@ -121,7 +121,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Stars value={product.rating} />
             <span className="font-mono text-[11px] text-ink-soft">
-              {product.rating.toFixed(1)} · {compact(product.reviewCount)} reviews
+              {typeof product.rating === "number" ? product.rating.toFixed(1) : "—"} · {compact(product.reviewCount || 0)} reviews
             </span>
             <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">SKU {product.sku}</span>
           </div>

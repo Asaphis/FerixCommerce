@@ -70,7 +70,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                   <MapPin width={12} height={12} /> {store.location}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <Star width={12} height={12} /> {stats.rating.toFixed(1)} · {compact(stats.reviewCount)} reviews
+                  <Star width={12} height={12} /> {typeof stats.rating === "number" ? stats.rating.toFixed(1) : "—"} · {typeof stats.reviewCount === "number" ? compact(stats.reviewCount) : "0"} reviews
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Package width={12} height={12} /> {stats.products} products
