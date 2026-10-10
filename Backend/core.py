@@ -1047,7 +1047,7 @@ def store_card(db: Session, merchant: dict) -> dict:
     public_fields = (
         "id", "slug", "name", "tagline", "location", "rating", "reviewCount",
         "verified", "brand", "domain", "customDomain", "since", "logo", "image",
-        "about", "website", "payment_methods",
+        "about", "website", "payment_methods", "phone", "email",
     )
     return {
         **{key: merchant[key] for key in public_fields if key in merchant},
