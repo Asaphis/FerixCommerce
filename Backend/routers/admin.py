@@ -1448,6 +1448,10 @@ def cms_save_document(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         draft = _cms_draft(db, doc.id)
         base_data = (draft.data if draft is not None else doc.data) or {}
         draft_data = _merge_cms_data(base_data, payload.data or {})
+        for previous_draft in db.scalars(select(ContentVersion).where(
+            ContentVersion.document_id == doc.id, ContentVersion.status == "draft",
+        )).all():
+            previous_draft.status = "superseded"
         doc.updated_at = now()
         doc.updated_by = staff.email
         version = len(db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)).all()) + 1
@@ -1471,7 +1475,10 @@ def cms_publish(session: Optional[str] = Header(None, alias="X-Ferix-Session"), 
         draft = _cms_draft(db, doc.id)
         if draft is not None:
             doc.data = draft.data or {}
-            draft.status = "published"
+        for previous_draft in db.scalars(select(ContentVersion).where(
+            ContentVersion.document_id == doc.id, ContentVersion.status == "draft",
+        )).all():
+            previous_draft.status = "published" if previous_draft is draft else "superseded"
         doc.status = "published"
         doc.updated_at = now()
         doc.updated_by = staff.email
@@ -1495,8 +1502,9 @@ def cms_restore(session: Optional[str] = Header(None, alias="X-Ferix-Session"), 
         restored_data = version.data or {}
         doc.updated_at = now()
         doc.updated_by = staff.email
-        previous_draft = _cms_draft(db, doc.id)
-        if previous_draft is not None:
+        for previous_draft in db.scalars(select(ContentVersion).where(
+            ContentVersion.document_id == doc.id, ContentVersion.status == "draft",
+        )).all():
             previous_draft.status = "superseded"
         db.add(ContentVersion(id=new_id("ver"), document_id=doc.id,
                               version=len(db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)).all()) + 1,
@@ -1925,12 +1933,19 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
         existing = db.scalars(
             select(ContentVersion.id).where(ContentVersion.document_id == document.id)
         ).all()
+        for previous_draft in db.scalars(select(ContentVersion).where(
+            ContentVersion.document_id == document.id, ContentVersion.status == "draft",
+        )).all():
+            previous_draft.status = "superseded"
         db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
                               status="draft", data=data, note="Edited in the CMS",
                               created_by=staff.email))
         audit(db, "admin", staff.email, "cms.page.save", document.id, staff.role)
         db.commit()
-        return {"page": _page_summary(document)}
+        summary = _page_summary(document)
+        summary["sections"] = sorted(data.get("sections") or [], key=lambda section: section.get("position", 0))
+        summary["draftStatus"] = "draft"
+        return {"page": summary}
 
 
 @router.post("/cms/page/publish")
@@ -1954,7 +1969,10 @@ def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         )
         if draft is not None and (draft.data or {}).get("sections") is not None:
             document.data = draft.data
-            draft.status = "published"
+        for previous_draft in db.scalars(select(ContentVersion).where(
+            ContentVersion.document_id == document.id, ContentVersion.status == "draft",
+        )).all():
+            previous_draft.status = "published" if previous_draft is draft else "superseded"
         document.status = "published"
 
         existing = db.scalars(
