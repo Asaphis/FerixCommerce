@@ -385,6 +385,10 @@ export type ReviewItem = {
   status: string;
   rejection_reason?: string;
   section_tags?: string[];
+  description?: string; bullets?: string[]; tags?: string[];
+  variants?: { name: string; values: string[] }[]; images?: string[];
+  collections?: string[]; compareAt?: number | null;
+  seoTitle?: string; seoDescription?: string;
   category?: string; brandName?: string;
   shipping_amount?: number | null; estimated_delivery_days?: number | null;
   package_weight?: number | null; package_dimensions?: string; shipping_origin?: string;

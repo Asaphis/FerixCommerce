@@ -107,9 +107,8 @@ export default async function CatalogPage({
             <option value="archived">Archived</option>
           </select>
           <select name="owner" defaultValue={owner ?? "official"} className={selectClass}>
-            <option value="official">Our products</option>
-            <option value="all">Every owner, including sellers</option>
             <option value="official">Ferixas Official</option>
+            <option value="all">Every owner, including sellers</option>
             <option value="seller">Merchant sellers</option>
           </select>
         </FilterForm>

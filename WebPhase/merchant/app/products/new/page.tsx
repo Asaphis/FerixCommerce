@@ -14,7 +14,7 @@ export default async function NewProductPage() {
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">New product</h1>
       </header>
 
-      <ProductForm categories={options.categories.map((item) => item.slug)} brands={options.brands} sections={options.sections} storeName={merchant.name} />
+      <ProductForm categories={options.categories.map((item) => item.slug)} brands={options.brands} collections={options.collections} sections={options.sections} storeName={merchant.name} />
     </div>
   );
 }

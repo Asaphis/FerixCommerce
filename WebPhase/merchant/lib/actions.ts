@@ -32,6 +32,21 @@ async function uploadProductImages(session: string, formData: FormData, current:
   return uploaded;
 }
 
+function readVariants(formData: FormData): { name: string; values: string[] }[] {
+  return String(formData.get("variants") ?? "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const separator = line.indexOf(":");
+      if (separator < 1) return null;
+      const name = line.slice(0, separator).trim();
+      const values = line.slice(separator + 1).split(",").map((value) => value.trim()).filter(Boolean);
+      return name && values.length ? { name, values } : null;
+    })
+    .filter((variant): variant is { name: string; values: string[] } => variant !== null);
+}
+
 // ── Session ────────────────────────────────────────────────────────────
 
 export async function signInAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -69,14 +84,26 @@ export async function createProductAction(_prev: FormState, formData: FormData):
   const title = String(formData.get("title") ?? "").trim();
   const price = Number(formData.get("price") ?? 0);
   if (title.length < 2) return { error: "Give the product a title." };
-  if (price < 0) return { error: "Price cannot be negative." };
+  if (!Number.isFinite(price) || price <= 0) return { error: "Enter a price greater than zero." };
+  const files = formData.getAll("mediaFiles").filter((value): value is File => value instanceof File && value.size > 0);
+  if (!readImageUrls(formData).length && !files.length) return { error: "Add at least one product image." };
   const compareRaw = String(formData.get("compareAt") ?? "").trim();
   try {
+    const images = await uploadProductImages(session, formData, readImageUrls(formData));
     const created = await api.createProduct(session, {
       title,
       category: String(formData.get("category") ?? ""),
       brandId: String(formData.get("brandId") ?? "") || null,
       section_tags: formData.getAll("section_tags").map(String),
+      collections: formData.getAll("collections").map(String),
+      sku: String(formData.get("sku") ?? "").trim(),
+      lowStockAt: Number(formData.get("lowStockAt") ?? 8),
+      bullets: String(formData.get("bullets") ?? "").split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
+      tags: String(formData.get("tags") ?? "").split(/[\n,]/).map((value) => value.trim()).filter(Boolean),
+      variants: readVariants(formData),
+      seoTitle: String(formData.get("seoTitle") ?? "").trim(),
+      seoDescription: String(formData.get("seoDescription") ?? "").trim(),
+      images,
       shipping_amount: Number(formData.get("shipping_amount") ?? 0),
       estimated_delivery_days: Number(formData.get("estimated_delivery_days") ?? 0),
       package_weight: Number(formData.get("package_weight") ?? 0),
@@ -90,8 +117,6 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       marketplace: true,
       description: String(formData.get("description") ?? "").trim() || null,
     });
-    const images = await uploadProductImages(session, formData, readImageUrls(formData));
-    if (images.length) await api.updateProduct(session, { id: created.product.id, images });
     refresh("/products");
     redirect(`/products/${created.product.slug}`);
   } catch (error) {
@@ -108,6 +133,10 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
   if (!id) return { error: "Which product?" };
   const title = String(formData.get("title") ?? "").trim();
   if (title.length < 2) return { error: "Give the product a title." };
+  const price = Number(formData.get("price") ?? 0);
+  if (!Number.isFinite(price) || price <= 0) return { error: "Enter a price greater than zero." };
+  const files = formData.getAll("mediaFiles").filter((value): value is File => value instanceof File && value.size > 0);
+  if (!readImageUrls(formData).length && !files.length) return { error: "Add at least one product image." };
   const compareRaw = String(formData.get("compareAt") ?? "").trim();
   try {
     const images = await uploadProductImages(session, formData, readImageUrls(formData));
@@ -117,6 +146,14 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
       category: String(formData.get("category") ?? ""),
       brandId: String(formData.get("brandId") ?? ""),
       section_tags: formData.getAll("section_tags").map(String),
+      collections: formData.getAll("collections").map(String),
+      sku: String(formData.get("sku") ?? "").trim(),
+      lowStockAt: Number(formData.get("lowStockAt") ?? 8),
+      bullets: String(formData.get("bullets") ?? "").split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
+      tags: String(formData.get("tags") ?? "").split(/[\n,]/).map((value) => value.trim()).filter(Boolean),
+      variants: readVariants(formData),
+      seoTitle: String(formData.get("seoTitle") ?? "").trim(),
+      seoDescription: String(formData.get("seoDescription") ?? "").trim(),
       shipping_amount: Number(formData.get("shipping_amount") ?? 0),
       estimated_delivery_days: Number(formData.get("estimated_delivery_days") ?? 0),
       package_weight: Number(formData.get("package_weight") ?? 0),

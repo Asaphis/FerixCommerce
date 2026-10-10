@@ -994,7 +994,12 @@ def review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Session"))
                 "merchantId": p.get("merchantId", ""),
                 "merchantName": p.get("merchantName", ""),
                 "price": p.get("price", 0), "stock": p.get("stock", 0),
-                "category": p.get("category", ""), "sku": p.get("sku", ""),
+                "compareAt": p.get("compareAt"), "description": p.get("description", ""),
+                "bullets": p.get("bullets", []), "tags": p.get("tags", []),
+                "variants": p.get("variants", []), "images": p.get("images", []),
+                "collections": p.get("collections", []),
+                "seoTitle": p.get("seoTitle", ""), "seoDescription": p.get("seoDescription", ""),
+                "category": p.get("category", ""),
                 "brandName": p.get("brandName") or "",
                 "image": (p.get("images") or [placeholder(p["slug"])])[0],
                 "channels": p.get("channels") or {},
@@ -1883,102 +1888,6 @@ def auth_refresh(session: Optional[str] = Header(None, alias="X-Ferix-Session"))
             raise HTTPException(401, "That session has ended. Please sign in again.")
         return {"token": result["token"], "expiresAt": iso(result["expiresAt"]),
                 "role": result["staff"].role, "permissions": result["staff"].permissions}
-
-# ── The review queue and the decision ──────────────────────────────────────
-# What the platform does with a submission. Approving is what puts a product on
-# sale; requesting changes sends it back with a note the seller can act on.
-
-
-class ReviewDecisionIn(BaseModel):
-    id: str
-    decision: str                      # approve | changes | reject
-    note: Optional[str] = None
-    rejection_reason: Optional[str] = None
-    placement: Optional[str] = None
-    section_tags: Optional[list[str]] = None
-
-
-def _review_state(product: dict) -> str:
-    return str(product.get("reviewStatus") or "").lower()
-
-
-@router.get("/review/queue")
-def review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
-    """Everything waiting on the platform, oldest submission first."""
-    with SessionLocal() as db:
-        staff = require_staff(db, session, "admin")
-        require_permission(staff, "catalog.manage")
-        rows = all_products(db)
-        waiting = [p for p in rows if p.get("status") == "pending_review"
-                   or _review_state(p) in ("in_review", "changes_requested")]
-        waiting.sort(key=lambda p: p.get("submittedAt") or "")
-        return {
-            "items": [
-                {
-                    "id": p.get("id"), "title": p.get("title"), "slug": p.get("slug"),
-                    "merchantId": p.get("merchantId"), "merchantName": p.get("merchantName"),
-                    "price": p.get("price"), "stock": p.get("stock"),
-                    "reviewStatus": p.get("reviewStatus"), "reviewNote": p.get("reviewNote") or "",
-                    "submittedBy": p.get("submittedBy") or "", "submittedAt": p.get("submittedAt") or "",
-                }
-                for p in waiting
-            ],
-            "counts": {
-                "in_review": sum(1 for p in rows if _review_state(p) == "in_review"),
-                "changes_requested": sum(1 for p in rows if _review_state(p) == "changes_requested"),
-                "approved": sum(1 for p in rows if _review_state(p) == "approved"),
-                "rejected": sum(1 for p in rows if _review_state(p) == "rejected"),
-            },
-        }
-
-
-@router.post("/review/decision")
-def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
-                    payload: ReviewDecisionIn = Body(...)):
-    """Approve, ask for changes, or reject. Only an operator can do this."""
-    with SessionLocal() as db:
-        staff = require_staff(db, session, "admin")
-        require_permission(staff, "catalog.manage")
-
-        decision = (payload.decision or "").lower()
-        if decision not in ("approve", "changes", "reject"):
-            raise HTTPException(400, "Decision must be approve, changes or reject")
-
-        product = next((p for p in all_products(db) if p.get("id") == payload.id), None)
-        if not product:
-            raise HTTPException(404, "That product does not exist")
-
-        if decision == "approve":
-            product["reviewStatus"] = "approved"
-            product["status"] = "approved"
-            product.pop("rejection_reason", None)
-            product["reviewNote"] = ""
-            if payload.placement:
-                product["placement"] = payload.placement
-            if payload.section_tags is not None:
-                product["section_tags"] = payload.section_tags
-        elif decision == "changes":
-            product["reviewStatus"] = "changes_requested"
-            product["status"] = "pending_review"
-            product["reviewNote"] = payload.note or "Please review the listing and resubmit."
-        else:
-            product["reviewStatus"] = "rejected"
-            product["status"] = "rejected"
-            product["rejection_reason"] = payload.rejection_reason or payload.note or "This listing was not accepted."
-
-        product["reviewedBy"] = staff.email
-        product["reviewedAt"] = now().isoformat()
-        put_row(db, "product", product["slug"], product)
-        cat = db.get(Catalog, f"product:{product['slug']}")
-        if cat:
-            cat.status = product["status"]
-            cat.rejection_reason = product.get("rejection_reason")
-        audit(db, "admin", staff.email, f"product.{decision}", product["slug"], staff.role)
-        db.commit()
-        return {"product": {"id": product["id"], "reviewStatus": product["reviewStatus"],
-                            "status": product["status"], "placement": product.get("placement"),
-                            "rejection_reason": product.get("rejection_reason"),
-                            "reviewNote": product.get("reviewNote") or ""}}
 
 # ── Advertisements ─────────────────────────────────────────────────────────
 # A record type of its own, because an advert is not a banner: it has a sponsor,

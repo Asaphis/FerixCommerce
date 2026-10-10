@@ -150,6 +150,7 @@ def _own_products(db, merchant_id: str) -> list[dict]:
 def _product_options(db) -> dict:
     categories = [c for c in all_categories(db) if c.get("visible", True)]
     brands = [b for b in rows_of(db, "brand") if b.get("visible", True)]
+    collections = [c for c in all_collections(db) if c.get("visible", True)]
     sections = []
     for document in db.scalars(select(ContentDocument)).all():
         if document.owner_type != "platform":
@@ -161,7 +162,7 @@ def _product_options(db) -> dict:
                     "name": section.get("name") or section.get("title") or section.get("type"),
                     "documentTitle": document.title,
                 })
-    return {"categories": categories, "brands": brands, "sections": sections}
+    return {"categories": categories, "brands": brands, "collections": collections, "sections": sections}
 
 
 def _merchant_orders(db, merchant_id: str) -> list[Order]:

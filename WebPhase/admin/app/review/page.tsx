@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Check, RotateCcw, X } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listReviewQueue } from "@/lib/api";
+import { assetUrl, listReviewQueue } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass } from "@/components/ops/table";
@@ -48,6 +48,23 @@ export default async function ReviewPage() {
                   </Pill>
                 }
               />
+              <div className="grid gap-3 sm:grid-cols-[112px_minmax(0,1fr)]">
+                {item.images?.length ? (
+                  <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-1">
+                    {item.images.slice(0, 2).map((image, index) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={`${image}-${index}`} src={assetUrl(image)} alt={`${item.title} ${index + 1}`} className="aspect-square w-full rounded-[9px] border border-hairline bg-panel-2 object-cover" />
+                    ))}
+                  </div>
+                ) : null}
+                <div className="min-w-0 rounded-[10px] border border-hairline bg-panel-2 p-3 text-[12px]">
+                  <p className="whitespace-pre-wrap leading-relaxed text-chalk">{item.description || "No product description supplied."}</p>
+                  {item.bullets?.length ? <div className="mt-3"><p className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-chalk-dim">Highlights</p><ul className="mt-1 grid gap-1 text-chalk">{item.bullets.map((bullet, index) => <li key={`${bullet}-${index}`}>• {bullet}</li>)}</ul></div> : null}
+                  {item.variants?.length ? <p className="mt-3 text-chalk"><span className="text-chalk-dim">Options:</span> {item.variants.map((variant) => `${variant.name}: ${variant.values.join(", ")}`).join(" · ")}</p> : null}
+                  {item.tags?.length ? <p className="mt-2 text-chalk"><span className="text-chalk-dim">Tags:</span> {item.tags.join(", ")}</p> : null}
+                  {item.collections?.length ? <p className="mt-2 text-chalk"><span className="text-chalk-dim">Collections:</span> {item.collections.join(", ")}</p> : null}
+                </div>
+              </div>
               {item.reviewNote ? (
                 <p className="rounded-[10px] border border-hairline bg-panel-2 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-chalk-dim">
                   <span className="text-chalk">Your last note:</span> {item.reviewNote}

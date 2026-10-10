@@ -90,6 +90,9 @@ export type Product = {
   brandId?: string | null;
   brandName?: string | null;
   brandSlug?: string | null;
+  seoTitle?: string;
+  seoDescription?: string;
+  collections?: string[];
 };
 
 export type Summary = {
@@ -400,6 +403,7 @@ export const getProduct = (session: string | null, slug: string) =>
 export type ProductOptions = {
   categories: { id?: string; slug: string; name: string }[];
   brands: { id: string; slug: string; name: string }[];
+  collections: { id?: string; slug: string; name: string }[];
   sections: { value: string; name: string; documentTitle: string }[];
 };
 
@@ -425,6 +429,15 @@ export const createProduct = (
     package_dimensions?: string;
     shipping_origin?: string;
     description?: string | null;
+    sku?: string;
+    lowStockAt?: number;
+    bullets?: string[];
+    tags?: string[];
+    variants?: Variant[];
+    seoTitle?: string;
+    seoDescription?: string;
+    images?: string[];
+    collections?: string[];
   },
 ) => call<{ product: Product }>("POST", "merchant/product", { body: body as unknown as Record<string, unknown>, session });
 

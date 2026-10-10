@@ -95,7 +95,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <StatTile label="Product views" value="Coming soon" sub="Visitor tracking is not connected" accent="sand" />
       </div>
 
-      <ProductForm product={product} categories={options.categories.map((item) => item.slug)} brands={options.brands} sections={options.sections} />
+      <ProductForm product={product} categories={options.categories.map((item) => item.slug)} brands={options.brands} collections={options.collections} sections={options.sections} />
 
       <Panel>
         <PanelHead

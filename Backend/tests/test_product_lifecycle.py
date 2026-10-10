@@ -37,6 +37,7 @@ class ProductLifecycleTest(unittest.TestCase):
         categories = options.json()["categories"]
         self.assertTrue(categories)
         category = categories[0]["slug"]
+        collections = options.json()["collections"]
 
         created = self.client.post("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
             "title": "Lifecycle Contract Product",
@@ -48,6 +49,18 @@ class ProductLifecycleTest(unittest.TestCase):
             "marketplace": True,
             "shipping_amount": 3.25,
             "estimated_delivery_days": 3,
+            "package_weight": 1.2,
+            "package_dimensions": "20 x 15 x 10 cm",
+            "shipping_origin": "Test City",
+            "description": "A durable, lightweight lifecycle test product.",
+            "sku": "SELLER-TEST-001",
+            "lowStockAt": 2,
+            "bullets": ["Durable", "Lightweight"],
+            "tags": ["test", "lifecycle"],
+            "variants": [{"name": "Color", "values": ["Black", "Blue"]}],
+            "seoTitle": "Lifecycle Test Listing",
+            "seoDescription": "Listing field round-trip test.",
+            "collections": [collections[0]["slug"]] if collections else [],
         })
         self.assertEqual(created.status_code, 200, created.text)
         product = created.json()["product"]
@@ -55,12 +68,35 @@ class ProductLifecycleTest(unittest.TestCase):
         self.assertEqual(product["reviewStatus"], "in_review")
         self.assertFalse(product["channels"]["store"])
         self.assertTrue(product["channels"]["marketplace"])
+        self.assertEqual(product["sku"], "SELLER-TEST-001")
+        self.assertEqual(product["bullets"], ["Durable", "Lightweight"])
+        self.assertEqual(product["variants"][0]["values"], ["Black", "Blue"])
+        self.assertEqual(product["package_weight"], 1.2)
+        self.assertEqual(product["collections"], [collections[0]["slug"]] if collections else [])
         self.assertEqual(self.client.get("/catalog/product", params={"slug": product["slug"]}).status_code, 404)
+
+        merchant_products = self.client.get("/merchant/products", headers={"X-Ferix-Session": self.merchant})
+        self.assertEqual(merchant_products.status_code, 200, merchant_products.text)
+        owned_matches = [item for item in merchant_products.json()["items"] if item["id"] == product["id"]]
+        self.assertEqual(len(owned_matches), 1)
+        self.assertEqual(owned_matches[0]["status"], "pending_review")
+
+        platform_catalog = self.client.get("/admin/catalog/products", headers={"X-Ferix-Session": self.admin}, params={"owner": "official"})
+        seller_catalog = self.client.get("/admin/catalog/products", headers={"X-Ferix-Session": self.admin}, params={"owner": "seller"})
+        self.assertEqual(platform_catalog.status_code, 200, platform_catalog.text)
+        self.assertEqual(seller_catalog.status_code, 200, seller_catalog.text)
+        self.assertNotIn(product["id"], {item["id"] for item in platform_catalog.json()["products"]})
+        self.assertEqual(sum(item["id"] == product["id"] for item in seller_catalog.json()["products"]), 1)
 
         queue = self.client.get("/admin/review/queue", headers={"X-Ferix-Session": self.admin})
         self.assertEqual(queue.status_code, 200, queue.text)
         queued = next(item for item in queue.json()["items"] if item["id"] == product["id"])
         self.assertEqual(queued["shipping_amount"], 3.25)
+        self.assertEqual(queued["package_dimensions"], "20 x 15 x 10 cm")
+        self.assertEqual(queued["shipping_origin"], "Test City")
+        self.assertEqual(queued["description"], "A durable, lightweight lifecycle test product.")
+        self.assertEqual(queued["variants"][0]["name"], "Color")
+        self.assertEqual(queued["collections"], product["collections"])
         self.assertEqual(queued["reviewStatus"], "in_review")
 
         changes = self.client.post("/admin/review/decision", headers={"X-Ferix-Session": self.admin}, json={

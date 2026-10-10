@@ -26,12 +26,14 @@ export function ProductForm({
   product,
   categories,
   brands = [],
+  collections = [],
   sections = [],
   storeName,
 }: {
   product?: Product;
   categories: string[];
   brands?: { id: string; slug: string; name: string }[];
+  collections?: { slug: string; name: string }[];
   sections?: { value: string; name: string; documentTitle: string }[];
   storeName?: string;
 }) {
@@ -111,6 +113,10 @@ export function ProductForm({
               <Field title="Description">
                 <textarea name="description" value={draft.description} onChange={set("description")} className={textareaClass} placeholder="What it is, who it is for, what makes it worth buying" />
               </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field title="SKU (optional)"><input name="sku" defaultValue={product?.sku ?? ""} className={inputClass} placeholder="Generated if left blank" /></Field>
+                <Field title="Low-stock alert at"><input name="lowStockAt" type="number" min="0" defaultValue={product?.lowStockAt ?? 8} className={inputClass} /></Field>
+              </div>
             </div>
           </Panel>
 
@@ -153,6 +159,25 @@ export function ProductForm({
           </Panel>
 
           <Panel>
+            <PanelHead title="More product details" />
+            <div className="grid gap-4">
+              <Field title="Highlights — one per line">
+                <textarea name="bullets" defaultValue={(product?.bullets ?? []).join("\n")} className={textareaClass} rows={4} placeholder="Key feature or benefit" />
+              </Field>
+              <Field title="Search tags — separate with commas">
+                <input name="tags" defaultValue={(product?.tags ?? []).join(", ")} className={inputClass} placeholder="wireless, travel, lightweight" />
+              </Field>
+              <Field title="Options — one per line, for example Color: Black, White">
+                <textarea name="variants" defaultValue={(product?.variants ?? []).map((variant) => `${variant.name}: ${variant.values.join(", ")}`).join("\n")} className={textareaClass} rows={3} placeholder="Size: Small, Medium, Large" />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field title="Search title (optional)"><input name="seoTitle" defaultValue={product?.seoTitle ?? ""} className={inputClass} placeholder={draft.title || "Product title"} /></Field>
+                <Field title="Search description (optional)"><textarea name="seoDescription" defaultValue={product?.seoDescription ?? ""} className={textareaClass} rows={2} placeholder="A short description for search results" /></Field>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel>
             <PanelHead title="Where it sells" />
             <p className="text-[12.5px] leading-relaxed text-chalk-dim">For now, seller listings are submitted to the Ferixas marketplace only. Your product stays hidden until an admin approves it. A dedicated seller storefront is not enabled yet.</p>
             <input type="hidden" name="marketplace" value="on" />
@@ -167,8 +192,19 @@ export function ProductForm({
             </div>
           </Panel>
 
+          {collections.length ? (
+            <Panel>
+              <PanelHead title="Collections (optional)" />
+              <p className="mb-3 text-[12px] text-chalk-dim">Request one or more active marketplace collections for this listing.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {collections.map((collection) => <label key={collection.slug} className="flex items-center gap-2.5 rounded-[10px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="collections" value={collection.slug} defaultChecked={product?.collections?.includes(collection.slug)} className="accent-[#e4572e]" />{collection.name}</label>)}
+              </div>
+            </Panel>
+          ) : null}
+
           <Panel>
             <PanelHead title="Shipping and package details" />
+            <p className="mb-3 text-[12px] leading-relaxed text-chalk-dim">These details are saved with your submission for review. Buyer checkout currently uses Ferixas shipping options and rates; the product shipping amount below does not yet set the checkout charge.</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field title="Shipping amount"><input name="shipping_amount" type="number" min="0" step="0.01" defaultValue={product?.shipping_amount ?? 0} className={inputClass} /></Field>
               <Field title="Estimated delivery (days)"><input name="estimated_delivery_days" type="number" min="0" defaultValue={product?.estimated_delivery_days ?? 0} className={inputClass} /></Field>
