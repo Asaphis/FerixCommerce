@@ -13,14 +13,15 @@ The merchant workspace. One of three separate systems on the same platform backe
 Every screen and every action goes through `lib/api.ts`. Nothing in the UI holds its own
 data — there is no mock or placeholder data anywhere in this app.
 
-The backend is the shared FastAPI commerce API, the same one the customer system uses.
-It answers the same requests, at the same addresses, with the same shapes of data across
-local and production environments.
+The backend is the shared hosted commerce REST API, the same one the customer system uses.
+The frontend reads and writes through that API; it does not connect directly to PostgreSQL/Neon.
 
-To point at the production backend, change one value:
+The default API host is `https://api.ferixas.com`. For a deployment using another API host,
+set both public and server values:
 
 ```
-FERIX_API_BASE=http://127.0.0.1:8000
+FERIX_API_BASE=https://api.ferixas.com
+NEXT_PUBLIC_FERIX_API_BASE=https://api.ferixas.com
 ```
 
 ## Routes

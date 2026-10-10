@@ -1,8 +1,5 @@
-// Environment the console expects at runtime.
-//
-//   FERIX_API_BASE=http://127.0.0.1:8003
-//
-// FERIX_API_BASE is the only API endpoint setting; change it per environment.
+// The console defaults to the existing hosted REST API. These values are
+// optional overrides for deployments that use another API host.
 
-export const REQUIRED_ENV = ["FERIX_API_BASE"] as const;
-export const OPTIONAL_ENV = ["CODEWORDS_API_KEY"] as const;
+export const REQUIRED_ENV = [] as const;
+export const OPTIONAL_ENV = ["FERIX_API_BASE", "NEXT_PUBLIC_FERIX_API_BASE", "CODEWORDS_API_KEY"] as const;

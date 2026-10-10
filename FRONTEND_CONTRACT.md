@@ -1,15 +1,18 @@
 # Ferixas frontend integration contract
 
-The real backend runs at **`http://127.0.0.1:8003`** during development and is
-mounted at `/admin/*`, `/merchant/*` and the shopper routes. Every screen must
-read and write through `lib/api.ts`. Never hardcode data in a page.
+All three frontends use the existing hosted commerce REST API at
+**`https://api.ferixas.com`** by default. Every screen must read and write through
+its app's `lib/api.ts`. Never hardcode records in a page or connect a frontend
+directly to PostgreSQL/Neon.
 
 ## Environment
 
-Both consoles already read `FERIX_API_BASE`. Put this in `.env.local`:
+An alternate deployment can override the API host with both server and browser
+values:
 
 ```
-FERIX_API_BASE=http://127.0.0.1:8003
+FERIX_API_BASE=https://api.ferixas.com
+NEXT_PUBLIC_FERIX_API_BASE=https://api.ferixas.com
 ```
 
 ## Demo sign-ins

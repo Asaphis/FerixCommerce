@@ -1,18 +1,15 @@
 /**
  * The seller app's only door to the outside world.
  *
- * Every screen and every action goes through here. Point FERIX_API_BASE at
- * the live commerce backend and the whole app follows. Local development uses
- * the real FastAPI service on port 8003 rather than the retired mock runtime.
+ * Every screen and every action goes through here. The console uses the
+ * hosted commerce REST API and never connects directly to the database.
  */
 
 const KEY = process.env.CODEWORDS_API_KEY ?? "";
 
-// Falls back to the local FastAPI service so a fresh clone installs, builds and
-// renders without any environment setup. Point FERIX_API_BASE at the deployed
-// API in production.
-export const apiBase =
-  process.env.FERIX_API_BASE ?? process.env.NEXT_PUBLIC_FERIX_API_BASE ?? resolveApiBase();
+// All three frontends use the existing hosted REST API by default. Set both
+// server and public overrides only when this deployment uses another API host.
+export const apiBase = resolveApiBase();
 
 export function apiImageUrl(path: string | null | undefined): string | null {
   if (!path) return null;
@@ -619,35 +616,19 @@ export const createPromotion = (session: string | null, body: Record<string, unk
 /**
  * Resolve the API address.
  *
- * Order: an explicit variable, then the other names this project has used, then
- * a local address in development only.
- *
- * In production, a missing variable must NEVER throw. An earlier version did
- * exactly that, and one unset setting took every page of the live site down
- * behind an error screen. A misconfiguration should degrade — the app still
- * renders, requests resolve to this app's own origin, and a single line is
- * logged naming the variable to set.
+ * The seller console calls the existing hosted commerce REST API, never the
+ * database. An explicit per-deployment override wins; otherwise use the shared
+ * API host so server-rendered routes never target loopback.
  */
 function resolveApiBase(): string {
   const explicit =
     process.env.NEXT_PUBLIC_API_URL ??
+    process.env.NEXT_PUBLIC_FERIX_API_BASE ??
+    process.env.FERIX_API_BASE ??
     process.env.API_BASE_URL ??
     process.env.NEXT_PUBLIC_API_BASE ??
     process.env.API_URL;
 
-  if (explicit) return explicit.replace(/\/$/, "");
-
-  if (process.env.NODE_ENV === "production") {
-    const flag = globalThis as unknown as { __ferixApiBaseWarned?: boolean };
-    if (!flag.__ferixApiBaseWarned) {
-      flag.__ferixApiBaseWarned = true;
-      console.warn(
-        "[ferixas] FERIX_API_BASE is not set. Requests fall back to this app's own origin. " +
-          "Set FERIX_API_BASE in the environment to point at the commerce API.",
-      );
-    }
-    return "";
-  }
-
-  return "http://127.0.0.1:8003";
+  if (explicit?.trim()) return explicit.trim().replace(/\/+$/, "");
+  return "https://api.ferixas.com";
 }

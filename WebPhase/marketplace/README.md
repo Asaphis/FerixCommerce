@@ -14,17 +14,13 @@ same platform backend:
 Every screen and every action goes through `lib/api.ts`. Nothing in the UI holds
 its own data — there is no mock or placeholder data anywhere in this app.
 
-The repository now includes the production API in `../../Backend`. It uses Neon
-PostgreSQL for persistent state and keeps the same route contract as the
-original simulator. The sandbox preview may still point at the local mock while
-the Neon service is being deployed; the app cannot tell the difference once the
-route contract is online.
-
-To switch to the production backend, change one value:
+The app uses the existing hosted commerce REST API at `https://api.ferixas.com`.
+It never connects to PostgreSQL/Neon directly and does not run a mock or AI backend.
+To use another API hostname, set both values:
 
 ```
-FERIX_API_SERVICE=<service id>      # or
-FERIX_API_BASE=https://<host>
+FERIX_API_BASE=https://api.ferixas.com
+NEXT_PUBLIC_FERIX_API_BASE=https://api.ferixas.com
 ```
 
 No page or component needs to change.
