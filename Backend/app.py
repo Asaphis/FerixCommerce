@@ -26,7 +26,7 @@ from sqlalchemy import select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from core import (
-    Address, Cart, Catalog, ContentDocument, FlashSale, FlashSaleItem, FREE_SHIPPING_OVER,
+    Address, Cart, Catalog, ContentDocument, FlashSale, FlashSaleItem, FREE_SHIPPING_OVER, SectionPlacement,
     Order, Review, SESSION_DAYS, SessionLocal, SessionToken, TAX_RATE, User, Wishlist,
     backfill_catalogue_media,
     cart_for as _cart_for, cart_payload, categories as category_rows, brands as brand_rows,
@@ -532,6 +532,26 @@ def home():
         doc = db.get(ContentDocument, "doc_marketplace_home")
         content = (doc.data if doc and doc.status == "published" else None) or {"sections": []}
 
+        # CMS owns the published section structure. SectionPlacement owns the
+        # approved membership of curated/product sections. Seller requests never
+        # reach shoppers until Admin approval creates a placement row.
+        placement_products: dict[str, list[dict]] = {}
+        if doc and doc.status == "published":
+            product_by_id = {p.get("id"): p for p in items}
+            current_time = now()
+            placement_rows = db.scalars(
+                select(SectionPlacement).where(SectionPlacement.document_id == doc.id)
+            ).all()
+            for row in sorted(placement_rows, key=lambda item: (item.section_id, item.position, item.created_at)):
+                if row.starts_at and row.starts_at > current_time:
+                    continue
+                if row.ends_at and row.ends_at < current_time:
+                    continue
+                product = product_by_id.get(row.product_id)
+                if not product:
+                    continue
+                placement_products.setdefault(row.section_id, []).append(public_by_id[product["id"]])
+
         live_banners = [b for b in banner_rows(db) if b.get("active", True)]
         sale = next((s for s in db.scalars(select(FlashSale)).all() if sale_status(s) == "live"), None)
         flash_items = []
@@ -542,6 +562,7 @@ def home():
         return {
             "banners": sorted(live_banners, key=lambda b: b.get("position", 0)),
             "content": content,
+            "placements": placement_products,
             "categories": sorted([{**c, "count": sum(p.get("category") == c.get("slug") for p in items)}
                                   for c in cats if c.get("visible", True)], key=lambda c: c.get("position", 0)),
             "collections": [{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in items),

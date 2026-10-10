@@ -170,17 +170,30 @@ def _own_products(db, merchant_id: str) -> list[dict]:
 def _product_options(db) -> dict:
     categories = [c for c in all_categories(db) if c.get("visible", True)]
     brands = [b for b in rows_of(db, "brand") if b.get("visible", True)]
-    collections = [c for c in all_collections(db) if c.get("visible", True)]
+    # Collections remain readable for old records, but are no longer a separate
+    # seller-placement workflow. CMS product sections are the destination.
+    collections = []
     sections = []
+    product_section_types = {"product_carousel", "product_grid"}
     for document in db.scalars(select(ContentDocument)).all():
         if document.owner_type != "platform":
             continue
-        for section in (document.data or {}).get("sections", []):
-            if section.get("type") in ("product_carousel", "product_grid") and section.get("visible", True):
+        draft = db.scalar(
+            select(ContentVersion)
+            .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
+            .order_by(ContentVersion.version.desc())
+        )
+        source = (draft.data if draft is not None else document.data) or {}
+        for section in source.get("sections", []):
+            section_type = str(section.get("type") or "")
+            if section_type in product_section_types and section.get("visible", True):
                 sections.append({
                     "value": f"{document.id}__{section.get('id')}",
                     "name": section.get("name") or section.get("title") or section.get("type"),
                     "documentTitle": document.title,
+                    "sectionType": section_type,
+                    "source": section.get("source") or "curated",
+                    "status": "draft" if draft is not None else "published",
                 })
     return {"categories": categories, "brands": brands, "collections": collections, "sections": sections}
 
@@ -637,6 +650,8 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "package_dimensions": payload.package_dimensions,
             "shipping_origin": payload.shipping_origin,
             "section_tags": section_tags,
+            "placementRequests": section_tags,
+            "placementStatus": "pending_review" if section_tags else "none",
             "submittedAt": iso(now()), "submittedBy": staff.email,
         }
         put_row(db, "product", slug, product)
@@ -679,6 +694,9 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             value = getattr(payload, field, None)
             if value is not None:
                 updated[field] = value
+        if payload.section_tags is not None:
+            updated["placementRequests"] = list(dict.fromkeys(payload.section_tags))
+            updated["placementStatus"] = "pending_review" if payload.section_tags else "none"
         if payload.price is not None:
             updated["price"] = float(payload.price)
         if payload.stock is not None:

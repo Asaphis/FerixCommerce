@@ -1,18 +1,17 @@
 import Link from "next/link";
-import { ArrowRight, Boxes, Image as ImageIcon, Layers, Megaphone, Palette, Tag, UploadCloud } from "lucide-react";
+import { ArrowRight, Layers, Megaphone, UploadCloud } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
 import { listCmsPages, type CmsPage } from "@/lib/api";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader } from "@/components/ops/table";
 
-// The records - products, departments, brands, sellers - have pages of their own.
-// What is left here exists only to fill a place in a page: a banner, a promotion,
-// and the library both draw from.
+// CMS owns the visible page sections. Campaigns is the only supporting workflow
+// linked here because Flash Sale carries time, price, and quantity rules beyond
+// ordinary section layout. Media, banners, adverts, and collections are edited
+// through their owning section/catalogue workflows rather than presented as
+// competing content managers.
 const AREAS = [
-  { href: "/cms/banners", label: "Banners", detail: "Hero and promo creatives", Icon: Megaphone },
-  { href: "/cms/collections", label: "Collections", detail: "Curated product groupings", Icon: Palette },
-  { href: "/cms/adverts", label: "Adverts", detail: "Promotions inside the product list", Icon: Megaphone },
-  { href: "/cms/media", label: "Media", detail: "Images and video", Icon: ImageIcon },
+  { href: "/promotions", label: "Campaigns", detail: "Flash Sale timing, prices, and quantity rules", Icon: Megaphone },
   { href: "/cms/publishing", label: "Publishing", detail: "Version history and restore", Icon: UploadCloud },
 ];
 

@@ -20,11 +20,13 @@ from sqlalchemy import select
 from core import (
     ContentDocument,
     ContentVersion,
+    SectionPlacement,
     SessionLocal,
     ensure_seed,
     merchants,
     new_id,
     now,
+    products,
     put_row,
     rows_of,
 )
@@ -54,6 +56,9 @@ HOME = [
     {"id": "sec_trending", "type": "product_carousel", "name": "Trending",
      "title": "Trending this week", "subtitle": "What shoppers are buying",
      "source": "trending", "limit": 8},
+    {"id": "sec_featured", "type": "product_carousel", "name": "Featured products",
+     "title": "Featured products", "subtitle": "Selected by Ferixas",
+     "source": "selected", "limit": 8},
     {"id": "sec_stores", "type": "featured_stores", "name": "Stores worth following",
      "title": "Stores worth following", "subtitle": "Verified merchants across the platform",
      "limit": 3, "layout": "rows", "showFollow": True},
@@ -131,6 +136,40 @@ def ensure_page(db, doc_id, doc_type, title, sections):
     return f"added {len(missing)} missing section(s)", [s.get("id") for s in missing]
 
 
+def ensure_featured_placements(db) -> str:
+    """Seed a small curated section from existing approved products only."""
+    document = db.get(ContentDocument, "doc_marketplace_home")
+    if document is None:
+        return "featured placements skipped: homepage missing"
+    section = next((s for s in (document.data or {}).get("sections", []) if s.get("id") == "sec_featured"), None)
+    if section is None:
+        return "featured placements skipped: section missing"
+    existing = {
+        (row.product_id, row.section_id)
+        for row in db.scalars(select(SectionPlacement)).all()
+    }
+    candidates = [
+        product for product in products(db)
+        if product.get("status") == "approved"
+        and (product.get("channels") or {}).get("marketplace") is True
+    ]
+    candidates.sort(key=lambda product: (not bool(product.get("featured")), str(product.get("createdAt", ""))))
+    added = 0
+    for position, product in enumerate(candidates[:8], start=1):
+        key = (product.get("id"), "sec_featured")
+        if key in existing:
+            continue
+        db.add(SectionPlacement(
+            id=new_id("plc"), product_id=product["id"], product_slug=product["slug"],
+            document_id="doc_marketplace_home", section_id="sec_featured",
+            section_type="product_carousel", price=float(product.get("price") or 0),
+            compare_at=float(product.get("compareAt") or 0), quantity=int(product.get("stock") or 0),
+            position=position,
+        ))
+        added += 1
+    return f"featured placements: {added} added"
+
+
 def main() -> int:
     ensure_seed()          # tables and migrations, never a wipe
     created, completed = [], []
@@ -169,6 +208,8 @@ def main() -> int:
                 completed.append(f"{title}: {result} -> {', '.join(added)}")
             else:
                 created.append(f"{title}: {result}")
+
+        created.append(ensure_featured_placements(db))
 
         db.commit()
 

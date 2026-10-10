@@ -85,11 +85,19 @@ const CHOICES: Record<string, EditorField[]> = {
       { value: "flash", label: "Today's deals" },
       { value: "trending", label: "Trending" },
       { value: "new", label: "New arrivals" },
+      { value: "selected", label: "Products approved for this section" },
       { value: "related", label: "Related to a product" },
     ] },
     ...ARRANGEMENT,
   ],
-  product_grid: [...ARRANGEMENT],
+  product_grid: [
+    { key: "source", title: "Which products", options: [
+      { value: "selected", label: "Products approved for this section" },
+      { value: "trending", label: "Trending" },
+      { value: "new", label: "New arrivals" },
+    ] },
+    ...ARRANGEMENT,
+  ],
   category_grid: [
     { key: "across", title: "Across on a phone", options: [
       { value: "1", label: "One" },

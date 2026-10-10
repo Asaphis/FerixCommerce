@@ -130,6 +130,7 @@ export type Banner = {
 export type HomeFeed = {
   banners: Banner[];
   content: { sections?: { id: string; type: string; title?: string; subtitle?: string; ctaLabel?: string; ctaHref?: string; position: number; visible: boolean }[] };
+  placements: Record<string, Product[]>;
   flashSale: {
     id: string;
     name: string;

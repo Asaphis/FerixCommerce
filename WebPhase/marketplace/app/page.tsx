@@ -400,7 +400,8 @@ export default async function HomePage() {
       }
 
       /* ── A strip of products ────────────────────────────────────── */
-      case "product_carousel": {
+      case "product_carousel":
+      case "product_grid": {
         const source = section.source ?? "trending";
         if (source === "flash") {
           if (!flash.length) return null;
@@ -417,14 +418,17 @@ export default async function HomePage() {
             </section>
           );
         }
-        const products = source === "new" ? arrivals : trending;
+        const curated = home.placements?.[section.id] ?? [];
+        const products = source === "selected" || source === "curated"
+          ? curated
+          : source === "new" ? arrivals : trending;
         if (!products.length) return null;
         const shown = limit ? products.slice(0, limit) : products;
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
             <SectionHead
-              eyebrow={section.subtitle ?? (source === "new" ? "Fresh on Ferixas" : "Popular right now")}
-              title={section.title ?? (source === "new" ? "New arrivals" : "Trending picks")}
+              eyebrow={section.subtitle ?? (source === "selected" || source === "curated" ? "Selected for this section" : source === "new" ? "Fresh on Ferixas" : "Popular right now")}
+              title={section.title ?? (source === "selected" || source === "curated" ? "Featured products" : source === "new" ? "New arrivals" : "Trending picks")}
               action={
                 <Link href={`/browse?sort=${source === "new" ? "new" : "best"}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
                   See all <ArrowRight width={14} height={14} />

@@ -438,8 +438,8 @@ export const getProduct = (session: string | null, slug: string) =>
 export type ProductOptions = {
   categories: { id?: string; slug: string; name: string }[];
   brands: { id: string; slug: string; name: string }[];
-  collections: { id?: string; slug: string; name: string }[];
-  sections: { value: string; name: string; documentTitle: string }[];
+  collections?: { id?: string; slug: string; name: string }[];
+  sections: { value: string; name: string; documentTitle: string; sectionType?: string; source?: string; status?: string }[];
 };
 
 export const getProductOptions = (session: string | null) =>

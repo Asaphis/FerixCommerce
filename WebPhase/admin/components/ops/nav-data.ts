@@ -41,11 +41,11 @@ export const NAV_GROUPS: NavGroupData[] = [
       { href: "/cms", label: "CMS", icon: "palette", permission: "cms.manage" },
       { href: "/brands", label: "Brands", icon: "tag", permission: "catalog.manage" },
       { href: "/departments", label: "Departments", icon: "dashboard", permission: "catalog.manage" },
-      { href: "/cms/collections", label: "Collections", icon: "boxes", permission: "catalog.manage" },
-      { href: "/cms/adverts", label: "Adverts", icon: "megaphone", permission: "cms.manage" },
-      { href: "/cms/banners", label: "Banners", icon: "megaphone", permission: "cms.manage" },
-      { href: "/cms/media", label: "Media", icon: "dashboard", permission: "media.manage" },
-      { href: "/promotions", label: "Promotions", icon: "megaphone", permission: "promotions.manage" },
+      // Collections, banners, adverts, and media are supporting records owned by
+      // CMS/Catalogue workflows. They are intentionally not competing primary
+      // destinations. Flash Sale campaigns remain available as an operational
+      // workflow because they carry time, price, and quantity rules.
+      { href: "/promotions", label: "Campaigns", icon: "megaphone", permission: "promotions.manage" },
     ],
   },
   {

@@ -26,15 +26,13 @@ export function ProductForm({
   product,
   categories,
   brands = [],
-  collections = [],
   sections = [],
   storeName,
 }: {
   product?: Product;
   categories: string[];
   brands?: { id: string; slug: string; name: string }[];
-  collections?: { slug: string; name: string }[];
-  sections?: { value: string; name: string; documentTitle: string }[];
+  sections?: { value: string; name: string; documentTitle: string; sectionType?: string; source?: string; status?: string }[];
   storeName?: string;
 }) {
   const [state, action] = useActionState<FormState, FormData>(
@@ -184,23 +182,13 @@ export function ProductForm({
           </Panel>
 
           <Panel>
-            <PanelHead title="Product sections (optional)" />
-            <p className="mb-3 text-[12px] text-chalk-dim">Request placement in active CMS product sections. Your choices take effect after review.</p>
+            <PanelHead title="Request a CMS section placement (optional)" />
+            <p className="mb-3 text-[12px] text-chalk-dim">Choose where you would like this product to appear. This is a request only: Admin approves the product and the final CMS placement.</p>
             <div className="grid gap-2 sm:grid-cols-2">
-              {sections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[10px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="block text-[10.5px] text-chalk-dim">{section.documentTitle}</span></span></label>)}
-              {!sections.length ? <p className="text-[12px] text-chalk-dim">No active CMS product sections are available.</p> : null}
+              {sections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[10px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="block text-[10.5px] text-chalk-dim">{section.documentTitle} · {section.sectionType === "product_grid" ? "Product grid" : "Product carousel"}{section.source && section.source !== "curated" ? ` · ${section.source}` : ""}{section.status === "draft" ? " · draft" : ""}</span></span></label>)}
+              {!sections.length ? <p className="text-[12px] text-chalk-dim">No eligible product sections are available in CMS.</p> : null}
             </div>
           </Panel>
-
-          {collections.length ? (
-            <Panel>
-              <PanelHead title="Collections (optional)" />
-              <p className="mb-3 text-[12px] text-chalk-dim">Request one or more active marketplace collections for this listing.</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {collections.map((collection) => <label key={collection.slug} className="flex items-center gap-2.5 rounded-[10px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="collections" value={collection.slug} defaultChecked={product?.collections?.includes(collection.slug)} className="accent-[#e4572e]" />{collection.name}</label>)}
-              </div>
-            </Panel>
-          ) : null}
 
           <Panel>
             <PanelHead title="Shipping and package details" />

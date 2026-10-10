@@ -1290,6 +1290,9 @@ def pending_review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Se
                 "shipping_amount": p.get("shipping_amount"),
                 "estimated_delivery_days": p.get("estimated_delivery_days"),
                 "section_tags": p.get("section_tags", []),
+                "placementRequests": p.get("placementRequests") or p.get("section_tags", []),
+                "approvedSectionTags": p.get("approvedSectionTags", []),
+                "placementStatus": p.get("placementStatus", "none"),
                 "createdAt": p.get("createdAt", ""),
                 "updatedAt": p.get("updatedAt", ""),
             } for p in pending],
@@ -1351,6 +1354,9 @@ def review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Session"))
                 "reviewStatus": p.get("reviewStatus") or "in_review",
                 "reviewNote": p.get("reviewNote") or "",
                 "section_tags": p.get("section_tags") or [],
+                "placementRequests": p.get("placementRequests") or p.get("section_tags") or [],
+                "approvedSectionTags": p.get("approvedSectionTags") or [],
+                "placementStatus": p.get("placementStatus") or "none",
                 "submittedAt": p.get("submittedAt") or "",
                 "submittedBy": p.get("submittedBy") or "",
             } for p in pending],
@@ -1392,19 +1398,35 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
             updated["reviewNote"] = ""
             updated.pop("rejection_reason", None)
             updated.pop("rejectionReason", None)
-            if placement:
-                updated["section_tags"] = updated.get("section_tags", []) or []
-                if placement not in updated["section_tags"]:
-                    updated["section_tags"].append(placement)
+            requested_sections = list(dict.fromkeys(
+                (updated.get("placementRequests") or updated.get("section_tags") or [])
+                + ([placement] if placement else [])
+            ))
+            updated["placementRequests"] = requested_sections
+            updated["approvedSectionTags"] = []
+            updated["placementStatus"] = "approved" if requested_sections else "none"
             from core import ContentDocument, SectionPlacement
-            for request in updated.get("section_tags") or []:
+            # A seller can remove or change requested sections on resubmission.
+            # Replace the old approved placement set so the public resolver never
+            # keeps a stale section membership after the next approval.
+            for old_placement in db.scalars(
+                select(SectionPlacement).where(SectionPlacement.product_id == target["id"])
+            ).all():
+                db.delete(old_placement)
+            for request in requested_sections:
                 if "__" not in request:
                     continue
                 document_id, section_id = request.split("__", 1)
                 document = db.get(ContentDocument, document_id)
                 if not document or document.owner_type != "platform":
                     continue
-                section = next((item for item in (document.data or {}).get("sections", [])
+                draft = db.scalar(
+                    select(ContentVersion)
+                    .where(ContentVersion.document_id == document_id, ContentVersion.status == "draft")
+                    .order_by(ContentVersion.version.desc())
+                )
+                source = (draft.data if draft is not None else document.data) or {}
+                section = next((item for item in source.get("sections", [])
                                 if item.get("id") == section_id
                                 and item.get("type") in ("product_grid", "product_carousel")
                                 and item.get("visible", True)), None)
@@ -1422,15 +1444,18 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
                         price=float(target.get("price") or 0), compare_at=float(target.get("compareAt") or 0),
                         quantity=int(target.get("stock") or 0), position=1,
                     ))
+                updated["approvedSectionTags"].append(request)
         elif decision == "changes":
             updated["reviewStatus"] = "changes_requested"
             updated["reviewNote"] = note
+            updated["placementStatus"] = "changes_requested"
             # stays pending_review so it stays out of the shop
         else:
             updated["status"] = "rejected"
             updated["rejectionReason"] = note or "Admin rejected"
             updated["rejection_reason"] = note or "Admin rejected"
             updated["reviewStatus"] = "rejected"
+            updated["placementStatus"] = "rejected"
         
         updated["updatedAt"] = iso(now())
         put_row(db, "product", target["slug"], updated)
@@ -2401,8 +2426,14 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
 
         available = []
         for document in db.scalars(select(ContentDocument)).all():
-            for section in (document.data or {}).get("sections", []):
-                if section.get("type") not in ("product_carousel", "product_grid", "featured_stores"):
+            draft = db.scalar(
+                select(ContentVersion)
+                .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
+                .order_by(ContentVersion.version.desc())
+            )
+            source_data = (draft.data if draft is not None else document.data) or {}
+            for section in source_data.get("sections", []):
+                if section.get("type") not in ("product_carousel", "product_grid"):
                     continue
                 used = [p for p in placements if p["sectionId"] == section.get("id")]
                 available.append({
@@ -2412,6 +2443,7 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                     "sectionName": section.get("name") or section.get("type"),
                     "sectionType": section.get("type"),
                     "source": section.get("source"),
+                    "status": "draft" if draft is not None else "published",
                     "placements": len(used),
                 })
         return {"placements": placements, "available": available}
@@ -2421,12 +2453,22 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
 def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
                          payload: PlacementIn = Body(...)):
     """Put a product into a section, on that section's terms."""
-    from core import SectionPlacement
-
+    from core import ContentDocument, SectionPlacement
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "catalog.manage")
-
+        document = db.get(ContentDocument, payload.documentId)
+        if not document or document.owner_type != "platform":
+            raise HTTPException(404, "That CMS page does not exist")
+        draft = db.scalar(
+            select(ContentVersion)
+            .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
+            .order_by(ContentVersion.version.desc())
+        )
+        source_data = (draft.data if draft is not None else document.data) or {}
+        section = next((item for item in source_data.get("sections", []) if item.get("id") == payload.sectionId), None)
+        if not section or section.get("type") not in ("product_carousel", "product_grid"):
+            raise HTTPException(400, "Products can only be assigned to CMS product sections")
         product = next((p for p in all_products(db)
                         if p.get("id") == payload.productId or p.get("slug") == payload.slug), None)
         if not product:
