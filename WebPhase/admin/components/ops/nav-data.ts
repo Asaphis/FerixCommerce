@@ -37,7 +37,7 @@ export const NAV_GROUPS: NavGroupData[] = [
     label: "Marketplace",
     items: [
       { href: "/catalog", label: "Catalogue", icon: "boxes", permission: "catalog.manage" },
-      { href: "/review", label: "Review queue", icon: "shield", permission: "catalog.manage" },
+      { href: "/review", label: "Review queue", icon: "shield", permission: "merchant.approve" },
       { href: "/cms", label: "CMS", icon: "palette", permission: "cms.manage" },
       { href: "/brands", label: "Brands", icon: "tag", permission: "catalog.manage" },
       { href: "/departments", label: "Departments", icon: "dashboard", permission: "catalog.manage" },
@@ -60,7 +60,6 @@ export const NAV_GROUPS: NavGroupData[] = [
     label: "People",
     items: [
       { href: "/merchants", label: "Merchants", icon: "store", permission: "merchant.view" },
-      { href: "/profile-requests", label: "Seller profiles", icon: "shield", permission: "merchant.approve" },
       { href: "/users", label: "Customers", icon: "users", permission: "customer.view" },
     ],
   },

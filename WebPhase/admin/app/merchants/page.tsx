@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search, Store, Trash2 } from "lucide-react";
+import { Search, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listMerchants } from "@/lib/api";
 import { FilterForm, SubmitButton } from "@/components/ops/controls";
@@ -8,7 +8,7 @@ import { Empty, Meter, Panel, PanelHead, Pill, Readout } from "@/components/ops/
 import { CellLabel, DataTable, PageHeader, Row, Td, TdLead, TablePanel } from "@/components/ops/table";
 import { money, num, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { deleteMerchantAction, suspendMerchantAction } from "@/lib/actions";
+import { suspendMerchantAction } from "@/lib/actions";
 
 const FILTERS = [
   { id: "all", label: "Every merchant" },
@@ -30,10 +30,8 @@ export default async function MerchantsPage({
 }) {
   const { search, status, plan } = await searchParams;
   const { session, admin } = await requireAdmin();
-  // The endpoint deletes a seller only for an owner, so the button is offered only to an
-  // owner. The gate is the server's; this keeps the screen from promising something it
-  // would refuse.
-  const canDelete = (admin.permissions ?? []).includes("*");
+  const permissions = admin.permissions ?? [];
+  const canManageAccount = permissions.includes("*") || permissions.includes("merchant.approve");
   const data = await listMerchants(session, { search, status: status ?? "all", plan: plan ?? "all" });
   const maxGmv = Math.max(...data.merchants.map((m) => m.gmv), 1);
   const totalGmv = data.merchants.reduce((sum, m) => sum + m.gmv, 0);
@@ -44,7 +42,7 @@ export default async function MerchantsPage({
       <PageHeader
         eyebrow="Store management"
         title="Merchants"
-        description="Every store on the platform. Suspending a merchant stops them selling at once; commission and plan changes apply from the next order."
+        description="Seller records for the Ferixas marketplace. Open a seller to review performance, manage approved Ferixas listings, and control account access."
       />
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -116,7 +114,7 @@ export default async function MerchantsPage({
                   <div className="flex items-center gap-3">
                     <span
                       className="grid h-9 w-9 shrink-0 place-items-center rounded-[2px] font-display text-[14px] font-extrabold"
-                      style={{ background: merchant.brand.accent, color: merchant.brand.accentInk }}
+                      style={{ background: merchant.brand?.accent ?? "#e4572e", color: merchant.brand?.accentInk ?? "#ffffff" }}
                     >
                       {merchant.name.slice(0, 1)}
                     </span>
@@ -164,23 +162,11 @@ export default async function MerchantsPage({
                 </Td>
                 <Td>
                   <CellLabel>Actions</CellLabel>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <CmsActionForm action={suspendMerchantAction} className="inline-flex">
-                      <input type="hidden" name="id" value={merchant.id} />
-                      <input type="hidden" name="suspend" value={merchant.status === "suspended" ? "false" : "true"} />
-                      <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
-                        {merchant.status === "suspended" ? "Reactivate" : "Suspend"}
-                      </SubmitButton>
-                    </CmsActionForm>
-                    {canDelete ? (
-                      <CmsActionForm action={deleteMerchantAction} className="inline-flex">
-                        <input type="hidden" name="id" value={merchant.id} />
-                        <SubmitButton variant="danger" pendingLabel="…" className="px-2.5 py-1.5">
-                          <Trash2 width={12} height={12} />
-                        </SubmitButton>
-                      </CmsActionForm>
-                    ) : null}
-                  </div>
+                  {canManageAccount ? <CmsActionForm action={suspendMerchantAction} className="inline-flex">
+                    <input type="hidden" name="id" value={merchant.id} />
+                    <input type="hidden" name="suspend" value={merchant.status === "suspended" ? "false" : "true"} />
+                    <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">{merchant.status === "suspended" ? "Reactivate" : "Suspend"}</SubmitButton>
+                  </CmsActionForm> : <span className="text-[10.5px] text-chalk-dim">Open record</span>}
                 </Td>
               </Row>
             ))}

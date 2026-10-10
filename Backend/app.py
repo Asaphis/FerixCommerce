@@ -547,8 +547,14 @@ def home():
             "collections": [{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in items),
                              "products": safe_products([p for p in decorated if c["slug"] in (p.get("collections") or [])][:4])}
                             for c in cols if c.get("visible", True)],
-            "featured": safe_products(sorted(decorated, key=lambda p: -((public_by_id[p["id"]].get("rating") or 0)
-                                                                         * 100 + public_by_id[p["id"]].get("reviewCount", 0)))[:8]),
+            "featured": safe_products(sorted(
+                decorated,
+                key=lambda p: (
+                    not bool(p.get("featured")),
+                    -((public_by_id[p["id"]].get("rating") or 0) * 100
+                      + public_by_id[p["id"]].get("reviewCount", 0)),
+                ),
+            )[:8]),
             "trending": safe_products(sorted(decorated, key=lambda p: -paid_units.get(p["id"], 0))[:8]),
             "newArrivals": safe_products(sorted(decorated, key=lambda p: p.get("createdAt", ""), reverse=True)[:8]),
             "under100": safe_products([p for p in decorated if p["price"] < 100][:8]),

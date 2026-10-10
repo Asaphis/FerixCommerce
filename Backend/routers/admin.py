@@ -18,10 +18,10 @@ from core import (
     MediaAsset, MerchantProfileRequest, Order, Payout, ROLE_PERMISSIONS, SessionLocal, StaffSession, StaffUser, User,
     audit, collections as all_collections, categories as all_categories, find_merchant,
     find_product, iso, issue_staff_session, media_json, merchants as all_merchants,
-    is_platform_product, is_seller_marketplace_product, marketplace_product_available,
+    is_platform_product, is_seller_marketplace_product, is_seller_product, marketplace_product_available,
     merchant_follower_count, merchant_review_summary, new_id, now,
     permissions_for, placeholder, product_owner_kind, products as all_products,
-    put_row, drop_row, seller_products,
+    find_category, put_row, drop_row, seller_catalog_products, seller_products,
     remove_media_blob, require_permission, require_staff, rows_of, storage_info,
     sync_pending_media, upload_media_blob, validate_media_upload, verify_password,
 )
@@ -49,6 +49,7 @@ class LoginIn(BaseModel):
 
 
 class MerchantPatch(BaseModel):
+    model_config = {"extra": "forbid"}
     id: str
     status: Optional[str] = None
     plan: Optional[str] = None
@@ -91,6 +92,29 @@ class ProductPatch(BaseModel):
     images: Optional[list[str]] = None
     collections: Optional[list[str]] = None
     tags: Optional[list[str]] = None
+
+
+class SellerProductPatch(BaseModel):
+    model_config = {"extra": "forbid"}
+    merchantId: str
+    productId: str
+    title: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    compareAt: Optional[float] = None
+    stock: Optional[int] = None
+    sku: Optional[str] = None
+    images: Optional[list[str]] = None
+    collections: Optional[list[str]] = None
+    tags: Optional[list[str]] = None
+    featured: Optional[bool] = None
+    marketplace: Optional[bool] = None
+
+
+class SellerProductRef(BaseModel):
+    merchantId: str
+    productId: str
 
 
 class CategoryIn(BaseModel):
@@ -265,15 +289,48 @@ def _assert_unique_brand_slug(db, slug: str, brand_id: Optional[str] = None) -> 
 PAID_PAYMENT_STATES = {"paid", "captured", "succeeded", "settled"}
 
 
+def _order_data(value) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _order_items(data: dict) -> list[dict]:
+    data = _order_data(data)
+    raw = data.get("items")
+    return [item for item in raw if isinstance(item, dict)] if isinstance(raw, list) else []
+
+
+def _is_seller_marketplace_order(row: Order, merchant_id: str) -> bool:
+    data = _order_data(row.data)
+    return str(data.get("channel") or "").lower() == "marketplace" and any(
+        item.get("merchantId") == merchant_id for item in _order_items(data)
+    )
+
+
+def _seller_gmv(items: list[dict], merchant_id: str) -> float:
+    total = 0.0
+    for item in items:
+        if item.get("merchantId") != merchant_id:
+            continue
+        try:
+            total += max(0.0, float(item.get("price") or 0)) * max(0, int(item.get("qty") or 0))
+        except (TypeError, ValueError):
+            continue
+    return round(total, 2)
+
+
 def _order_row(db, row: Order) -> dict:
-    data = dict(row.data or {})
+    data = _order_data(row.data)
     user = db.get(User, row.user_id)
-    merchant = find_merchant(db, (data.get("items") or [{}])[0].get("merchantId", "")) or {}
+    items = _order_items(data)
+    first_item = items[0] if items else {}
+    merchant = find_merchant(db, str(first_item.get("merchantId") or "")) or {}
     payment = str(data.get("payment") or "pending").lower()
     channel = str(data.get("channel") or "unknown").lower()
+    address = data.get("address") if isinstance(data.get("address"), dict) else {}
+    fulfillment = str(data.get("fulfillment") or "processing").lower()
     commission = 0.0
     if payment in PAID_PAYMENT_STATES and channel == "marketplace":
-        for item in data.get("items", []):
+        for item in items:
             owner = find_merchant(db, str(item.get("merchantId") or "")) or {}
             try:
                 rate = float(owner.get("commissionPct", DEFAULT_SETTINGS["defaultCommissionPct"]))
@@ -287,14 +344,14 @@ def _order_row(db, row: Order) -> dict:
         "customer": {
             "id": row.user_id, "name": (user.name if user else "Guest"),
             "email": (user.email if user else ""), "phone": (user.phone if user else ""),
-            "location": (data.get("address") or {}).get("country", "—"),
+            "location": address.get("country", "—"),
         },
-        "items": data.get("items", []),
+        "items": items,
         "subtotal": data.get("subtotal", 0), "shipping": data.get("shipping", 0),
         "tax": data.get("tax", 0), "total": data.get("total", 0),
         "commission": round(commission, 2),
         "payment": payment,
-        "fulfillment": data.get("fulfillment", "processing"),
+        "fulfillment": fulfillment,
         "carrier": data.get("carrier"), "tracking": data.get("tracking"),
         "merchantId": merchant.get("id", ""), "merchantName": merchant.get("name", "Ferixas"),
         "merchantSlug": merchant.get("slug", ""),
@@ -311,7 +368,7 @@ def _order_product_units(orders: list[dict], days: Optional[int] = None, merchan
             continue
         if days is not None and _days_between(order.get("placedAt", "")) >= days:
             continue
-        for item in order.get("items", []):
+        for item in _order_items(order):
             if merchant_id and item.get("merchantId") != merchant_id:
                 continue
             product_id = str(item.get("productId", ""))
@@ -326,34 +383,47 @@ def _order_product_units(orders: list[dict], days: Optional[int] = None, merchan
 
 
 def _merchant_row(db, merchant: dict) -> dict:
-    owned = seller_products(db, merchant["id"])
+    owned = seller_catalog_products(db, merchant["id"])
     orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()
-              if str((r.data or {}).get("channel") or "").lower() == "marketplace"
-              and any(i.get("merchantId") == merchant["id"] for i in (r.data or {}).get("items", []))]
+              if _is_seller_marketplace_order(r, merchant["id"])]
     paid_marketplace = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
                         and o.get("channel") == "marketplace" and o.get("fulfillment") != "cancelled"]
-    seller_lines = [item for order in paid_marketplace for item in order.get("items", [])
+    seller_lines = [item for order in paid_marketplace for item in _order_items(order)
                     if item.get("merchantId") == merchant["id"]]
-    gmv = round(sum(float(i.get("price") or 0) * int(i.get("qty") or 0) for i in seller_lines), 2)
+    gmv = _seller_gmv(seller_lines, merchant["id"])
     try:
         rate = float(merchant.get("commissionPct", DEFAULT_SETTINGS["defaultCommissionPct"]))
     except (TypeError, ValueError):
         rate = DEFAULT_SETTINGS["defaultCommissionPct"]
     commission = round(gmv * rate / 100, 2)
     reviews = merchant_review_summary(db, merchant["id"])
+    raw_brand = merchant.get("brand")
+    brand_data = raw_brand if isinstance(raw_brand, dict) else {}
+    brand = {
+        "template": str(brand_data.get("template") or "FERIXAS"),
+        "canvas": str(brand_data.get("canvas") or "#fbf8f2"),
+        "surface": str(brand_data.get("surface") or "#ffffff"),
+        "ink": str(brand_data.get("ink") or "#17242e"),
+        "muted": str(brand_data.get("muted") or "#6c7882"),
+        "accent": str(brand_data.get("accent") or "#e4572e"),
+        "accentInk": str(brand_data.get("accentInk") or "#ffffff"),
+    }
     return {
         "id": merchant["id"], "slug": merchant["slug"], "name": merchant["name"],
         "tagline": merchant.get("tagline", ""), "location": merchant.get("location", ""),
         "rating": reviews["rating"], "reviewCount": reviews["reviewCount"],
         "followers": merchant_follower_count(db, merchant["id"]), "verified": merchant.get("verified", False),
-        "brand": merchant.get("brand", {}), "domain": merchant.get("domain", ""),
+        "brand": brand, "domain": merchant.get("domain", ""),
         "customDomain": merchant.get("customDomain"), "plan": merchant.get("plan", "Starter"),
         "since": merchant.get("since", ""), "status": merchant.get("status", "active"),
         "commissionPct": merchant.get("commissionPct", 10),
         "productCount": len(owned),
-        "marketplaceListings": sum(p.get("status") == "approved" and (p.get("channels") or {}).get("marketplace") is True for p in owned),
+        "marketplaceListings": sum(
+            p.get("status") == "approved" and isinstance(p.get("channels"), dict)
+            and p["channels"].get("marketplace") is True for p in owned
+        ),
         "gmv": gmv, "commission": commission, "orders": len(paid_marketplace),
-        "template": (merchant.get("brand") or {}).get("template"),
+        "template": brand["template"],
     }
 
 
@@ -530,13 +600,26 @@ def merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
             raise HTTPException(404, "Merchant not found")
         row = _merchant_row(db, found)
         orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()
-                  if str((r.data or {}).get("channel") or "").lower() == "marketplace"
-                  and any(i.get("merchantId") == found["id"] for i in (r.data or {}).get("items", []))]
-        owned = seller_products(db, found["id"])
+                  if _is_seller_marketplace_order(r, found["id"])]
+        paid_orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
+                       and o.get("fulfillment") != "cancelled"]
+        owned = seller_catalog_products(db, found["id"])
         sold30 = _order_product_units(orders, days=30, merchant_id=found["id"])
         statuses: dict[str, int] = {}
         for order in orders:
             statuses[order["fulfillment"]] = statuses.get(order["fulfillment"], 0) + 1
+        recent_paid = [o for o in paid_orders if _days_between(o["placedAt"]) < 30]
+        revenue30 = round(sum(_seller_gmv(_order_items(o), found["id"]) for o in recent_paid), 2)
+        try:
+            seller_rate = float(found.get("commissionPct", DEFAULT_SETTINGS["defaultCommissionPct"]))
+        except (TypeError, ValueError):
+            seller_rate = DEFAULT_SETTINGS["defaultCommissionPct"]
+        commission30 = round(revenue30 * seller_rate / 100, 2)
+        for order in orders:
+            seller_gross = _seller_gmv(_order_items(order), found["id"])
+            order["sellerGross"] = seller_gross
+            commissionable = order.get("payment") in PAID_PAYMENT_STATES and order.get("fulfillment") != "cancelled"
+            order["sellerCommission"] = round(seller_gross * seller_rate / 100, 2) if commissionable else 0.0
         return {
             "merchant": {**row,
                          "responseRate": found.get("responseRate") if found.get("responseRateVerified") else None,
@@ -548,25 +631,24 @@ def merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
                 "addressLine1", "addressLine2", "city", "region", "postalCode", "country", "website",
                 "showBusinessEmail", "showPhone",
             )},
-            "profileRequests": [{
-                "id": request.id, "profile": request.profile or {}, "status": request.status,
-                "note": request.note or "", "submittedBy": request.submitted_by,
-                "submittedAt": iso(request.submitted_at), "reviewedBy": request.reviewed_by,
-                "reviewedAt": iso(request.reviewed_at) if request.reviewed_at else None,
-            } for request in db.scalars(select(MerchantProfileRequest)
-                                        .where(MerchantProfileRequest.merchant_id == found["id"])
-                                        .order_by(MerchantProfileRequest.submitted_at.desc()).limit(10)).all()],
             "summary": {
                 "revenueTotal": row["gmv"],
-                "revenue30d": round(sum(o["total"] for o in orders if _days_between(o["placedAt"]) < 30), 2),
-                "ordersTotal": len(orders),
-                "commission30d": round(sum(o["commission"] for o in orders if _days_between(o["placedAt"]) < 30), 2),
-                "averageOrder": round(row["gmv"] / len(orders), 2) if orders else 0.0,
+                "revenue30d": revenue30,
+                "ordersTotal": len(paid_orders),
+                "commission30d": commission30,
+                "averageOrder": round(row["gmv"] / len(paid_orders), 2) if paid_orders else 0.0,
             },
             "statuses": statuses,
-            "catalog": [{"id": p["id"], "slug": p["slug"], "title": p["title"], "sku": p.get("sku", ""),
-                         "price": p.get("price", 0), "stock": p.get("stock", 0), "status": p.get("status", "active"),
-                         "category": p.get("category", ""), "channels": p.get("channels") or {},
+            "catalog": [{"id": p["id"], "slug": p["slug"], "title": p.get("title", "Untitled listing"),
+                         "sku": p.get("sku", ""), "price": p.get("price", 0),
+                         "compareAt": p.get("compareAt"), "stock": p.get("stock", 0),
+                         "status": p.get("status", "draft"), "description": p.get("description", ""),
+                         "category": p.get("category", ""), "channels": p.get("channels") if isinstance(p.get("channels"), dict) else {},
+                         "images": p.get("images") if isinstance(p.get("images"), list) else [],
+                         "collections": p.get("collections") if isinstance(p.get("collections"), list) else [],
+                         "tags": p.get("tags") if isinstance(p.get("tags"), list) else [],
+                         "featured": bool(p.get("featured")),
+                         "adminRemoved": isinstance(p.get("adminRemoval"), dict),
                          "sold30d": sold30.get(p["id"], 0)} for p in owned],
             "orders": orders[:12],
             "commissionEarned": row["commission"],
@@ -581,6 +663,10 @@ def update_merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session
         found = find_merchant(db, payload.id)
         if not found:
             raise HTTPException(404, "Merchant not found")
+        if payload.status is not None and payload.status not in {"active", "review", "suspended"}:
+            raise HTTPException(422, "Seller status must be active, review, or suspended")
+        if payload.commissionPct is not None and not 0 <= payload.commissionPct <= 100:
+            raise HTTPException(422, "Commission must be between 0 and 100 percent")
         updated = dict(found)
         for field in ("status", "plan", "commissionPct", "marketplaceEnabled", "verified"):
             value = getattr(payload, field)
@@ -590,6 +676,168 @@ def update_merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session
         audit(db, "admin", staff.email, "merchant.update", found["slug"], f"status={updated.get('status')}")
         db.commit()
         return {"merchant": _merchant_row(db, updated)}
+
+
+@router.patch("/merchant/product")
+def update_merchant_product(
+    session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+    payload: SellerProductPatch = Body(...),
+):
+    """Manage one seller-owned Ferixas listing; this route cannot edit platform inventory."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
+        merchant = find_merchant(db, payload.merchantId)
+        product = find_product(db, payload.productId)
+        if not merchant or not product or not is_seller_product(product, merchant["id"]):
+            raise HTTPException(404, "Seller listing not found")
+        if product.get("status") == "archived":
+            raise HTTPException(409, "Restore this archived listing before editing it")
+        if product.get("status") != "approved":
+            raise HTTPException(409, "Pending and unapproved listings must be handled in the Review queue")
+
+        updates = payload.model_dump(exclude={"merchantId", "productId"}, exclude_unset=True)
+        if not updates:
+            return {"product": product}
+        if "title" in updates:
+            title = str(updates["title"] or "").strip()
+            if not 2 <= len(title) <= 180:
+                raise HTTPException(422, "Product title must be between 2 and 180 characters")
+            updates["title"] = title
+        if "category" in updates:
+            category = str(updates["category"] or "").strip()
+            if not category or not find_category(db, category):
+                raise HTTPException(422, "Choose a category managed by Ferixas")
+            updates["category"] = category
+        if "description" in updates:
+            description = str(updates["description"] or "").strip()
+            if len(description) > 5000:
+                raise HTTPException(422, "Product description cannot exceed 5000 characters")
+            updates["description"] = description
+        for field in ("price", "compareAt"):
+            if field in updates and updates[field] is not None and updates[field] < 0:
+                raise HTTPException(422, f"{field} cannot be negative")
+        if "stock" in updates and (updates["stock"] is None or not 0 <= updates["stock"] <= 100_000_000):
+            raise HTTPException(422, "Stock must be between 0 and 100,000,000")
+        if "sku" in updates:
+            updates["sku"] = str(updates["sku"] or "").strip()[:120]
+        if "images" in updates:
+            images = updates["images"] or []
+            if len(images) > 20 or any(not isinstance(url, str) or len(url) > 2048
+                                       or not (url.startswith("/") or url.startswith("https://")
+                                               or url.startswith("http://")) for url in images):
+                raise HTTPException(422, "Use up to 20 relative or http(s) image URLs")
+            updates["images"] = images
+        for field in ("tags", "collections"):
+            if field in updates:
+                values = updates[field] or []
+                if len(values) > 60 or any(not isinstance(value, str) or len(value) > 120 for value in values):
+                    raise HTTPException(422, f"{field} must contain at most 60 values of 120 characters each")
+                updates[field] = list(dict.fromkeys(value.strip() for value in values if value.strip()))
+
+        channels = dict(product.get("channels")) if isinstance(product.get("channels"), dict) else {}
+        if "marketplace" in updates:
+            requested_marketplace = bool(updates.pop("marketplace"))
+            if requested_marketplace and product.get("status") != "approved":
+                raise HTTPException(409, "Only approved listings can be made visible in the marketplace")
+            channels["marketplace"] = requested_marketplace
+        if not channels.get("marketplace"):
+            updates["featured"] = False
+
+        updated = dict(product)
+        updated.update(updates)
+        updated["channels"] = channels
+        updated["updatedAt"] = iso(now())
+        put_row(db, "product", product["slug"], updated)
+        audit(db, "admin", staff.email, "merchant.product.update", product["slug"],
+              ",".join(sorted(updates.keys()) + (["marketplace"] if "marketplace" in payload.model_fields_set else [])))
+        db.commit()
+        return {"product": updated}
+
+
+@router.delete("/merchant/product")
+def remove_merchant_product(
+    session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+    payload: SellerProductRef = Body(...),
+):
+    """Remove an unreferenced listing; archive listings with history to preserve records."""
+    from core import Cart, Review, SectionPlacement, Wishlist
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
+        merchant = find_merchant(db, payload.merchantId)
+        product = find_product(db, payload.productId)
+        if not merchant or not product or not is_seller_product(product, merchant["id"]):
+            raise HTTPException(404, "Seller listing not found")
+        product_id = str(product["id"])
+        has_order = any(
+            item.get("productId") == product_id
+            for order in db.scalars(select(Order)).all()
+            for item in _order_items(order.data or {})
+        )
+        has_review = db.scalar(select(Review.id).where(Review.product_id == product_id).limit(1)) is not None
+        has_placement = db.scalar(select(SectionPlacement.id).where(SectionPlacement.product_id == product_id).limit(1)) is not None
+        has_sale = db.scalar(select(FlashSaleItem.id).where(FlashSaleItem.product_id == product_id).limit(1)) is not None
+        preserve_history = has_order or has_review or has_placement or has_sale
+
+        if preserve_history:
+            updated = dict(product)
+            current_channels = product.get("channels") if isinstance(product.get("channels"), dict) else {}
+            updated["adminRemoval"] = {
+                "status": product.get("status", "draft"),
+                "marketplace": bool(current_channels.get("marketplace")),
+                "featured": bool(product.get("featured")),
+                "removedAt": iso(now()),
+            }
+            updated["status"] = "archived"
+            updated["featured"] = False
+            updated["channels"] = {**current_channels, "marketplace": False}
+            updated["updatedAt"] = iso(now())
+            put_row(db, "product", product["slug"], updated)
+            audit(db, "admin", staff.email, "merchant.product.archive", product["slug"], "history retained")
+            db.commit()
+            return {"removed": product_id, "archived": True, "message": "Listing archived to preserve order or review history."}
+
+        for cart in db.scalars(select(Cart)).all():
+            lines = cart.lines if isinstance(cart.lines, list) else []
+            cart.lines = [line for line in lines if not isinstance(line, dict) or line.get("productId") != product_id]
+        for wishlist in db.scalars(select(Wishlist)).all():
+            ids = wishlist.product_ids if isinstance(wishlist.product_ids, list) else []
+            wishlist.product_ids = [value for value in ids if value != product_id]
+        drop_row(db, "product", product["slug"])
+        audit(db, "admin", staff.email, "merchant.product.delete", product["slug"], "no historical references")
+        db.commit()
+        return {"removed": product_id, "archived": False, "message": "Listing permanently removed; no order or review history existed."}
+
+
+@router.post("/merchant/product/restore")
+def restore_merchant_product(
+    session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+    payload: SellerProductRef = Body(...),
+):
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
+        merchant = find_merchant(db, payload.merchantId)
+        product = find_product(db, payload.productId)
+        if not merchant or not product or not is_seller_product(product, merchant["id"]):
+            raise HTTPException(404, "Seller listing not found")
+        removal = product.get("adminRemoval")
+        if product.get("status") != "archived" or not isinstance(removal, dict):
+            raise HTTPException(409, "This seller listing is not archived by Admin")
+        updated = dict(product)
+        archived_channels = product.get("channels") if isinstance(product.get("channels"), dict) else {}
+        updated["status"] = str(removal.get("status") or "pending_review")
+        updated["channels"] = {**archived_channels,
+                               "marketplace": bool(removal.get("marketplace"))}
+        updated["featured"] = bool(removal.get("featured")) and updated["channels"].get("marketplace") is True
+        updated.pop("adminRemoval", None)
+        updated["updatedAt"] = iso(now())
+        put_row(db, "product", product["slug"], updated)
+        audit(db, "admin", staff.email, "merchant.product.restore", product["slug"], "restored previous state")
+        db.commit()
+        return {"product": updated}
 
 
 @router.post("/merchant/profile-request/decision")
@@ -635,7 +883,7 @@ def decide_merchant_profile_request(
 
 @router.get("/merchant/profile-requests")
 def pending_merchant_profile_requests(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
-    """List only pending seller profile snapshots for the dedicated Admin queue."""
+    """List pending seller profile snapshots for the unified Admin Review queue."""
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "merchant.approve")

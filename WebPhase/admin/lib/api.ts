@@ -101,6 +101,8 @@ export type OrderRow = {
   tax: number;
   total: number;
   commission: number;
+  sellerGross?: number;
+  sellerCommission?: number;
   payment: string;
   fulfillment: "processing" | "shipped" | "delivered" | "cancelled";
   carrier: string | null;
@@ -124,10 +126,6 @@ export type MerchantDetail = {
     postalCode: string; country: string; website: string;
     showBusinessEmail: boolean; showPhone: boolean;
   };
-  profileRequests: {
-    id: string; profile: Record<string, string | boolean>; status: string; note: string;
-    submittedBy: string; submittedAt: string; reviewedBy: string; reviewedAt: string | null;
-  }[];
   summary: {
     revenueTotal: number;
     revenue30d: number;
@@ -142,14 +140,26 @@ export type MerchantDetail = {
     title: string;
     sku: string;
     price: number;
+    compareAt: number | null;
     stock: number;
     status: string;
+    description: string;
     category: string;
-    channels: { store: boolean; marketplace: boolean };
+    channels: { store?: boolean; marketplace?: boolean };
+    images: string[];
+    collections: string[];
+    tags: string[];
+    featured: boolean;
+    adminRemoved?: boolean;
     sold30d: number;
   }[];
   orders: OrderRow[];
   commissionEarned: number;
+};
+
+export type MerchantProfileRequest = {
+  id: string; profile: Record<string, string | boolean>; status: string; note: string;
+  submittedBy: string; submittedAt: string; reviewedBy: string; reviewedAt: string | null;
 };
 
 export type MerchantProfileQueueItem = {
@@ -157,7 +167,7 @@ export type MerchantProfileQueueItem = {
   merchantName: string;
   merchantSlug: string;
   currentProfile: MerchantDetail["profile"];
-  request: MerchantDetail["profileRequests"][number];
+  request: MerchantProfileRequest;
 };
 
 export type UserRow = {
@@ -378,6 +388,23 @@ export const getMerchant = (session: string | null, id: string) =>
 
 export const updateMerchant = (session: string | null, body: Record<string, unknown>) =>
   call<{ merchant: MerchantRow }>("PATCH", "admin/merchant", { body, session });
+
+export type SellerProductPatch = {
+  merchantId: string; productId: string; title?: string; category?: string;
+  description?: string; price?: number; compareAt?: number | null; stock?: number;
+  sku?: string; images?: string[]; collections?: string[]; tags?: string[];
+  featured?: boolean; marketplace?: boolean;
+};
+export const updateSellerProduct = (session: string | null, body: SellerProductPatch) =>
+  call<{ product: Record<string, unknown> }>("PATCH", "admin/merchant/product", { body, session });
+export const removeSellerProduct = (session: string | null, merchantId: string, productId: string) =>
+  call<{ removed: string; archived: boolean; message: string }>("DELETE", "admin/merchant/product", {
+    body: { merchantId, productId }, session,
+  });
+export const restoreSellerProduct = (session: string | null, merchantId: string, productId: string) =>
+  call<{ product: Record<string, unknown> }>("POST", "admin/merchant/product/restore", {
+    body: { merchantId, productId }, session,
+  });
 
 export const decideMerchantProfileRequest = (session: string | null, body: { id: string; decision: "approve" | "changes" | "reject"; note?: string }) =>
   call<{ request: { id: string; status: string; note: string } }>("POST", "admin/merchant/profile-request/decision", { body, session });

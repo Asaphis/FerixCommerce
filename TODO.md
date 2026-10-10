@@ -22,6 +22,9 @@
 
 ## Approved seller/admin governance follow-up
 - [ ] Admin’s default Products catalogue contains only canonically platform-owned Ferixas Official products; seller products are in a separate review or merchant-detail workflow, and no accidental combined owner view is offered.
+- [ ] The Admin Merchant record is a management page, not a review form: show the seller’s real performance, follower/review counts, approved profile read-only, and full seller-owned catalogue; gate commercial/account controls by their matching permissions.
+- [ ] Admin can edit approved seller listings, hide/show them on Ferixas, feature them on the homepage, and remove them. Pending submissions remain Review-only; referenced listings are archived/restorable so order/review history is preserved.
+- [ ] The unified Admin Review queue covers both seller product submissions and seller-profile proposals, supports seller filtering, and shows explicit API errors instead of presenting failed requests as empty queues.
 - [ ] Every admin generic product edit/delete path is owner-scoped; no generic status edit or legacy approval route can publish a seller item. Seller products remain private until a valid pending-review decision approves them, and missing marketplace-channel data fails closed.
 - [ ] Seller dashboard list/detail/edit/delete and new seller analytics remain scoped to the authenticated merchant ID; platform and other-seller products never appear there.
 - [ ] Ferixas public seller pages expose only approved marketplace-profile fields and that seller’s approved marketplace products. External seller website/domain/storefront CMS page content, private address, sign-in email, plan, commission, and payout details are not exposed or rendered as Ferixas storefront content.

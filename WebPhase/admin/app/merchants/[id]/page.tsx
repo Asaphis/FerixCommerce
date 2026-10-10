@@ -1,18 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, AlertTriangle, ExternalLink, MapPin, Percent, Store } from "lucide-react";
+import { ArrowLeft, AlertTriangle, ExternalLink, MapPin, Percent, Store, Trash2 } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { getMerchant, listReviewQueue, ApiError } from "@/lib/api";
+import { getMerchant, ApiError, type MerchantDetail } from "@/lib/api";
 import { MerchantForm } from "@/components/ops/merchant-form";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
-import { SubmitButton } from "@/components/ops/controls";
-import { Trash2 } from "lucide-react";
+import { Field, SubmitButton } from "@/components/ops/controls";
 import { deleteMerchantAction, restrictMerchantAction, suspendMerchantAction } from "@/lib/actions";
 import { Distribution, KeyValue } from "@/components/ops/marks";
-import { CellLabel, DataTable, Row, Td, TdLead, TablePanel } from "@/components/ops/table";
+import { CellLabel, DataTable, inputClass, Row, Td, TdLead, TablePanel } from "@/components/ops/table";
 import { compact, dateLong, money, num, relative, titleCase } from "@/lib/format";
-import { MerchantProfileReview } from "@/components/ops/merchant-profile-review";
+import { SellerProductControls } from "@/components/ops/seller-product-controls";
 
 function statusTone(status: string) {
   if (status === "active") return "mint" as const;
@@ -23,20 +22,28 @@ function statusTone(status: string) {
 export default async function MerchantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { session, admin } = await requireAdmin();
-  // The endpoint removes a seller only for an owner, so the control is offered only to an
-  // owner. The gate is the server's; this keeps the screen from promising a refusal.
-  const canDelete = (admin.permissions ?? []).includes("*");
-  let detail;
+  const permissions = admin.permissions ?? [];
+  const canDelete = permissions.includes("*");
+  const canManageAccount = canDelete || permissions.includes("merchant.approve");
+  const canManageProducts = canDelete || permissions.includes("catalog.manage");
+  let detail: MerchantDetail | null = null;
+  let loadError = "";
   try {
     detail = await getMerchant(session, id);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
-    throw error;
+    loadError = error instanceof ApiError ? error.message : "The seller record could not be loaded. Try again or return to the merchant list.";
   }
-  const { merchant, about, summary, statuses, catalog, orders, commissionEarned } = detail;
-  // Only this seller's submissions, from the queue the platform has.
-  const queue = await listReviewQueue(session).catch(() => ({ items: [], counts: {} }));
-  const waiting = queue.items.filter((item) => item.merchantId === merchant.id);
+  if (!detail) {
+    return <div className="grid min-w-0 gap-5">
+      <Link href="/merchants" className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim hover:text-chalk"><ArrowLeft width={12} height={12} /> All merchants</Link>
+      <Panel><PanelHead title="Seller record unavailable" hint="The merchant list is still available while this record is checked." />
+        <p role="alert" className="text-[12.5px] leading-relaxed text-rose">{loadError || "The seller record could not be loaded."}</p>
+        <Link href="/merchants" className="mt-4 inline-flex text-[12px] text-signal hover:underline">Return to Merchants</Link>
+      </Panel>
+    </div>;
+  }
+  const { merchant, summary, statuses, catalog, orders, commissionEarned } = detail;
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -53,7 +60,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
         <div className="flex items-start gap-4">
           <span
             className="grid h-14 w-14 shrink-0 place-items-center rounded-[2px] font-display text-[20px] font-extrabold"
-            style={{ background: merchant.brand.accent, color: merchant.brand.accentInk }}
+            style={{ background: merchant.brand?.accent ?? "#e4572e", color: merchant.brand?.accentInk ?? "#ffffff" }}
           >
             {merchant.name.slice(0, 1)}
           </span>
@@ -82,7 +89,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
             {merchant.customDomain ?? merchant.domain}
           </p>
           <p className="mt-1 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
-            {merchant.brand.template} template <ExternalLink width={10} height={10} />
+            {merchant.brand?.template ?? "FERIXAS"} template <ExternalLink width={10} height={10} />
           </p>
         </div>
       </header>
@@ -105,7 +112,9 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
       </div>
 
       <div className="grid gap-3 lg:grid-cols-[1.35fr_1fr]">
-        <MerchantForm detail={detail} />
+        {canManageAccount ? <MerchantForm detail={detail} /> : (
+          <Panel><PanelHead title="Commercial settings" hint="View-only access" /><p className="text-[12px] leading-relaxed text-chalk-dim">You can inspect this seller record, but changing account or commercial settings requires merchant approval permission.</p></Panel>
+        )}
 
         <div className="grid gap-3">
           <Panel>
@@ -132,22 +141,39 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
             </ul>
           </Panel>
 
-          <Panel>
-            <PanelHead title="About the store" />
-            <p className="text-[12.5px] leading-relaxed text-chalk-dim">{about}</p>
-          </Panel>
         </div>
       </div>
 
+      <Panel>
+        <PanelHead
+          title="Approved Ferixas marketplace profile"
+          hint="Read-only here. The seller proposes profile changes; Admin reviews them in the Review queue."
+          action={canManageAccount ? <Link href={`/review?tab=profiles&merchantId=${encodeURIComponent(merchant.id)}`} className="font-mono text-[10px] uppercase tracking-[0.12em] text-signal hover:underline">Review profile proposals</Link> : undefined}
+        />
+        <p className="mb-3 text-[11px] leading-relaxed text-chalk-dim">This is the seller profile displayed on Ferixas. The seller’s separate website is not embedded here; contact and address details below are for Admin review and are not public by default.</p>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <KeyValue label="Profile name" value={detail.profile.name || merchant.name} />
+          <KeyValue label="Tagline" value={detail.profile.tagline || "Not provided"} />
+          <KeyValue label="Public location" value={detail.profile.location || "Not provided"} />
+          <KeyValue label="Business name" value={detail.profile.businessName || "Not provided"} />
+          <KeyValue label="Business email" value={detail.profile.businessEmail || "Not provided"} />
+          <KeyValue label="Business phone" value={detail.profile.businessPhone || "Not provided"} />
+          <KeyValue label="Private address" value={[detail.profile.addressLine1, detail.profile.addressLine2, detail.profile.city, detail.profile.region, detail.profile.postalCode, detail.profile.country].filter(Boolean).join(", ") || "Not provided"} />
+          <KeyValue label="Website (verification only)" value={detail.profile.website || "Not provided"} />
+          <KeyValue label="Public contact opt-in" value={`Email ${detail.profile.showBusinessEmail ? "on" : "off"} · phone ${detail.profile.showPhone ? "on" : "off"}`} />
+        </div>
+        {detail.profile.about ? <p className="mt-3 rounded-[8px] border border-hairline bg-panel-2 p-3 text-[12px] leading-relaxed text-chalk-dim">{detail.profile.about}</p> : null}
+      </Panel>
+
       <Panel flush>
         <div className="p-5 pb-3">
-          <PanelHead title="Catalogue" />
+          <PanelHead title="Ferixas seller catalogue" action={canManageAccount ? <Link href={`/review?tab=products&merchantId=${encodeURIComponent(merchant.id)}`} className="font-mono text-[10px] uppercase tracking-[0.12em] text-signal hover:underline">Review submissions</Link> : undefined} />
         </div>
         {catalog.length ? (
           <TablePanel>
             <DataTable
-              head={["Product", "SKU", "Price", "Stock", "Sold 30d", "Channels", "Status"]}
-              minWidthClass="md:min-w-[760px]"
+              head={["Product", "SKU", "Price", "Stock", "Sold 30d", "Marketplace", "Status", "Management"]}
+              minWidthClass="md:min-w-[980px]"
             >
               {catalog.map((product) => (
                 <Row key={product.id}>
@@ -168,16 +194,15 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
                     <CellLabel>Sold 30d</CellLabel>
                     {num(product.sold30d)}
                   </Td>
-                  <Td className="w-full md:w-auto">
-                    <div className="flex flex-wrap gap-1.5">
-                      {product.channels.marketplace ? <Pill tone="violet">Market</Pill> : null}
-                    </div>
+                  <Td>
+                    <Pill tone={product.channels?.marketplace ? "violet" : "neutral"}>{product.channels?.marketplace ? "Visible" : "Hidden"}</Pill>
                   </Td>
                   <Td className="ml-auto md:ml-0">
                     <Pill tone={product.status === "approved" ? "mint" : product.status === "pending_review" ? "amber" : "neutral"}>
-                      {product.status}
+                      {product.status === "archived" && product.adminRemoved ? "Admin archived" : product.status}
                     </Pill>
                   </Td>
+                  <Td className="ml-auto md:ml-0">{canManageProducts ? <SellerProductControls merchantId={merchant.id} product={product} /> : <span className="text-[11px] text-chalk-dim">View only</span>}</Td>
                 </Row>
               ))}
             </DataTable>
@@ -191,7 +216,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
 
       <Panel flush>
         <div className="p-5 pb-3">
-          <PanelHead title="Recent orders" action={
+          <PanelHead title="Recent Ferixas marketplace orders" action={
             <Link href={`/orders?merchantId=${merchant.id}`} className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
               Filter the order view
             </Link>
@@ -200,7 +225,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
         {orders.length ? (
           <TablePanel>
             <DataTable
-              head={["Order", "Customer", "Channel", "Placed", "Status", "Commission", "Total"]}
+              head={["Order", "Customer", "Placed", "Status", "Seller item subtotal", "Settled seller commission"]}
               minWidthClass="md:min-w-[700px]"
             >
               {orders.map((order) => (
@@ -209,9 +234,6 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
                   <Td className="text-[12.5px] text-chalk-dim">
                     <CellLabel>Customer</CellLabel>
                     {order.customer.name}
-                  </Td>
-                  <Td>
-                    <Pill tone={order.channel === "marketplace" ? "violet" : "neutral"}>{order.channel}</Pill>
                   </Td>
                   <Td className="font-mono text-[11.5px] text-chalk-dim">
                     <CellLabel>Placed</CellLabel>
@@ -232,13 +254,13 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
                       {titleCase(order.fulfillment)}
                     </Pill>
                   </Td>
-                  <Td className="font-mono text-[12px] tabular-nums text-violet">
-                    <CellLabel>Commission</CellLabel>
-                    {money(order.commission)}
+                  <Td className="font-mono text-[12px] tabular-nums text-chalk">
+                    <CellLabel>Seller item subtotal</CellLabel>
+                    {money(order.sellerGross ?? 0)}
                   </Td>
-                  <Td className="ml-auto font-mono text-[12.5px] tabular-nums text-chalk md:ml-0">
-                    <CellLabel>Total</CellLabel>
-                    {money(order.total)}
+                  <Td className="ml-auto font-mono text-[12px] tabular-nums text-violet md:ml-0">
+                    <CellLabel>Settled seller commission</CellLabel>
+                    {money(order.sellerCommission ?? 0)}
                   </Td>
                 </Row>
               ))}
@@ -251,73 +273,34 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
         )}
       </Panel>
 
-      <Panel>
-        <PanelHead
-          title="Waiting on the platform"
-          hint="What this seller has submitted, and what each one is waiting for."
-          action={<Pill tone={waiting.length ? "amber" : "mint"}>{waiting.length} waiting</Pill>}
-        />
-        {waiting.length ? (
-          <div className="grid gap-2.5">
-            {waiting.map((item) => (
-              <div key={item.id} className="rounded-[12px] border border-hairline px-3.5 py-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-semibold text-chalk">{item.title}</span>
-                    <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                      {money(item.price)} · stock {item.stock} · by {item.submittedBy || "the store"}
-                    </span>
-                  </span>
-                  <Pill tone={item.reviewStatus === "in_review" ? "amber" : "neutral"}>{item.reviewStatus}</Pill>
-                </div>
-                {item.reviewNote ? (
-                  <p className="mt-2 text-[12px] leading-relaxed text-chalk-dim">{item.reviewNote}</p>
-                ) : null}
-              </div>
-            ))}
+      {canManageAccount ? (
+        <Panel>
+          <PanelHead title="Account controls" hint="These actions apply immediately. Suspending blocks sign-in; marketplace restriction hides the seller’s Ferixas listings without changing their separate website." />
+          <div className="mt-4 flex flex-wrap items-center gap-2.5">
+            <CmsActionForm action={suspendMerchantAction} className="inline-flex">
+              <input type="hidden" name="id" value={merchant.id} />
+              <input type="hidden" name="suspend" value={merchant.status === "suspended" ? "false" : "true"} />
+              <SubmitButton variant="outline" pendingLabel="Saving">{merchant.status === "suspended" ? "Reactivate seller account" : "Suspend seller account"}</SubmitButton>
+            </CmsActionForm>
+            <CmsActionForm action={restrictMerchantAction} className="inline-flex">
+              <input type="hidden" name="id" value={merchant.id} />
+              <input type="hidden" name="restricted" value={merchant.marketplaceEnabled ? "true" : "false"} />
+              <SubmitButton variant="outline" pendingLabel="Saving">{merchant.marketplaceEnabled ? "Hide all seller listings on Ferixas" : "Restore marketplace access"}</SubmitButton>
+            </CmsActionForm>
           </div>
-        ) : (
-          <Empty title="Nothing waiting" body="This seller has no products in review." />
-        )}
-      </Panel>
-
-      <MerchantProfileReview merchantId={merchant.id} profile={detail.profile} requests={detail.profileRequests} />
-
-      <Panel>
-        <PanelHead
-          title="Account controls"
-          hint="Suspending stops them signing in and selling. Restricting takes them out of the marketplace. Neither deletes anything."
-        />
-        <div className="mt-4 flex flex-wrap items-center gap-2.5">
-          <CmsActionForm action={suspendMerchantAction} className="inline-flex">
-            <input type="hidden" name="id" value={merchant.id} />
-            <input type="hidden" name="suspend" value={merchant.status === "suspended" ? "false" : "true"} />
-            <SubmitButton variant="outline" pendingLabel="Saving">
-              {merchant.status === "suspended" ? "Reactivate this seller" : "Suspend this seller"}
-            </SubmitButton>
-          </CmsActionForm>
-
-          <CmsActionForm action={restrictMerchantAction} className="inline-flex">
-            <input type="hidden" name="id" value={merchant.id} />
-            <input type="hidden" name="restricted" value={merchant.marketplaceEnabled ? "true" : "false"} />
-            <SubmitButton variant="outline" pendingLabel="Saving">
-              {merchant.marketplaceEnabled ? "Take out of the marketplace" : "Put back in the marketplace"}
-            </SubmitButton>
-          </CmsActionForm>
 
           {canDelete ? (
-            <CmsActionForm action={deleteMerchantAction} className="grid w-full gap-2 border-t border-hairline pt-3">
+            <CmsActionForm action={deleteMerchantAction} className="mt-4 grid gap-3 border-t border-hairline pt-4">
               <input type="hidden" name="id" value={merchant.id} />
-              <p className="text-[12px] leading-relaxed text-chalk-dim">
-                {"Deleting removes the account, its products and its sign-ins. A seller with orders cannot be deleted — suspend them instead, which stops them trading and keeps the history."}
-              </p>
-              <SubmitButton variant="danger" pendingLabel="Deleting">
-                <Trash2 width={13} height={13} /> Delete this seller
-              </SubmitButton>
+              <p className="text-[12px] leading-relaxed text-chalk-dim">Permanent account removal also removes its catalogue and sign-ins. The API refuses deletion while orders exist; suspend the seller to preserve trading history instead.</p>
+              <Field title="Type DELETE to confirm permanent removal"><input name="confirm" required pattern="DELETE" autoComplete="off" className={inputClass} /></Field>
+              <SubmitButton variant="danger" pendingLabel="Deleting"><Trash2 width={13} height={13} /> Delete this seller</SubmitButton>
             </CmsActionForm>
           ) : null}
-        </div>
-      </Panel>
+        </Panel>
+      ) : (
+        <Panel><PanelHead title="Account controls" hint="View-only access" /><p className="text-[12px] leading-relaxed text-chalk-dim">Suspension and marketplace access changes require merchant approval permission. Your access remains read-only.</p></Panel>
+      )}
     </div>
   );
 }

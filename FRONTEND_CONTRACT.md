@@ -61,6 +61,16 @@ GET    /admin/catalog/products?search&category&status&owner
 POST   /admin/catalog/product
 PATCH  /admin/catalog/product
 DELETE /admin/catalog/product
+GET    /admin/merchants
+GET    /admin/merchant?id=
+PATCH  /admin/merchant
+PATCH  /admin/merchant/product
+DELETE /admin/merchant/product
+POST   /admin/merchant/product/restore
+GET    /admin/merchant/profile-requests
+POST   /admin/merchant/profile-request/decision
+GET    /admin/review/queue
+POST   /admin/review/decision
 GET    /admin/catalog/categories      POST /admin/catalog/category      DELETE /admin/catalog/category
 GET    /admin/catalog/collections     POST /admin/catalog/collection    DELETE /admin/catalog/collection
 GET    /admin/cms/banners             POST /admin/cms/banner            DELETE /admin/cms/banner
@@ -83,6 +93,8 @@ GET/POST /merchant/promotions
 ```
 
 Admin orders, payments and analytics include only explicitly tagged Ferixas marketplace orders. Revenue and commission require a paid/captured/succeeded/settled payment state and exclude cancelled orders; fulfillment is not proof of payment, refund or settlement. With no provider connected, refund/paid-payout mutations are refused, payout estimates are not synthesized from orders, and persisted payout rows remain unverified records.
+
+Admin seller management and review are separate workflows. `GET /admin/merchant?id=` is the Merchant record: it exposes seller-scoped performance/catalogue and the approved profile as read-only. `PATCH /admin/merchant` changes only account/commercial settings, not seller-submitted profile fields. The Merchant page can edit only approved listings owned by that seller via `/admin/merchant/product`; pending submissions must use the Review queue. Marketplace visibility and homepage featuring are separate listing controls. Removing an unreferenced listing deletes it; listings referenced by orders, reviews, placements, or sales are archived and may be restored. `/admin/review/queue` and `/admin/merchant/profile-requests` feed the same Admin Review page; decisions remain permission-checked by the API, and failed queue loads must not appear as empty queues.
 
 ## Deferred features
 

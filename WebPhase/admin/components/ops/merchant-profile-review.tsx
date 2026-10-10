@@ -2,10 +2,10 @@ import { MapPin, Mail, Phone } from "lucide-react";
 import { Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { reviewMerchantProfileAction } from "@/lib/actions";
-import type { MerchantDetail } from "@/lib/api";
+import type { MerchantDetail, MerchantProfileRequest } from "@/lib/api";
 
 type Profile = Record<string, string | boolean>;
-type Request = MerchantDetail["profileRequests"][number];
+type Request = MerchantProfileRequest;
 
 function Value({ label, value }: { label: string; value?: string | boolean | null }) {
   const rendered = typeof value === "boolean" ? (value ? "Yes" : "No") : value || "Not provided";

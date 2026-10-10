@@ -64,13 +64,14 @@ export async function saveMerchantAction(_prev: FormState, formData: FormData): 
   if (!id) return { error: "Which merchant?" };
   const plan = String(formData.get("plan") ?? "");
   const commission = Number(formData.get("commissionPct") ?? 8);
+  if (!Number.isFinite(commission) || commission < 0 || commission > 100) {
+    return { error: "Commission must be between 0 and 100 percent." };
+  }
   try {
     await api.updateMerchant(session, {
       id,
-      status: String(formData.get("status") ?? "active"),
       plan,
       commissionPct: commission,
-      marketplaceEnabled: formData.get("marketplaceEnabled") === "on",
       verified: formData.get("verified") === "on",
     });
   } catch (error) {
@@ -78,7 +79,7 @@ export async function saveMerchantAction(_prev: FormState, formData: FormData): 
   }
   refresh("/merchants");
   revalidatePath(`/merchants/${id}`);
-  return { message: "Merchant updated. The change applies immediately." };
+  return { message: "Commercial settings saved. Commission applies to future orders; the badge updates immediately." };
 }
 
 // ── Settings ───────────────────────────────────────────────────────────
@@ -476,6 +477,9 @@ export async function deleteMerchantAction(_prev: FormState, formData: FormData)
   if (!session) redirect("/login");
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return { error: "That seller is missing." };
+  if (String(formData.get("confirm") ?? "").trim() !== "DELETE") {
+    return { error: "Type DELETE to confirm permanent seller-account removal." };
+  }
   try {
     await api.deleteMerchant(session, id);
   } catch (error) {
@@ -483,6 +487,81 @@ export async function deleteMerchantAction(_prev: FormState, formData: FormData)
   }
   refresh("/merchants");
   return { message: "Seller account removed, along with their products and sign-ins." };
+}
+
+export async function updateSellerProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const merchantId = String(formData.get("merchantId") ?? "").trim();
+  const productId = String(formData.get("productId") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim();
+  const price = Number(formData.get("price"));
+  const stock = Number(formData.get("stock"));
+  if (!merchantId || !productId) return { error: "The seller or product reference is missing." };
+  if (!title || !Number.isFinite(price) || price < 0 || !Number.isInteger(stock) || stock < 0) {
+    return { error: "Enter a product title, valid price, and whole-number stock of zero or more." };
+  }
+  const compareRaw = String(formData.get("compareAt") ?? "").trim();
+  const images = String(formData.get("images") ?? "").split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+  const asList = (key: string) => String(formData.get(key) ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+  try {
+    await api.updateSellerProduct(session, {
+      merchantId,
+      productId,
+      title,
+      category: String(formData.get("category") ?? "").trim(),
+      description: String(formData.get("description") ?? "").trim(),
+      price,
+      compareAt: compareRaw ? Number(compareRaw) : null,
+      stock,
+      sku: String(formData.get("sku") ?? "").trim(),
+      images,
+      collections: asList("collections"),
+      tags: asList("tags"),
+      featured: formData.get("featured") === "on",
+      marketplace: formData.get("marketplace") === "on",
+    });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not update this seller listing." };
+  }
+  refresh(`/merchants/${merchantId}`);
+  refresh("/catalog");
+  return { message: "Seller listing updated. Featured items are prioritized in the marketplace homepage rail." };
+}
+
+export async function removeSellerProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const merchantId = String(formData.get("merchantId") ?? "").trim();
+  const productId = String(formData.get("productId") ?? "").trim();
+  if (!merchantId || !productId) return { error: "The seller or product reference is missing." };
+  if (String(formData.get("confirm") ?? "").trim() !== "REMOVE") {
+    return { error: "Type REMOVE to confirm this listing action." };
+  }
+  try {
+    const result = await api.removeSellerProduct(session, merchantId, productId);
+    refresh(`/merchants/${merchantId}`);
+    refresh("/catalog");
+    return { message: result.message };
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not remove this seller listing." };
+  }
+}
+
+export async function restoreSellerProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const merchantId = String(formData.get("merchantId") ?? "").trim();
+  const productId = String(formData.get("productId") ?? "").trim();
+  if (!merchantId || !productId) return { error: "The seller or product reference is missing." };
+  try {
+    await api.restoreSellerProduct(session, merchantId, productId);
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not restore this seller listing." };
+  }
+  refresh(`/merchants/${merchantId}`);
+  refresh("/catalog");
+  return { message: "Seller listing restored to its previous reviewed state." };
 }
 
 // ── Acting on an order ─────────────────────────────────────────────────
@@ -534,7 +613,7 @@ export async function reviewMerchantProfileAction(_prev: FormState, formData: Fo
   }
   refresh(`/merchants/${String(formData.get("merchantId") ?? "")}`);
   refresh("/merchants");
-  refresh("/profile-requests");
+  refresh("/review");
   return { message: decision === "approve" ? "Seller profile approved and published." : decision === "changes" ? "Changes requested. The current public profile remains unchanged." : "Profile update rejected. The current public profile remains unchanged." };
 }
 

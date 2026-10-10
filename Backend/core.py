@@ -1081,6 +1081,11 @@ def seller_products(db: Session, merchant_id: str) -> list[dict]:
     return [p for p in products(db) if is_seller_marketplace_product(p, merchant_id)]
 
 
+def seller_catalog_products(db: Session, merchant_id: str) -> list[dict]:
+    """All seller-owned records managed by Ferixas, including hidden/archived listings."""
+    return [p for p in products(db) if is_seller_product(p, merchant_id)]
+
+
 def pending_products(db: Session) -> list[dict]:
     """Seller submissions awaiting the explicit admin review gate."""
     return [p for p in products(db) if is_seller_marketplace_product(p) and p.get("status") == "pending_review"]

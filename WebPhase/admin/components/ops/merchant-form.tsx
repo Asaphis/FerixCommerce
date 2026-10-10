@@ -9,12 +9,6 @@ import { Notice } from "@/components/ops/notice";
 import { Panel, PanelHead } from "@/components/ops/bits";
 import { saveMerchantAction, type FormState } from "@/lib/actions";
 
-const STATUSES = [
-  { value: "active", label: "Active — selling normally" },
-  { value: "review", label: "In review — marketplace held" },
-  { value: "suspended", label: "Suspended — removed from the marketplace" },
-];
-
 const PLANS = ["Starter", "Growth", "Scale", "Platform"];
 
 export function MerchantForm({ detail }: { detail: MerchantDetail }) {
@@ -26,17 +20,8 @@ export function MerchantForm({ detail }: { detail: MerchantDetail }) {
       <input type="hidden" name="id" value={merchant.id} />
 
       <Panel>
-        <PanelHead title="Standing and terms" hint="Applies to the next order placed with this merchant" />
+        <PanelHead title="Commercial settings" hint="These settings do not edit the seller's public profile or account standing." />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field title="Account standing">
-            <select name="status" defaultValue={merchant.status} className={selectClass}>
-              {STATUSES.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field title="Plan">
             <select name="plan" defaultValue={merchant.plan} className={selectClass}>
               {PLANS.map((plan) => (
@@ -52,7 +37,7 @@ export function MerchantForm({ detail }: { detail: MerchantDetail }) {
               type="number"
               step="0.5"
               min="0"
-              max="50"
+              max="100"
               defaultValue={merchant.commissionPct}
               className={inputClass}
             />
@@ -67,30 +52,11 @@ export function MerchantForm({ detail }: { detail: MerchantDetail }) {
                 className="h-4 w-4 accent-[#6ee7ff]"
               />
               <label htmlFor="verified" className="text-[12.5px] text-chalk-dim">
-                Shows a verified badge to shoppers
+              Shows a verified badge on the Ferixas marketplace profile
               </label>
             </div>
           </Field>
         </div>
-      </Panel>
-
-      <Panel>
-        <PanelHead title="Marketplace access" hint="Their own storefront is never affected by this" />
-        <label className="flex cursor-pointer items-start gap-3 rounded-[2px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
-          <input
-            type="checkbox"
-            name="marketplaceEnabled"
-            defaultChecked={merchant.marketplaceEnabled}
-            className="mt-[3px] h-4 w-4 accent-[#6ee7ff]"
-          />
-          <span>
-            <span className="block text-[13px] font-medium text-chalk">Listed on the Ferixas marketplace</span>
-            <span className="block text-[12px] text-chalk-dim">
-              Turn this off and {merchant.name}&apos;s products disappear from ferixas.com while their own
-              storefront keeps selling at the same stock count.
-            </span>
-          </span>
-        </label>
       </Panel>
 
       <div className="flex flex-wrap items-center gap-3">

@@ -191,8 +191,7 @@ class ProductLifecycleTest(unittest.TestCase):
 
             direct_edit = self.client.patch("/admin/merchant", headers={"X-Ferix-Session": self.admin},
                                             json={"id": "abc-electronics", "name": "Admin Direct Edit"})
-            self.assertEqual(direct_edit.status_code, 200, direct_edit.text)
-            self.assertEqual(direct_edit.json()["merchant"]["name"], original["name"])
+            self.assertEqual(direct_edit.status_code, 422, direct_edit.text)
             decision = self.client.post("/admin/merchant/profile-request/decision", headers={"X-Ferix-Session": self.admin},
                                         json={"id": request_id, "decision": "approve"})
             self.assertEqual(decision.status_code, 200, decision.text)
@@ -416,6 +415,163 @@ class ProductLifecycleTest(unittest.TestCase):
                 db.query(Order).filter(Order.id.in_(order_ids)).delete(synchronize_session=False)
                 db.query(SessionToken).filter_by(user_id=user_id).delete(synchronize_session=False)
                 db.query(User).filter_by(id=user_id).delete(synchronize_session=False)
+                db.commit()
+
+    def test_admin_merchant_detail_uses_seller_lines_and_survives_malformed_order_json(self):
+        suffix = uuid.uuid4().hex[:10]
+        user_id = f"usr_detail_{suffix}"
+        email = f"detail-{suffix}@example.com"
+        mixed_id = f"ord_mixed_{suffix}"
+        malformed_id = f"ord_bad_json_{suffix}"
+        baseline = self.client.get("/admin/merchant", headers={"X-Ferix-Session": self.admin},
+                                   params={"id": "abc-electronics"})
+        self.assertEqual(baseline.status_code, 200, baseline.text)
+        with SessionLocal() as db:
+            merchant_a = find_merchant(db, "abc-electronics")
+            merchant_b = find_merchant(db, "aurasound")
+            product_a = self.client.get("/merchant/products", headers={"X-Ferix-Session": self.merchant}).json()["items"][0]
+            db.add(User(id=user_id, name="Mixed Order Shopper", email=email,
+                        password_hash=hash_password("Isolated-Test-Password-123!"), settings={}))
+            db.add(Order(id=mixed_id, user_id=user_id, data={
+                "id": mixed_id, "number": mixed_id, "channel": "marketplace", "payment": "paid",
+                "fulfillment": "delivered", "placedAt": "2026-10-10T08:00:00+00:00",
+                "subtotal": 1000, "total": 1000, "items": [
+                    {"productId": product_a["id"], "merchantId": merchant_a["id"], "title": "Seller A", "price": 100, "qty": 1},
+                    {"productId": "product-other-seller", "merchantId": merchant_b["id"], "title": "Seller B", "price": 900, "qty": 1},
+                ],
+            }))
+            db.add(Order(id=malformed_id, user_id=user_id, data={
+                "id": malformed_id, "number": malformed_id, "channel": "marketplace", "payment": "pending",
+                "fulfillment": "processing", "items": ["not-an-item", None],
+            }))
+            db.commit()
+        try:
+            detail = self.client.get("/admin/merchant", headers={"X-Ferix-Session": self.admin},
+                                     params={"id": "abc-electronics"})
+            self.assertEqual(detail.status_code, 200, detail.text)
+            payload = detail.json()
+            before = baseline.json()["summary"]
+            after = payload["summary"]
+            self.assertEqual(after["revenueTotal"] - before["revenueTotal"], 100)
+            self.assertEqual(after["revenue30d"] - before["revenue30d"], 100)
+            self.assertEqual(after["ordersTotal"] - before["ordersTotal"], 1)
+            rate = float(payload["merchant"]["commissionPct"])
+            self.assertAlmostEqual(after["commission30d"] - before["commission30d"], rate)
+            row = next(order for order in payload["orders"] if order["id"] == mixed_id)
+            self.assertEqual(row["sellerGross"], 100)
+            self.assertAlmostEqual(row["sellerCommission"], rate)
+            admin_orders = self.client.get("/admin/orders", headers={"X-Ferix-Session": self.admin})
+            self.assertEqual(admin_orders.status_code, 200, admin_orders.text)
+            malformed = next(order for order in admin_orders.json()["orders"] if order["id"] == malformed_id)
+            self.assertEqual(malformed["items"], [])
+            invalid_status = self.client.patch("/admin/merchant", headers={"X-Ferix-Session": self.admin},
+                                               json={"id": "abc-electronics", "status": "inactive"})
+            self.assertEqual(invalid_status.status_code, 422, invalid_status.text)
+            direct_profile_edit = self.client.patch("/admin/merchant", headers={"X-Ferix-Session": self.admin}, json={
+                "id": "abc-electronics", "name": "Must remain seller-owned", "location": "Must remain seller-owned",
+            })
+            self.assertEqual(direct_profile_edit.status_code, 422, direct_profile_edit.text)
+            unchanged = self.client.get("/admin/merchant", headers={"X-Ferix-Session": self.admin},
+                                        params={"id": "abc-electronics"}).json()
+            self.assertEqual(unchanged["profile"]["name"], baseline.json()["profile"]["name"])
+        finally:
+            with SessionLocal() as db:
+                db.query(Order).filter(Order.id.in_([mixed_id, malformed_id])).delete(synchronize_session=False)
+                db.query(SessionToken).filter_by(user_id=user_id).delete(synchronize_session=False)
+                db.query(User).filter_by(id=user_id).delete(synchronize_session=False)
+                db.commit()
+
+    def test_admin_seller_product_management_is_scoped_and_preserves_history(self):
+        suffix = uuid.uuid4().hex[:10]
+        with SessionLocal() as lookup_db:
+            seller_id = find_merchant(lookup_db, "abc-electronics")["id"]
+            other_seller_id = find_merchant(lookup_db, "aurasound")["id"]
+        user_id = f"usr_manage_{suffix}"
+        email = f"manage-{suffix}@example.com"
+        product_specs = [
+            (f"prod_manage_{suffix}", f"admin-managed-{suffix}", seller_id, "approved"),
+            (f"prod_delete_{suffix}", f"admin-delete-{suffix}", seller_id, "approved"),
+            (f"prod_pending_{suffix}", f"admin-pending-{suffix}", seller_id, "pending_review"),
+            (f"prod_other_{suffix}", f"admin-other-{suffix}", other_seller_id, "approved"),
+        ]
+        order_id = f"ord_manage_{suffix}"
+        with SessionLocal() as db:
+            merchant = find_merchant(db, "abc-electronics")
+            categories = __import__("core").categories(db)
+            category = categories[0]["slug"]
+            for product_id, slug, owner_id, status in product_specs:
+                owner = find_merchant(db, owner_id)
+                put_row(db, "product", slug, {
+                    "id": product_id, "slug": slug, "title": f"Listing {product_id}",
+                    "merchantId": owner_id, "merchantName": owner["name"], "merchantSlug": owner["slug"],
+                    "origin": "seller", "owner_type": "seller", "category": category,
+                    "description": "Initial description", "price": 25.0, "stock": 5,
+                    "status": status, "channels": {"marketplace": True, "store": False},
+                    "images": [], "collections": [], "tags": [], "featured": False,
+                })
+            db.add(User(id=user_id, name="Product Management Shopper", email=email,
+                        password_hash=hash_password("Isolated-Test-Password-123!"), settings={}))
+            db.add(Order(id=order_id, user_id=user_id, data={
+                "id": order_id, "channel": "marketplace", "payment": "paid", "fulfillment": "delivered",
+                "placedAt": "2026-10-10T08:00:00+00:00", "items": [
+                    {"productId": product_specs[0][0], "merchantId": seller_id, "price": 25, "qty": 1},
+                ],
+            }))
+            db.commit()
+        try:
+            product_id, slug = product_specs[0][0], product_specs[0][1]
+            scope_violation = self.client.patch("/admin/merchant/product", headers={"X-Ferix-Session": self.admin}, json={
+                "merchantId": seller_id, "productId": product_specs[3][0], "title": "Cross-seller edit",
+            })
+            self.assertEqual(scope_violation.status_code, 404, scope_violation.text)
+            pending_edit = self.client.patch("/admin/merchant/product", headers={"X-Ferix-Session": self.admin}, json={
+                "merchantId": seller_id, "productId": product_specs[2][0], "title": "Skip review",
+            })
+            self.assertEqual(pending_edit.status_code, 409, pending_edit.text)
+            updated = self.client.patch("/admin/merchant/product", headers={"X-Ferix-Session": self.admin}, json={
+                "merchantId": seller_id, "productId": product_id, "title": "Admin corrected listing",
+                "description": "Corrected by Admin", "price": 31.5, "stock": 8,
+                "category": category, "marketplace": False, "featured": True,
+            })
+            self.assertEqual(updated.status_code, 200, updated.text)
+            self.assertFalse(updated.json()["product"]["channels"]["marketplace"])
+            self.assertFalse(updated.json()["product"]["featured"])
+            self.assertEqual(self.client.get("/catalog/product", params={"slug": slug}).status_code, 404)
+            enabled = self.client.patch("/admin/merchant/product", headers={"X-Ferix-Session": self.admin}, json={
+                "merchantId": seller_id, "productId": product_id, "marketplace": True, "featured": True,
+            })
+            self.assertEqual(enabled.status_code, 200, enabled.text)
+            self.assertIn(product_id, {p["id"] for p in self.client.get("/catalog/home").json()["featured"]})
+
+            removed = self.client.request("DELETE", "/admin/merchant/product", headers={"X-Ferix-Session": self.admin},
+                                          json={"merchantId": seller_id, "productId": product_id})
+            self.assertEqual(removed.status_code, 200, removed.text)
+            self.assertTrue(removed.json()["archived"])
+            self.assertEqual(self.client.get("/catalog/product", params={"slug": slug}).status_code, 404)
+            restored = self.client.post("/admin/merchant/product/restore", headers={"X-Ferix-Session": self.admin},
+                                        json={"merchantId": seller_id, "productId": product_id})
+            self.assertEqual(restored.status_code, 200, restored.text)
+            self.assertEqual(restored.json()["product"]["status"], "approved")
+            self.assertTrue(restored.json()["product"]["channels"]["marketplace"])
+            self.assertTrue(restored.json()["product"]["featured"])
+
+            no_history_id, no_history_slug = product_specs[1][0], product_specs[1][1]
+            permanent = self.client.request("DELETE", "/admin/merchant/product", headers={"X-Ferix-Session": self.admin},
+                                            json={"merchantId": seller_id, "productId": no_history_id})
+            self.assertEqual(permanent.status_code, 200, permanent.text)
+            self.assertFalse(permanent.json()["archived"])
+            self.assertEqual(self.client.get("/catalog/product", params={"slug": no_history_slug}).status_code, 404)
+            detail = self.client.get("/admin/merchant", headers={"X-Ferix-Session": self.admin}, params={"id": seller_id})
+            self.assertEqual(detail.status_code, 200, detail.text)
+            self.assertIn(product_id, {product["id"] for product in detail.json()["catalog"]})
+            self.assertNotIn(no_history_id, {product["id"] for product in detail.json()["catalog"]})
+        finally:
+            with SessionLocal() as db:
+                db.query(Order).filter_by(id=order_id).delete(synchronize_session=False)
+                db.query(SessionToken).filter_by(user_id=user_id).delete(synchronize_session=False)
+                db.query(User).filter_by(id=user_id).delete(synchronize_session=False)
+                for _, slug, _, _ in product_specs:
+                    drop_row(db, "product", slug)
                 db.commit()
 
     def test_cms_draft_preserves_hidden_section_fields_and_live_content_until_publish(self):

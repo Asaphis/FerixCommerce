@@ -53,11 +53,11 @@ export default async function CatalogPage({
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-hairline bg-panel-2 px-4 py-3">
         <p className="text-[12.5px] leading-relaxed text-chalk-dim">
-          This catalogue contains Ferixas Official inventory only. Seller product submissions and seller-profile changes are handled in their separate review queues.
+          This catalogue contains Ferixas Official inventory only. Seller product submissions and seller-profile changes are handled in the unified Review queue; approved seller listings are managed from their Merchant records.
         </p>
         <div className="flex flex-wrap gap-2">
           <Link href="/review" className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Product review</Link>
-          <Link href="/profile-requests" className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Profile changes</Link>
+          <Link href="/review?tab=profiles" className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Review seller profiles</Link>
         </div>
       </div>
 
