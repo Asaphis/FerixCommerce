@@ -30,6 +30,8 @@ export const NAV_GROUPS: NavGroupData[] = [
       { href: "/", label: "Dashboard", icon: "dashboard" },
       { href: "/orders", label: "Orders", icon: "cart" },
       { href: "/customers", label: "Customers", icon: "users" },
+      { href: "/audience", label: "Audience", icon: "users" },
+      { href: "/settings", label: "Profile & settings", icon: "settings" },
     ],
   },
   {
@@ -48,13 +50,6 @@ export const NAV_GROUPS: NavGroupData[] = [
       { href: "/analytics", label: "Analytics", icon: "chart" },
     ],
   },
-  {
-    label: "Storefront",
-    items: [
-      { href: "/store-design", label: "Store design", icon: "paintbrush", soon: true },
-      { href: "/settings", label: "Store settings", icon: "settings" },
-    ],
-  },
 ];
 
 export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
@@ -64,7 +59,7 @@ export const MOBILE_PRIMARY = [
   "/",
   "/orders",
   "/products",
-  "/payouts",
+  "/audience",
 ];
 
 export function isActivePath(pathname: string, href: string) {

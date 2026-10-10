@@ -33,8 +33,7 @@ export default async function OverviewPage() {
     return <DataUnavailable title="Overview" reason={describeError(error)} />;
   }
 
-  const { settings, totals, windows, channels, statuses, topMerchants, needsAttention, recentOrders } = data;
-  const channelMax = Math.max(channels.store, channels.marketplace, 1);
+  const { settings, totals, windows, statuses, topMerchants, needsAttention, recentOrders } = data;
   const merchantMax = Math.max(...topMerchants.map((merchant) => merchant.gmv), 1);
   const orderPipeline = [
     { label: "Needs action", value: statuses.processing ?? 0, tone: "amber" as const },
@@ -52,7 +51,7 @@ export default async function OverviewPage() {
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         <Readout label="GMV · all time" value={money(totals.gmv, { cents: false })} sub={`${money(windows.today.gmv, { cents: false })} today`} icon={<ChartNoAxesCombined width={15} height={15} />} />
-        <Readout label="Recorded orders" value={num(totals.orders)} sub={`${windows.month.orders} in 30 days`} icon={<Receipt width={15} height={15} />} tone="signal" />
+        <Readout label="Marketplace orders" value={num(totals.orders)} sub={`${windows.month.orders} paid in 30 days`} icon={<Receipt width={15} height={15} />} tone="signal" />
         <Readout label="Active merchants" value={num(totals.activeMerchants)} sub={`${totals.merchants} total accounts`} icon={<Store width={15} height={15} />} tone="mint" />
         <Readout label="Catalogue" value={num(totals.products)} sub={`${compact(totals.marketplaceListings)} marketplace listings`} icon={<Package width={15} height={15} />} tone="violet" />
       </div>
@@ -67,17 +66,9 @@ export default async function OverviewPage() {
 
       <div className="grid min-w-0 gap-3 xl:grid-cols-[1.4fr_1fr]">
         <Panel>
-          <PanelHead title="Channel activity" />
-          <div className="grid grid-cols-2 gap-2.5">
-            <div className="rounded-[3px] rounded-tr-[10px] border border-hairline bg-white p-3"><Eyebrow>Ferixas marketplace</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{money(channels.marketplace, { cents: false })}</p><p className="text-[10px] text-chalk-dim">GMV</p></div>
-            <div className="rounded-[3px] rounded-tr-[10px] border border-hairline bg-white p-3"><Eyebrow>Merchant stores</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{money(channels.store, { cents: false })}</p><p className="text-[10px] text-chalk-dim">GMV</p></div>
-          </div>
-          <div className="mt-4 grid gap-3 border-t border-hairline pt-4">
-            {[{ label: "Marketplace", value: channels.marketplace, tone: undefined }, { label: "Merchant stores", value: channels.store, tone: "violet" as const }].map((row) => <div key={row.label}>
-              <div className="mb-1 flex justify-between gap-3 text-[11px]"><span className="text-chalk-dim">{row.label}</span><span className="font-mono text-chalk">{money(row.value, { cents: false })}</span></div><Meter value={row.value} max={channelMax} tone={row.tone} />
-            </div>)}
-          </div>
-          <p className="mt-3 text-[10px] text-chalk-dim">Traffic and conversion reports: <span className="font-semibold text-signal">Coming soon</span></p>
+          <PanelHead title="Marketplace reporting" />
+          <p className="text-[12px] leading-relaxed text-chalk-dim">Sales, orders and commission on this dashboard include confirmed Ferixas marketplace transactions only. Seller websites are separate and are not included.</p>
+          <p className="mt-3 border-t border-hairline pt-3 text-[10px] text-chalk-dim">Traffic and conversion reports: <span className="font-semibold text-signal">Coming soon</span></p>
         </Panel>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">

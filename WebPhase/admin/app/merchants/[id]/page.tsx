@@ -127,7 +127,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
               <KeyValue label="Plan" value={merchant.plan} />
               <KeyValue label="Response rate" value={merchant.responseRate == null ? "Not measured" : `${merchant.responseRate}%`} />
               <KeyValue label="Fulfilment rate" value={merchant.fulfilmentRate == null ? "Not measured" : `${merchant.fulfilmentRate}%`} />
-              <KeyValue label="Rating" value={`${merchant.rating.toFixed(1)} · ${compact(merchant.reviewCount)} reviews`} />
+              <KeyValue label="Rating" value={merchant.rating == null ? `No reviews yet · ${compact(merchant.reviewCount)} reviews` : `${merchant.rating.toFixed(1)} · ${compact(merchant.reviewCount)} reviews`} />
               <KeyValue label="Followers" value={compact(merchant.followers)} />
             </ul>
           </Panel>
@@ -170,7 +170,6 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
                   </Td>
                   <Td className="w-full md:w-auto">
                     <div className="flex flex-wrap gap-1.5">
-                      {product.channels.store ? <Pill tone="signal">Store</Pill> : null}
                       {product.channels.marketplace ? <Pill tone="violet">Market</Pill> : null}
                     </div>
                   </Td>

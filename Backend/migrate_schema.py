@@ -6,10 +6,13 @@ import os
 import sys
 sys.path.insert(0, ".")
 
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+if not DATABASE_URL:
+    raise SystemExit("DATABASE_URL must be configured for the hosted PostgreSQL database.")
+
 from sqlalchemy import create_engine, text, inspect
 from core import Base
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ferixas-dev.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 if DATABASE_URL.startswith("postgresql://"):

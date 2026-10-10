@@ -86,7 +86,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
       <section className="mx-auto max-w-[1240px] px-4 py-8">
         <div className="grid grid-cols-1 gap-6 border-b border-line-warm pb-8 lg:grid-cols-[1.4fr_1fr]">
           <div>
-            <Eyebrow>About the store</Eyebrow>
+            <Eyebrow>About the seller</Eyebrow>
             <p className="mt-2.5 max-w-[70ch] text-[14px] leading-relaxed text-ink-soft">{about}</p>
             {store.businessEmail || store.businessPhone ? <div className="mt-4 flex flex-wrap gap-4 text-[12px] text-ink-soft">
               {store.businessEmail ? <a href={`mailto:${store.businessEmail}`} className="inline-flex items-center gap-1.5 hover:text-ember"><Mail width={13} height={13} />{store.businessEmail}</a> : null}
@@ -151,9 +151,6 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
           </div>
         </div>
 
-        <p className="mt-10 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
-          {store.name} sells here and on {store.customDomain ?? store.domain} from one product record · same cart and checkout
-        </p>
       </section>
     </div>
   );

@@ -135,23 +135,23 @@ const GROUPS: Group[] = [
   {
     id: "selling",
     title: "Selling on Ferixas",
-    note: "Your storefront, your delivery rules, weekly payouts.",
+    note: "Approved seller profiles and marketplace listings.",
     items: [
       {
         q: "How do I open a merchant store?",
-        a: "Send us the outline of your catalogue through the contact form. Onboarding checks your returns address and payout account, then your store goes live — AuraSound Audio, Nova Fashion and PixelForge each started with a single listing.",
+        a: "Contact Ferixas to apply. Admin reviews seller details and each product listing before it appears in the marketplace. Ferixas shows your approved seller profile and approved listings, not pages from your separate website.",
       },
       {
         q: "What does Ferixas charge?",
-        a: "A commission per category on completed sales, with no listing fee and no monthly minimum. Payouts run weekly for delivered orders, net of refunds.",
+        a: "Your Seller Center shows the commission rate assigned to your account. It applies to confirmed Ferixas marketplace sales. Automatic payment capture and payout processing are not connected yet, so no weekly payout schedule is promised.",
       },
       {
         q: "Who handles delivery?",
-        a: "You do, with your own carrier or a Ferixas collect point. Sellers must dispatch within two working days of an order being accepted, and tracking has to be uploaded so buyers can follow their parcel.",
+        a: "Sellers manage delivery for paid Ferixas marketplace orders and can add carrier and tracking information in Seller Center. An order must have confirmed payment before it can be marked shipped or delivered.",
       },
       {
         q: "Can I sell in more than one country?",
-        a: "Yes. Choose the countries you ship to in your store settings; buyers outside them simply will not see a delivery option for your items.",
+        a: "Shipping destinations are shown only when they are configured for a Ferixas marketplace listing. Your independent website shipping settings are not controlled here.",
       },
     ],
   },

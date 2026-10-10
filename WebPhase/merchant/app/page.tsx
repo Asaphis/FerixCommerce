@@ -19,6 +19,7 @@ const quickLinks = [
   { href: "/orders", title: "Orders", Icon: ShoppingCart },
   { href: "/inventory", title: "Inventory", Icon: Boxes },
   { href: "/analytics", title: "Analytics", Icon: ChartNoAxesCombined },
+  { href: "/audience", title: "Audience", Icon: Users },
 ];
 
 export default async function DashboardPage() {
@@ -60,10 +61,10 @@ export default async function DashboardPage() {
         <StatTile label="Revenue · 30 days" value={money(summary.revenue30d, { cents: false })} sub="Recorded orders" icon={<ChartNoAxesCombined width={15} height={15} />} />
         <StatTile label="Orders · 30 days" value={num(summary.orders30d)} sub={`${statuses.processing ?? 0} need attention`} icon={<ShoppingCart width={15} height={15} />} accent="azure" />
         <StatTile label="Products" value={num(counts.products)} sub={`${counts.published} published`} icon={<Package width={15} height={15} />} accent="chalk" />
-        <StatTile label="Customers" value={num(counts.customers)} sub={`${counts.lowStock} low-stock items`} icon={<Users width={15} height={15} />} accent="sand" />
+        <StatTile label="Marketplace followers" value={num(counts.followers)} sub="Real shopper follows" icon={<Users width={15} height={15} />} accent="sand" />
       </div>
 
-      <nav aria-label="Seller quick actions" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <nav aria-label="Seller quick actions" className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
         {quickLinks.map(({ href, title, Icon }) => (
           <Link key={href} href={href} className="group flex min-h-[62px] items-center gap-2.5 rounded-[3px] rounded-tr-[11px] border border-hairline bg-panel px-3 py-2.5 transition-colors hover:border-signal/50 hover:bg-white">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[2px] bg-[#fff0e9] text-signal"><Icon width={15} height={15} /></span>
@@ -150,11 +151,12 @@ export default async function DashboardPage() {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Panel>
-          <PanelHead title="Store and marketplace" />
+          <PanelHead title="Ferixas marketplace presence" action={<Link href="/audience" className="text-[11px] font-bold text-signal">View audience <ArrowRight className="inline" width={12} height={12} /></Link>} />
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Your store</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.storeOrders)}</p><p className="text-[10px] text-chalk-dim">orders</p></div>
-            <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Marketplace</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.marketplaceOrders)}</p><p className="text-[10px] text-chalk-dim">orders</p></div>
+            <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Approved listings</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.published)}</p><p className="text-[10px] text-chalk-dim">visible on Ferixas</p></div>
+            <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Followers</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.followers)}</p><p className="text-[10px] text-chalk-dim">current shopper follows</p></div>
           </div>
+          <p className="mt-3 text-[11px] text-chalk-dim">Shoppers see your approved Ferixas profile, not pages from your separate website.</p>
         </Panel>
         <Panel>
           <PanelHead title="Traffic insights" />

@@ -19,7 +19,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   const labels = data.series.map((point) => point.date);
   const totalRevenue = revenue.reduce((sum, value) => sum + value, 0);
   const totalOrders = orders.reduce((sum, value) => sum + value, 0);
-  const channelMax = Math.max(data.byChannel.store, data.byChannel.marketplace, 1);
+  const channelMax = Math.max(data.byChannel.marketplace, 1);
   const categoryMax = Math.max(...data.byCategory.map((row) => row.revenue), 1);
   const best = data.series.reduce((top, point) => (point.revenue > top.revenue ? point : top), data.series[0]);
 
@@ -32,7 +32,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         <StatTile label={`Revenue · ${range} days`} value={money(totalRevenue, { cents: false })} sub="Recorded orders" />
-        <StatTile label={`Orders · ${range} days`} value={num(totalOrders)} sub="Across both channels" accent="azure" />
+        <StatTile label={`Orders · ${range} days`} value={num(totalOrders)} sub="Confirmed Ferixas marketplace orders" accent="azure" />
         <StatTile label="Best day" value={money(best?.revenue ?? 0, { cents: false })} sub={best?.date ?? "No recorded activity"} accent="sand" />
         <StatTile label="Repeat buyers" value={`${data.customers.repeatRate}%`} sub={`${data.customers.repeat} repeat buyers`} accent="lime" />
       </div>
@@ -44,8 +44,8 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
         </Panel>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
           <Panel>
-            <PanelHead title="Channel mix" />
-            <div className="grid gap-3">{[{ title: "Ferixas marketplace", amount: data.byChannel.marketplace, tone: "azure" as const }, { title: "Your store", amount: data.byChannel.store, tone: undefined }].map((row) => <div key={row.title}><div className="mb-1 flex items-center justify-between gap-2 text-[11px]"><span className="text-chalk-dim">{row.title}</span><span className="font-mono font-semibold text-chalk">{money(row.amount, { cents: false })}</span></div><BarRow value={row.amount} max={channelMax} tone={row.tone} /></div>)}</div>
+            <PanelHead title="Ferixas marketplace sales" />
+            {data.byChannel.marketplace > 0 ? <div><div className="mb-1 flex items-center justify-between gap-2 text-[11px]"><span className="text-chalk-dim">Paid and not cancelled</span><span className="font-mono font-semibold text-chalk">{money(data.byChannel.marketplace, { cents: false })}</span></div><BarRow value={data.byChannel.marketplace} max={channelMax} tone="azure" /></div> : <p className="text-[12px] text-chalk-dim">Confirmed marketplace sales will appear here when payments are connected.</p>}
           </Panel>
           <Panel>
             <PanelHead title="Traffic reports" />

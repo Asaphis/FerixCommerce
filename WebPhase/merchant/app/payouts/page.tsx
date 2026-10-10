@@ -20,13 +20,13 @@ export default async function PayoutsPage() {
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile
-          label="Net lifetime"
+          label="Recorded payout net"
           value={data.available ? money(data.balance, { cents: false }) : "Coming soon"}
-          sub={data.available ? "From recorded payouts" : "Settlement is not connected"}
+          sub={data.available ? "Stored records; not provider-verified" : "Settlement is not connected"}
           icon={<Wallet width={15} height={15} />}
         />
-        <StatTile label="Pending payout" value={data.available ? money(data.pending, { cents: false }) : "Coming soon"} sub={data.available ? `${data.cadence} payouts` : "No payout record yet"} accent="sand" />
-        <StatTile label="Paid to date" value={data.available ? money(data.paidToDate, { cents: false }) : "Coming soon"} sub={data.available ? "Recorded as settled" : "No settlement record yet"} accent="lime" />
+        <StatTile label="Recorded pending" value={data.available ? money(data.pending, { cents: false }) : "Coming soon"} sub={data.available ? "Unverified payout ledger" : "No payout record yet"} accent="sand" />
+        <StatTile label="Recorded paid" value={data.available ? money(data.paidToDate, { cents: false }) : "Coming soon"} sub={data.available ? "Not provider-verified" : "No settlement record yet"} accent="lime" />
         <StatTile label="Commission rate" value={`${data.commissionPct}%`} sub="On marketplace sales only" accent="azure" />
       </div>
 
@@ -35,8 +35,8 @@ export default async function PayoutsPage() {
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             { label: "Sale value", body: "The full value of the order, including delivery and tax." },
-            { label: "Platform commission", body: `${data.commissionPct}% of product value on marketplace sales. Nothing on your own store.` },
-            { label: "Your net", body: "What arrives in your bank on the next payout run." },
+            { label: "Platform commission", body: `${data.commissionPct}% of confirmed Ferixas marketplace product value only.` },
+            { label: "Your net", body: "Only a recorded, confirmed payout appears here; order totals alone are not income." },
           ].map((item) => (
             <div key={item.label} className="rounded-[2px] border border-hairline p-3.5">
               <p className="text-[12.5px] font-medium text-chalk">{item.label}</p>
@@ -51,7 +51,7 @@ export default async function PayoutsPage() {
           <PanelHead title="Payout history" />
         </div>
         {data.payouts.length ? <DataTable
-          head={["Period", "Orders", "Gross", "Commission", "Net", "Status", "Settled"]}
+          head={["Period", "Orders", "Gross", "Commission", "Net", "Recorded status", "Recorded date"]}
           minWidth={820}
           className="p-5 pt-0"
         >
@@ -81,7 +81,7 @@ export default async function PayoutsPage() {
                 </span>
               </Td>
               <Td>
-                <Pill tone={payout.status === "paid" ? "success" : "warn"}>{payout.status}</Pill>
+                <Pill tone={payout.status === "paid" ? "success" : "warn"}>recorded {payout.status}</Pill>
               </Td>
               <TdEnd className="font-mono text-[11.5px] text-chalk-dim md:table-cell">
                 {payout.date}
@@ -100,7 +100,7 @@ export default async function PayoutsPage() {
           <div>
             <p className="text-[13px] text-chalk">{data.method ?? "Not configured"}</p>
             <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">
-              Store {merchant.name} · {merchant.plan} plan · {data.cadence} settlement
+              Seller {merchant.name} · {merchant.plan} plan · {data.cadence} settlement
             </p>
           </div>
         </div>

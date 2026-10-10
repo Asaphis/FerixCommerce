@@ -13,20 +13,20 @@ const STEPS = [
   {
     Icon: Store,
     step: "01",
-    title: "Every seller keeps their own store",
-    body: "A merchant joins with their own brand, catalogue, pricing and delivery rules. AuraSound Audio sells audio hardware, Nova Fashion sells clothing, Sahel Supply sells home and garden, PixelForge sells computing and Lumen Home sells lighting — each on their own storefront.",
+    title: "Every seller has a Ferixas profile",
+    body: "Customers browse each seller’s approved profile and approved marketplace listings here. A seller’s separate website remains external; its pages, domain, and storefront design are not embedded in Ferixas.",
   },
   {
     Icon: Package,
     step: "02",
-    title: "One cart, one checkout, one payment",
-    body: "You can mix five sellers in a single cart and pay once. We split that payment behind the scenes and route each line to the merchant who owns it, so your statement shows one Ferixas charge, not five.",
+    title: "Your basket stays transparent",
+    body: "Items from different sellers remain clearly attributed to their owners. Marketplace payment capture is not available yet, so no order or seller payout is reported as paid until a confirmed payment flow is enabled.",
   },
   {
     Icon: Receipt,
     step: "03",
     title: "Each seller ships, we hold the promise",
-    body: "Because merchants pack their own items, an order can arrive in more than one parcel — each tracked separately. Whatever happens, buyer protection sits with Ferixas: if it never arrives, you are refunded in full.",
+    body: "Once checkout is enabled, seller-owned shipments and payment status will be shown separately. Ferixas will display order and buyer-protection details only when they are backed by a confirmed order.",
   },
 ];
 
@@ -42,11 +42,11 @@ export default function AboutPage() {
     <div className="mx-auto max-w-[1240px] px-4 py-8 lg:px-6">
       <Eyebrow>About</Eyebrow>
       <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">
-        A marketplace where every seller keeps their own store
+        Independent sellers, one Ferixas marketplace profile each
       </h1>
       <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
-        Ferixas is not one shop with one warehouse. It is a place for independent merchants to sell properly — with
-        their own identity — while the shopper gets a single cart, a single checkout and one set of guarantees.
+        Ferixas brings independent seller profiles and approved product listings together. Seller websites remain
+        separate, and checkout stays unavailable until the payment flow is ready.
       </p>
 
       <section className="mt-8">

@@ -534,6 +534,7 @@ export async function reviewMerchantProfileAction(_prev: FormState, formData: Fo
   }
   refresh(`/merchants/${String(formData.get("merchantId") ?? "")}`);
   refresh("/merchants");
+  refresh("/profile-requests");
   return { message: decision === "approve" ? "Seller profile approved and published." : decision === "changes" ? "Changes requested. The current public profile remains unchanged." : "Profile update rejected. The current public profile remains unchanged." };
 }
 

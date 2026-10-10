@@ -27,7 +27,7 @@ export default async function AnalyticsPage({
   const totalOrders = orders.reduce((sum, value) => sum + value, 0);
   const merchantMax = Math.max(...data.byMerchant.map((m) => m.gmv), 1);
   const categoryMax = Math.max(...data.byCategory.map((c) => c.revenue), 1);
-  const channelMax = Math.max(data.byChannel.store, data.byChannel.marketplace, 1);
+  const channelMax = Math.max(data.byChannel.marketplace, 1);
   const bestDay = data.series.reduce((top, point) => (point.gmv > top.gmv ? point : top), data.series[0]);
 
   return (
@@ -35,7 +35,7 @@ export default async function AnalyticsPage({
       <PageHeader
         eyebrow="Platform analytics"
         title="Growth across the marketplace"
-        description={`GMV, commission and order volume over the last ${range} days, split by merchant, channel, department and plan.`}
+        description={`Paid marketplace GMV, commission and order volume over the last ${range} days, split by seller, department and plan.`}
         action={RANGES.map((option) => (
           <Link
             key={option}
@@ -71,26 +71,18 @@ export default async function AnalyticsPage({
 
         <div className="grid gap-3">
           <Panel>
-            <PanelHead title="Channel mix" />
+            <PanelHead title="Ferixas marketplace" hint="Confirmed marketplace sales only" />
             <div className="space-y-4">
               <div className="grid gap-1.5">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-[12.5px] text-chalk-dim">Ferixas marketplace</span>
+                  <span className="text-[12.5px] text-chalk-dim">Paid marketplace sales</span>
                   <span className="font-mono text-[12.5px] tabular-nums text-chalk">
                     {money(data.byChannel.marketplace, { cents: false })}
                   </span>
                 </div>
                 <Meter value={data.byChannel.marketplace} max={channelMax} />
               </div>
-              <div className="grid gap-1.5">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[12.5px] text-chalk-dim">Merchant storefronts</span>
-                  <span className="font-mono text-[12.5px] tabular-nums text-chalk">
-                    {money(data.byChannel.store, { cents: false })}
-                  </span>
-                </div>
-                <Meter value={data.byChannel.store} max={channelMax} tone="violet" />
-              </div>
+              <p className="text-[11px] leading-relaxed text-chalk-dim">Seller websites are outside Ferixas marketplace analytics and are not included in these totals.</p>
             </div>
           </Panel>
 

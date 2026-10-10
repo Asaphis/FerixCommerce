@@ -195,7 +195,7 @@ export default async function MerchantsPage({
         <div className="grid gap-3 text-[12.5px] leading-relaxed text-chalk-dim sm:grid-cols-3">
           <div className="rounded-[2px] border border-hairline p-3.5">
             <Pill tone="mint">Active</Pill>
-            <p className="mt-2.5">Sells in their own storefront and, if enabled, on the marketplace.</p>
+            <p className="mt-2.5">Can submit listings to the Ferixas marketplace. Only approved listings and profile fields are public here.</p>
           </div>
           <div className="rounded-[2px] border border-hairline p-3.5">
             <Pill tone="amber">In review</Pill>

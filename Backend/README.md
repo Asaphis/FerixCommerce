@@ -2,7 +2,7 @@
 
 This is the real FastAPI backend for the marketplace. It uses **Neon PostgreSQL** as the source of truth. The catalogue seed is demo content only so the customer UI has products, categories, stores and banners before the first merchant uploads real inventory.
 
-## Local run
+## Run the API
 
 ```bash
 cd Backend
@@ -10,9 +10,12 @@ python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# For local development, DATABASE_URL may be sqlite:///./ferixas-dev.db
+# Set DATABASE_URL to the hosted Neon PostgreSQL connection string before starting.
+# The application intentionally does not create a local SQLite fallback.
 uvicorn app:app --reload --port 8000
 ```
+
+Contract tests use their own disposable test database; that test isolation is not the application runtime database.
 
 The first boot creates the tables and imports `seed.json`. It is idempotent: it does not reseed a database that already contains catalogue data.
 

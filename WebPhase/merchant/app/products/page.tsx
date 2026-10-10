@@ -20,15 +20,14 @@ const SORTS = [
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; status?: string; sort?: string; channel?: string }>;
+  searchParams: Promise<{ search?: string; status?: string; sort?: string }>;
 }) {
-  const { search, status, sort, channel } = await searchParams;
+  const { search, status, sort } = await searchParams;
   const { session } = await requireMerchant();
   const data = await listProducts(session, {
     search,
     status: status ?? "all",
     sort: sort ?? "new",
-    channel,
   });
 
   const filters = [
@@ -46,7 +45,7 @@ export default async function ProductsPage({
         <div className="min-w-0">
           <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
-          
+          <p className="mt-1.5 max-w-[70ch] text-[12px] text-chalk-dim">This catalogue manages only your Ferixas marketplace listings. Your separate website is not imported or displayed here.</p>
         </div>
         <Link
           href="/products/new"
@@ -99,26 +98,14 @@ export default async function ProductsPage({
               ))}
             </select>
           </label>
-          <label className="flex items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">Channel</span>
-            <select
-              name="channel"
-              defaultValue={channel ?? ""}
-              className="h-11 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
-            >
-              <option value="">Every channel</option>
-              <option value="store">My store</option>
-              <option value="marketplace">Marketplace</option>
-            </select>
-          </label>
         </FilterForm>
       </div>
 
       {data.items.length ? (
         <TablePanel>
           <DataTable
-            head={["Product", "SKU", "Price", "Stock", "Sold 30d", "Channels", "Status", ""]}
-            minWidth={860}
+            head={["Product", "SKU", "Price", "Stock", "Sold 30d", "Listing", "Status", ""]}
+            minWidth={820}
             className="p-5"
           >
             {data.items.map((product) => (
@@ -163,13 +150,7 @@ export default async function ProductsPage({
                   {num(product.sold30d)}
                 </TdDetail>
                 <Td>
-                  <div className="flex flex-wrap gap-1.5">
-                    {product.channels.store ? <Pill tone="lime">Store</Pill> : null}
-                    {product.channels.marketplace ? <Pill tone="info">Market</Pill> : null}
-                    {!product.channels.store && !product.channels.marketplace ? (
-                      <Pill tone="warn">Not selling</Pill>
-                    ) : null}
-                  </div>
+                  <Pill tone="info">Ferixas marketplace</Pill>
                 </Td>
                 <Td>
                   <Pill

@@ -32,8 +32,10 @@ from core import (
     cart_for as _cart_for, cart_payload, categories as category_rows, brands as brand_rows,
     collections as collection_rows, decorate, find_merchant, find_product, get_user,
     hash_password, iso, line_key, merchants as merchant_rows, now, product_rows,
-    public_user, put_row, require_user, sale_status, seed, store_card,
-    marketplace_product_available, verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
+    public_product_fields, public_products, public_review_data, public_user, put_row,
+    record_merchant_follow_activity, require_user, sale_status, seed, store_card,
+    is_seller_product, marketplace_product_available, paid_marketplace_product_units,
+    verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
     merchant_follower_count,
 )
 
@@ -406,10 +408,12 @@ def products(search: Optional[str] = None,
             row for row in product_rows(db)
             if marketplace_product_available(db, row)
         ])
+        public_by_id = {item["id"]: item for item in public_products(db, catalogue)}
+        paid_units = paid_marketplace_product_units(db, days=30)
         items = list(catalogue)
         q = (search or "").lower()
         if q:
-            items = [p for p in items if q in json.dumps(p).lower()]
+            items = [p for p in items if q in json.dumps(public_product_fields(p)).lower()]
         chosen_categories = as_list(category)
         if chosen_categories:
             items = [p for p in items if p.get("category") in chosen_categories]
@@ -434,7 +438,7 @@ def products(search: Optional[str] = None,
         if maxPrice is not None:
             items = [p for p in items if p["price"] <= maxPrice]
         if rating is not None:
-            items = [p for p in items if p["rating"] >= rating]
+            items = [p for p in items if (public_by_id.get(p["id"], {}).get("rating") or 0) >= rating]
         if inStock:
             items = [p for p in items if p["stock"] > 0]
         if onSale:
@@ -446,14 +450,16 @@ def products(search: Optional[str] = None,
         elif sort == "new":
             items.sort(key=lambda p: p.get("createdAt", ""), reverse=True)
         elif sort == "best":
-            items.sort(key=lambda p: -p.get("sold30d", 0))
+            items.sort(key=lambda p: -paid_units.get(p["id"], 0))
         else:
-            items.sort(key=lambda p: -(p.get("rating", 0) * 100 + p.get("sold30d", 0) / 10))
+            items.sort(key=lambda p: -((public_by_id.get(p["id"], {}).get("rating") or 0) * 100
+                                       + public_by_id.get(p["id"], {}).get("reviewCount", 0) / 10
+                                       + paid_units.get(p["id"], 0) / 10))
         total = len(items)
         per_page = max(1, min(60, perPage))
         start = (page - 1) * per_page
         return {
-            "items": items[start:start + per_page], "total": total, "page": page,
+            "items": [public_by_id[p["id"]] for p in items[start:start + per_page]], "total": total, "page": page,
             "perPage": per_page, "pages": max(1, (total + per_page - 1) // per_page),
             "facets": {
                 "categories": [
@@ -491,10 +497,10 @@ def product(slug: str):
                    and (p.get("merchantId") == found.get("merchantId") or p.get("category") == found.get("category"))][:8]
         reviews = db.scalars(select(Review).where(Review.product_id == found["id"])).all()
         return {
-            "product": decorate(db, [found])[0],
+            "product": public_products(db, decorate(db, [found]))[0],
             "merchant": store_card(db, merchant) if merchant else {},
-            "reviews": [r.data for r in reviews],
-            "related": decorate(db, related),
+            "reviews": [public_review_data(review) for review in reviews],
+            "related": public_products(db, decorate(db, related)),
             "shipping": [
                 {"label": "Standard", "detail": "2-5 working days, tracked end to end"},
                 {"label": "Express", "detail": "1-2 working days where available"},
@@ -511,6 +517,10 @@ def home():
         all_items = product_rows(db)
         items = [p for p in all_items if marketplace_product_available(db, p)]
         decorated = decorate(db, items)
+        public_by_id = {item["id"]: item for item in public_products(db, decorated)}
+        paid_units = paid_marketplace_product_units(db, days=30)
+        def safe_products(rows: list[dict]) -> list[dict]:
+            return [public_by_id[row["id"]] for row in rows if row.get("id") in public_by_id]
         cats = category_rows(db)
         cols = collection_rows(db)
         ms = merchant_rows(db)
@@ -535,16 +545,17 @@ def home():
             "categories": sorted([{**c, "count": sum(p.get("category") == c.get("slug") for p in items)}
                                   for c in cats if c.get("visible", True)], key=lambda c: c.get("position", 0)),
             "collections": [{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in items),
-                             "products": [p for p in decorated if c["slug"] in (p.get("collections") or [])][:4]}
+                             "products": safe_products([p for p in decorated if c["slug"] in (p.get("collections") or [])][:4])}
                             for c in cols if c.get("visible", True)],
-            "featured": sorted(decorated, key=lambda p: -p.get("rating", 0))[:8],
-            "trending": sorted(decorated, key=lambda p: -p.get("sold30d", 0))[:8],
-            "newArrivals": sorted(decorated, key=lambda p: p.get("createdAt", ""), reverse=True)[:8],
-            "under100": [p for p in decorated if p["price"] < 100][:8],
-            "official": [p for p in decorated if p.get("merchantId") == "ferixas-official"][:4],
+            "featured": safe_products(sorted(decorated, key=lambda p: -((public_by_id[p["id"]].get("rating") or 0)
+                                                                         * 100 + public_by_id[p["id"]].get("reviewCount", 0)))[:8]),
+            "trending": safe_products(sorted(decorated, key=lambda p: -paid_units.get(p["id"], 0))[:8]),
+            "newArrivals": safe_products(sorted(decorated, key=lambda p: p.get("createdAt", ""), reverse=True)[:8]),
+            "under100": safe_products([p for p in decorated if p["price"] < 100][:8]),
+            "official": safe_products([p for p in decorated if p.get("merchantId") == "ferixas-official"][:4]),
             "flashSale": ({"id": sale.id, "name": sale.name, "headline": sale.headline,
                            "endsAt": iso(sale.ends_at), "bannerUrl": sale.banner_url,
-                           "products": flash_items[:8]} if sale else None),
+                           "products": safe_products(flash_items[:8])} if sale else None),
             "stores": [store_card(db, m) for m in ms],
             # Hook for a future CMS `featured_brands` section. The existing
             # document contract remains untouched; clients can opt into this
@@ -568,7 +579,7 @@ def collections():
     with SessionLocal() as db:
         items = decorate(db, [p for p in product_rows(db) if marketplace_product_available(db, p)])
         return {"collections": [{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in items),
-                                 "products": [p for p in items if c["slug"] in (p.get("collections") or [])][:3]}
+                                 "products": public_products(db, [p for p in items if c["slug"] in (p.get("collections") or [])][:3])}
                                 for c in collection_rows(db) if c.get("visible", True)]}
 
 
@@ -591,7 +602,7 @@ def stores(search: Optional[str] = None, sort: str = "top"):
         if sort == "new":
             rows.sort(key=lambda m: m.get("since", ""), reverse=True)
         else:
-            rows.sort(key=lambda m: -(m.get("rating", 0) * 100 + m.get("followers", 0) / 100))
+            rows.sort(key=lambda m: -((m.get("rating") or 0) * 100 + (m.get("followers") or 0) / 100))
         return {"stores": rows, "total": len(rows)}
 
 
@@ -606,41 +617,34 @@ def store(slug: str):
         # Platform products must NOT mix in.
         owned = decorate(db, [
             p for p in product_rows(db)
-            if p.get("merchantId") == merchant["id"]
+            if is_seller_product(p, merchant["id"])
             and marketplace_product_available(db, p)
         ])
         
-        # Fetch catalog row for merchant stats
-        cat_row = db.get(Catalog, f"merchant:{slug}")
+        public_profile = store_card(db, merchant)
+        followers = merchant_follower_count(db, merchant["id"])
         stats = {
             "products": len(owned),
-            "rating": merchant.get("rating", 0.0),
-            "reviewCount": merchant.get("reviewCount", 0),
-            "followers": merchant_follower_count(db, merchant["id"]),
-            "follower_count": merchant_follower_count(db, merchant["id"]),
-            "total_reviews": cat_row.total_reviews if cat_row else 0,
-            "average_rating": cat_row.average_rating if cat_row else 0.0,
-            "success_rate": cat_row.success_rate if cat_row else 0.0,
-            "delivery_rate": cat_row.delivery_rate if cat_row else 0.0,
+            "rating": public_profile.get("rating"),
+            "reviewCount": public_profile.get("reviewCount", 0),
+            "followers": followers,
+            "follower_count": followers,
+            "total_reviews": public_profile.get("reviewCount", 0),
+            "average_rating": public_profile.get("rating"),
         }
-        
-        doc = db.get(ContentDocument, f"doc_store_{merchant['id']}")
         return {
-            "store": store_card(db, merchant), 
+            "store": public_profile,
             "about": merchant.get("about", ""),
             "location": merchant.get("location", ""),
-            "website": merchant.get("website", ""),
-            "payment_methods": merchant.get("payment_methods", []),
             "responseRate": merchant.get("responseRate") if merchant.get("responseRateVerified") else None,
             "fulfilmentRate": merchant.get("fulfilmentRate") if merchant.get("fulfilmentRateVerified") else None,
-            "products": owned,
+            "products": public_products(db, owned),
             "categories": [
                 {"slug": c["slug"], "name": c.get("name", c["slug"]),
                  "count": sum(1 for p in owned if p.get("category") == c["slug"])}
                 for c in sorted(category_rows(db), key=lambda c: c.get("position", 0))
                 if any(p.get("category") == c["slug"] for p in owned)
             ],
-            "content": (doc.data if doc and doc.status == "published" else None),
             "stats": stats,
         }
 
@@ -650,9 +654,10 @@ def search(q: str = ""):
     with SessionLocal() as db:
         needle = q.lower()
         items = decorate(db, [p for p in product_rows(db)
-                              if marketplace_product_available(db, p) and needle in json.dumps(p).lower()])
+                              if marketplace_product_available(db, p)
+                              and needle in json.dumps(public_product_fields(p)).lower()])
         found_stores = [store_card(db, m) for m in merchant_rows(db) if needle in m["name"].lower()]
-        return {"query": q, "products": items[:24], "stores": found_stores,
+        return {"query": q, "products": public_products(db, items[:24]), "stores": found_stores,
                 "categories": [c for c in category_rows(db) if needle in c.get("name", "").lower()],
                 "suggestions": []}
 
@@ -664,14 +669,17 @@ def follow_seller(merchant_id: str, x_session: Optional[str] = Header(None, alia
     """Follow a seller to get updates about their products."""
     with SessionLocal() as db:
         user = require_user(db, x_session)
+        user = db.scalar(select(User).where(User.id == user.id).with_for_update()) or user
         merchant = find_merchant(db, merchant_id)
-        if not merchant:
+        if not merchant or merchant.get("status", "active") != "active" or not merchant.get("marketplaceEnabled", True):
             raise HTTPException(404, "Seller not found")
         
-        followed = list((user.settings or {}).get("followed_sellers", []))
+        raw_followed = (user.settings or {}).get("followed_sellers", [])
+        followed = list(dict.fromkeys(str(item) for item in raw_followed)) if isinstance(raw_followed, list) else []
         if merchant["id"] not in followed:
             followed.append(merchant["id"])
             user.settings = {**(user.settings or {}), "followed_sellers": followed}
+            record_merchant_follow_activity(db, merchant, "follow")
             db.commit()
             return {"following": True, "follower_count": merchant_follower_count(db, merchant["id"])}
         
@@ -683,14 +691,17 @@ def unfollow_seller(merchant_id: str, x_session: Optional[str] = Header(None, al
     """Unfollow a seller."""
     with SessionLocal() as db:
         user = require_user(db, x_session)
+        user = db.scalar(select(User).where(User.id == user.id).with_for_update()) or user
         merchant = find_merchant(db, merchant_id)
-        if not merchant:
+        if not merchant or merchant.get("status", "active") != "active" or not merchant.get("marketplaceEnabled", True):
             raise HTTPException(404, "Seller not found")
         
-        followed = list((user.settings or {}).get("followed_sellers", []))
+        raw_followed = (user.settings or {}).get("followed_sellers", [])
+        followed = list(dict.fromkeys(str(item) for item in raw_followed)) if isinstance(raw_followed, list) else []
         if merchant["id"] in followed:
             followed.remove(merchant["id"])
             user.settings = {**(user.settings or {}), "followed_sellers": followed}
+            record_merchant_follow_activity(db, merchant, "unfollow")
             db.commit()
             return {"following": False, "follower_count": merchant_follower_count(db, merchant["id"])}
         
@@ -706,9 +717,10 @@ def check_following(merchant_id: str, x_session: Optional[str] = Header(None, al
             return {"following": False}
         
         merchant = find_merchant(db, merchant_id)
-        if not merchant:
+        if not merchant or merchant.get("status", "active") != "active" or not merchant.get("marketplaceEnabled", True):
             raise HTTPException(404, "Seller not found")
         followed = (user.settings or {}).get("followed_sellers", [])
+        followed = followed if isinstance(followed, list) else []
         return {"following": merchant["id"] in followed}
 
 
@@ -862,11 +874,14 @@ def account(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         user = require_user(db, session)
         wish = db.scalar(select(Wishlist).where(Wishlist.user_id == user.id))
         addresses = db.scalars(select(Address).where(Address.user_id == user.id)).all()
-        orders = db.scalars(select(Order).where(Order.user_id == user.id).order_by(Order.placed_at.desc())).all()
+        orders = [o for o in db.scalars(select(Order).where(Order.user_id == user.id).order_by(Order.placed_at.desc())).all()
+                  if str((o.data or {}).get("channel") or "").lower() == "marketplace"]
         by_id = {p["id"]: p for p in product_rows(db)}
         wishlist = [by_id[x] for x in (wish.product_ids if wish else []) if x in by_id]
         rows = [o.data for o in orders]
-        spent = round(sum(o.get("total", 0) for o in rows), 2)
+        settled = [o for o in rows if str(o.get("payment") or "").lower() in {"paid", "captured", "succeeded", "settled"}
+                   and o.get("fulfillment") != "cancelled"]
+        spent = round(sum(o.get("total", 0) for o in settled), 2)
         reviews = user_reviews(db, user.id)
         # Follow relationships store canonical seller IDs; the marketplace resolves them to cards.
         followed = (user.settings or {}).get("followed_sellers", [])
@@ -876,7 +891,7 @@ def account(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
             "wishlist": wishlist, "addresses": [a.data for a in addresses],
             "reviews": reviews, "follows": followed,
             "stats": {"orderCount": len(rows), "spent": spent,
-                      "averageOrder": round(spent / len(rows), 2) if rows else 0,
+                      "averageOrder": round(spent / len(settled), 2) if settled else 0,
                       "wishlistCount": len(wishlist), "addressCount": len(addresses),
                       "reviewCount": len(reviews), "since": iso(user.created_at)},
         }
@@ -886,7 +901,8 @@ def account(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 def account_orders(status: Optional[str] = None, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         user = require_user(db, session)
-        everything = [o.data for o in db.scalars(select(Order).where(Order.user_id == user.id).order_by(Order.placed_at.desc())).all()]
+        everything = [o.data for o in db.scalars(select(Order).where(Order.user_id == user.id).order_by(Order.placed_at.desc())).all()
+                      if str((o.data or {}).get("channel") or "").lower() == "marketplace"]
         rows = everything
         if status and status != "all":
             rows = [o for o in everything if o.get("fulfillment") == status]
@@ -902,7 +918,8 @@ def order_detail(orderId: str, session: Optional[str] = Header(None, alias="X-Fe
     with SessionLocal() as db:
         user = require_user(db, session)
         row = next((o for o in db.scalars(select(Order).where(Order.user_id == user.id)).all()
-                    if o.id == orderId or (o.data or {}).get("number") == orderId), None)
+                    if str((o.data or {}).get("channel") or "").lower() == "marketplace"
+                    and (o.id == orderId or (o.data or {}).get("number") == orderId)), None)
         if not row:
             raise HTTPException(404, "We could not find that order")
         order = row.data or {}
@@ -921,7 +938,11 @@ def reorder(p: ReorderIn, session: Optional[str] = Header(None, alias="X-Ferix-S
     with SessionLocal() as db:
         user = require_user(db, session)
         row = db.get(Order, p.orderId)
-        if not row or row.user_id != user.id:
+        order_data = row.data or {} if row else {}
+        if (not row or row.user_id != user.id
+                or str(order_data.get("channel") or "").lower() != "marketplace"
+                or str(order_data.get("payment") or "").lower() not in {"paid", "captured", "succeeded", "settled"}
+                or order_data.get("fulfillment") == "cancelled"):
             raise HTTPException(404, "We could not find that order")
         cart = cart_for(db, user.id, None)
         added = 0
@@ -1284,28 +1305,14 @@ def public_seller_profile(merchant_id: str):
     """Public Seller Profile: ONLY approved products for that merchant."""
     with SessionLocal() as db:
         merchant = find_merchant(db, merchant_id)
-        if not merchant:
+        if not merchant or merchant.get("status", "active") != "active" or not merchant.get("marketplaceEnabled", True):
             raise HTTPException(404, "Seller not found")
-        all_prods = product_rows(db)
-        approved_products = [
-            p for p in all_prods
-            if p.get("merchantId") == merchant["id"] and marketplace_product_available(db, p)
-        ]
+        approved_products = [p for p in product_rows(db)
+                             if is_seller_product(p, merchant["id"])
+                             and marketplace_product_available(db, p)]
         return {
-            "merchant": {
-                "id": merchant.get("id"), "slug": merchant.get("slug"),
-                "name": merchant.get("name"), "about": merchant.get("about", ""),
-                "location": merchant.get("location", ""), "website": merchant.get("website", ""),
-                "businessEmail": merchant.get("businessEmail", "") if merchant.get("showBusinessEmail") else "",
-                "businessPhone": merchant.get("businessPhone", "") if merchant.get("showPhone") else "",
-                "follower_count": merchant.get("follower_count", 0),
-                "total_reviews": merchant.get("total_reviews", 0),
-                "average_rating": merchant.get("average_rating", 0.0),
-                "success_rate": None,
-                "delivery_rate": None,
-                "verified": merchant.get("verified", False),
-            },
-            "products": approved_products,
+            "merchant": store_card(db, merchant),
+            "products": public_products(db, decorate(db, approved_products)),
         }
 
 

@@ -1,9 +1,7 @@
 import { Wallet } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listPayouts } from "@/lib/api";
-import { SubmitButton } from "@/components/ops/controls";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
-import { updatePayoutAction } from "@/lib/ops-actions";
 import { money, num } from "@/lib/format";
 
 const STATUS_TONE: Record<string, "mint" | "amber" | "neutral"> = {
@@ -25,10 +23,10 @@ export default async function PayoutsPage() {
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <Readout label="Awaiting payout" value={money(data.totals.pending ?? 0, { cents: false })} sub="Not yet settled" icon={<Wallet width={15} height={15} />} tone="amber" />
-        <Readout label="Paid to date" value={money(data.totals.paid ?? 0, { cents: false })} sub="Settled to merchants" tone="mint" />
-        <Readout label="Gross processed" value={money(data.totals.gross ?? 0, { cents: false })} sub="Across all periods" tone="violet" />
-        <Readout label="Commission retained" value={money(data.totals.commission ?? 0, { cents: false })} sub="Platform share" />
+        <Readout label="Recorded pending" value={money(data.totals.pending ?? 0, { cents: false })} sub="Unverified payout ledger" icon={<Wallet width={15} height={15} />} tone="amber" />
+        <Readout label="Recorded paid" value={money(data.totals.paid ?? 0, { cents: false })} sub="Not provider-verified" tone="mint" />
+        <Readout label="Recorded gross" value={money(data.totals.gross ?? 0, { cents: false })} sub="Stored payout records" tone="violet" />
+        <Readout label="Recorded commission" value={money(data.totals.commission ?? 0, { cents: false })} sub="Stored payout records" />
       </div>
 
       <Panel className="border-amber/30 bg-amber/5">
@@ -39,7 +37,7 @@ export default async function PayoutsPage() {
       </Panel>
 
       {data.payouts.length === 0 ? (
-        <Empty title="Nothing to pay out yet" body="Payout periods appear once a merchant has taken orders." />
+        <Empty title="No payout ledger records" body="No estimates are generated from orders. Payout records will appear after a verified settlement flow is connected." />
       ) : (
         <Panel flush className="overflow-hidden">
           <div className="min-w-0 md:overflow-x-auto">
@@ -80,16 +78,10 @@ export default async function PayoutsPage() {
                     </td>
                     <td className="hidden px-4 py-3 text-[12.5px] text-chalk-dim md:table-cell">{payout.method}</td>
                     <td className="px-0 py-0 md:px-4 md:py-3">
-                      <Pill tone={STATUS_TONE[payout.status] ?? "neutral"}>{payout.status}</Pill>
+                      <Pill tone={STATUS_TONE[payout.status] ?? "neutral"}>recorded {payout.status}</Pill>
                     </td>
                     <td className="ml-auto px-0 py-0 md:ml-0 md:px-4 md:py-3">
-                      <form action={updatePayoutAction} className="flex gap-2">
-                        <input type="hidden" name="id" value={payout.id} />
-                        <input type="hidden" name="status" value={payout.status === "paid" ? "pending" : "paid"} />
-                        <SubmitButton variant={payout.status === "paid" ? "outline" : "primary"} pendingLabel="Saving">
-                          {payout.status === "paid" ? "Reopen" : "Mark paid"}
-                        </SubmitButton>
-                      </form>
+                      <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-chalk-dim">Provider confirmation required</span>
                     </td>
                   </tr>
                 ))}

@@ -6,17 +6,18 @@ import { SubmitButton } from "@/components/studio/controls";
 import { Notice, inputClass } from "@/components/studio/forms";
 import { setOrderStatusAction, type FormState } from "@/lib/actions";
 
-export function OrderStatusForms({ orderId, carrier, tracking, carriers }: { orderId: string; carrier: string | null; tracking: string | null; carriers: string[] }) {
+export function OrderStatusForms({ orderId, carrier, tracking, carriers, paid, fulfillment }: { orderId: string; carrier: string | null; tracking: string | null; carriers: string[]; paid: boolean; fulfillment: string }) {
   const [state, action] = useActionState<FormState, FormData>(setOrderStatusAction, {});
+  const options = paid
+    ? fulfillment === "processing" ? [{ to: "shipped", label: "Mark shipped" }]
+      : fulfillment === "shipped" ? [{ to: "delivered", label: "Mark delivered" }]
+      : []
+    : fulfillment === "processing" ? [{ to: "cancelled", label: "Cancel unpaid order" }]
+      : [];
   return (
     <div className="grid gap-3">
       <div className="flex flex-wrap gap-2">
-        {[
-          { to: "processing", label: "Processing" },
-          { to: "shipped", label: "Shipped" },
-          { to: "delivered", label: "Delivered" },
-          { to: "cancelled", label: "Cancelled" },
-        ].map((option) => (
+        {options.map((option) => (
           <form key={option.to} action={action} className="flex flex-wrap items-end gap-2">
             <input type="hidden" name="id" value={orderId} />
             <input type="hidden" name="fulfillment" value={option.to} />
@@ -30,6 +31,8 @@ export function OrderStatusForms({ orderId, carrier, tracking, carriers }: { ord
           </form>
         ))}
       </div>
+      {!paid ? <p className="text-[11px] text-sand">Customer contact and delivery details remain hidden until payment is confirmed. Cancelling an unpaid order does not issue a refund.</p> : null}
+      {paid && fulfillment === "delivered" ? <p className="text-[11px] text-chalk-dim">This paid order is complete. Refund requests must be handled by Admin.</p> : null}
       <Notice state={state} />
     </div>
   );

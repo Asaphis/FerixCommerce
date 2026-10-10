@@ -82,6 +82,8 @@ GET/POST/DELETE /merchant/media
 GET/POST /merchant/promotions
 ```
 
+Admin orders, payments and analytics include only explicitly tagged Ferixas marketplace orders. Revenue and commission require a paid/captured/succeeded/settled payment state and exclude cancelled orders; fulfillment is not proof of payment, refund or settlement. With no provider connected, refund/paid-payout mutations are refused, payout estimates are not synthesized from orders, and persisted payout rows remain unverified records.
+
 ## Deferred features
 
 These must exist as pages and say **Coming soon** — do not fake them:

@@ -217,11 +217,10 @@ export function Price({
   );
 }
 
-export function StockNote({ stock, low = 25 }: { stock: number; low?: number }) {
-  if (stock <= 0) return <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ember">Out of stock</span>;
-  if (stock <= low)
-    return <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[#8a6a1f]">Only {stock} left</span>;
-  return <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">In stock · {stock}</span>;
+export function StockNote({ status }: { status: "in_stock" | "limited" | "out_of_stock" }) {
+  if (status === "out_of_stock") return <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ember">Out of stock</span>;
+  if (status === "limited") return <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-[#8a6a1f]">Limited availability</span>;
+  return <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">In stock</span>;
 }
 
 export function LinkButton({

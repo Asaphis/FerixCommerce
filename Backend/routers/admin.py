@@ -18,8 +18,10 @@ from core import (
     MediaAsset, MerchantProfileRequest, Order, Payout, ROLE_PERMISSIONS, SessionLocal, StaffSession, StaffUser, User,
     audit, collections as all_collections, categories as all_categories, find_merchant,
     find_product, iso, issue_staff_session, media_json, merchants as all_merchants,
-    new_id, now, permissions_for, placeholder, products as all_products, put_row, drop_row,
-    merchant_follower_count,
+    is_platform_product, is_seller_marketplace_product, marketplace_product_available,
+    merchant_follower_count, merchant_review_summary, new_id, now,
+    permissions_for, placeholder, product_owner_kind, products as all_products,
+    put_row, drop_row, seller_products,
     remove_media_blob, require_permission, require_staff, rows_of, storage_info,
     sync_pending_media, upload_media_blob, validate_media_upload, verify_password,
 )
@@ -260,14 +262,28 @@ def _assert_unique_brand_slug(db, slug: str, brand_id: Optional[str] = None) -> 
         raise HTTPException(409, "A brand with that slug already exists")
 
 
+PAID_PAYMENT_STATES = {"paid", "captured", "succeeded", "settled"}
+
+
 def _order_row(db, row: Order) -> dict:
     data = dict(row.data or {})
     user = db.get(User, row.user_id)
     merchant = find_merchant(db, (data.get("items") or [{}])[0].get("merchantId", "")) or {}
+    payment = str(data.get("payment") or "pending").lower()
+    channel = str(data.get("channel") or "unknown").lower()
+    commission = 0.0
+    if payment in PAID_PAYMENT_STATES and channel == "marketplace":
+        for item in data.get("items", []):
+            owner = find_merchant(db, str(item.get("merchantId") or "")) or {}
+            try:
+                rate = float(owner.get("commissionPct", DEFAULT_SETTINGS["defaultCommissionPct"]))
+                commission += float(item.get("price") or 0) * int(item.get("qty") or 0) * rate / 100
+            except (TypeError, ValueError):
+                continue
     return {
         "id": data.get("id", row.id), "number": data.get("number", row.id),
         "placedAt": data.get("placedAt", iso(row.placed_at)),
-        "channel": data.get("channel", "marketplace"),
+        "channel": channel,
         "customer": {
             "id": row.user_id, "name": (user.name if user else "Guest"),
             "email": (user.email if user else ""), "phone": (user.phone if user else ""),
@@ -276,8 +292,8 @@ def _order_row(db, row: Order) -> dict:
         "items": data.get("items", []),
         "subtotal": data.get("subtotal", 0), "shipping": data.get("shipping", 0),
         "tax": data.get("tax", 0), "total": data.get("total", 0),
-        "commission": round(sum(i.get("price", 0) * i.get("qty", 0) for i in data.get("items", [])) * merchant.get("commissionPct", 10) / 100, 2),
-        "payment": data.get("payment", "paid"),
+        "commission": round(commission, 2),
+        "payment": payment,
         "fulfillment": data.get("fulfillment", "processing"),
         "carrier": data.get("carrier"), "tracking": data.get("tracking"),
         "merchantId": merchant.get("id", ""), "merchantName": merchant.get("name", "Ferixas"),
@@ -289,7 +305,9 @@ def _order_product_units(orders: list[dict], days: Optional[int] = None, merchan
     """Aggregate real non-cancelled order quantities; catalogue seed metadata is not sales."""
     counts: dict[str, int] = {}
     for order in orders:
-        if order.get("fulfillment") == "cancelled":
+        if order.get("channel") != "marketplace":
+            continue
+        if order.get("payment") not in PAID_PAYMENT_STATES or order.get("fulfillment") == "cancelled":
             continue
         if days is not None and _days_between(order.get("placedAt", "")) >= days:
             continue
@@ -308,28 +326,41 @@ def _order_product_units(orders: list[dict], days: Optional[int] = None, merchan
 
 
 def _merchant_row(db, merchant: dict) -> dict:
-    owned = [p for p in all_products(db) if p.get("merchantId") == merchant["id"]]
-    orders = [_order_row(db, r) for r in db.scalars(select(Order)).all() if any(i.get("merchantId") == merchant["id"] for i in (r.data or {}).get("items", []))]
-    gmv = round(sum(o["total"] for o in orders), 2)
-    commission = round(sum(o["commission"] for o in orders), 2)
+    owned = seller_products(db, merchant["id"])
+    orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()
+              if str((r.data or {}).get("channel") or "").lower() == "marketplace"
+              and any(i.get("merchantId") == merchant["id"] for i in (r.data or {}).get("items", []))]
+    paid_marketplace = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
+                        and o.get("channel") == "marketplace" and o.get("fulfillment") != "cancelled"]
+    seller_lines = [item for order in paid_marketplace for item in order.get("items", [])
+                    if item.get("merchantId") == merchant["id"]]
+    gmv = round(sum(float(i.get("price") or 0) * int(i.get("qty") or 0) for i in seller_lines), 2)
+    try:
+        rate = float(merchant.get("commissionPct", DEFAULT_SETTINGS["defaultCommissionPct"]))
+    except (TypeError, ValueError):
+        rate = DEFAULT_SETTINGS["defaultCommissionPct"]
+    commission = round(gmv * rate / 100, 2)
+    reviews = merchant_review_summary(db, merchant["id"])
     return {
         "id": merchant["id"], "slug": merchant["slug"], "name": merchant["name"],
         "tagline": merchant.get("tagline", ""), "location": merchant.get("location", ""),
-        "rating": merchant.get("rating", 0), "reviewCount": merchant.get("reviewCount", 0),
+        "rating": reviews["rating"], "reviewCount": reviews["reviewCount"],
         "followers": merchant_follower_count(db, merchant["id"]), "verified": merchant.get("verified", False),
         "brand": merchant.get("brand", {}), "domain": merchant.get("domain", ""),
         "customDomain": merchant.get("customDomain"), "plan": merchant.get("plan", "Starter"),
         "since": merchant.get("since", ""), "status": merchant.get("status", "active"),
         "commissionPct": merchant.get("commissionPct", 10),
         "productCount": len(owned),
-        "marketplaceListings": sum((p.get("channels") or {}).get("marketplace") for p in owned),
-        "gmv": gmv, "commission": commission, "orders": len(orders),
+        "marketplaceListings": sum(p.get("status") == "approved" and (p.get("channels") or {}).get("marketplace") is True for p in owned),
+        "gmv": gmv, "commission": commission, "orders": len(paid_marketplace),
         "template": (merchant.get("brand") or {}).get("template"),
     }
 
 
 def _user_row(db, user: User) -> dict:
     orders = [_order_row(db, r) for r in db.scalars(select(Order).where(Order.user_id == user.id)).all()]
+    orders = [o for o in orders if o.get("channel") == "marketplace"
+              and o.get("payment") in PAID_PAYMENT_STATES and o.get("fulfillment") != "cancelled"]
     spent = round(sum(o["total"] for o in orders), 2)
     last = max((o["placedAt"] for o in orders), default=None)
     return {
@@ -416,19 +447,24 @@ def overview(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         require_staff(db, session, "admin")
         merchants = [_merchant_row(db, m) for m in all_merchants(db)]
-        orders = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()]
+        orders = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()
+                  if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
+        paid_orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
+                       and o.get("fulfillment") != "cancelled"]
         users = db.scalars(select(User)).all()
         products = all_products(db)
-        sold_units = _order_product_units(orders)
+        official_products = [p for p in products if is_platform_product(p)]
+        marketplace_listings = [p for p in products if marketplace_product_available(db, p)]
+        sold_units = _order_product_units(paid_orders)
 
-        gmv = round(sum(o["total"] for o in orders), 2)
-        commission = round(sum(o["commission"] for o in orders), 2)
+        gmv = round(sum(o["total"] for o in paid_orders), 2)
+        commission = round(sum(o["commission"] for o in paid_orders), 2)
         statuses: dict[str, int] = {}
         for order in orders:
             statuses[order["fulfillment"]] = statuses.get(order["fulfillment"], 0) + 1
 
         def window(days: int) -> dict:
-            rows = [o for o in orders if _days_between(o["placedAt"]) < days]
+            rows = [o for o in paid_orders if _days_between(o["placedAt"]) < days]
             return {"gmv": round(sum(o["total"] for o in rows), 2),
                     "commission": round(sum(o["commission"] for o in rows), 2), "orders": len(rows)}
 
@@ -437,21 +473,18 @@ def overview(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
             "totals": {
                 "gmv": gmv, "commission": commission, "merchantNet": round(gmv - commission, 2),
                 "orders": len(orders),
-                "averageOrder": round(gmv / len(orders), 2) if orders else 0.0,
-                "deliveredRate": round((statuses.get("delivered", 0) / len(orders) * 100) if orders else 0, 1),
+                "averageOrder": round(gmv / len(paid_orders), 2) if paid_orders else 0.0,
+                "deliveredRate": round((sum(o["fulfillment"] == "delivered" for o in paid_orders) / len(paid_orders) * 100) if paid_orders else 0, 1),
                 "merchants": len(merchants),
                 "activeMerchants": sum(m["status"] == "active" for m in merchants),
                 "reviewMerchants": sum(m["status"] == "review" for m in merchants),
                 "suspendedMerchants": sum(m["status"] == "suspended" for m in merchants),
-                "products": len(products),
-                "marketplaceListings": sum((p.get("channels") or {}).get("marketplace") for p in products),
+                "products": len(official_products),
+                "marketplaceListings": len(marketplace_listings),
                 "soldUnits": sum(sold_units.values()),
             },
             "windows": {"today": window(1), "week": window(7), "month": window(30)},
-            "channels": {
-                "store": round(sum(o["total"] for o in orders if o["channel"] == "store"), 2),
-                "marketplace": round(sum(o["total"] for o in orders if o["channel"] == "marketplace"), 2),
-            },
+            "channels": {"marketplace": gmv},
             "statuses": statuses,
             "topMerchants": sorted(
                 [{"id": m["id"], "name": m["name"], "slug": m["slug"], "gmv": m["gmv"], "orders": m["orders"]} for m in merchants],
@@ -496,8 +529,10 @@ def merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
         if not found:
             raise HTTPException(404, "Merchant not found")
         row = _merchant_row(db, found)
-        orders = [_order_row(db, r) for r in db.scalars(select(Order)).all() if any(i.get("merchantId") == found["id"] for i in (r.data or {}).get("items", []))]
-        owned = [p for p in all_products(db) if p.get("merchantId") == found["id"]]
+        orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()
+                  if str((r.data or {}).get("channel") or "").lower() == "marketplace"
+                  and any(i.get("merchantId") == found["id"] for i in (r.data or {}).get("items", []))]
+        owned = seller_products(db, found["id"])
         sold30 = _order_product_units(orders, days=30, merchant_id=found["id"])
         statuses: dict[str, int] = {}
         for order in orders:
@@ -509,7 +544,7 @@ def merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
                          "marketplaceEnabled": found.get("marketplaceEnabled", True)},
             "about": found.get("about", ""),
             "profile": {key: found.get(key, "") for key in (
-                "name", "tagline", "about", "location", "businessName", "businessEmail", "businessPhone",
+                "name", "tagline", "about", "location", "logo", "businessName", "businessEmail", "businessPhone",
                 "addressLine1", "addressLine2", "city", "region", "postalCode", "country", "website",
                 "showBusinessEmail", "showPhone",
             )},
@@ -582,10 +617,9 @@ def decide_merchant_profile_request(
             updated = {**merchant, **(request.profile or {})}
             put_row(db, "merchant", merchant["slug"], updated)
             if updated.get("name") != before_name:
-                for product in all_products(db):
-                    if product.get("merchantId") == merchant["id"]:
-                        product["merchantName"] = updated["name"]
-                        put_row(db, "product", product["slug"], product)
+                for product in seller_products(db, merchant["id"]):
+                    product["merchantName"] = updated["name"]
+                    put_row(db, "product", product["slug"], product)
             request.status = "approved"
         elif decision == "changes":
             request.status = "changes_requested"
@@ -597,6 +631,41 @@ def decide_merchant_profile_request(
         audit(db, "admin", staff.email, f"merchant.profile.{decision}", merchant["slug"], note or "Profile approved")
         db.commit()
         return {"request": {"id": request.id, "status": request.status, "note": request.note}}
+
+
+@router.get("/merchant/profile-requests")
+def pending_merchant_profile_requests(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """List only pending seller profile snapshots for the dedicated Admin queue."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.approve")
+        requests = db.scalars(
+            select(MerchantProfileRequest)
+            .where(MerchantProfileRequest.status == "pending_review")
+            .order_by(MerchantProfileRequest.submitted_at.asc())
+        ).all()
+        profile_fields = (
+            "name", "tagline", "about", "location", "logo", "businessName", "businessEmail", "businessPhone",
+            "addressLine1", "addressLine2", "city", "region", "postalCode", "country", "website",
+            "showBusinessEmail", "showPhone",
+        )
+        items = []
+        for request in requests:
+            merchant = find_merchant(db, request.merchant_id)
+            if not merchant:
+                continue
+            items.append({
+                "merchantId": merchant["id"], "merchantName": merchant.get("name", "Seller"),
+                "merchantSlug": merchant.get("slug", ""),
+                "currentProfile": {key: merchant.get(key, "") for key in profile_fields},
+                "request": {
+                    "id": request.id, "profile": request.profile or {}, "status": request.status,
+                    "note": request.note or "", "submittedBy": request.submitted_by,
+                    "submittedAt": iso(request.submitted_at), "reviewedBy": request.reviewed_by,
+                    "reviewedAt": iso(request.reviewed_at) if request.reviewed_at else None,
+                },
+            })
+        return {"items": items, "total": len(items)}
 
 
 # ── Customers ──────────────────────────────────────────────────────────────
@@ -629,7 +698,8 @@ def user(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str
         if not found:
             raise HTTPException(404, "Customer not found")
         row = _user_row(db, found)
-        orders = [_order_row(db, r) for r in db.scalars(select(Order).where(Order.user_id == id)).all()]
+        orders = [_order_row(db, r) for r in db.scalars(select(Order).where(Order.user_id == id)).all()
+                  if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
         from core import Address, Review, Wishlist
         addresses = [a.data for a in db.scalars(select(Address).where(Address.user_id == id)).all()]
         reviews = [r.data for r in db.scalars(select(Review).where(Review.user_id == id)).all()]
@@ -660,10 +730,13 @@ def orders(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
            merchant: Optional[str] = None):
     with SessionLocal() as db:
         require_staff(db, session, "admin")
-        rows = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()]
+        rows = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()
+                if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
         counts: dict[str, int] = {"all": len(rows)}
         for row in rows:
             counts[row["fulfillment"]] = counts.get(row["fulfillment"], 0) + 1
+        counts["paid"] = sum(o.get("payment") in PAID_PAYMENT_STATES for o in rows)
+        counts["refunded"] = sum(o.get("payment") == "refunded" for o in rows)
         filtered = rows
         if search:
             q = search.lower()
@@ -671,13 +744,15 @@ def orders(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
                         or q in o["merchantName"].lower()]
         if status and status != "all":
             filtered = [o for o in filtered if o["fulfillment"] == status]
-        if channel and channel != "all":
-            filtered = [o for o in filtered if o["channel"] == channel]
+        if channel and channel not in {"all", "marketplace"}:
+            raise HTTPException(400, "The Admin order console covers Ferixas marketplace orders only.")
         if merchant and merchant != "all":
             filtered = [o for o in filtered if o["merchantId"] == merchant]
         return {"orders": filtered, "total": len(filtered), "counts": counts,
-                "gmv": round(sum(o["total"] for o in filtered), 2),
-                "commission": round(sum(o["commission"] for o in filtered), 2),
+                "gmv": round(sum(o["total"] for o in filtered if o.get("payment") in PAID_PAYMENT_STATES
+                                 and o.get("fulfillment") != "cancelled"), 2),
+                "commission": round(sum(o["commission"] for o in filtered if o.get("payment") in PAID_PAYMENT_STATES
+                                         and o.get("fulfillment") != "cancelled"), 2),
                 "merchants": sorted({(o["merchantId"], o["merchantName"]) for o in rows} - {("", "")},
                                     key=lambda pair: pair[1]) and [{"id": i, "name": n} for i, n in sorted({(o["merchantId"], o["merchantName"]) for o in rows}, key=lambda p: p[1])]}
 
@@ -689,33 +764,38 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
     with SessionLocal() as db:
         require_staff(db, session, "admin")
         merchants = [_merchant_row(db, m) for m in all_merchants(db)]
-        orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()]
+        orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()
+                  if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
+        paid_orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
+                       and o.get("fulfillment") != "cancelled"]
         products = all_products(db)
+        official_products = [p for p in products if is_platform_product(p)]
+        marketplace_listings = [p for p in products if marketplace_product_available(db, p)]
         span = max(7, min(180, days))
-        sold_units = _order_product_units(orders)
+        sold_units = _order_product_units(paid_orders)
 
         series = []
         from datetime import date as _date_t
         today = now().date()
         for offset in range(span - 1, -1, -1):
             day = (today - timedelta(days=offset)).isoformat()
-            rows = [o for o in orders if _date(o["placedAt"]) == day]
+            rows = [o for o in paid_orders if _date(o["placedAt"]) == day]
             series.append({"date": day, "gmv": round(sum(o["total"] for o in rows), 2),
                            "commission": round(sum(o["commission"] for o in rows), 2),
                            "orders": len(rows)})
 
-        gmv = round(sum(o["total"] for o in orders), 2)
-        commission = round(sum(o["commission"] for o in orders), 2)
+        gmv = round(sum(o["total"] for o in paid_orders), 2)
+        commission = round(sum(o["commission"] for o in paid_orders), 2)
         by_category: dict[str, float] = {}
-        for order in orders:
+        for order in paid_orders:
             for item in order["items"]:
                 product = next((p for p in products if p["id"] == item.get("productId")), None)
                 key = (product or {}).get("category", "other")
                 by_category[key] = round(by_category.get(key, 0) + item.get("price", 0) * item.get("qty", 0), 2)
 
         product_sales: dict[str, dict] = {}
-        for order in orders:
-            if order.get("fulfillment") == "cancelled" or _days_between(order.get("placedAt", "")) >= 30:
+        for order in paid_orders:
+            if _days_between(order.get("placedAt", "")) >= 30:
                 continue
             for item in order.get("items", []):
                 product_id = str(item.get("productId", ""))
@@ -743,21 +823,20 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
             "series": series,
             "totals": {
                 "gmv": gmv, "commission": commission, "merchantNet": round(gmv - commission, 2),
-                "orders": len(orders),
-                "averageOrder": round(gmv / len(orders), 2) if orders else 0.0,
-                "deliveredRate": round((sum(o["fulfillment"] == "delivered" for o in orders) / len(orders) * 100) if orders else 0, 1),
+                "orders": len(paid_orders),
+                "averageOrder": round(gmv / len(paid_orders), 2) if paid_orders else 0.0,
+                "deliveredRate": round((sum(o["fulfillment"] == "delivered" for o in paid_orders) / len(paid_orders) * 100) if paid_orders else 0, 1),
                 "merchants": len(merchants), "activeMerchants": sum(m["status"] == "active" for m in merchants),
                 "reviewMerchants": sum(m["status"] == "review" for m in merchants),
                 "suspendedMerchants": sum(m["status"] == "suspended" for m in merchants),
-                "products": len(products),
-                "marketplaceListings": sum((p.get("channels") or {}).get("marketplace") for p in products),
+                "products": len(official_products),
+                "marketplaceListings": len(marketplace_listings),
                 "soldUnits": sum(sold_units.values()),
             },
             "byMerchant": sorted([{"id": m["id"], "name": m["name"], "slug": m["slug"], "gmv": m["gmv"],
                                    "commission": m["commission"], "orders": m["orders"]} for m in merchants],
                                  key=lambda m: -m["gmv"]),
-            "byChannel": {"store": round(sum(o["total"] for o in orders if o["channel"] == "store"), 2),
-                          "marketplace": round(sum(o["total"] for o in orders if o["channel"] == "marketplace"), 2)},
+            "byChannel": {"marketplace": gmv},
             "byCategory": [{"category": k, "name": k.title(), "revenue": v} for k, v in sorted(by_category.items(), key=lambda kv: -kv[1])],
             "topProducts": sorted(top_products, key=lambda product: -product["revenue"])[:10],
             "plans": [{"plan": plan, "merchants": sum(m["plan"] == plan for m in merchants)}
@@ -807,15 +886,15 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                      status: Optional[str] = None, owner: Optional[str] = None):
     with SessionLocal() as db:
         require_staff(db, session, "admin")
-        rows = all_products(db)
+        scope = (owner or "official").strip().lower()
+        if scope != "official":
+            raise HTTPException(400, "The platform catalogue contains Ferixas Official products only. Use seller review or merchant records for seller-owned listings.")
+        rows = [p for p in all_products(db) if is_platform_product(p)]
         order_rows = [_order_row(db, row) for row in db.scalars(select(Order)).all()]
         sold30 = _order_product_units(order_rows, days=30)
-        counts = {"all": len(rows)}
+        counts = {"all": len(rows), "official": len(rows)}
         for row in rows:
             counts[row.get("status", "active")] = counts.get(row.get("status", "active"), 0) + 1
-        counts["official"] = sum(p.get("merchantId") == "ferixas-official" for p in rows)
-        counts["seller"] = len(rows) - counts["official"]
-        counts["scope"] = "seller" if owner == "seller" else ("all" if owner == "all" else "official")
         filtered = rows
         if search:
             q = search.lower()
@@ -824,15 +903,6 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
             filtered = [p for p in filtered if p.get("category") == category]
         if status and status != "all":
             filtered = [p for p in filtered if p.get("status") == status]
-        # The catalogue is the platform's OWN stock. A seller's products belong to that
-        # seller and are managed from their page, so the default is our own rows and
-        # seeing everything takes asking for it explicitly.
-        if owner == "seller":
-            filtered = [p for p in filtered if p.get("merchantId") != "ferixas-official" and p.get("origin") != "platform"]
-        elif owner == "all":
-            pass
-        else:
-            filtered = [p for p in filtered if p.get("merchantId") == "ferixas-official" or p.get("origin") == "platform"]
         return {
             "products": [{"id": p["id"], "slug": p["slug"], "title": p["title"], "sku": p.get("sku", ""),
                           "price": p.get("price", 0), "compareAt": p.get("compareAt"), "stock": p.get("stock", 0),
@@ -888,7 +958,8 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
             "variants": payload.get("variants") or [], "status": (payload.get("status") or default_status) if is_platform else "pending_review",
             "reviewStatus": "in_review" if not is_platform else None,
-            "channels": {"store": bool(payload.get("store", True)), "marketplace": bool(payload.get("marketplace", True))},
+            "channels": {"store": bool(payload.get("store", True)) if is_platform else False,
+                         "marketplace": bool(payload.get("marketplace", True)) if is_platform else True},
             "featured": bool(payload.get("featured")),
             "createdAt": iso(now()), "updatedAt": iso(now()), "sold30d": 0, "views30d": 0,
             "seoTitle": payload.get("seoTitle") or title,
@@ -909,6 +980,8 @@ def catalog_update(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         target = find_product(db, payload.id or payload.slug or "")
         if not target:
             raise HTTPException(404, "Product not found")
+        if not is_platform_product(target):
+            raise HTTPException(403, "Seller-owned products must be managed through the seller review workflow.")
         updated = dict(target)
         for field in ("title", "category", "description", "status", "images", "collections", "tags", "compareAt", "featured"):
             value = getattr(payload, field, None)
@@ -940,6 +1013,8 @@ def catalog_delete(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         target = find_product(db, str(payload.get("id") or payload.get("slug") or ""))
         if not target:
             raise HTTPException(404, "Product not found")
+        if not is_platform_product(target):
+            raise HTTPException(403, "Seller-owned products cannot be removed from the platform catalogue.")
         drop_row(db, "product", target["slug"])
         audit(db, "admin", staff.email, "catalog.delete", target["slug"], target.get("title", ""))
         db.commit()
@@ -974,64 +1049,22 @@ def pending_review_queue(session: Optional[str] = Header(None, alias="X-Ferix-Se
         }
 
 
-@router.patch("/catalog/products/approve")
+@router.patch("/catalog/products/approve", deprecated=True)
 def approve_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
-    """Approve a seller product for public marketplace display."""
+    """Block the old approval shortcut; all submissions use the review decision workflow."""
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "merchant.approve")
-        product_id = str(payload.get("id") or payload.get("slug") or "")
-        target = find_product(db, product_id)
-        if not target:
-            raise HTTPException(404, "Product not found")
-        if target.get("status") == "approved":
-            return {"product": target, "message": "Product is already approved"}
-        
-        # Update product status to approved
-        updated = dict(target)
-        updated["status"] = "approved"
-        updated["updatedAt"] = iso(now())
-        
-        # Admin can override section tags during approval
-        if "section_tags" in payload:
-            updated["section_tags"] = payload["section_tags"]
-        
-        put_row(db, "product", target["slug"], updated)
-        audit(db, "admin", staff.email, "product.approve", target["slug"], 
-              f"Approved {target.get('title', '')} from {target.get('merchantName', '')}")
-        db.commit()
-        
-        return {"product": updated, "message": "Product approved successfully"}
+        raise HTTPException(410, "Use /admin/review/decision so seller ownership and publication rules are enforced.")
 
 
-@router.patch("/catalog/products/reject")
+@router.patch("/catalog/products/reject", deprecated=True)
 def reject_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
-    """Reject a seller product with a reason."""
+    """Block the old moderation shortcut; all submissions use the review decision workflow."""
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "merchant.approve")
-        product_id = str(payload.get("id") or payload.get("slug") or "")
-        reason = str(payload.get("reason") or "").strip()
-        
-        if not reason:
-            raise HTTPException(400, "A rejection reason is required")
-        
-        target = find_product(db, product_id)
-        if not target:
-            raise HTTPException(404, "Product not found")
-        
-        # Update product status to rejected with reason
-        updated = dict(target)
-        updated["status"] = "rejected"
-        updated["rejection_reason"] = reason
-        updated["updatedAt"] = iso(now())
-        
-        put_row(db, "product", target["slug"], updated)
-        audit(db, "admin", staff.email, "product.reject", target["slug"], 
-              f"Rejected {target.get('title', '')}: {reason}")
-        db.commit()
-        
-        return {"product": updated, "message": "Product rejected"}
+        raise HTTPException(410, "Use /admin/review/decision so seller ownership and publication rules are enforced.")
 
 
 # ── Review Queue API (consumed by WebPhase/admin) ─────────────────────────────
@@ -1099,6 +1132,8 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
         target = find_product(db, product_id)
         if not target:
             raise HTTPException(404, "Product not found")
+        if not is_seller_marketplace_product(target):
+            raise HTTPException(409, "Only seller-owned Ferixas marketplace submissions can enter this review workflow.")
         if target.get("status") != "pending_review":
             raise HTTPException(409, "Product is no longer pending review")
         
@@ -1673,23 +1708,24 @@ def delete_promotion(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
 def payments(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         require_staff(db, session, "admin")
-        orders = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()]
-        gross = round(sum(o["total"] for o in orders), 2)
-        commission = round(sum(o["commission"] for o in orders), 2)
-        refunds = round(sum(o["total"] for o in orders if o["fulfillment"] == "cancelled"), 2)
+        orders = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()
+                  if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
+        paid_orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
+                       and o.get("fulfillment") != "cancelled"]
+        gross = round(sum(o["total"] for o in paid_orders), 2)
+        commission = round(sum(o["commission"] for o in paid_orders), 2)
         return {
             "transactions": [{"id": f"txn_{o['id']}", "orderId": o["id"], "number": o["number"],
                               "placedAt": o["placedAt"], "merchantId": o["merchantId"],
                               "merchantName": o["merchantName"], "customer": o["customer"]["name"],
                               "amount": o["total"], "commission": o["commission"], "channel": o["channel"],
-                              "status": "refunded" if o["fulfillment"] == "cancelled" else ("settled" if o["fulfillment"] == "delivered" else "authorized"),
-                              "method": o["payment"]} for o in orders],
+                              "status": o["payment"], "method": "Not connected"} for o in paid_orders],
             "totals": {"gross": gross, "commission": commission, "merchantNet": round(gross - commission, 2),
-                       "refunds": refunds, "net": round(gross - refunds, 2),
-                       "authorized": round(sum(o["total"] for o in orders if o["fulfillment"] == "processing"), 2),
-                       "settled": round(sum(o["total"] for o in orders if o["fulfillment"] == "delivered"), 2)},
+                       "refunds": 0.0, "net": gross,
+                       "authorized": 0.0,
+                       "settled": round(sum(o["total"] for o in paid_orders if o["payment"] == "settled"), 2)},
             "provider": "pending-configuration",
-            "message": "Connect a payment provider to move from recorded transactions to live charges.",
+            "message": "The payment provider is not connected. Amounts reflect recorded paid marketplace states only; this console does not initiate charges, refunds or transfers.",
         }
 
 
@@ -1704,30 +1740,12 @@ def payouts(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
                  "merchantName": (find_merchant(db, p.merchant_id) or {}).get("name", p.merchant_id),
                  "period": p.period, "orders": p.orders, "gross": p.gross, "commission": p.commission,
                  "net": p.net, "status": p.status, "date": p.date, "method": p.method} for p in stored]
-        if not rows:
-            for merchant in all_merchants(db):
-                orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()
-                          if any(i.get("merchantId") == merchant["id"] for i in (r.data or {}).get("items", []))]
-                buckets: dict[str, dict] = {}
-                for order in orders:
-                    period = _date(order["placedAt"])[:7]
-                    bucket = buckets.setdefault(period, {"orders": 0, "gross": 0.0, "commission": 0.0})
-                    bucket["orders"] += 1
-                    bucket["gross"] = round(bucket["gross"] + order["total"], 2)
-                    bucket["commission"] = round(bucket["commission"] + order["commission"], 2)
-                for period, bucket in buckets.items():
-                    rows.append({"id": f"pay_{merchant['slug']}_{period}", "merchantId": merchant["id"],
-                                 "merchantName": merchant["name"], "period": period,
-                                 "orders": bucket["orders"], "gross": bucket["gross"],
-                                 "commission": bucket["commission"],
-                                 "net": round(bucket["gross"] - bucket["commission"], 2),
-                                 "status": "pending", "date": f"{period}-28", "method": "Bank transfer"})
         return {"payouts": rows,
                 "totals": {"pending": round(sum(r["net"] for r in rows if r["status"] == "pending"), 2),
                            "paid": round(sum(r["net"] for r in rows if r["status"] == "paid"), 2),
                            "gross": round(sum(r["gross"] for r in rows), 2),
                            "commission": round(sum(r["commission"] for r in rows), 2)},
-                "message": "Marking a payout paid records the settlement. Live transfers require a payout provider."}
+                "message": "No payout estimates are generated from orders. A connected payout provider is required to confirm transfers or mark a payout paid."}
 
 
 @router.patch("/payouts")
@@ -1735,17 +1753,7 @@ def update_payout(session: Optional[str] = Header(None, alias="X-Ferix-Session")
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "payouts.view")
-        row = db.get(Payout, payload.id)
-        if not row:
-            row = Payout(id=payload.id, merchant_id=payload.id.split("_")[1] if "_" in payload.id else "",
-                         period="", orders=0, gross=0, commission=0, net=0, status="pending",
-                         method="Bank transfer", date=_date(iso(now())))
-            db.add(row)
-        if payload.status:
-            row.status = payload.status
-        audit(db, "admin", staff.email, "payout.update", payload.id, payload.status or "")
-        db.commit()
-        return {"payout": {"id": row.id, "status": row.status}}
+        raise HTTPException(409, "Payout updates require a verified payout-provider flow. No payout record was changed.")
 
 
 # ── Roles, staff and audit ─────────────────────────────────────────────────
@@ -2310,8 +2318,10 @@ def order_action(action: str, session: Optional[str] = Header(None, alias="X-Fer
             raise HTTPException(404, "That order does not exist")
 
         data = dict(order.data or {})
+        if str(data.get("channel") or "").lower() != "marketplace":
+            raise HTTPException(404, "That order is not a Ferixas marketplace order")
         timeline = list(data.get("timeline") or [])
-        paid = str(data.get("payment") or "").lower() == "paid"
+        paid = str(data.get("payment") or "").lower() in PAID_PAYMENT_STATES
         done = str(data.get("fulfillment") or "").lower() in ("delivered", "completed")
         cancelled = str(data.get("fulfillment") or "").lower() == "cancelled"
 
@@ -2320,22 +2330,21 @@ def order_action(action: str, session: Optional[str] = Header(None, alias="X-Fer
                 raise HTTPException(409, "That order was already cancelled")
             if done:
                 raise HTTPException(409, "That order has already been delivered, so it cannot be cancelled. Refund it instead.")
-            data["fulfillment"] = "cancelled"
             if paid:
-                data["payment"] = "refunded"
+                raise HTTPException(409, "Paid-order cancellation is unavailable until a verified refund flow is connected. No order or payment state was changed.")
+            data["fulfillment"] = "cancelled"
             timeline.append({"label": "Cancelled", "at": iso(now()), "by": staff.email,
                              **({"note": payload.reason} if payload.reason else {})})
-            message = "Order cancelled" + (" and the payment refunded." if paid else ".")
+            message = "Unpaid order cancelled. No payment was processed."
 
         elif action == "refund":
             if not paid:
                 raise HTTPException(409, "That order was never paid, so there is nothing to refund.")
-            data["payment"] = "refunded"
-            timeline.append({"label": "Refunded", "at": iso(now()), "by": staff.email,
-                             **({"note": payload.reason} if payload.reason else {})})
-            message = "Refunded. The buyer keeps the order in their history."
+            raise HTTPException(409, "Refunds are unavailable until a verified payment-provider refund flow is connected. No payment state was changed.")
 
         else:
+            if not paid:
+                raise HTTPException(409, "An order confirmation can only be resent after marketplace payment is confirmed.")
             to = str(data.get("contactEmail") or "")
             if not to:
                 buyer = db.get(User, order.user_id)

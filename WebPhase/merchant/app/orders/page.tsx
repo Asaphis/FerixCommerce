@@ -22,13 +22,12 @@ const FILTERS = [
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; channel?: string; search?: string }>;
+  searchParams: Promise<{ status?: string; search?: string }>;
 }) {
-  const { status, channel, search } = await searchParams;
+  const { status, search } = await searchParams;
   const { session } = await requireMerchant();
   const data = await listOrders(session, {
     status: status ?? "all",
-    channel: channel ?? "all",
     search,
   });
 
@@ -50,7 +49,7 @@ export default async function OrdersPage({
         />
         <StatTile label="In transit" value={num(data.counts.shipped ?? 0)} sub="With the carrier" icon={<Truck width={15} height={15} />} accent="azure" />
         <StatTile label="Delivered" value={num(data.counts.delivered ?? 0)} sub="Completed" accent="lime" />
-        <StatTile label="Value of these orders" value={money(data.revenue, { cents: false })} sub={`${data.total} orders in view`} accent="chalk" />
+        <StatTile label="Paid order value" value={money(data.revenue, { cents: false })} sub="Confirmed payment · Ferixas marketplace" accent="chalk" />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -82,24 +81,14 @@ export default async function OrdersPage({
               className="h-11 w-[240px] rounded-[2px] border border-hairline bg-panel-2 pl-8 pr-3 text-[12.5px] text-chalk outline-none placeholder:text-chalk-dim/60 focus:border-chalk-dim"
             />
           </label>
-          <select
-            name="channel"
-            defaultValue={channel ?? "all"}
-            className="h-11 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-chalk-dim"
-            aria-label="Channel"
-          >
-            <option value="all">Every channel</option>
-            <option value="store">My store</option>
-            <option value="marketplace">Marketplace</option>
-          </select>
         </FilterForm>
       </div>
 
       {data.orders.length ? (
         <TablePanel>
           <DataTable
-            head={["Order", "Customer", "Channel", "Placed", "Total", "Status", "Fulfilment"]}
-            minWidth={980}
+            head={["Order", "Customer", "Channel", "Payment", "Placed", "Total", "Status", "Fulfilment"]}
+            minWidth={1080}
             className="p-5"
           >
             {data.orders.map((order) => (
@@ -120,8 +109,9 @@ export default async function OrdersPage({
                   <p className="font-mono text-[10px] text-chalk-dim">{order.customer.location}</p>
                 </TdDetail>
                 <TdDetail>
-                  <Pill tone={order.channel === "marketplace" ? "info" : "neutral"}>{order.channel}</Pill>
+                  <Pill tone="info">Ferixas marketplace</Pill>
                 </TdDetail>
+                <TdDetail><Pill tone={["paid", "captured", "succeeded", "settled"].includes(String(order.payment ?? "pending").toLowerCase()) ? "success" : "warn"}>{titleCase(order.payment ?? "pending")}</Pill></TdDetail>
                 <TdDetail>
                   <p className="font-mono text-[11.5px] text-chalk-dim">{dateShort(order.placedAt)}</p>
                   <p className="font-mono text-[10px] text-chalk-dim/70">{relative(order.placedAt)}</p>
@@ -142,10 +132,10 @@ export default async function OrdersPage({
                   <div className="flex flex-wrap items-center justify-end gap-1.5">
                     {/* One action per order, matching where it rests in the
                         workflow, so there is never a choice to get wrong. */}
-                    {order.fulfillment === "processing" ? (
+                    {["paid", "captured", "succeeded", "settled"].includes(String(order.payment ?? "pending").toLowerCase()) && order.fulfillment === "processing" ? (
                       <StatusButton id={order.id} to="shipped" label="Mark shipped" />
                     ) : null}
-                    {order.fulfillment === "shipped" ? (
+                    {["paid", "captured", "succeeded", "settled"].includes(String(order.payment ?? "pending").toLowerCase()) && order.fulfillment === "shipped" ? (
                       <StatusButton id={order.id} to="delivered" label="Mark delivered" />
                     ) : null}
                     {order.fulfillment !== "cancelled" && order.fulfillment !== "delivered" ? (
@@ -153,7 +143,7 @@ export default async function OrdersPage({
                         action={setOrderStatusRequestAction}
                         fields={{ id: order.id, fulfillment: "cancelled" }}
                         label="Cancel"
-                        confirmLabel="Refund and cancel?"
+                        confirmLabel="Mark this marketplace order cancelled?"
                         tone="danger"
                       />
                     ) : null}
@@ -174,10 +164,9 @@ export default async function OrdersPage({
       )}
 
       <Panel>
-        <PanelHead title="What the shopper sees" />
+          <PanelHead title="Ferixas marketplace orders" />
         <p className="text-[12.5px] leading-relaxed text-chalk-dim">
-          Marking an order shipped adds the carrier and a tracking number to the customer&apos;s account.
-          Delivered closes it out. Cancelling refunds the payment.
+          Only Ferixas marketplace orders appear here. Shipment is available after payment is confirmed. Cancelling changes the order status; it does not issue an automatic payment refund.
         </p>
       </Panel>
     </div>

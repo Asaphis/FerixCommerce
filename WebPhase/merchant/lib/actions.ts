@@ -172,7 +172,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
     return { error: error instanceof api.ApiError ? error.message : "We could not save that product." };
   }
   refresh(`/products/${slug}`);
-  return { message: "Product saved. Your store and the marketplace both use this record." };
+  return { message: "Product saved. It remains hidden on the Ferixas marketplace until Admin approves it." };
 }
 
 export async function deleteProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -239,9 +239,6 @@ export async function saveSettingsAction(_prev: FormState, formData: FormData): 
   if (!session) redirect("/login");
   try {
     await api.updateSettings(session, {
-      customDomain: String(formData.get("customDomain") ?? "").trim(),
-      template: String(formData.get("template") ?? "FERRUM"),
-      accent: String(formData.get("accent") ?? "#e4572e"),
       lowStockAt: Number(formData.get("lowStockAt") ?? 25),
       payoutCadence: String(formData.get("payoutCadence") ?? "weekly"),
       marketplaceEnabled: formData.get("marketplaceEnabled") === "on",
@@ -252,7 +249,7 @@ export async function saveSettingsAction(_prev: FormState, formData: FormData): 
     return { error: error instanceof api.ApiError ? error.message : "We could not save your settings." };
   }
   refresh("/settings");
-  return { message: "Store settings saved." };
+  return { message: "Marketplace settings saved." };
 }
 
 export async function submitProfileRequestAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -268,6 +265,7 @@ export async function submitProfileRequestAction(_prev: FormState, formData: For
       tagline: String(formData.get("tagline") ?? "").trim(),
       about: String(formData.get("about") ?? "").trim(),
       location: String(formData.get("location") ?? "").trim(),
+      logo: String(formData.get("logo") ?? "").trim(),
       businessName: String(formData.get("businessName") ?? "").trim(),
       businessEmail: String(formData.get("businessEmail") ?? "").trim(),
       businessPhone: String(formData.get("businessPhone") ?? "").trim(),

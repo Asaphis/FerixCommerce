@@ -123,12 +123,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <span className="font-mono text-[11px] text-ink-soft">
               {typeof product.rating === "number" ? product.rating.toFixed(1) : "—"} · {compact(product.reviewCount || 0)} reviews
             </span>
-            <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">SKU {product.sku}</span>
           </div>
 
           <div className="mt-5 flex flex-wrap items-end gap-4 border-y border-line-warm py-4">
             <Price value={product.price} compareAt={product.compareAt} discount={product.discount} className="text-[18px]" />
-            <StockNote stock={product.stock} />
+            <StockNote status={product.stockStatus ?? "in_stock"} />
           </div>
 
           <AddToCartForm
@@ -165,7 +164,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                   defaultValue="1"
                   className="h-10 rounded-[2px] border border-line-warm bg-white px-2 text-[13px] text-ink outline-none focus:border-ink"
                 >
-                  {Array.from({ length: Math.max(1, Math.min(10, product.stock)) }, (_, i) => i + 1).map((qty) => (
+                  {Array.from({ length: product.stockStatus === "out_of_stock" ? 1 : 10 }, (_, i) => i + 1).map((qty) => (
                     <option key={qty} value={qty}>
                       {qty}
                     </option>
@@ -173,8 +172,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 </select>
               </label>
               <AddToCartButton
-                label={product.stock > 0 ? "Add to cart" : "Out of stock"}
-                disabled={product.stock <= 0}
+                label={product.stockStatus === "out_of_stock" ? "Out of stock" : "Add to cart"}
+                disabled={product.stockStatus === "out_of_stock"}
                 className="flex-1 sm:flex-none sm:px-8"
               />
             </div>
@@ -194,8 +193,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               </span>
               <span className="flex-1">
                 <AddToCartButton
-                  label={product.stock > 0 ? "Add to cart" : "Out of stock"}
-                  disabled={product.stock <= 0}
+                  label={product.stockStatus === "out_of_stock" ? "Out of stock" : "Add to cart"}
+                  disabled={product.stockStatus === "out_of_stock"}
                   className="w-full"
                 />
               </span>
@@ -254,7 +253,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div>
           <Eyebrow>Ratings</Eyebrow>
           <div className="mt-3">
-            <RatingBars breakdown={product.ratingBreakdown} total={product.reviewCount} rating={product.rating} />
+            <RatingBars breakdown={product.ratingBreakdown} total={product.reviewCount} rating={product.rating ?? 0} />
           </div>
         </div>
         <div>
@@ -292,10 +291,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </section>
       ) : null}
 
-      <p className="mt-12 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
-        Listed {dateShort(product.createdAt)} · {compact(product.sold30d)} sold in the last 30 days · one cart and one
-        checkout across every seller
-      </p>
     </div>
   );
 }

@@ -20,7 +20,7 @@ const LABELS = [
   { key: "hero", label: "Hero layout" },
 ];
 
-const SOON = ["Live canvas", "Templates", "Device preview", "AI assistant"];
+const SOON = ["Live canvas", "Templates", "Device preview"];
 
 export default async function StoreDesignPage() {
   const { session, merchant } = await requireMerchant();
@@ -44,8 +44,8 @@ export default async function StoreDesignPage() {
   return (
     <div className="grid gap-5">
       <header>
-        <Eyebrow>Storefront</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Store design</h1>
+          <Eyebrow>Separate seller website</Eyebrow>
+          <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Independent site settings</h1>
         
       </header>
 
@@ -55,7 +55,7 @@ export default async function StoreDesignPage() {
             <Eyebrow className="text-lime">Coming soon</Eyebrow>
             <h2 className="mt-2 font-display text-[18px] font-semibold text-chalk">Visual store design</h2>
             <p className="mt-2 text-[13px] leading-relaxed text-chalk-dim">
-              A drag-and-drop storefront designer, so you can change your store without code.
+              This site is separate from Ferixas marketplace. Shoppers on Ferixas see only your approved seller profile and marketplace listings—not these pages.
             </p>
           </div>
           <span className="inline-flex h-11 w-11 items-center justify-center rounded-[2px] border border-lime/30 bg-lime/10 text-lime">

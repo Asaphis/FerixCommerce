@@ -43,8 +43,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <Pill tone={product.status === "approved" ? "success" : product.status === "pending_review" ? "warn" : product.status === "rejected" ? "neutral" : "neutral"}>
                 {product.status}
               </Pill>
-              {product.channels.store ? <Pill tone="lime">My store</Pill> : null}
-              {product.channels.marketplace ? <Pill tone="info">Marketplace</Pill> : null}
+              <Pill tone="info">Ferixas marketplace</Pill>
               <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">
                 {product.sku} · listed {dateShort(product.createdAt)}
               </span>
@@ -99,20 +98,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
       <Panel>
         <PanelHead
-          title="Where this sells"
+          title="Ferixas marketplace listing"
         />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[2px] border border-hairline p-3.5">
-            <Eyebrow>Your storefront</Eyebrow>
-            <p className="mt-1.5 text-[13px] text-chalk">{product.channels.store ? "Visible" : "Hidden"}</p>
-            <p className="mt-1 font-mono text-[10.5px] text-chalk-dim">{merchant.customDomain ?? merchant.domain}</p>
-          </div>
-          <div className="rounded-[2px] border border-hairline p-3.5">
-            <Eyebrow>Ferixas marketplace</Eyebrow>
-            <p className="mt-1.5 text-[13px] text-chalk">{product.channels.marketplace ? "Listed" : "Not listed"}</p>
-            <p className="mt-1 font-mono text-[10.5px] text-chalk-dim">ferixas.com · {merchant.commissionPct ?? 8}% commission on marketplace sales</p>
-          </div>
-        </div>
+        <p className="text-[13px] text-chalk">This listing appears on Ferixas only after Admin approval. Your separate website is not part of this listing.</p>
+        <p className="mt-1 font-mono text-[10.5px] text-chalk-dim">ferixas.com · {merchant.commissionPct ?? 10}% commission on settled marketplace sales</p>
       </Panel>
     </div>
   );

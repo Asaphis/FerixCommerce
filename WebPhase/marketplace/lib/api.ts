@@ -54,15 +54,12 @@ export type Merchant = {
   followers: number;
   verified: boolean;
   brand: Brand;
-  domain: string;
-  customDomain: string | null;
   plan: string;
   since: string;
   productCount?: number;
   categories?: string[];
   logo?: string | null;
   cover?: string | null;
-  website?: string;
   businessEmail?: string;
   businessPhone?: string;
 };
@@ -83,16 +80,14 @@ export type Product = {
   price: number;
   compareAt: number | null;
   discount: number | null;
-  sku: string;
-  stock: number;
-  rating: number;
+  stockStatus?: "in_stock" | "limited" | "out_of_stock";
+  rating: number | null;
   reviewCount: number;
   ratingBreakdown: Record<string, number>;
   variants: Variant[];
   plates: number;
   images?: string[];
   tags: string[];
-  sold30d: number;
   createdAt: string;
 };
 

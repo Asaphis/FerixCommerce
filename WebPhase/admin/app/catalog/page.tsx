@@ -17,9 +17,9 @@ const STATUS_TONE: Record<string, "mint" | "amber" | "neutral" | "rose"> = {
 export default async function CatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; category?: string; status?: string; owner?: string }>;
+  searchParams: Promise<{ search?: string; category?: string; status?: string }>;
 }) {
-  const { search, category, status, owner } = await searchParams;
+  const { search, category, status } = await searchParams;
   const { session } = await requireAdmin();
   const data = await listCatalog(session, {
     search,
@@ -28,11 +28,10 @@ export default async function CatalogPage({
     // The catalogue is the platform's own stock. A seller's products belong to that seller
     // and are reached from their page; asking for every owner was showing the
     // marketplace in what is meant to be our own shelf.
-    owner: owner ?? "official",
+    owner: "official",
   });
 
   const official = data.counts.official ?? 0;
-  const seller = data.counts.seller ?? 0;
   const value = data.products.reduce((sum, product) => sum + product.price * product.stock, 0);
 
   return (
@@ -52,42 +51,25 @@ export default async function CatalogPage({
         </Link>
       </header>
 
-      /* Where a seller's stock lives, said where someone would look for it. */
-
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-hairline bg-panel-2 px-4 py-3">
-
         <p className="text-[12.5px] leading-relaxed text-chalk-dim">
-
-          Looking for a seller's products? They are not on this shelf — each seller's stock lives on
-
-          their own page, with what they have submitted waiting for review.
-
+          This catalogue contains Ferixas Official inventory only. Seller product submissions and seller-profile changes are handled in their separate review queues.
         </p>
-
-        <Link
-
-          href="/merchants"
-
-          className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel"
-
-        >
-
-          Open their page →
-
-        </Link>
-
+        <div className="flex flex-wrap gap-2">
+          <Link href="/review" className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Product review</Link>
+          <Link href="/profile-requests" className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Profile changes</Link>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <Readout label="Products" value={num(data.total)} sub={`${data.counts.active ?? 0} active`} icon={<Boxes width={15} height={15} />} />
-        <Readout label="Ferixas Official" value={num(official)} sub="Owned by the platform" tone="violet" />
-        <Readout label="Seller listings" value={num(seller)} sub="From merchants" tone="mint" />
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-3">
+        <Readout label="Ferixas Official products" value={num(official)} sub={`${data.counts.active ?? 0} active`} icon={<Boxes width={15} height={15} />} />
+        <Readout label="Filtered results" value={num(data.total)} sub="Official products matching filters" tone="violet" />
         <Readout label="Stock value" value={money(value, { cents: false })} sub="At listed price" tone="amber" />
       </div>
 
       <Panel>
         <PanelHead title="Filters" />
-        <FilterForm action="/catalog" className="grid grid-cols-2 gap-2.5 md:gap-3 xl:grid-cols-4">
+        <FilterForm action="/catalog" className="grid grid-cols-2 gap-2.5 md:gap-3 xl:grid-cols-3">
           <label className="relative block">
             <Search width={14} height={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-chalk-dim" />
             <input name="search" defaultValue={search ?? ""} placeholder="Title or SKU" className={`${inputClass} pl-9`} />
@@ -102,14 +84,9 @@ export default async function CatalogPage({
           </select>
           <select name="status" defaultValue={status ?? "all"} className={selectClass}>
             <option value="all">Every status</option>
-            <option value="approved">Approved</option>
+            <option value="active">Active</option>
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
-          </select>
-          <select name="owner" defaultValue={owner ?? "official"} className={selectClass}>
-            <option value="official">Ferixas Official</option>
-            <option value="all">Every owner, including sellers</option>
-            <option value="seller">Merchant sellers</option>
           </select>
         </FilterForm>
       </Panel>

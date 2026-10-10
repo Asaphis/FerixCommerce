@@ -17,10 +17,11 @@ from sqlalchemy import select
 
 from core import (
     DEMO_PASSWORD, ContentDocument, ContentVersion, FlashSale, FlashSaleItem,
-    InventoryLog, MediaAsset, MerchantProfileRequest, Order, Payout, SessionLocal, StaffSession,
+    InventoryLog, MediaAsset, MerchantProfileRequest, Order, Payout, Review, SessionLocal, StaffSession,
     audit, aware, collections as all_collections, categories as all_categories, find_category, find_merchant, find_product,
-    hash_password, iso, issue_staff_session, merchants as all_merchants, new_id, now,
-    permissions_for, placeholder, products as all_products, put_row, remove_media_blob,
+    hash_password, iso, issue_staff_session, merchant_follower_count,
+    merchants as all_merchants, new_id, now, permissions_for, placeholder, products as all_products,
+    is_seller_marketplace_product, put_row, remove_media_blob, seller_products,
     require_permission, require_staff, rows_of, storage_info, sync_pending_media,
     upload_media_blob, validate_media_upload, verify_password, media_json,
 )
@@ -34,6 +35,7 @@ CATEGORY_LABELS = {
     "office": "Office", "kids": "Kids",
 }
 TEMPLATES = ["Atelier", "Terminal", "Boutique", "Gallery", "Depot"]
+PAID_PAYMENT_STATES = {"paid", "captured", "succeeded", "settled"}
 
 
 # ── Payload models ─────────────────────────────────────────────────────────
@@ -102,6 +104,7 @@ class ProfileRequestIn(BaseModel):
     tagline: str = ""
     about: str = ""
     location: str = ""
+    logo: str = ""
     businessName: str = ""
     businessEmail: str = ""
     businessPhone: str = ""
@@ -161,7 +164,7 @@ def _merchant_or_404(db, merchant_id: str) -> dict:
 
 
 def _own_products(db, merchant_id: str) -> list[dict]:
-    return [p for p in all_products(db) if p.get("merchantId") == merchant_id]
+    return seller_products(db, merchant_id)
 
 
 def _product_options(db) -> dict:
@@ -184,7 +187,9 @@ def _product_options(db) -> dict:
 
 def _merchant_orders(db, merchant_id: str) -> list[Order]:
     rows = db.scalars(select(Order).order_by(Order.placed_at.desc())).all()
-    return [r for r in rows if any(i.get("merchantId") == merchant_id for i in (r.data or {}).get("items", []))]
+    return [r for r in rows
+            if str((r.data or {}).get("channel") or "").lower() == "marketplace"
+            and any(i.get("merchantId") == merchant_id for i in (r.data or {}).get("items", []))]
 
 
 def _merchant_product_units(db, merchant_id: str, days: Optional[int] = None) -> dict[str, int]:
@@ -193,6 +198,8 @@ def _merchant_product_units(db, merchant_id: str, days: Optional[int] = None) ->
     counts: dict[str, int] = {}
     for row in _merchant_orders(db, merchant_id):
         data = row.data or {}
+        if str(data.get("payment") or "pending").lower() not in PAID_PAYMENT_STATES:
+            continue
         if data.get("fulfillment") == "cancelled":
             continue
         if days is not None and (today - _date(data.get("placedAt", iso(row.placed_at)))).days >= days:
@@ -228,7 +235,13 @@ def _merchant_order(db, row: Order, merchant_id: str) -> dict:
     """One order as this merchant sees it: only their items, only their money."""
     data = row.data or {}
     merchant = find_merchant(db, merchant_id) or {}
-    commission_pct = merchant.get("commissionPct", 10)
+    try:
+        commission_pct = float(merchant.get("commissionPct", 10))
+    except (TypeError, ValueError):
+        commission_pct = 10.0
+    payment = str(data.get("payment") or "pending").lower()
+    channel = str(data.get("channel") or "unknown").lower()
+    paid = payment in PAID_PAYMENT_STATES
     items = [i for i in data.get("items", []) if i.get("merchantId") == merchant_id]
     subtotal = round(sum(i["price"] * i["qty"] for i in items), 2)
     ratio = (subtotal / data["subtotal"]) if data.get("subtotal") else 1
@@ -239,19 +252,24 @@ def _merchant_order(db, row: Order, merchant_id: str) -> dict:
         "id": data.get("id", row.id),
         "number": data.get("number", row.id),
         "placedAt": data.get("placedAt", iso(row.placed_at)),
-        "channel": "marketplace" if data.get("channel") == "marketplace" else "store",
-        "customer": _customer_of(db, row),
+        "channel": channel if channel in {"marketplace", "store"} else "unknown",
+        "customer": _customer_of(db, row) if paid else {
+            "id": "", "name": "Payment pending", "email": "", "phone": "", "location": "",
+        },
         "items": items,
         "subtotal": subtotal, "shipping": shipping, "tax": tax, "total": total,
-        "commission": round(subtotal * commission_pct / 100, 2),
-        "payment": data.get("payment", "pending"),
+        "commission": round(subtotal * commission_pct / 100, 2) if payment in PAID_PAYMENT_STATES and channel == "marketplace" else 0.0,
+        "payment": payment,
         "fulfillment": data.get("fulfillment", "processing"),
         "carrier": data.get("carrier"), "tracking": data.get("tracking"),
-        "address": data.get("address") or {
+        "address": (data.get("address") or {
             "label": "Home", "name": "—", "phone": "", "line1": "—", "line2": None,
             "city": "—", "region": "", "postcode": "", "country": "—",
+        }) if paid else {
+            "label": "Hidden until payment is confirmed", "name": "—", "phone": "", "line1": "—",
+            "line2": None, "city": "—", "region": "", "postcode": "", "country": "—",
         },
-        "note": data.get("note"),
+        "note": data.get("note") if paid else None,
         "timeline": data.get("timeline", []),
     }
 
@@ -259,7 +277,10 @@ def _merchant_order(db, row: Order, merchant_id: str) -> dict:
 def _money_series(db, merchant_id: str, days: int) -> list[dict]:
     today = now().date()
     series = []
-    orders = [_merchant_order(db, r, merchant_id) for r in _merchant_orders(db, merchant_id)]
+    orders = [
+        order for order in (_merchant_order(db, r, merchant_id) for r in _merchant_orders(db, merchant_id))
+        if order.get("payment") in PAID_PAYMENT_STATES and order.get("fulfillment") != "cancelled"
+    ]
     for offset in range(days - 1, -1, -1):
         day = today - timedelta(days=offset)
         label = day.isoformat()
@@ -295,6 +316,7 @@ def _merchant_profile(merchant: dict) -> dict:
     return {
         "name": merchant.get("name", ""), "tagline": merchant.get("tagline", ""),
         "about": merchant.get("about", ""), "location": merchant.get("location", ""),
+        "logo": merchant.get("logo", ""),
         "businessName": merchant.get("businessName", ""),
         "businessEmail": merchant.get("businessEmail", ""),
         "businessPhone": merchant.get("businessPhone", ""),
@@ -392,15 +414,17 @@ def dashboard(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         owned = _own_products(db, merchant["id"])
         settings = _merchant_settings(db, merchant)
         orders = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
+        confirmed_orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES]
 
         statuses: dict[str, int] = {}
-        for order in orders:
+        for order in confirmed_orders:
             statuses[order["fulfillment"]] = statuses.get(order["fulfillment"], 0) + 1
 
+        paid_orders = [o for o in confirmed_orders if o.get("fulfillment") != "cancelled"]
         today = now().date()
         def window(days: int) -> list[dict]:
-            return [o for o in orders if (today - _date(o["placedAt"])).days < days]
-        revenue_total = round(sum(o["total"] for o in orders), 2)
+            return [o for o in paid_orders if (today - _date(o["placedAt"])).days < days]
+        revenue_total = round(sum(o["total"] for o in paid_orders), 2)
         rev30 = round(sum(o["total"] for o in window(30)), 2)
         sold30 = _merchant_product_units(db, merchant["id"], 30)
         low_stock = [p for p in owned if p.get("stock", 0) <= settings["lowStockAt"]]
@@ -410,16 +434,16 @@ def dashboard(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
             "revenueToday": round(sum(o["total"] for o in window(1)), 2),
             "revenue7d": round(sum(o["total"] for o in window(7)), 2),
             "revenue30d": rev30,
-            "ordersTotal": len(orders),
+            "ordersTotal": len(paid_orders),
             "orders30d": len(window(30)),
             "commission30d": round(sum(o["commission"] for o in window(30)), 2),
-            "averageOrder": round(revenue_total / len(orders), 2) if orders else 0.0,
+            "averageOrder": round(revenue_total / len(paid_orders), 2) if paid_orders else 0.0,
         }
-        customers = {o["customer"]["id"] for o in orders}
+        customers = {o["customer"]["id"] for o in paid_orders}
         activity = []
         for log in db.scalars(select(InventoryLog).where(InventoryLog.merchant_id == merchant["id"]).order_by(InventoryLog.created_at.desc()).limit(6)).all():
             activity.append({"id": log.id, "label": "Stock adjusted", "detail": f"{log.reason} · {log.delta:+d}", "at": iso(log.created_at), "tone": "amber"})
-        for order in orders[:5]:
+        for order in confirmed_orders[:5]:
             activity.append({"id": f"act_{order['id']}", "label": f"Order {order['number']}", "detail": f"{order['customer']['name']} · {order['channel']}", "at": order["placedAt"], "tone": "mint"})
         activity.sort(key=lambda a: a["at"], reverse=True)
 
@@ -435,12 +459,12 @@ def dashboard(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
             "statuses": statuses,
             "counts": {
                 "products": len(owned),
-                "published": sum(p.get("status") == "active" for p in owned),
+                "published": sum(p.get("status") == "approved" and (p.get("channels") or {}).get("marketplace") is True for p in owned),
                 "drafts": sum(p.get("status") == "draft" for p in owned),
                 "lowStock": len(low_stock),
                 "customers": len(customers),
-                "marketplaceOrders": sum(o["channel"] == "marketplace" for o in orders),
-                "storeOrders": sum(o["channel"] == "store" for o in orders),
+                "followers": merchant_follower_count(db, merchant["id"]),
+                "marketplaceOrders": len(confirmed_orders),
             },
             "traffic": {
                 "storeVisitors": None,
@@ -450,7 +474,7 @@ def dashboard(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
                 "sold30d": sum(sold30.values()),
             },
             "lowStock": [{"id": p["id"], "title": p["title"], "sku": p.get("sku", ""), "stock": p.get("stock", 0), "slug": p["slug"]} for p in low_stock[:6]],
-            "recentOrders": orders[:6],
+            "recentOrders": confirmed_orders[:6],
             "activity": activity[:8],
         }
 
@@ -533,7 +557,7 @@ def product(session: Optional[str] = Header(None, alias="X-Ferix-Session"), slug
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
         found = find_product(db, slug)
-        if not found or found.get("merchantId") != merchant["id"]:
+        if not found or not is_seller_marketplace_product(found, merchant["id"]):
             raise HTTPException(404, "Product not found in your catalogue")
         sold_all = _merchant_product_units(db, merchant["id"])
         sold30 = _merchant_product_units(db, merchant["id"], 30)
@@ -564,13 +588,11 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         if not payload.title:
             raise HTTPException(400, "A product needs a title")
         
-        # CRITICAL: Sellers must tag products to marketplace since they don't have websites yet
         if not payload.marketplace and not payload.store:
-            raise HTTPException(400, "Product must be tagged for at least one sales channel (marketplace or store)")
+            raise HTTPException(400, "Seller product submissions must be assigned to the Ferixas marketplace.")
         
-        # Until seller websites are launched, marketplace tagging is mandatory
         if not payload.marketplace:
-            raise HTTPException(400, "Products must be tagged to Marketplace until your store website is ready. Enable the marketplace channel to continue.")
+            raise HTTPException(400, "Enable the Ferixas marketplace listing to submit this product for review.")
         options = _product_options(db)
         category = next((c for c in options["categories"] if c.get("slug") == payload.category), None) if payload.category else None
         if payload.category and not category:
@@ -630,7 +652,7 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         require_permission(staff, "merchant.products.manage")
         merchant = _merchant_or_404(db, staff.subject_id)
         target = find_product(db, payload.id or payload.slug or "")
-        if not target or target.get("merchantId") != merchant["id"]:
+        if not target or not is_seller_marketplace_product(target, merchant["id"]):
             raise HTTPException(404, "Product not found in your catalogue")
         updated = dict(target)
         options = _product_options(db)
@@ -685,7 +707,7 @@ def delete_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         require_permission(staff, "merchant.products.manage")
         merchant = _merchant_or_404(db, staff.subject_id)
         target = find_product(db, str(payload.get("id") or payload.get("slug") or ""))
-        if not target or target.get("merchantId") != merchant["id"]:
+        if not target or not is_seller_marketplace_product(target, merchant["id"]):
             raise HTTPException(404, "Product not found in your catalogue")
         from core import drop_row
         drop_row(db, "product", target["slug"])
@@ -707,7 +729,9 @@ def inventory(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         reserved: dict[str, int] = {}
         for row in orders:
             data = row.data or {}
-            if data.get("fulfillment") in {"processing", "shipped"}:
+            if str(data.get("payment") or "pending").lower() in PAID_PAYMENT_STATES \
+                    and data.get("fulfillment") != "cancelled" \
+                    and data.get("fulfillment") in {"processing", "shipped"}:
                 for item in data.get("items", []):
                     if item.get("merchantId") == merchant["id"]:
                         reserved[item["productId"]] = reserved.get(item["productId"], 0) + item.get("qty", 0)
@@ -747,7 +771,7 @@ def adjust(session: Optional[str] = Header(None, alias="X-Ferix-Session"), paylo
         require_permission(staff, "merchant.inventory.manage")
         merchant = _merchant_or_404(db, staff.subject_id)
         target = find_product(db, payload.id)
-        if not target or target.get("merchantId") != merchant["id"]:
+        if not target or not is_seller_marketplace_product(target, merchant["id"]):
             raise HTTPException(404, "Product not found in your catalogue")
         updated = dict(target)
         updated["stock"] = max(0, int(target.get("stock", 0)) + payload.delta)
@@ -793,7 +817,8 @@ def orders(
             filtered = [o for o in filtered if q in o["number"].lower() or q in o["customer"]["name"].lower() or q in o["customer"]["email"].lower()]
         return {
             "orders": filtered, "total": len(filtered), "counts": counts,
-            "revenue": round(sum(o["total"] for o in filtered), 2),
+            "revenue": round(sum(o["total"] for o in filtered
+                                  if o.get("payment") in PAID_PAYMENT_STATES and o.get("fulfillment") != "cancelled"), 2),
             "awaiting": counts.get("processing", 0),
         }
 
@@ -820,6 +845,20 @@ def set_status(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
         for row in _merchant_orders(db, merchant["id"]):
             if row.id == payload.id or (row.data or {}).get("number") == payload.id:
                 data = dict(row.data or {})
+                payment = str(data.get("payment") or "pending").lower()
+                current = str(data.get("fulfillment") or "processing").lower()
+                allowed_transitions = {
+                    "processing": {"processing", "shipped", "cancelled"},
+                    "shipped": {"shipped", "delivered"},
+                    "delivered": {"delivered"},
+                    "cancelled": {"cancelled"},
+                }
+                if payload.fulfillment not in allowed_transitions.get(current, set()):
+                    raise HTTPException(409, "This order cannot move to that fulfilment state.")
+                if payload.fulfillment in {"shipped", "delivered"} and payment not in PAID_PAYMENT_STATES:
+                    raise HTTPException(409, "A marketplace order must have confirmed payment before it can be shipped or delivered.")
+                if payload.fulfillment == "cancelled" and payment in PAID_PAYMENT_STATES:
+                    raise HTTPException(409, "Seller Center cannot cancel a paid order because refunds are not connected. Contact Admin for help.")
                 data["fulfillment"] = payload.fulfillment
                 if payload.carrier is not None:
                     data["carrier"] = payload.carrier
@@ -848,6 +887,8 @@ def customers(session: Optional[str] = Header(None, alias="X-Ferix-Session"), se
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
         orders = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
+        orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
+                  and o.get("fulfillment") != "cancelled"]
         people: dict[str, dict] = {}
         for order in orders:
             person = people.setdefault(order["customer"]["id"], {**order["customer"], "orders": 0, "spent": 0.0, "lastOrderAt": None})
@@ -879,6 +920,8 @@ def customer(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
         orders = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
+        orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
+                  and o.get("fulfillment") != "cancelled"]
         mine = [o for o in orders if o["customer"]["id"] == id]
         if not mine:
             raise HTTPException(404, "Customer not found")
@@ -899,9 +942,10 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
         merchant = _merchant_or_404(db, staff.subject_id)
         owned = _own_products(db, merchant["id"])
         orders = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
+        paid_orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES and o.get("fulfillment") != "cancelled"]
         series = _money_series(db, merchant["id"], max(7, min(90, days)))
         today = now().date()
-        window = [o for o in orders if (today - _date(o["placedAt"])).days < days]
+        window = [o for o in paid_orders if (today - _date(o["placedAt"])).days < days]
 
         by_category: dict[str, float] = {}
         top: dict[str, dict] = {}
@@ -918,23 +962,20 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
 
         buyers = {o["customer"]["id"] for o in window}
         repeat = sum(1 for person in buyers if sum(1 for o in window if o["customer"]["id"] == person) > 1)
-        revenue_total = round(sum(o["total"] for o in orders), 2)
+        revenue_total = round(sum(o["total"] for o in paid_orders), 2)
         return {
             "merchant": _merchant_card(db, merchant),
             "series": series,
             "summary": {
                 "revenueTotal": revenue_total,
-                "revenueToday": round(sum(o["total"] for o in orders if _date(o["placedAt"]) == today), 2),
-                "revenue7d": round(sum(o["total"] for o in orders if (today - _date(o["placedAt"])).days < 7), 2),
+                "revenueToday": round(sum(o["total"] for o in paid_orders if _date(o["placedAt"]) == today), 2),
+                "revenue7d": round(sum(o["total"] for o in paid_orders if (today - _date(o["placedAt"])).days < 7), 2),
                 "revenue30d": round(sum(o["total"] for o in window), 2),
-                "ordersTotal": len(orders), "orders30d": len(window),
+                "ordersTotal": len(paid_orders), "orders30d": len(window),
                 "commission30d": round(sum(o["commission"] for o in window), 2),
-                "averageOrder": round(revenue_total / len(orders), 2) if orders else 0.0,
+                "averageOrder": round(revenue_total / len(paid_orders), 2) if paid_orders else 0.0,
             },
-            "byChannel": {
-                "store": round(sum(o["total"] for o in window if o["channel"] == "store"), 2),
-                "marketplace": round(sum(o["total"] for o in window if o["channel"] == "marketplace"), 2),
-            },
+            "byChannel": {"marketplace": round(sum(o["total"] for o in window), 2)},
             "topProducts": [
                 {**row, "conversion": None}
                 for row in sorted(top.values(), key=lambda r: -r["revenue"])[:8]
@@ -948,6 +989,89 @@ def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), da
         }
 
 
+# ── Audience: followers and marketplace reviews ────────────────────────────
+
+@router.get("/followers")
+def follower_activity(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Show real follower totals and anonymous follow activity; never expose shopper identities."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "merchant")
+        merchant = _merchant_or_404(db, staff.subject_id)
+        today = now().date()
+        activity = merchant.get("followerActivity") if isinstance(merchant.get("followerActivity"), dict) else {}
+        series = []
+        for offset in range(89, -1, -1):
+            day_key = (today - timedelta(days=offset)).isoformat()
+            raw = activity.get(day_key) if isinstance(activity, dict) else {}
+            raw = raw if isinstance(raw, dict) else {}
+            try:
+                follows = max(0, int(raw.get("follow", 0)))
+            except (TypeError, ValueError):
+                follows = 0
+            try:
+                unfollows = max(0, int(raw.get("unfollow", 0)))
+            except (TypeError, ValueError):
+                unfollows = 0
+            values = {"follows": follows, "unfollows": unfollows}
+            series.append({**values, "date": day_key, "net": values["follows"] - values["unfollows"]})
+
+        cutoff30 = (today - timedelta(days=29)).isoformat()
+        follows30 = sum(item["follows"] for item in series if item["date"] >= cutoff30)
+        unfollows30 = sum(item["unfollows"] for item in series if item["date"] >= cutoff30)
+        recent_events = merchant.get("recentFollowerActivity") if isinstance(merchant.get("recentFollowerActivity"), list) else []
+        recent_events = [event for event in recent_events if isinstance(event, dict) and event.get("action") in {"follow", "unfollow"}][-15:][::-1]
+        return {
+            "followers": merchant_follower_count(db, merchant["id"]),
+            "follows30d": follows30, "unfollows30d": unfollows30,
+            "net30d": follows30 - unfollows30, "series": series,
+            "trackingStartedAt": merchant.get("followerTrackingStartedAt"),
+            "recent": [{"action": event["action"], "at": event.get("at", "")} for event in recent_events],
+        }
+
+
+@router.get("/reviews")
+def seller_reviews(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Return actual reviews for this seller's products without exposing shopper PII."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "merchant")
+        merchant = _merchant_or_404(db, staff.subject_id)
+        owned = _own_products(db, merchant["id"])
+        product_by_id = {str(product["id"]): product for product in owned}
+        if not product_by_id:
+            return {"summary": {"rating": None, "reviewCount": 0, "ratingBreakdown": {}}, "items": []}
+        rows = db.scalars(select(Review).where(Review.product_id.in_(list(product_by_id)))).all()
+        items = []
+        ratings: list[int] = []
+        breakdown = {str(star): 0 for star in range(1, 6)}
+        for row in rows:
+            data = dict(row.data or {})
+            try:
+                rating = int(data.get("rating"))
+            except (TypeError, ValueError):
+                continue
+            if rating < 1 or rating > 5:
+                continue
+            ratings.append(rating)
+            breakdown[str(rating)] += 1
+            product = product_by_id.get(row.product_id) or {}
+            items.append({
+                "id": row.id, "productId": row.product_id,
+                "productTitle": product.get("title", "Product"),
+                "productSlug": product.get("slug", ""),
+                "rating": rating,
+                "title": str(data.get("title") or ""),
+                "body": str(data.get("body") or data.get("comment") or ""),
+                "createdAt": str(data.get("createdAt") or data.get("date") or ""),
+                "verifiedPurchase": bool(data.get("verifiedPurchase", data.get("verified", False))),
+            })
+        items.sort(key=lambda item: item["createdAt"], reverse=True)
+        summary = {
+            "rating": round(sum(ratings) / len(ratings), 1) if ratings else None,
+            "reviewCount": len(ratings), "ratingBreakdown": breakdown,
+        }
+        return {"summary": summary, "items": items[:100]}
+
+
 # ── Payouts ────────────────────────────────────────────────────────────────
 
 @router.get("/payouts")
@@ -956,16 +1080,6 @@ def payouts(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
         commission_pct = merchant.get("commissionPct", 10)
-        orders = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
-
-        buckets: dict[str, dict] = {}
-        for order in orders:
-            period = str(order["placedAt"])[:7]
-            bucket = buckets.setdefault(period, {"period": period, "orders": 0, "gross": 0.0, "commission": 0.0})
-            bucket["orders"] += 1
-            bucket["gross"] = round(bucket["gross"] + order["total"], 2)
-            bucket["commission"] = round(bucket["commission"] + order["commission"], 2)
-
         stored = db.scalars(select(Payout).where(Payout.merchant_id == merchant["id"])).all()
         rows = [{"id": p.id, "period": p.period, "orders": p.orders, "gross": p.gross,
                  "commission": p.commission, "net": p.net, "status": p.status,
@@ -987,10 +1101,13 @@ def settings(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
-        latest = db.scalar(select(MerchantProfileRequest).where(MerchantProfileRequest.merchant_id == merchant["id"])
-                            .order_by(MerchantProfileRequest.submitted_at.desc()))
+        history = db.scalars(select(MerchantProfileRequest).where(MerchantProfileRequest.merchant_id == merchant["id"])
+                             .order_by(MerchantProfileRequest.submitted_at.desc()).limit(25)).all()
+        latest = history[0] if history else None
         return {"settings": _merchant_settings(db, merchant), "profile": _merchant_profile(merchant),
-                "profileRequest": _profile_request_json(latest), "merchant": _merchant_card(db, merchant),
+                "profileRequest": _profile_request_json(latest),
+                "profileHistory": [_profile_request_json(request) for request in history],
+                "merchant": _merchant_card(db, merchant),
                 "email": staff.email, "plan": merchant.get("plan", "Starter"),
                 "templates": TEMPLATES, "domain": merchant.get("domain", "")}
 
@@ -1044,6 +1161,16 @@ def submit_profile_request(
             parsed = urlparse(profile["website"])
             if parsed.scheme != "https" or not parsed.netloc:
                 raise HTTPException(422, "Website links must start with https://")
+        logo = profile["logo"]
+        if len(logo) > 2048:
+            raise HTTPException(422, "Logo image links must be 2048 characters or fewer")
+        if logo:
+            parsed_logo = urlparse(logo)
+            if parsed_logo.scheme:
+                if parsed_logo.scheme != "https" or not parsed_logo.netloc:
+                    raise HTTPException(422, "Logo images must use https:// or a Ferixas media path")
+            elif not logo.startswith("/") or logo.startswith("//"):
+                raise HTTPException(422, "Logo images must use https:// or a Ferixas media path")
         pending = db.scalars(select(MerchantProfileRequest).where(
             MerchantProfileRequest.merchant_id == merchant["id"],
             MerchantProfileRequest.status == "pending_review",

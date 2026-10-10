@@ -37,8 +37,8 @@ export function ProductCard({
         />
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
           {product.discount ? <Pill tone="ember">−{product.discount}%</Pill> : null}
-          {product.stock <= 25 && product.stock > 0 ? <Pill tone="warn">Low stock</Pill> : null}
-          {product.stock <= 0 ? <Pill tone="danger">Sold out</Pill> : null}
+          {product.stockStatus === "limited" ? <Pill tone="warn">Limited availability</Pill> : null}
+          {product.stockStatus === "out_of_stock" ? <Pill tone="danger">Sold out</Pill> : null}
         </span>
       </Link>
 
@@ -56,15 +56,15 @@ export function ProductCard({
         <div className="mt-2 flex items-end justify-between gap-2 sm:mt-3">
           <Price value={product.price} compareAt={product.compareAt} discount={product.discount} />
         </div>
-        {product.stock > 0 && product.stock <= 25 ? (
+        {product.stockStatus === "limited" ? (
           <div className="mt-1.5">
-            <StockNote stock={product.stock} />
+            <StockNote status={product.stockStatus ?? "in_stock"} />
           </div>
         ) : null}
 
         {showAdd ? (
           <div className="mt-2 flex items-center gap-1.5 border-t border-line-warm pt-2 sm:mt-3 sm:pt-3">
-            {product.stock > 0 ? <AddToCartForm productId={product.id} /> : <span className="flex-1"><button type="button" disabled className="w-full rounded-[2px] bg-bone-soft py-2 text-[13px] font-semibold text-ink-soft">Sold out</button></span>}
+            {product.stockStatus !== "out_of_stock" ? <AddToCartForm productId={product.id} /> : <span className="flex-1"><button type="button" disabled className="w-full rounded-[2px] bg-bone-soft py-2 text-[13px] font-semibold text-ink-soft">Sold out</button></span>}
             <WishlistForm productId={product.id} back="/browse" saved={saved} />
           </div>
         ) : null}

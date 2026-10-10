@@ -19,10 +19,11 @@ function Snapshot({ profile }: { profile: Profile }) {
     <Value label="Business / legal name" value={profile.businessName} />
     <Value label="Location shown publicly" value={profile.location} />
     <Value label="About" value={profile.about} />
+    <Value label="Marketplace profile logo" value={profile.logo} />
     <Value label="Business contact email" value={profile.businessEmail} />
     <Value label="Business contact phone" value={profile.businessPhone} />
     <Value label="Business address (private)" value={address} />
-    <Value label="External website" value={profile.website} />
+    <Value label="External website (verification only; not public)" value={profile.website} />
     <Value label="Public email opt-in" value={profile.showBusinessEmail} />
     <Value label="Public phone opt-in" value={profile.showPhone} />
   </div>;

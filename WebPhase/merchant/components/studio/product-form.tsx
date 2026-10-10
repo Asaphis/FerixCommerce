@@ -179,7 +179,7 @@ export function ProductForm({
 
           <Panel>
             <PanelHead title="Where it sells" />
-            <p className="text-[12.5px] leading-relaxed text-chalk-dim">For now, seller listings are submitted to the Ferixas marketplace only. Your product stays hidden until an admin approves it. A dedicated seller storefront is not enabled yet.</p>
+            <p className="text-[12.5px] leading-relaxed text-chalk-dim">Seller product listings are submitted to Ferixas marketplace only and stay hidden until Admin approval. Your separate website and its pages are not imported or displayed here; shoppers see your approved Ferixas seller profile.</p>
             <input type="hidden" name="marketplace" value="on" />
           </Panel>
 
@@ -243,9 +243,7 @@ export function ProductForm({
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
-                  {draft.store ? <Pill tone="success">Your store</Pill> : null}
                   {draft.marketplace ? <Pill tone="info">Marketplace</Pill> : null}
-                  {!draft.store && !draft.marketplace ? <Pill tone="danger">No channel — nobody can buy it</Pill> : null}
                 </div>
               </div>
             </div>

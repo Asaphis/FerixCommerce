@@ -5,6 +5,9 @@ import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/op
 import { money, num } from "@/lib/format";
 
 const STATUS_TONE: Record<string, "mint" | "amber" | "rose" | "neutral"> = {
+  paid: "mint",
+  captured: "mint",
+  succeeded: "mint",
   settled: "mint",
   authorized: "amber",
   refunded: "rose",
@@ -24,15 +27,15 @@ export default async function PaymentsPage() {
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <Readout label="Gross taken" value={money(totals.gross, { cents: false })} sub="All orders" icon={<CreditCard width={15} height={15} />} />
+        <Readout label="Recorded paid value" value={money(totals.gross, { cents: false })} sub="Confirmed marketplace payment states" icon={<CreditCard width={15} height={15} />} />
         <Readout label="Platform commission" value={money(totals.commission, { cents: false })} sub="Retained" tone="violet" />
         <Readout label="Merchant net" value={money(totals.merchantNet, { cents: false })} sub="Payable to sellers" tone="mint" />
-        <Readout label="Refunded" value={money(totals.refunds, { cents: false })} sub={`Net ${money(totals.net, { cents: false })}`} tone={totals.refunds > 0 ? "rose" : "mint"} />
+        <Readout label="Provider-verified refunds" value={money(totals.refunds, { cents: false })} sub={`Recorded net ${money(totals.net, { cents: false })}`} tone={totals.refunds > 0 ? "rose" : "mint"} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Readout label="Authorised, not settled" value={money(totals.authorized, { cents: false })} sub="Orders in progress" tone="amber" />
-        <Readout label="Settled" value={money(totals.settled, { cents: false })} sub="Delivered orders" tone="mint" />
+        <Readout label="Authorised by provider" value={money(totals.authorized, { cents: false })} sub="Not available until provider connection" tone="amber" />
+        <Readout label="Provider-settled" value={money(totals.settled, { cents: false })} sub="Only explicit settled payment states" tone="mint" />
       </div>
 
       <Panel className="border-amber/30 bg-amber/5">
@@ -50,7 +53,7 @@ export default async function PaymentsPage() {
       </Panel>
 
       {data.transactions.length === 0 ? (
-        <Empty title="No transactions yet" body="Orders placed on the storefront appear here with their commission." />
+        <Empty title="No confirmed marketplace transactions" body="Only paid Ferixas marketplace orders appear here. Separate seller websites are not included." />
       ) : (
         <Panel flush className="overflow-hidden">
           <div className="min-w-0 md:overflow-x-auto">

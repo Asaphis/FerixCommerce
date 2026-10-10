@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { CellLabel, DataTable, PageHeader, Row, Td, TdDetail, TdLead, TablePanel } from "@/components/ops/table";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { SubmitButton } from "@/components/ops/controls";
-import { cancelOrderAction, refundOrderAction, resendOrderAction } from "@/lib/actions";
+import { cancelOrderAction, resendOrderAction } from "@/lib/actions";
 
 const FILTERS = [
   { id: "all", label: "All" },
@@ -30,13 +30,12 @@ function statusTone(status: string) {
 export default async function OrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; channel?: string; merchantId?: string; search?: string }>;
+  searchParams: Promise<{ status?: string; merchantId?: string; search?: string }>;
 }) {
-  const { status, channel, merchantId, search } = await searchParams;
+  const { status, merchantId, search } = await searchParams;
   const { session } = await requireAdmin();
   const data = await listOrders(session, {
     status: status ?? "all",
-    channel: channel ?? "all",
     merchantId: merchantId ?? "all",
     search,
   });
@@ -46,7 +45,8 @@ export default async function OrdersPage({
     <div className="grid min-w-0 gap-5">
       <header>
         <Eyebrow>Order oversight</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Platform orders</h1>
+        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Marketplace orders</h1>
+        <p className="mt-1 max-w-[70ch] text-[12px] leading-relaxed text-chalk-dim">Only Ferixas marketplace orders appear here. Orders and sales from sellers&apos; separate websites are not part of this console.</p>
         
       </header>
 
@@ -104,16 +104,6 @@ export default async function OrdersPage({
               </option>
             ))}
           </select>
-          <select
-            name="channel"
-            defaultValue={channel ?? "all"}
-            className="h-9 rounded-[2px] border border-hairline bg-panel-2 px-2 text-[12.5px] text-chalk outline-none focus:border-signal/60"
-            aria-label="Channel"
-          >
-            <option value="all">Every channel</option>
-            <option value="marketplace">Marketplace</option>
-            <option value="store">Merchant store</option>
-          </select>
         </FilterForm>
       </div>
 
@@ -131,7 +121,7 @@ export default async function OrdersPage({
           {data.orders.length ? (
             <TablePanel>
               <DataTable
-                head={["Order", "Merchant", "Customer", "Channel", "Placed", "Payment", "Status", "Commission", "Total", "Actions"]}
+                head={["Order", "Merchant", "Customer", "Placed", "Payment", "Status", "Commission", "Total", "Actions"]}
                 minWidthClass="md:min-w-[1000px]"
               >
                 {data.orders.map((order) => (
@@ -152,9 +142,6 @@ export default async function OrdersPage({
                       <CellLabel>Customer</CellLabel>
                       <p className="text-[12.5px] text-chalk-dim">{order.customer.name}</p>
                       <p className="font-mono text-[10px] text-chalk-dim/70">{order.customer.location}</p>
-                    </Td>
-                    <Td>
-                      <Pill tone={order.channel === "marketplace" ? "violet" : "neutral"}>{order.channel}</Pill>
                     </Td>
                     <TdDetail className="font-mono text-[11.5px] text-chalk-dim">
                       {dateShort(order.placedAt)} · {relative(order.placedAt)}
@@ -180,24 +167,20 @@ export default async function OrdersPage({
                   <Td>
                     <CellLabel>Actions</CellLabel>
                     <div className="flex flex-wrap items-center gap-2">
-                      <CmsActionForm action={resendOrderAction} className="inline-flex">
-                        <input type="hidden" name="id" value={order.id} />
-                        <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
-                          Resend
-                        </SubmitButton>
-                      </CmsActionForm>
-                      <CmsActionForm action={refundOrderAction} className="inline-flex">
-                        <input type="hidden" name="id" value={order.id} />
-                        <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
-                          Refund
-                        </SubmitButton>
-                      </CmsActionForm>
-                      <CmsActionForm action={cancelOrderAction} className="inline-flex">
-                        <input type="hidden" name="id" value={order.id} />
-                        <SubmitButton variant="danger" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
-                          Cancel
-                        </SubmitButton>
-                      </CmsActionForm>
+                      {new Set(["paid", "captured", "succeeded", "settled"]).has(order.payment) ? (
+                        <CmsActionForm action={resendOrderAction} className="inline-flex">
+                          <input type="hidden" name="id" value={order.id} />
+                          <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">Resend</SubmitButton>
+                        </CmsActionForm>
+                      ) : <span className="text-[10px] text-chalk-dim">Awaiting confirmed payment</span>}
+                      {new Set(["paid", "captured", "succeeded", "settled"]).has(order.payment) ? (
+                        <button type="button" disabled title="A verified payment-provider refund flow is not connected" className="cursor-not-allowed rounded-[2px] border border-hairline px-2.5 py-1.5 text-[10.5px] text-chalk-dim opacity-60">Refund unavailable</button>
+                      ) : order.fulfillment === "processing" ? (
+                        <CmsActionForm action={cancelOrderAction} className="inline-flex">
+                          <input type="hidden" name="id" value={order.id} />
+                          <SubmitButton variant="danger" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">Cancel unpaid</SubmitButton>
+                        </CmsActionForm>
+                      ) : null}
                     </div>
                   </Td>
 
@@ -226,8 +209,7 @@ export default async function OrdersPage({
           <Panel>
             <PanelHead title="Reading this table" />
             <p className="text-[12.5px] leading-relaxed text-chalk-dim">
-              Each row is one seller&apos;s part of an order. Commission is charged on marketplace sales only,
-              which is why merchant-store rows carry none.
+              Each row is one Ferixas marketplace order. Commission is calculated only from confirmed marketplace item sales.
             </p>
             <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim/70">
               {compact(data.gmv)} of paid value · {compact(data.commission)} retained

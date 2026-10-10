@@ -1,6 +1,7 @@
 """Shared database, models and helpers for the Ferixas commerce API.
 
-Neon PostgreSQL is the source of truth. SQLite is supported for local work.
+Neon PostgreSQL is the application source of truth. A database URL must be
+explicitly configured; the application never silently creates a local database.
 Cloudinary and Resend are adapters enabled by environment variables.
 """
 from __future__ import annotations
@@ -25,7 +26,9 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sess
 
 # ── Configuration ──────────────────────────────────────────────────────────
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ferixas-dev.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL must be configured for the hosted PostgreSQL database.")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 if DATABASE_URL.startswith("postgresql://"):
@@ -882,6 +885,42 @@ def put_row(db: Session, kind: str, slug: str, data: dict) -> None:
         ))
 
 
+def record_merchant_follow_activity(db: Session, merchant: dict, action: str, at: Optional[datetime] = None) -> None:
+    """Persist anonymous daily follow counts in existing merchant JSON; never store follower identity."""
+    if action not in {"follow", "unfollow"}:
+        raise ValueError("Follow activity must be 'follow' or 'unfollow'")
+    slug = str(merchant.get("slug") or "")
+    if not slug:
+        raise ValueError("Merchant slug is required to record follow activity")
+    timestamp = at or now()
+    # Lock the existing catalog row so simultaneous follow actions do not lose increments.
+    row = db.scalar(select(Catalog).where(Catalog.kind == "merchant", Catalog.slug == slug).with_for_update())
+    current = dict((row.data if row else None) or merchant)
+    day = timestamp.date().isoformat()
+    raw_activity = current.get("followerActivity")
+    activity = dict(raw_activity) if isinstance(raw_activity, dict) else {}
+    raw_bucket = activity.get(day)
+    bucket = dict(raw_bucket) if isinstance(raw_bucket, dict) else {}
+    try:
+        previous = int(bucket.get(action, 0))
+    except (TypeError, ValueError):
+        previous = 0
+    bucket[action] = max(0, previous) + 1
+    activity[day] = bucket
+    cutoff = (timestamp.date() - timedelta(days=364)).isoformat()
+    current["followerActivity"] = {key: value for key, value in activity.items() if str(key) >= cutoff}
+    current["followerTrackingStartedAt"] = current.get("followerTrackingStartedAt") or iso(timestamp)
+    raw_recent = current.get("recentFollowerActivity")
+    recent = [
+        {"action": item.get("action"), "at": str(item.get("at") or "")}
+        for item in (raw_recent if isinstance(raw_recent, list) else [])
+        if isinstance(item, dict) and item.get("action") in {"follow", "unfollow"}
+    ]
+    recent.append({"action": action, "at": iso(timestamp)})
+    current["recentFollowerActivity"] = recent[-30:]
+    put_row(db, "merchant", slug, current)
+
+
 def drop_row(db: Session, kind: str, slug: str) -> bool:
     row = db.get(Catalog, f"{kind}:{slug}")
     if not row:
@@ -974,6 +1013,39 @@ def find_collection(db: Session, value: str) -> Optional[dict]:
 
 # ── Product filtering helpers ──────────────────────────────────────────────
 
+def product_owner_kind(product: dict) -> str:
+    """Classify a catalogue row without guessing when its ownership markers conflict."""
+    merchant_id = str(product.get("merchantId") or "").strip().lower()
+    origin = str(product.get("origin") or "").strip().lower()
+    owner_type = str(product.get("owner_type") or "").strip().lower()
+    official_ids = {"ferixas-official", "platform", "official"}
+    platform_marked = merchant_id in official_ids or origin in {"platform", "official"} or owner_type in {"platform", "official"}
+    seller_marked = origin in {"seller", "merchant"} or owner_type in {"seller", "merchant"} or bool(merchant_id and merchant_id not in official_ids)
+    if platform_marked and seller_marked:
+        return "conflict"
+    if platform_marked:
+        return "platform"
+    if seller_marked and merchant_id and merchant_id not in official_ids:
+        return "seller"
+    return "unknown"
+
+
+def is_platform_product(product: dict) -> bool:
+    return product_owner_kind(product) == "platform"
+
+
+def is_seller_product(product: dict, merchant_id: str) -> bool:
+    return product_owner_kind(product) == "seller" and str(product.get("merchantId") or "") == merchant_id
+
+
+def is_seller_marketplace_product(product: dict, merchant_id: Optional[str] = None) -> bool:
+    """A seller listing belongs in Ferixas only when ownership and marketplace channel are explicit."""
+    channels = product.get("channels")
+    if not is_seller_product(product, merchant_id or str(product.get("merchantId") or "")):
+        return False
+    return isinstance(channels, dict) and channels.get("marketplace") is True
+
+
 def approved_products(db: Session) -> list[dict]:
     """Only approved products for public marketplace display."""
     return [p for p in products(db) if marketplace_product_available(db, p)]
@@ -983,8 +1055,10 @@ def is_publicly_sellable(product: dict) -> bool:
     """Whether a product may be discovered and purchased on the marketplace."""
     channels = product.get("channels") or {}
     return (
+        product_owner_kind(product) in {"platform", "seller"}
+        and
         str(product.get("status") or "").lower() == "approved"
-        and bool(channels.get("marketplace", True))
+        and channels.get("marketplace") is True
     )
 
 
@@ -999,22 +1073,23 @@ def marketplace_product_available(db: Session, product: dict) -> bool:
 
 def platform_products(db: Session) -> list[dict]:
     """Only platform-owned products for admin catalog (Ferixas Official products)."""
-    return [p for p in products(db) if p.get("origin") == "platform" or p.get("owner_type") == "platform"]
+    return [p for p in products(db) if is_platform_product(p)]
 
 
 def seller_products(db: Session, merchant_id: str) -> list[dict]:
-    """Only products owned by a specific seller."""
-    return [p for p in products(db) if p.get("merchantId") == merchant_id]
+    """Only explicit Ferixas marketplace listings owned by a specific seller."""
+    return [p for p in products(db) if is_seller_marketplace_product(p, merchant_id)]
 
 
 def pending_products(db: Session) -> list[dict]:
-    """All products awaiting admin review (for admin review queue)."""
-    return [p for p in products(db) if p.get("status") == "pending_review"]
+    """Seller submissions awaiting the explicit admin review gate."""
+    return [p for p in products(db) if is_seller_marketplace_product(p) and p.get("status") == "pending_review"]
 
 
 def rejected_products(db: Session, merchant_id: Optional[str] = None) -> list[dict]:
-    """All rejected products, optionally filtered by merchant."""
-    rejected = [p for p in products(db) if p.get("status") == "rejected"]
+    """Rejected Ferixas marketplace submissions, optionally filtered by merchant."""
+    rejected = [p for p in products(db)
+                if p.get("status") == "rejected" and is_seller_marketplace_product(p)]
     if merchant_id:
         rejected = [p for p in rejected if p.get("merchantId") == merchant_id]
     return rejected
@@ -1024,39 +1099,96 @@ def merchant_follower_count(db: Session, merchant_id: str) -> int:
     """Count actual account relationships, not demo counters copied from seed data."""
     return sum(
         1 for settings in db.scalars(select(User.settings)).all()
-        if merchant_id in ((settings or {}).get("followed_sellers") or [])
+        if isinstance(settings, dict) and merchant_id in (settings.get("followed_sellers") or [])
     )
+
+
+def merchant_review_summary(db: Session, merchant_id: str) -> dict:
+    """Aggregate persisted reviews for this seller's own products; ignore seed counters."""
+    product_ids = [p["id"] for p in seller_products(db, merchant_id) if marketplace_product_available(db, p)]
+    if not product_ids:
+        return {"rating": None, "reviewCount": 0, "ratingBreakdown": {}}
+    ratings: list[float] = []
+    breakdown = {str(star): 0 for star in range(1, 6)}
+    for review in db.scalars(select(Review).where(Review.product_id.in_(product_ids))).all():
+        try:
+            rating = float((review.data or {}).get("rating"))
+        except (TypeError, ValueError):
+            continue
+        if 1 <= rating <= 5:
+            ratings.append(rating)
+            bucket = str(int(round(rating)))
+            breakdown[bucket] += 1
+    return {
+        "rating": round(sum(ratings) / len(ratings), 1) if ratings else None,
+        "reviewCount": len(ratings),
+        "ratingBreakdown": breakdown,
+    }
+
+
+def paid_marketplace_product_units(db: Session, days: Optional[int] = None) -> dict[str, int]:
+    """Count paid, non-cancelled marketplace units; never trust seeded sold counters."""
+    cutoff = now() - timedelta(days=days) if days is not None else None
+    counts: dict[str, int] = {}
+    paid_states = {"paid", "captured", "succeeded", "settled"}
+    for row in db.scalars(select(Order)).all():
+        data = dict(row.data or {})
+        if str(data.get("payment") or "pending").lower() not in paid_states:
+            continue
+        if str(data.get("channel") or "").lower() != "marketplace":
+            continue
+        if str(data.get("fulfillment") or "processing").lower() == "cancelled":
+            continue
+        if cutoff is not None:
+            placed = row.placed_at
+            raw_placed = data.get("placedAt")
+            if raw_placed:
+                try:
+                    placed = datetime.fromisoformat(str(raw_placed).replace("Z", "+00:00"))
+                except (TypeError, ValueError):
+                    pass
+            if aware(placed) < cutoff:
+                continue
+        for item in data.get("items") or []:
+            if not isinstance(item, dict):
+                continue
+            product_id = str(item.get("productId") or item.get("product_id") or "")
+            if not product_id:
+                continue
+            try:
+                quantity = max(0, int(item.get("qty", 0)))
+            except (TypeError, ValueError):
+                quantity = 0
+            counts[product_id] = counts.get(product_id, 0) + quantity
+    return counts
 
 
 def store_card(db: Session, merchant: dict) -> dict:
-    owned = [p for p in products(db) if p.get("merchantId") == merchant.get("id") and marketplace_product_available(db, p)]
-    # Fetch catalog row for merchant stats if available
-    cat_row = db.get(Catalog, f"merchant:{merchant.get('slug')}")
-    stats = {}
-    if cat_row:
-        # Prefer the DB column, fall back to the JSON data (legacy field names
-        # like "followers" and "rating"). This means a merchant whose row was
-        # never backfilled still shows the right numbers.
-        stats = {
-            "follower_count": cat_row.follower_count or merchant.get("followers") or 0,
-            "total_reviews": cat_row.total_reviews or merchant.get("reviewCount") or 0,
-            "average_rating": cat_row.average_rating or merchant.get("rating") or 0.0,
-            "success_rate": cat_row.success_rate or merchant.get("responseRate") or 0.0,
-            "delivery_rate": cat_row.delivery_rate or merchant.get("fulfilmentRate") or 0.0,
-        }
-    public_fields = (
-        "id", "slug", "name", "tagline", "location", "rating", "reviewCount",
-        "verified", "brand", "domain", "customDomain", "since", "logo", "image",
-        "about", "website", "payment_methods", "phone", "email",
-    )
+    merchant_id = str(merchant.get("id") or "")
+    owned = [p for p in seller_products(db, merchant_id) if marketplace_product_available(db, p)]
+    followers = merchant_follower_count(db, merchant_id)
+    reviews = merchant_review_summary(db, merchant_id)
+    # Seller theme/domain settings are private workspace configuration. The
+    # Ferixas marketplace renders its own profile shell and only exposes the
+    # approved profile fields below.
+    public_fields = ("id", "slug", "name", "tagline", "location", "verified", "since", "logo", "image", "about")
     return {
         **{key: merchant[key] for key in public_fields if key in merchant},
+        "brand": {
+            "template": "FERIXAS", "canvas": "#fbf8f2", "surface": "#ffffff",
+            "ink": "#17242e", "muted": "#6c7882", "accent": "#e4572e",
+            "accentInk": "#ffffff", "displayFont": "", "radius": 12, "hero": "",
+        },
         **({"businessEmail": merchant.get("businessEmail", "")} if merchant.get("showBusinessEmail") and merchant.get("businessEmail") else {}),
         **({"businessPhone": merchant.get("businessPhone", "")} if merchant.get("showPhone") and merchant.get("businessPhone") else {}),
         "productCount": len(owned),
         "categories": sorted({p.get("category") for p in owned if p.get("category")}),
-        "followers": merchant_follower_count(db, merchant.get("id", "")),
-        **{key: value for key, value in stats.items() if key not in ("success_rate", "delivery_rate")},
+        "followers": followers,
+        "follower_count": followers,
+        "rating": reviews["rating"],
+        "reviewCount": reviews["reviewCount"],
+        "average_rating": reviews["rating"],
+        "total_reviews": reviews["reviewCount"],
     }
 
 
@@ -1196,6 +1328,97 @@ def decorated_product(db: Session, product: dict) -> dict:
 
 def decorate(db: Session, items: list[dict]) -> list[dict]:
     return [decorated_product(db, item) for item in items]
+
+
+PUBLIC_PRODUCT_FIELDS = (
+    "id", "slug", "title", "merchantId", "merchantName", "merchantSlug", "brandName",
+    "category", "collections", "description", "bullets", "price", "compareAt", "discount",
+    "variants", "plates", "images", "tags", "createdAt", "promotion",
+)
+
+
+def public_product_fields(product: dict) -> dict:
+    """Return only shopper-facing listing fields; never serialize seller/admin internals."""
+    public = {key: product[key] for key in PUBLIC_PRODUCT_FIELDS if key in product}
+    safe_variants = []
+    for variant in product.get("variants") or []:
+        if not isinstance(variant, dict):
+            continue
+        name = str(variant.get("name") or "").strip()
+        values = variant.get("values") or []
+        if name:
+            safe_variants.append({"name": name, "values": [str(value) for value in values if value is not None]})
+    public["variants"] = safe_variants
+    try:
+        stock = max(0, int(product.get("stock", 0)))
+        low_stock_at = max(1, int(product.get("lowStockAt", 8)))
+    except (TypeError, ValueError):
+        stock, low_stock_at = 0, 8
+    public["stockStatus"] = "out_of_stock" if stock == 0 else "limited" if stock <= low_stock_at else "in_stock"
+    return public
+
+
+def public_products(db: Session, items: list[dict]) -> list[dict]:
+    """Serialize marketplace products with ratings calculated from persisted reviews only."""
+    if not items:
+        return []
+    product_ids = list({str(item.get("id") or "") for item in items if item.get("id")})
+    summaries: dict[str, dict] = {
+        product_id: {"ratings": [], "breakdown": {str(star): 0 for star in range(1, 6)}}
+        for product_id in product_ids
+    }
+    if product_ids:
+        for review in db.scalars(select(Review).where(Review.product_id.in_(product_ids))).all():
+            summary = summaries.get(str(review.product_id))
+            if summary is None:
+                continue
+            try:
+                rating = float((review.data or {}).get("rating"))
+            except (TypeError, ValueError):
+                continue
+            if 1 <= rating <= 5:
+                summary["ratings"].append(rating)
+                summary["breakdown"][str(int(round(rating)))] += 1
+
+    output = []
+    for item in items:
+        public = public_product_fields(item)
+        summary = summaries.get(str(item.get("id") or ""), {"ratings": [], "breakdown": {}})
+        ratings = summary["ratings"]
+        public.update({
+            "rating": round(sum(ratings) / len(ratings), 1) if ratings else None,
+            "reviewCount": len(ratings),
+            "ratingBreakdown": summary["breakdown"],
+        })
+        output.append(public)
+    return output
+
+
+def public_review_data(review: Review) -> dict:
+    """Expose only customer-authored review content and a generic label, never account PII."""
+    data = dict(review.data or {})
+    verified = bool(data.get("verified", data.get("verifiedPurchase", False)))
+    try:
+        rating = int(data.get("rating", 0))
+    except (TypeError, ValueError):
+        rating = 0
+    if rating < 1 or rating > 5:
+        rating = 0
+    try:
+        helpful = max(0, int(data.get("helpful", 0)))
+    except (TypeError, ValueError):
+        helpful = 0
+    return {
+        "id": review.id,
+        "productId": review.product_id,
+        "rating": rating,
+        "title": str(data.get("title") or ""),
+        "body": str(data.get("body") or data.get("comment") or ""),
+        "date": str(data.get("date") or data.get("createdAt") or ""),
+        "verified": verified,
+        "helpful": helpful,
+        "author": "Verified buyer" if verified else "Ferixas customer",
+    }
 
 
 # ── Seeding ────────────────────────────────────────────────────────────────

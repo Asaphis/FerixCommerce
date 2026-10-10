@@ -70,7 +70,7 @@ export type MerchantRow = {
   name: string;
   tagline: string;
   location: string;
-  rating: number;
+  rating: number | null;
   reviewCount: number;
   followers: number;
   verified: boolean;
@@ -118,7 +118,7 @@ export type MerchantDetail = {
   };
   about: string;
   profile: {
-    name: string; tagline: string; about: string; location: string;
+    name: string; tagline: string; about: string; location: string; logo: string;
     businessName: string; businessEmail: string; businessPhone: string;
     addressLine1: string; addressLine2: string; city: string; region: string;
     postalCode: string; country: string; website: string;
@@ -150,6 +150,14 @@ export type MerchantDetail = {
   }[];
   orders: OrderRow[];
   commissionEarned: number;
+};
+
+export type MerchantProfileQueueItem = {
+  merchantId: string;
+  merchantName: string;
+  merchantSlug: string;
+  currentProfile: MerchantDetail["profile"];
+  request: MerchantDetail["profileRequests"][number];
 };
 
 export type UserRow = {
@@ -200,7 +208,7 @@ export type Overview = {
   settings: Settings;
   totals: Totals;
   windows: Record<"today" | "week" | "month", { gmv: number; commission: number; orders: number }>;
-  channels: { store: number; marketplace: number };
+  channels: { marketplace: number };
   statuses: Record<string, number>;
   topMerchants: { id: string; name: string; slug: string; gmv: number; orders: number }[];
   needsAttention: MerchantRow[];
@@ -236,7 +244,7 @@ export type Analytics = {
   series: { date: string; gmv: number; commission: number; orders: number }[];
   totals: Totals;
   byMerchant: { id: string; name: string; slug: string; gmv: number; commission: number; orders: number }[];
-  byChannel: { store: number; marketplace: number };
+  byChannel: { marketplace: number };
   byCategory: { category: string; name: string; revenue: number }[];
   topProducts: {
     id: string;
@@ -361,6 +369,9 @@ export const getOverview = (session: string | null) => call<Overview>("GET", "ad
 
 export const listMerchants = (session: string | null, params: Params = {}) =>
   call<MerchantList>("GET", "admin/merchants", { params, session });
+
+export const listMerchantProfileRequests = (session: string | null) =>
+  call<{ items: MerchantProfileQueueItem[]; total: number }>("GET", "admin/merchant/profile-requests", { session });
 
 export const getMerchant = (session: string | null, id: string) =>
   call<MerchantDetail>("GET", "admin/merchant", { params: { id }, session });

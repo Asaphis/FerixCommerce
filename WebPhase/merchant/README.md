@@ -61,7 +61,7 @@ The merchant session token travels inside the request body (writes) or the query
 
 ## The core idea this workspace demonstrates
 
-A product is one record. Per product the merchant chooses which channels it sells on —
-their own storefront, the Ferixas marketplace, or both. Stock is shared, so a marketplace
-sale reduces the same count the storefront shows. A marketplace order also lands in the
-merchant's order queue, marked with its channel.
+Seller products are scoped to the authenticated merchant and submitted to the Ferixas
+marketplace for review. Only approved listings and an approved seller profile appear on
+Ferixas. A seller's independent website is separate: its pages, domain, and storefront
+content are not embedded or represented as a Ferixas marketplace store.

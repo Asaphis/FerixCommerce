@@ -173,7 +173,7 @@ export type Settings = {
 };
 
 export type MerchantProfile = {
-  name: string; tagline: string; about: string; location: string;
+  name: string; tagline: string; about: string; location: string; logo: string;
   businessName: string; businessEmail: string; businessPhone: string;
   addressLine1: string; addressLine2: string; city: string; region: string;
   postalCode: string; country: string; website: string;
@@ -198,8 +198,8 @@ export type Dashboard = {
     drafts: number;
     lowStock: number;
     customers: number;
+    followers: number;
     marketplaceOrders: number;
-    storeOrders: number;
   };
   traffic: {
     storeVisitors: number | null;
@@ -269,10 +269,37 @@ export type Analytics = {
   merchant: Merchant;
   series: { date: string; revenue: number; orders: number }[];
   summary: Summary;
-  byChannel: { store: number; marketplace: number };
+  byChannel: { marketplace: number };
   topProducts: { id: string; slug: string; title: string; sold30d: number; views30d: number | null; price: number; revenue: number; conversion: number | null }[];
   byCategory: { category: string; name: string; revenue: number }[];
   customers: { buyers: number; repeat: number; repeatRate: number };
+};
+
+export type FollowerActivity = {
+  followers: number;
+  follows30d: number;
+  unfollows30d: number;
+  net30d: number;
+  trackingStartedAt: string | null;
+  series: { date: string; follows: number; unfollows: number; net: number }[];
+  recent: { action: "follow" | "unfollow"; at: string }[];
+};
+
+export type SellerReview = {
+  id: string;
+  productId: string;
+  productTitle: string;
+  productSlug: string;
+  rating: number;
+  title: string;
+  body: string;
+  createdAt: string;
+  verifiedPurchase: boolean;
+};
+
+export type SellerReviews = {
+  summary: { rating: number | null; reviewCount: number; ratingBreakdown: Record<string, number> };
+  items: SellerReview[];
 };
 
 export type Payout = {
@@ -487,10 +514,16 @@ export const getCustomer = (session: string | null, id: string) =>
 export const getAnalytics = (session: string | null, days = 30) =>
   call<Analytics>("GET", "merchant/analytics", { params: { days }, session });
 
+export const getFollowerActivity = (session: string | null) =>
+  call<FollowerActivity>("GET", "merchant/followers", { session });
+
+export const getSellerReviews = (session: string | null) =>
+  call<SellerReviews>("GET", "merchant/reviews", { session });
+
 export const getPayouts = (session: string | null) => call<Payouts>("GET", "merchant/payouts", { session });
 
 export const getSettings = (session: string | null) =>
-  call<{ settings: Settings; profile: MerchantProfile; profileRequest: MerchantProfileRequest | null; merchant: Merchant; email: string; plan: string; templates: string[]; domain: string }>(
+  call<{ settings: Settings; profile: MerchantProfile; profileRequest: MerchantProfileRequest | null; profileHistory: MerchantProfileRequest[]; merchant: Merchant; email: string; plan: string; templates: string[]; domain: string }>(
     "GET",
     "merchant/settings",
     { session },

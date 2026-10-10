@@ -100,8 +100,8 @@ export function FerixFooter() {
               <span className="font-display text-[15px] font-extrabold tracking-[0.16em] text-white">FERIXAS</span>
             </div>
             <p className="mt-4 max-w-[34ch] text-[13px] leading-relaxed text-white/70">
-              One catalogue, every channel. Merchants keep their own storefront and sell on the
-              marketplace from the same product record.
+              Independent sellers, approved listings, one Ferixas marketplace. Seller websites
+              remain separate from the profiles shoppers see here.
             </p>
             <div className="mt-5 flex gap-2">
               <span className="grid h-8 w-8 place-items-center rounded-[2px] border border-white/20 text-white/70">

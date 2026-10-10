@@ -25,7 +25,7 @@ export async function StudioShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div className="mx-3 mb-4 hidden rounded-[2px] rounded-tr-[12px] border border-white/10 bg-white/[0.06] p-3 xl:block">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/55">Your store</p>
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-white/55">Ferixas seller account</p>
           <p className="mt-1 truncate text-[13px] font-semibold text-white">{merchant.name}</p>
           <p className="mt-0.5 truncate text-[10px] text-white/55">{merchant.plan} plan · {merchant.location}</p>
         </div>
@@ -34,11 +34,11 @@ export async function StudioShell({ children }: { children: ReactNode }) {
           <div className="hidden xl:block"><StudioSidebar /></div>
         </div>
         <div className="hidden px-4 pb-5 xl:block">
-          <Link
-            href={merchant.customDomain ? `https://${merchant.customDomain}` : `https://${merchant.domain}`}
+        <Link
+            href="/settings#seller-profile"
             className="flex min-h-[42px] items-center gap-2 rounded-[2px] rounded-tr-[10px] border border-white/15 px-3 py-2 text-[11px] font-semibold text-white/75 transition-colors hover:border-white/40 hover:text-white"
           >
-            <Store width={14} height={14} /> View storefront
+            <Store width={14} height={14} /> Manage marketplace profile
           </Link>
         </div>
       </aside>

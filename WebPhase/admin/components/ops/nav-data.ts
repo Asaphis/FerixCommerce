@@ -60,6 +60,7 @@ export const NAV_GROUPS: NavGroupData[] = [
     label: "People",
     items: [
       { href: "/merchants", label: "Merchants", icon: "store", permission: "merchant.view" },
+      { href: "/profile-requests", label: "Seller profiles", icon: "shield", permission: "merchant.approve" },
       { href: "/users", label: "Customers", icon: "users", permission: "customer.view" },
     ],
   },

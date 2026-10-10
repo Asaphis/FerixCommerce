@@ -27,6 +27,8 @@ A high-trust operations console with role-specific navigation, a crisp overview,
 
 ## Data and media integrity
 - Derive sold units and financial totals only from persisted order rows/line items; do not present seeded catalogue metadata as actual sales.
+- Admin order, payment and analytics views include only explicitly tagged Ferixas marketplace orders; financial totals require a paid/captured/succeeded/settled payment state and exclude cancelled orders. Fulfilment status alone never establishes payment, refund or settlement.
+- Do not infer refunds from cancellation, synthesize payout estimates from orders, or mark a transfer paid without a verified provider result. Until a provider is connected, show the limitation clearly and keep payout records read-only.
 - Remove invented traffic/impressions/conversion claims. Display `Coming soon` where the feature is not backed by a real source.
 - Never create sample payments/orders/payouts to make a screen look populated. Empty states must remain honest and useful.
 - Use existing approved/local catalogue media where available; correct broken hero/category asset references rather than masking them with invented business content.
@@ -45,3 +47,31 @@ A high-trust operations console with role-specific navigation, a crisp overview,
 
 ## Validation and delivery
 Use the isolated local QA API/database only for preview; do not change live orders, payments, account/security settings or production CMS content. Compare screenshots against the approved boards, check overflow/broken media, run builds/tests, and push only verified source changes to the authorized GitHub `main` branch. Production publishing/redeployment is separate and will be identified clearly in the handoff.
+
+
+## Approved follow-up: seller marketplace governance and visibility
+
+### Product decisions
+- The seller page on Ferixas is a **Ferixas marketplace profile**, not the seller’s separate website. Ferixas must not render or serialize a seller’s external site pages, domain, or storefront CMS content as its marketplace profile. Only an explicit public profile allowlist is eligible, and seller changes to that profile remain private until Admin approves them.
+- Seller product submissions belong to the seller, remain scoped to that merchant, and stay out of public marketplace feeds until the dedicated review decision approves them. The Admin platform catalogue is Ferixas Official inventory by default; seller inventory belongs in seller review and seller-detail surfaces, never an accidental combined catalogue.
+- Seller-facing follower history is privacy-safe: show real aggregate counts and dated follow/unfollow activity, but not follower identity, email, phone, or private profile data. Do not fabricate historical event dates for existing followers.
+- Continue using the existing REST API and ORM-backed hosted database contract. Do not add a local database, SQLite service, AI runtime, new hosting configuration, or production-data writes. Keep follower history in existing merchant JSON fields with the user follow relationship remaining the source of truth; add no database table, schema migration, or production deployment as part of the Git push.
+
+### Design and information architecture
+- Reuse the existing Ferixas Seller Center and calm Admin operations-console styles, components, nav system, keyboard/touch patterns, and 360/768/1280 responsive targets. Add concise, role-specific surfaces rather than a generic dashboard redesign.
+- Merchant workspace adds an Audience destination for actual follower trends and the seller’s persisted product reviews; settings makes current public profile, pending proposal, feedback, and profile submission history distinct.
+- Seller Center products, orders, earnings, payout estimates, and sales history are Ferixas marketplace-only; independent seller website data is not presented as Ferixas activity, and shipment cannot be marked before payment is confirmed.
+- Admin adds a global seller-profile review queue next to product moderation. The platform catalogue is explicitly labelled Ferixas Official; seller submissions remain in review queues and individual merchant records.
+- Marketplace seller profile displays only approved profile information, approved marketplace products, real counts, and only business contact fields the seller explicitly elected to expose. It does not display or link the seller’s separate website as a Ferixas storefront.
+
+### Implementation approach and project structure
+- `Backend/core.py` remains the existing SQLAlchemy/Neon persistence boundary; maintain anonymous daily follow/unfollow aggregates and a short, identity-free recent-event list inside the existing merchant JSON record, while `User.settings.followed_sellers` remains the source of truth for follower counts. No new ORM table or schema migration is required; no test or implementation code may connect to or mutate the hosted database.
+- `Backend/app.py` and `Backend/routers/merchant.py` own public serialization and authenticated seller endpoints; `Backend/routers/admin.py` owns owner-separated catalog filtering and guarded review transitions.
+- `WebPhase/admin/lib/api.ts`, `lib/actions.ts`, `app/review`, and `app/merchants` own Admin review workflow; `WebPhase/merchant/lib/api.ts`, `lib/actions.ts`, `app/settings`, new `app/audience`, and `components/studio` own seller submissions and analytics; `WebPhase/marketplace/app/store/[slug]` renders only the approved public profile.
+- Keep product identity and merchant ownership intact; use the existing product review queue for marketplace publication. No seller website page/section builder is added to Ferixas.
+
+### Delivery order
+1. Tighten canonical product owner classification, default Admin catalogue filtering, product mutation guards, approval transitions, and public fail-closed visibility; add regression tests.
+2. Enforce the approved seller-profile public allowlist and remove seller-website content/domain from marketplace payload/UI; add a global Admin profile-request queue and seller-visible profile history.
+3. Persist privacy-safe follow events, derive real follower totals, and add the Merchant Audience UI for follower history and owned-product reviews.
+4. Run isolated backend tests and all three frontend production builds, inspect diffs, commit and push source only to GitHub `main`. Do not deploy or execute migrations on Neon.
