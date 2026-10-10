@@ -52,8 +52,8 @@ export type Merchant = {
   name: string;
   tagline: string;
   location: string;
-  rating: number;
-  reviewCount: number;
+  rating: number | null;
+  reviewCount: number | null;
   followers: number;
   verified: boolean;
   brand: Brand;
@@ -477,7 +477,7 @@ export const getStore = (slug: string) =>
     fulfilmentRate: number | null;
     products: Product[];
     categories: { slug: string; name: string; count: number }[];
-    stats: { products: number; rating: number; reviewCount: number; followers: number };
+    stats: { products: number; rating: number | null; reviewCount: number | null; followers: number };
   }>("GET", "catalog/store", { params: { slug } });
 
 export const searchAll = (q: string) =>

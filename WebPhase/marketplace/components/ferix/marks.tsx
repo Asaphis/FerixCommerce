@@ -108,10 +108,16 @@ export function Plate({
   );
 }
 
-export function Stars({ value, size = 12, className }: { value: number; size?: number; className?: string }) {
-  const full = Math.round(value);
+export function Stars({ value, size = 12, className }: { value: number | null | undefined; size?: number; className?: string }) {
+  const rating = typeof value === "number" && Number.isFinite(value)
+    ? Math.min(5, Math.max(0, value))
+    : null;
+  const full = rating === null ? 0 : Math.round(rating);
   return (
-    <span className={cn("inline-flex items-center gap-[3px]", className)} aria-label={`${value.toFixed(1)} out of 5`}>
+    <span
+      className={cn("inline-flex items-center gap-[3px]", className)}
+      aria-label={rating === null ? "No ratings yet" : `${rating.toFixed(1)} out of 5`}
+    >
       {[1, 2, 3, 4, 5].map((i) => (
         <svg key={i} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
           <path
