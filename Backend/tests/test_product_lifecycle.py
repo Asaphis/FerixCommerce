@@ -222,13 +222,28 @@ class ProductLifecycleTest(unittest.TestCase):
             self.assertEqual(draft["sections"][0]["heroConfig"], {"scrim": 75, "align": "right"})
             self.assertEqual(draft["sections"][0]["customField"], "keep-me")
             self.assertEqual(len(draft["sections"]), 2)
+            saved_again = self.client.patch("/admin/cms/document", headers={"X-Ferix-Session": self.admin}, json={
+                "id": document_id, "data": {"sections": [
+                    {"id": "hero", "visible": False}, {"id": "products", "title": "Keep section"},
+                ]},
+                "note": "Second contract save",
+            })
+            self.assertEqual(saved_again.status_code, 200, saved_again.text)
+            latest = saved_again.json()["document"]["data"]
+            self.assertEqual(latest["sections"][0]["title"], "New title")
+            self.assertFalse(latest["sections"][0]["visible"])
+            self.assertEqual(latest["sections"][0]["heroConfig"], {"scrim": 75, "align": "right"})
+            self.assertEqual(len(latest["sections"]), 2)
             with SessionLocal() as db:
                 live = db.get(ContentDocument, document_id)
                 self.assertEqual(live.data["sections"][0]["title"], "Old title")
                 self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="draft").count(), 1)
+                self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="superseded").count(), 1)
             published = self.client.post("/admin/cms/document/publish", headers={"X-Ferix-Session": self.admin}, json={"id": document_id})
             self.assertEqual(published.status_code, 200, published.text)
             self.assertEqual(published.json()["document"]["data"]["sections"][0]["title"], "New title")
+            with SessionLocal() as db:
+                self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="draft").count(), 0)
         finally:
             with SessionLocal() as db:
                 db.query(ContentVersion).filter_by(document_id=document_id).delete()
