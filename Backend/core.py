@@ -1034,12 +1034,15 @@ def store_card(db: Session, merchant: dict) -> dict:
     cat_row = db.get(Catalog, f"merchant:{merchant.get('slug')}")
     stats = {}
     if cat_row:
+        # Prefer the DB column, fall back to the JSON data (legacy field names
+        # like "followers" and "rating"). This means a merchant whose row was
+        # never backfilled still shows the right numbers.
         stats = {
-            "follower_count": cat_row.follower_count or 0,
-            "total_reviews": cat_row.total_reviews or 0,
-            "average_rating": cat_row.average_rating or 0.0,
-            "success_rate": cat_row.success_rate or 0.0,
-            "delivery_rate": cat_row.delivery_rate or 0.0,
+            "follower_count": cat_row.follower_count or merchant.get("followers") or 0,
+            "total_reviews": cat_row.total_reviews or merchant.get("reviewCount") or 0,
+            "average_rating": cat_row.average_rating or merchant.get("rating") or 0.0,
+            "success_rate": cat_row.success_rate or merchant.get("responseRate") or 0.0,
+            "delivery_rate": cat_row.delivery_rate or merchant.get("fulfilmentRate") or 0.0,
         }
     public_fields = (
         "id", "slug", "name", "tagline", "location", "rating", "reviewCount",
