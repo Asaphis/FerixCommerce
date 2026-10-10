@@ -14,7 +14,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{_DB.name}"
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app import app  # noqa: E402
-from core import Order, SessionLocal  # noqa: E402
+from core import ContentDocument, ContentVersion, MerchantProfileRequest, Order, SessionLocal, find_merchant, put_row  # noqa: E402
 
 
 class ProductLifecycleTest(unittest.TestCase):
@@ -32,6 +32,12 @@ class ProductLifecycleTest(unittest.TestCase):
         self.client.__exit__(None, None, None)
 
     def test_submission_stays_private_until_admin_approval(self):
+        other_login = self.client.post("/merchant/login", json={"email": "owner@aurasound.ferixas.com", "password": "Ferixas123"})
+        self.assertEqual(other_login.status_code, 200, other_login.text)
+        other_token = other_login.json()["token"]
+        first_items = self.client.get("/merchant/products", headers={"X-Ferix-Session": self.merchant}).json()["items"]
+        other_items = self.client.get("/merchant/products", headers={"X-Ferix-Session": other_token}).json()["items"]
+        self.assertFalse({item["id"] for item in first_items} & {item["id"] for item in other_items})
         options = self.client.get("/merchant/product/options", headers={"X-Ferix-Session": self.merchant})
         self.assertEqual(options.status_code, 200, options.text)
         categories = options.json()["categories"]
@@ -148,6 +154,88 @@ class ProductLifecycleTest(unittest.TestCase):
             "stock": 1, "marketplace": True,
         })
         self.assertEqual(response.status_code, 400, response.text)
+
+    def test_seller_profile_requires_review_and_private_contact_stays_private(self):
+        with SessionLocal() as db:
+            original = dict(find_merchant(db, "abc-electronics"))
+        try:
+            public_before = self.client.get("/catalog/store", params={"slug": "abc-electronics"}).json()
+            proposed = {
+                "name": original["name"], "tagline": "Seller-submitted tagline",
+                "about": "Seller-submitted description", "location": "Accra, Ghana",
+                "businessName": "ABC Electronics Ltd", "businessEmail": "contact@example.com",
+                "businessPhone": "+233200000000", "addressLine1": "123 Private Street",
+                "addressLine2": "Unit 4", "city": "Accra", "region": "Greater Accra",
+                "postalCode": "GA-100", "country": "Ghana", "website": "https://seller.example",
+                "showBusinessEmail": False, "showPhone": True,
+            }
+            submitted = self.client.post("/merchant/profile/request", headers={"X-Ferix-Session": self.merchant}, json=proposed)
+            self.assertEqual(submitted.status_code, 200, submitted.text)
+            request_id = submitted.json()["request"]["id"]
+            during_review = self.client.get("/catalog/store", params={"slug": "abc-electronics"}).json()
+            self.assertEqual(during_review["store"]["name"], public_before["store"]["name"])
+            self.assertNotEqual(during_review["store"].get("website"), proposed["website"])
+
+            direct_edit = self.client.patch("/admin/merchant", headers={"X-Ferix-Session": self.admin},
+                                            json={"id": "abc-electronics", "name": "Admin Direct Edit"})
+            self.assertEqual(direct_edit.status_code, 200, direct_edit.text)
+            self.assertEqual(direct_edit.json()["merchant"]["name"], original["name"])
+            decision = self.client.post("/admin/merchant/profile-request/decision", headers={"X-Ferix-Session": self.admin},
+                                        json={"id": request_id, "decision": "approve"})
+            self.assertEqual(decision.status_code, 200, decision.text)
+            after = self.client.get("/catalog/store", params={"slug": "abc-electronics"}).json()
+            self.assertEqual(after["store"]["website"], proposed["website"])
+            self.assertNotIn("businessEmail", after["store"])
+            self.assertEqual(after["store"]["businessPhone"], proposed["businessPhone"])
+            self.assertNotIn("123 Private Street", str(after))
+        finally:
+            with SessionLocal() as db:
+                put_row(db, "merchant", original["slug"], original)
+                for request in db.query(MerchantProfileRequest).filter_by(merchant_id=original["id"]).all():
+                    db.delete(request)
+                db.commit()
+
+    def test_cms_draft_preserves_hidden_section_fields_and_live_content_until_publish(self):
+        document_id = "cms-lossless-contract"
+        with SessionLocal() as db:
+            db.add(ContentDocument(
+                id=document_id, owner_type="platform", owner_id="platform", document_type="test_page",
+                title="Test page", status="published",
+                data={"globalSettings": {"theme": "warm"}, "sections": [
+                    {"id": "hero", "type": "hero_banner", "title": "Old title", "visible": True,
+                     "heroConfig": {"scrim": 75, "align": "right"}, "customField": "keep-me"},
+                    {"id": "products", "type": "product_carousel", "title": "Keep section", "visible": True},
+                ]},
+            ))
+            db.commit()
+        try:
+            saved = self.client.patch("/admin/cms/document", headers={"X-Ferix-Session": self.admin}, json={
+                "id": document_id, "data": {"sections": [
+                    {"id": "hero", "title": "New title", "position": 1},
+                    {"id": "products", "title": "Keep section", "position": 2},
+                ]}, "note": "Contract save",
+            })
+            self.assertEqual(saved.status_code, 200, saved.text)
+            draft = saved.json()["document"]["data"]
+            self.assertEqual(draft["globalSettings"], {"theme": "warm"})
+            self.assertEqual(draft["sections"][0]["title"], "New title")
+            self.assertEqual(draft["sections"][0]["heroConfig"], {"scrim": 75, "align": "right"})
+            self.assertEqual(draft["sections"][0]["customField"], "keep-me")
+            self.assertEqual(len(draft["sections"]), 2)
+            with SessionLocal() as db:
+                live = db.get(ContentDocument, document_id)
+                self.assertEqual(live.data["sections"][0]["title"], "Old title")
+                self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="draft").count(), 1)
+            published = self.client.post("/admin/cms/document/publish", headers={"X-Ferix-Session": self.admin}, json={"id": document_id})
+            self.assertEqual(published.status_code, 200, published.text)
+            self.assertEqual(published.json()["document"]["data"]["sections"][0]["title"], "New title")
+        finally:
+            with SessionLocal() as db:
+                db.query(ContentVersion).filter_by(document_id=document_id).delete()
+                doc = db.get(ContentDocument, document_id)
+                if doc:
+                    db.delete(doc)
+                db.commit()
 
 
 if __name__ == "__main__":

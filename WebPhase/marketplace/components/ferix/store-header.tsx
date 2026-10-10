@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus } from "lucide-react";
+import { ExternalLink, UserPlus } from "lucide-react";
 import { LinkButton } from "@/components/ferix/marks";
 import { compact } from "@/lib/format";
 import { toggleFollowAction } from "@/lib/actions";
 
-type StoreSummary = { slug: string; domain?: string; customDomain?: string | null };
+type StoreSummary = { slug: string; website?: string };
 
 export function StoreHeader({
   store,
@@ -48,9 +48,7 @@ export function StoreHeader({
           {following ? "Following" : `Follow (${compact(count)})`}
         </button>
       </form>
-      <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-soft">
-        {store.customDomain ?? store.domain}
-      </p>
+      {store.website ? <a href={store.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-ember hover:underline"><ExternalLink width={12} height={12} /> Visit seller website</a> : <p className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-soft">Seller website not provided</p>}
       <LinkButton href={`/browse?store=${store.slug}`} variant="outline">
         Shop on the marketplace
       </LinkButton>

@@ -115,11 +115,22 @@ export type OrderRow = {
 
 export type MerchantDetail = {
   merchant: MerchantRow & {
-    responseRate: number;
-    fulfilmentRate: number;
+    responseRate: number | null;
+    fulfilmentRate: number | null;
     marketplaceEnabled: boolean;
   };
   about: string;
+  profile: {
+    name: string; tagline: string; about: string; location: string;
+    businessName: string; businessEmail: string; businessPhone: string;
+    addressLine1: string; addressLine2: string; city: string; region: string;
+    postalCode: string; country: string; website: string;
+    showBusinessEmail: boolean; showPhone: boolean;
+  };
+  profileRequests: {
+    id: string; profile: Record<string, string | boolean>; status: string; note: string;
+    submittedBy: string; submittedAt: string; reviewedBy: string; reviewedAt: string | null;
+  }[];
   summary: {
     revenueTotal: number;
     revenue30d: number;
@@ -359,6 +370,9 @@ export const getMerchant = (session: string | null, id: string) =>
 
 export const updateMerchant = (session: string | null, body: Record<string, unknown>) =>
   call<{ merchant: MerchantRow }>("PATCH", "admin/merchant", { body, session });
+
+export const decideMerchantProfileRequest = (session: string | null, body: { id: string; decision: "approve" | "changes" | "reject"; note?: string }) =>
+  call<{ request: { id: string; status: string; note: string } }>("POST", "admin/merchant/profile-request/decision", { body, session });
 
 /** Remove a seller account. The endpoint is the owner's alone and refuses while orders exist. */
 export const deleteMerchant = (session: string | null, id: string) =>

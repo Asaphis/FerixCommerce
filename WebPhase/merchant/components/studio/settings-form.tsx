@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { Save } from "lucide-react";
 import type { Settings } from "@/lib/api";
 import { SubmitButton } from "@/components/studio/controls";
-import { Field, Notice, inputClass, selectClass, textareaClass } from "@/components/studio/forms";
+import { Field, Notice, inputClass, selectClass } from "@/components/studio/forms";
 import { Panel, PanelHead } from "@/components/studio/bits";
 import { saveSettingsAction, type FormState } from "@/lib/actions";
 
@@ -14,22 +14,8 @@ export function SettingsForm({ settings, templates }: { settings: Settings; temp
   return (
     <form action={action} className="grid gap-3">
       <Panel>
-        <PanelHead title="Storefront identity" hint="What shoppers see" />
+        <PanelHead title="Workspace appearance" hint="Your Ferixas workspace preferences" />
         <div className="grid gap-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field title="Store name">
-              <input name="name" defaultValue={settings.name} className={inputClass} required />
-            </Field>
-            <Field title="Location">
-              <input name="location" defaultValue={settings.location} className={inputClass} />
-            </Field>
-          </div>
-          <Field title="Tagline">
-            <input name="tagline" defaultValue={settings.tagline} className={inputClass} />
-          </Field>
-          <Field title="About the store">
-            <textarea name="about" defaultValue={settings.about} className={textareaClass} />
-          </Field>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field title="Branded domain · coming soon">
               <input

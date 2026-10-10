@@ -431,6 +431,20 @@ class ContentVersion(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class MerchantProfileRequest(Base):
+    """Auditable seller-proposed profile snapshots; public data changes only on approval."""
+    __tablename__ = "merchant_profile_requests"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    merchant_id: Mapped[str] = mapped_column(String(60), index=True)
+    profile: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(30), default="pending_review", index=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    submitted_by: Mapped[str] = mapped_column(String(320), default="")
+    submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    reviewed_by: Mapped[str] = mapped_column(String(320), default="")
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 
 class SectionPlacement(Base):
     """A product placed in a named section of a page.
@@ -962,7 +976,7 @@ def find_collection(db: Session, value: str) -> Optional[dict]:
 
 def approved_products(db: Session) -> list[dict]:
     """Only approved products for public marketplace display."""
-    return [p for p in products(db) if is_publicly_sellable(p)]
+    return [p for p in products(db) if marketplace_product_available(db, p)]
 
 
 def is_publicly_sellable(product: dict) -> bool:
@@ -972,6 +986,15 @@ def is_publicly_sellable(product: dict) -> bool:
         str(product.get("status") or "").lower() == "approved"
         and bool(channels.get("marketplace", True))
     )
+
+
+def marketplace_product_available(db: Session, product: dict) -> bool:
+    """A listing is public only while its own seller is active and marketplace-enabled."""
+    if not is_publicly_sellable(product):
+        return False
+    merchant = find_merchant(db, str(product.get("merchantId", "")))
+    return bool(merchant and merchant.get("status", "active") == "active"
+                and merchant.get("marketplaceEnabled", True))
 
 
 def platform_products(db: Session) -> list[dict]:
@@ -997,8 +1020,16 @@ def rejected_products(db: Session, merchant_id: Optional[str] = None) -> list[di
     return rejected
 
 
+def merchant_follower_count(db: Session, merchant_id: str) -> int:
+    """Count actual account relationships, not demo counters copied from seed data."""
+    return sum(
+        1 for settings in db.scalars(select(User.settings)).all()
+        if merchant_id in ((settings or {}).get("followed_sellers") or [])
+    )
+
+
 def store_card(db: Session, merchant: dict) -> dict:
-    owned = [p for p in products(db) if p.get("merchantId") == merchant.get("id") and is_publicly_sellable(p)]
+    owned = [p for p in products(db) if p.get("merchantId") == merchant.get("id") and marketplace_product_available(db, p)]
     # Fetch catalog row for merchant stats if available
     cat_row = db.get(Catalog, f"merchant:{merchant.get('slug')}")
     stats = {}
@@ -1017,9 +1048,11 @@ def store_card(db: Session, merchant: dict) -> dict:
     )
     return {
         **{key: merchant[key] for key in public_fields if key in merchant},
+        **({"businessEmail": merchant.get("businessEmail", "")} if merchant.get("showBusinessEmail") and merchant.get("businessEmail") else {}),
+        **({"businessPhone": merchant.get("businessPhone", "")} if merchant.get("showPhone") and merchant.get("businessPhone") else {}),
         "productCount": len(owned),
         "categories": sorted({p.get("category") for p in owned if p.get("category")}),
-        "followers": (cat_row.follower_count or 0) if cat_row else merchant.get("followers", 0),
+        "followers": merchant_follower_count(db, merchant.get("id", "")),
         **{key: value for key, value in stats.items() if key not in ("success_rate", "delivery_rate")},
     }
 
@@ -1072,7 +1105,7 @@ def cart_payload(db: Session, cart: Optional[Cart]) -> dict:
     if cart:
         for raw in cart.lines or []:
             product = find_product(db, raw["productId"])
-            if not product or not is_publicly_sellable(product):
+            if not product or not marketplace_product_available(db, product):
                 continue
             item = {
                 "key": line_key(raw), "product": product, "productId": product["id"],
@@ -1169,9 +1202,18 @@ def _catalogue_rows() -> dict:
 
 
 def seed(db: Session) -> None:
-    """Populate the storefront once. Idempotent: never reseeds a live catalogue."""
-    if db.scalar(select(Catalog.key).limit(1)):
-        _seed_staff(db)
+    """Populate only a truly blank database; existing CMS/accounts are never reset."""
+    # Catalogue-only checks were unsafe: an existing installation with a CMS page or an
+    # account but an empty catalogue could be reseeded and have curated content replaced.
+    # A fresh database has all of these tables but no rows, so any persisted application
+    # state means starter data must not be written over it.
+    if any((
+        db.scalar(select(Catalog.key).limit(1)),
+        db.scalar(select(ContentDocument.id).limit(1)),
+        db.scalar(select(User.id).limit(1)),
+        db.scalar(select(StaffUser.id).limit(1)),
+        db.scalar(select(MerchantProfileRequest.id).limit(1)),
+    )):
         return
 
     data = _catalogue_rows()

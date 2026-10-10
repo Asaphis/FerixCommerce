@@ -6,12 +6,13 @@ import { getMerchant, listReviewQueue, ApiError } from "@/lib/api";
 import { MerchantForm } from "@/components/ops/merchant-form";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
-import { Field, SubmitButton } from "@/components/ops/controls";
+import { SubmitButton } from "@/components/ops/controls";
 import { Trash2 } from "lucide-react";
-import { deleteMerchantAction, editMerchantAction, restrictMerchantAction, suspendMerchantAction } from "@/lib/actions";
+import { deleteMerchantAction, restrictMerchantAction, suspendMerchantAction } from "@/lib/actions";
 import { Distribution, KeyValue } from "@/components/ops/marks";
-import { CellLabel, DataTable, Row, Td, TdLead, TablePanel, inputClass } from "@/components/ops/table";
+import { CellLabel, DataTable, Row, Td, TdLead, TablePanel } from "@/components/ops/table";
 import { compact, dateLong, money, num, relative, titleCase } from "@/lib/format";
+import { MerchantProfileReview } from "@/components/ops/merchant-profile-review";
 
 function statusTone(status: string) {
   if (status === "active") return "mint" as const;
@@ -124,8 +125,8 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
             <ul className="grid gap-2.5 text-[12.5px]">
               <KeyValue label="Trading since" value={dateLong(merchant.since)} />
               <KeyValue label="Plan" value={merchant.plan} />
-              <KeyValue label="Response rate" value={`${merchant.responseRate}%`} />
-              <KeyValue label="Fulfilment rate" value={`${merchant.fulfilmentRate}%`} />
+              <KeyValue label="Response rate" value={merchant.responseRate == null ? "Not measured" : `${merchant.responseRate}%`} />
+              <KeyValue label="Fulfilment rate" value={merchant.fulfilmentRate == null ? "Not measured" : `${merchant.fulfilmentRate}%`} />
               <KeyValue label="Rating" value={`${merchant.rating.toFixed(1)} · ${compact(merchant.reviewCount)} reviews`} />
               <KeyValue label="Followers" value={compact(merchant.followers)} />
             </ul>
@@ -281,44 +282,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
         )}
       </Panel>
 
-      <Panel>
-        <PanelHead
-          title="Edit this seller"
-          hint="Name, where they are, what they pay the platform, and whether they sell on the marketplace. Only what you type is changed."
-        />
-        <CmsActionForm action={editMerchantAction} className="mt-4 grid gap-3">
-          <input type="hidden" name="id" value={merchant.id} />
-          <div className="grid gap-3 md:grid-cols-2">
-            <Field title="Store name">
-              <input name="name" defaultValue={merchant.name} className={inputClass} />
-            </Field>
-            <Field title="Where they are">
-              <input name="location" defaultValue={merchant.location} className={inputClass} />
-            </Field>
-          </div>
-          <Field title="Tagline">
-            <input name="tagline" defaultValue={merchant.tagline} className={inputClass} />
-          </Field>
-          <Field title="About the store">
-            <input name="about" defaultValue={about} className={inputClass} />
-          </Field>
-          <div className="grid gap-3 md:grid-cols-3">
-            <Field title="Commission %">
-              <input name="commissionPct" type="number" min={0} max={40} step="0.5" defaultValue={merchant.commissionPct} className={inputClass} />
-            </Field>
-            <Field title="Plan">
-              <input name="plan" defaultValue={merchant.plan} className={inputClass} />
-            </Field>
-            <label className="flex items-center gap-2 pt-6 text-[12.5px] text-chalk">
-              <input type="checkbox" name="marketplaceEnabled" defaultChecked={(merchant as { marketplaceEnabled?: boolean }).marketplaceEnabled !== false} className="size-4 accent-signal" />
-              Sells on the marketplace
-            </label>
-          </div>
-          <div>
-            <SubmitButton pendingLabel="Saving">Save the details</SubmitButton>
-          </div>
-        </CmsActionForm>
-      </Panel>
+      <MerchantProfileReview merchantId={merchant.id} profile={detail.profile} requests={detail.profileRequests} />
 
       <Panel>
         <PanelHead

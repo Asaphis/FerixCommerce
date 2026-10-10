@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Boxes, ChartNoAxesCombined, Package, ShoppingCart, Users, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowRight, Boxes, ChartNoAxesCombined, Mail, MapPin, Package, Phone, ShoppingCart, Users, Wallet } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getDashboard } from "@/lib/api";
 import { signOutAction } from "@/lib/actions";
@@ -72,6 +72,21 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </nav>
+
+      <Panel>
+        <PanelHead
+          title="Your seller profile"
+          action={<Pill tone={data.profileRequest?.status === "pending_review" ? "warn" : "neutral"}>{data.profileRequest?.status?.replaceAll("_", " ") ?? "profile setup"}</Pill>}
+        />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex items-start gap-2.5 rounded-[2px] border border-hairline p-3"><MapPin width={14} height={14} className="mt-0.5 shrink-0 text-signal" /><div><p className="text-[10px] text-chalk-dim">Business location</p><p className="mt-0.5 text-[12px] font-medium text-chalk">{[data.profile.city, data.profile.region, data.profile.country].filter(Boolean).join(", ") || data.profile.location || "Add your location"}</p></div></div>
+          <div className="flex items-start gap-2.5 rounded-[2px] border border-hairline p-3"><Mail width={14} height={14} className="mt-0.5 shrink-0 text-signal" /><div><p className="text-[10px] text-chalk-dim">Business email</p><p className="mt-0.5 break-all text-[12px] font-medium text-chalk">{data.profile.businessEmail || "Add a contact email"}</p></div></div>
+          <div className="flex items-start gap-2.5 rounded-[2px] border border-hairline p-3"><Phone width={14} height={14} className="mt-0.5 shrink-0 text-signal" /><div><p className="text-[10px] text-chalk-dim">Business phone</p><p className="mt-0.5 text-[12px] font-medium text-chalk">{data.profile.businessPhone || "Add a contact phone"}</p></div></div>
+          <div className="flex items-start gap-2.5 rounded-[2px] border border-hairline p-3"><MapPin width={14} height={14} className="mt-0.5 shrink-0 text-signal" /><div><p className="text-[10px] text-chalk-dim">Business address</p><p className="mt-0.5 text-[12px] font-medium text-chalk">{[data.profile.addressLine1, data.profile.city, data.profile.region, data.profile.postalCode, data.profile.country].filter(Boolean).join(", ") || "Add your business address"}</p></div></div>
+        </div>
+        {data.profileRequest?.note ? <p className="mt-3 rounded-[8px] border border-sand/30 bg-sand/5 p-3 text-[12px] text-sand">Profile review note: {data.profileRequest.note}</p> : null}
+        <Link href="/settings#seller-profile" className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-semibold text-signal">Manage seller profile <ArrowRight width={12} height={12} /></Link>
+      </Panel>
 
       <div className="grid min-w-0 gap-3 xl:grid-cols-[1.45fr_1fr]">
         <Panel flush>

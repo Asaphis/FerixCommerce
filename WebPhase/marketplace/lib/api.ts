@@ -65,6 +65,9 @@ export type Merchant = {
   categories?: string[];
   logo?: string | null;
   cover?: string | null;
+  website?: string;
+  businessEmail?: string;
+  businessPhone?: string;
 };
 
 export type Variant = { name: string; values: string[] };

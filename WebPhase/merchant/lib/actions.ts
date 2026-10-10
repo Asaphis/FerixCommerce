@@ -237,14 +237,8 @@ export async function setOrderStatusRequestAction(formData: FormData): Promise<v
 export async function saveSettingsAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
-  const name = String(formData.get("name") ?? "").trim();
-  if (name.length < 2) return { error: "Enter your store name." };
   try {
     await api.updateSettings(session, {
-      name,
-      tagline: String(formData.get("tagline") ?? "").trim(),
-      about: String(formData.get("about") ?? "").trim(),
-      location: String(formData.get("location") ?? "").trim(),
       customDomain: String(formData.get("customDomain") ?? "").trim(),
       template: String(formData.get("template") ?? "FERRUM"),
       accent: String(formData.get("accent") ?? "#e4572e"),
@@ -259,6 +253,40 @@ export async function saveSettingsAction(_prev: FormState, formData: FormData): 
   }
   refresh("/settings");
   return { message: "Store settings saved." };
+}
+
+export async function submitProfileRequestAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2) return { error: "Enter a store name with at least two characters." };
+  const website = String(formData.get("website") ?? "").trim();
+  if (website && !/^https:\/\//i.test(website)) return { error: "Use a secure website link starting with https://." };
+  try {
+    await api.submitProfileRequest(session, {
+      name,
+      tagline: String(formData.get("tagline") ?? "").trim(),
+      about: String(formData.get("about") ?? "").trim(),
+      location: String(formData.get("location") ?? "").trim(),
+      businessName: String(formData.get("businessName") ?? "").trim(),
+      businessEmail: String(formData.get("businessEmail") ?? "").trim(),
+      businessPhone: String(formData.get("businessPhone") ?? "").trim(),
+      addressLine1: String(formData.get("addressLine1") ?? "").trim(),
+      addressLine2: String(formData.get("addressLine2") ?? "").trim(),
+      city: String(formData.get("city") ?? "").trim(),
+      region: String(formData.get("region") ?? "").trim(),
+      postalCode: String(formData.get("postalCode") ?? "").trim(),
+      country: String(formData.get("country") ?? "").trim(),
+      website,
+      showBusinessEmail: formData.get("showBusinessEmail") === "on",
+      showPhone: formData.get("showPhone") === "on",
+    });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not submit your profile for review." };
+  }
+  refresh("/settings");
+  refresh("/");
+  return { message: "Profile submitted. Your current public profile stays live until an admin approves this update." };
 }
 
 // ── Storefront (Store Design) ──────────────────────────────────────────

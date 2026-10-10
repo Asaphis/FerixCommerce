@@ -15,10 +15,11 @@ from sqlalchemy import select
 
 from core import (
     AuditLog, ContentDocument, ContentVersion, FlashSale, FlashSaleItem, LedgerEntry,
-    MediaAsset, Order, Payout, ROLE_PERMISSIONS, SessionLocal, StaffSession, StaffUser, User,
+    MediaAsset, MerchantProfileRequest, Order, Payout, ROLE_PERMISSIONS, SessionLocal, StaffSession, StaffUser, User,
     audit, collections as all_collections, categories as all_categories, find_merchant,
     find_product, iso, issue_staff_session, media_json, merchants as all_merchants,
     new_id, now, permissions_for, placeholder, products as all_products, put_row, drop_row,
+    merchant_follower_count,
     remove_media_blob, require_permission, require_staff, rows_of, storage_info,
     sync_pending_media, upload_media_blob, validate_media_upload, verify_password,
 )
@@ -51,10 +52,13 @@ class MerchantPatch(BaseModel):
     plan: Optional[str] = None
     commissionPct: Optional[float] = None
     marketplaceEnabled: Optional[bool] = None
-    name: Optional[str] = None
-    tagline: Optional[str] = None
-    location: Optional[str] = None
-    about: Optional[str] = None
+    verified: Optional[bool] = None
+
+
+class MerchantProfileDecisionIn(BaseModel):
+    id: str
+    decision: str
+    note: Optional[str] = None
 
 
 class SettingsPatch(BaseModel):
@@ -312,7 +316,7 @@ def _merchant_row(db, merchant: dict) -> dict:
         "id": merchant["id"], "slug": merchant["slug"], "name": merchant["name"],
         "tagline": merchant.get("tagline", ""), "location": merchant.get("location", ""),
         "rating": merchant.get("rating", 0), "reviewCount": merchant.get("reviewCount", 0),
-        "followers": merchant.get("followers", 0), "verified": merchant.get("verified", False),
+        "followers": merchant_follower_count(db, merchant["id"]), "verified": merchant.get("verified", False),
         "brand": merchant.get("brand", {}), "domain": merchant.get("domain", ""),
         "customDomain": merchant.get("customDomain"), "plan": merchant.get("plan", "Starter"),
         "since": merchant.get("since", ""), "status": merchant.get("status", "active"),
@@ -486,7 +490,8 @@ def merchants(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
 @router.get("/merchant")
 def merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str = Query(...)):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.view")
         found = find_merchant(db, id)
         if not found:
             raise HTTPException(404, "Merchant not found")
@@ -498,10 +503,24 @@ def merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
         for order in orders:
             statuses[order["fulfillment"]] = statuses.get(order["fulfillment"], 0) + 1
         return {
-            "merchant": {**row, "responseRate": found.get("responseRate", 92),
-                         "fulfilmentRate": found.get("fulfilmentRate", 96),
+            "merchant": {**row,
+                         "responseRate": found.get("responseRate") if found.get("responseRateVerified") else None,
+                         "fulfilmentRate": found.get("fulfilmentRate") if found.get("fulfilmentRateVerified") else None,
                          "marketplaceEnabled": found.get("marketplaceEnabled", True)},
             "about": found.get("about", ""),
+            "profile": {key: found.get(key, "") for key in (
+                "name", "tagline", "about", "location", "businessName", "businessEmail", "businessPhone",
+                "addressLine1", "addressLine2", "city", "region", "postalCode", "country", "website",
+                "showBusinessEmail", "showPhone",
+            )},
+            "profileRequests": [{
+                "id": request.id, "profile": request.profile or {}, "status": request.status,
+                "note": request.note or "", "submittedBy": request.submitted_by,
+                "submittedAt": iso(request.submitted_at), "reviewedBy": request.reviewed_by,
+                "reviewedAt": iso(request.reviewed_at) if request.reviewed_at else None,
+            } for request in db.scalars(select(MerchantProfileRequest)
+                                        .where(MerchantProfileRequest.merchant_id == found["id"])
+                                        .order_by(MerchantProfileRequest.submitted_at.desc()).limit(10)).all()],
             "summary": {
                 "revenueTotal": row["gmv"],
                 "revenue30d": round(sum(o["total"] for o in orders if _days_between(o["placedAt"]) < 30), 2),
@@ -528,19 +547,56 @@ def update_merchant(session: Optional[str] = Header(None, alias="X-Ferix-Session
         if not found:
             raise HTTPException(404, "Merchant not found")
         updated = dict(found)
-        for field in ("status", "plan", "commissionPct", "marketplaceEnabled", "name", "tagline", "location", "about"):
+        for field in ("status", "plan", "commissionPct", "marketplaceEnabled", "verified"):
             value = getattr(payload, field)
             if value is not None:
                 updated[field] = value
         put_row(db, "merchant", found["slug"], updated)
-        if payload.name and payload.name != found.get("name"):
-            for product in all_products(db):
-                if product.get("merchantId") == found["id"]:
-                    product["merchantName"] = payload.name
-                    put_row(db, "product", product["slug"], product)
         audit(db, "admin", staff.email, "merchant.update", found["slug"], f"status={updated.get('status')}")
         db.commit()
         return {"merchant": _merchant_row(db, updated)}
+
+
+@router.post("/merchant/profile-request/decision")
+def decide_merchant_profile_request(
+    session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+    payload: MerchantProfileDecisionIn = Body(...),
+):
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "merchant.approve")
+        request = db.get(MerchantProfileRequest, payload.id)
+        if not request or request.status != "pending_review":
+            raise HTTPException(404, "Pending profile request not found")
+        decision = payload.decision.strip().lower()
+        if decision not in {"approve", "changes", "reject"}:
+            raise HTTPException(400, "Decision must be approve, changes, or reject")
+        note = (payload.note or "").strip()
+        if decision in {"changes", "reject"} and not note:
+            raise HTTPException(422, "Add a note so the seller knows what to change")
+        merchant = find_merchant(db, request.merchant_id)
+        if not merchant:
+            raise HTTPException(404, "Seller account no longer exists")
+        if decision == "approve":
+            before_name = merchant.get("name")
+            updated = {**merchant, **(request.profile or {})}
+            put_row(db, "merchant", merchant["slug"], updated)
+            if updated.get("name") != before_name:
+                for product in all_products(db):
+                    if product.get("merchantId") == merchant["id"]:
+                        product["merchantName"] = updated["name"]
+                        put_row(db, "product", product["slug"], product)
+            request.status = "approved"
+        elif decision == "changes":
+            request.status = "changes_requested"
+        else:
+            request.status = "rejected"
+        request.note = note
+        request.reviewed_by = staff.email
+        request.reviewed_at = now()
+        audit(db, "admin", staff.email, f"merchant.profile.{decision}", merchant["slug"], note or "Profile approved")
+        db.commit()
+        return {"request": {"id": request.id, "status": request.status, "note": request.note}}
 
 
 # ── Customers ──────────────────────────────────────────────────────────────
@@ -1323,6 +1379,28 @@ def _document_json(doc: ContentDocument) -> dict:
             "data": doc.data, "updatedAt": iso(doc.updated_at), "updatedBy": doc.updated_by}
 
 
+def _cms_draft(db, document_id: str):
+    return db.scalar(select(ContentVersion).where(
+        ContentVersion.document_id == document_id, ContentVersion.status == "draft",
+    ).order_by(ContentVersion.version.desc()))
+
+
+def _merge_cms_data(previous: dict, incoming: dict) -> dict:
+    """Merge section payloads by ID so controls hidden by an editor survive saves."""
+    result = dict(previous or {})
+    for key, value in (incoming or {}).items():
+        if key == "sections" and isinstance(value, list):
+            existing = {str(section.get("id")): section for section in (result.get("sections") or [])
+                        if isinstance(section, dict) and section.get("id") is not None}
+            result[key] = [{**existing.get(str(section.get("id")), {}), **section}
+                           for section in value if isinstance(section, dict)]
+        elif isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = {**result[key], **value}
+        else:
+            result[key] = value
+    return result
+
+
 def _ensure_document(db, document_id: str) -> ContentDocument:
     doc = db.get(ContentDocument, document_id)
     if doc:
@@ -1350,8 +1428,13 @@ def cms_document(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
         doc = _ensure_document(db, id)
         versions = db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)
                               .order_by(ContentVersion.version.desc()).limit(20)).all()
+        document_data = _document_json(doc)
+        draft = _cms_draft(db, doc.id)
+        if draft is not None:
+            document_data["data"] = draft.data or {}
+            document_data["draftStatus"] = "draft"
         db.commit()
-        return {"document": _document_json(doc),
+        return {"document": document_data,
                 "versions": [{"id": v.id, "version": v.version, "status": v.status, "note": v.note,
                               "createdBy": v.created_by, "createdAt": iso(v.created_at)} for v in versions]}
 
@@ -1362,24 +1445,21 @@ def cms_save_document(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         staff = require_staff(db, session, "admin")
         require_permission(staff, "cms.manage")
         doc = _ensure_document(db, payload.id)
-        if payload.title is not None:
-            doc.title = payload.title
-        if payload.data is not None:
-            # CRITICAL FIX: Merge new data with existing data instead of replacing
-            # This prevents wiping out other sections when updating one section
-            existing_data = doc.data or {}
-            doc.data = {**existing_data, **payload.data}
-        if payload.status is not None:
-            doc.status = payload.status
+        draft = _cms_draft(db, doc.id)
+        base_data = (draft.data if draft is not None else doc.data) or {}
+        draft_data = _merge_cms_data(base_data, payload.data or {})
         doc.updated_at = now()
         doc.updated_by = staff.email
         version = len(db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)).all()) + 1
         db.add(ContentVersion(id=new_id("ver"), document_id=doc.id, version=version,
-                              status=doc.status, data=doc.data, note=payload.note or "Saved",
+                              status="draft", data=draft_data, note=payload.note or "Saved as draft",
                               created_by=staff.email))
-        audit(db, "admin", staff.email, "cms.save", doc.id, doc.status)
+        audit(db, "admin", staff.email, "cms.save", doc.id, "draft")
         db.commit()
-        return {"document": _document_json(doc)}
+        document_data = _document_json(doc)
+        document_data["data"] = draft_data
+        document_data["draftStatus"] = "draft"
+        return {"document": document_data}
 
 
 @router.post("/cms/document/publish")
@@ -1388,6 +1468,10 @@ def cms_publish(session: Optional[str] = Header(None, alias="X-Ferix-Session"), 
         staff = require_staff(db, session, "admin")
         require_permission(staff, "cms.manage")
         doc = _ensure_document(db, str(payload.get("id")))
+        draft = _cms_draft(db, doc.id)
+        if draft is not None:
+            doc.data = draft.data or {}
+            draft.status = "published"
         doc.status = "published"
         doc.updated_at = now()
         doc.updated_by = staff.email
@@ -1408,16 +1492,22 @@ def cms_restore(session: Optional[str] = Header(None, alias="X-Ferix-Session"), 
         if not version:
             raise HTTPException(404, "Version not found")
         doc = _ensure_document(db, version.document_id)
-        doc.data = version.data
+        restored_data = version.data or {}
         doc.updated_at = now()
         doc.updated_by = staff.email
+        previous_draft = _cms_draft(db, doc.id)
+        if previous_draft is not None:
+            previous_draft.status = "superseded"
         db.add(ContentVersion(id=new_id("ver"), document_id=doc.id,
                               version=len(db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)).all()) + 1,
-                              status=doc.status, data=version.data,
+                              status="draft", data=restored_data,
                               note=f"Restored v{version.version}", created_by=staff.email))
         audit(db, "admin", staff.email, "cms.restore", doc.id, f"v{version.version}")
         db.commit()
-        return {"document": _document_json(doc)}
+        document_data = _document_json(doc)
+        document_data["data"] = restored_data
+        document_data["draftStatus"] = "draft"
+        return {"document": document_data}
 
 
 # ── Media library ──────────────────────────────────────────────────────────
@@ -1815,7 +1905,8 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
         if not document:
             raise HTTPException(404, "That page does not exist")
 
-        data = dict(document.data or {})
+        current_draft = _cms_draft(db, document.id)
+        data = dict((current_draft.data if current_draft is not None else document.data) or {})
         if payload.sections is not None:
             cleaned = []
             for index, section in enumerate(payload.sections):
@@ -1823,7 +1914,7 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
                 row["position"] = index + 1
                 row.setdefault("visible", True)
                 cleaned.append(row)
-            data["sections"] = cleaned
+            data = _merge_cms_data(data, {"sections": cleaned})
         if payload.title:
             document.title = payload.title
         # The draft goes to a version and NOT onto the document. The document is what the

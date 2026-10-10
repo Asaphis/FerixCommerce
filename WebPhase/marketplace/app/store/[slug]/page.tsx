@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowRight, Check, MapPin, Package, Star } from "lucide-react";
+import { ArrowRight, Check, Mail, MapPin, Package, Phone, Star } from "lucide-react";
 import { assetUrl, getStore, ApiError, checkFollowing } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
@@ -88,9 +88,10 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
           <div>
             <Eyebrow>About the store</Eyebrow>
             <p className="mt-2.5 max-w-[70ch] text-[14px] leading-relaxed text-ink-soft">{about}</p>
-            
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            </div>
+            {store.businessEmail || store.businessPhone ? <div className="mt-4 flex flex-wrap gap-4 text-[12px] text-ink-soft">
+              {store.businessEmail ? <a href={`mailto:${store.businessEmail}`} className="inline-flex items-center gap-1.5 hover:text-ember"><Mail width={13} height={13} />{store.businessEmail}</a> : null}
+              {store.businessPhone ? <a href={`tel:${store.businessPhone}`} className="inline-flex items-center gap-1.5 hover:text-ember"><Phone width={13} height={13} />{store.businessPhone}</a> : null}
+            </div> : null}
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[

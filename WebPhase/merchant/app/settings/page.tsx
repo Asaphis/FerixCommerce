@@ -2,6 +2,7 @@ import { ExternalLink, Globe, Palette, Store } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getSettings } from "@/lib/api";
 import { SettingsForm } from "@/components/studio/settings-form";
+import { ProfileForm } from "@/components/studio/profile-form";
 import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { dateLong, num } from "@/lib/format";
 
@@ -13,9 +14,11 @@ export default async function SettingsPage() {
     <div className="grid gap-5">
       <header>
         <Eyebrow>Store settings</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{data.settings.name}</h1>
+        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{data.profile.name}</h1>
         
       </header>
+
+      <div id="seller-profile"><ProfileForm profile={data.profile} request={data.profileRequest} /></div>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile label="Plan" value={data.plan} sub={`Trading since ${dateLong(merchant.since)}`} />

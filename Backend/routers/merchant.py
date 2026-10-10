@@ -6,6 +6,8 @@ frontend works against the real database without a single UI change.
 from __future__ import annotations
 
 from datetime import timedelta
+import re
+from urllib.parse import urlparse
 from typing import Optional
 
 from fastapi import APIRouter, Body, File, Form, Header, HTTPException, Query, Request, UploadFile
@@ -15,7 +17,7 @@ from sqlalchemy import select
 
 from core import (
     DEMO_PASSWORD, ContentDocument, ContentVersion, FlashSale, FlashSaleItem,
-    InventoryLog, MediaAsset, Order, Payout, SessionLocal, StaffSession,
+    InventoryLog, MediaAsset, MerchantProfileRequest, Order, Payout, SessionLocal, StaffSession,
     audit, aware, collections as all_collections, categories as all_categories, find_category, find_merchant, find_product,
     hash_password, iso, issue_staff_session, merchants as all_merchants, new_id, now,
     permissions_for, placeholder, products as all_products, put_row, remove_media_blob,
@@ -85,10 +87,6 @@ class StatusIn(BaseModel):
 
 
 class SettingsIn(BaseModel):
-    name: Optional[str] = None
-    tagline: Optional[str] = None
-    about: Optional[str] = None
-    location: Optional[str] = None
     customDomain: Optional[str] = None
     marketplaceEnabled: Optional[bool] = None
     accent: Optional[str] = None
@@ -97,6 +95,25 @@ class SettingsIn(BaseModel):
     autoFulfil: Optional[bool] = None
     orderEmails: Optional[bool] = None
     payoutCadence: Optional[str] = None
+
+
+class ProfileRequestIn(BaseModel):
+    name: str
+    tagline: str = ""
+    about: str = ""
+    location: str = ""
+    businessName: str = ""
+    businessEmail: str = ""
+    businessPhone: str = ""
+    addressLine1: str = ""
+    addressLine2: str = ""
+    city: str = ""
+    region: str = ""
+    postalCode: str = ""
+    country: str = ""
+    website: str = ""
+    showBusinessEmail: bool = False
+    showPhone: bool = False
 
 
 class MediaIn(BaseModel):
@@ -273,6 +290,35 @@ def _merchant_settings(db, merchant: dict) -> dict:
     }
 
 
+def _merchant_profile(merchant: dict) -> dict:
+    """Seller-owned profile data; contact/address fields remain private by default."""
+    return {
+        "name": merchant.get("name", ""), "tagline": merchant.get("tagline", ""),
+        "about": merchant.get("about", ""), "location": merchant.get("location", ""),
+        "businessName": merchant.get("businessName", ""),
+        "businessEmail": merchant.get("businessEmail", ""),
+        "businessPhone": merchant.get("businessPhone", ""),
+        "addressLine1": merchant.get("addressLine1", ""),
+        "addressLine2": merchant.get("addressLine2", ""),
+        "city": merchant.get("city", ""), "region": merchant.get("region", ""),
+        "postalCode": merchant.get("postalCode", ""), "country": merchant.get("country", ""),
+        "website": merchant.get("website", ""),
+        "showBusinessEmail": bool(merchant.get("showBusinessEmail", False)),
+        "showPhone": bool(merchant.get("showPhone", False)),
+    }
+
+
+def _profile_request_json(request: Optional[MerchantProfileRequest]) -> Optional[dict]:
+    if request is None:
+        return None
+    return {
+        "id": request.id, "profile": request.profile or {}, "status": request.status,
+        "note": request.note or "", "submittedBy": request.submitted_by,
+        "submittedAt": iso(request.submitted_at), "reviewedBy": request.reviewed_by,
+        "reviewedAt": iso(request.reviewed_at) if request.reviewed_at else None,
+    }
+
+
 def _merchant_card(db, merchant: dict) -> dict:
     card = dict(merchant)
     card.pop("settings", None)
@@ -379,6 +425,11 @@ def dashboard(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 
         return {
             "merchant": _merchant_card(db, merchant),
+            "profile": _merchant_profile(merchant),
+            "profileRequest": _profile_request_json(db.scalar(
+                select(MerchantProfileRequest).where(MerchantProfileRequest.merchant_id == merchant["id"])
+                .order_by(MerchantProfileRequest.submitted_at.desc())
+            )),
             "settings": settings,
             "summary": summary,
             "statuses": statuses,
@@ -936,7 +987,10 @@ def settings(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
-        return {"settings": _merchant_settings(db, merchant), "merchant": _merchant_card(db, merchant),
+        latest = db.scalar(select(MerchantProfileRequest).where(MerchantProfileRequest.merchant_id == merchant["id"])
+                            .order_by(MerchantProfileRequest.submitted_at.desc()))
+        return {"settings": _merchant_settings(db, merchant), "profile": _merchant_profile(merchant),
+                "profileRequest": _profile_request_json(latest), "merchant": _merchant_card(db, merchant),
                 "email": staff.email, "plan": merchant.get("plan", "Starter"),
                 "templates": TEMPLATES, "domain": merchant.get("domain", "")}
 
@@ -950,10 +1004,6 @@ def update_settings(session: Optional[str] = Header(None, alias="X-Ferix-Session
         updated = dict(merchant)
         stored = dict(updated.get("settings") or {})
         brand = dict(updated.get("brand") or {})
-        for field in ("name", "tagline", "about", "location"):
-            value = getattr(payload, field)
-            if value is not None:
-                updated[field] = value
         if payload.customDomain is not None:
             updated["customDomain"] = payload.customDomain or None
         if payload.marketplaceEnabled is not None:
@@ -969,14 +1019,46 @@ def update_settings(session: Optional[str] = Header(None, alias="X-Ferix-Session
         updated["brand"] = brand
         updated["settings"] = stored
         put_row(db, "merchant", merchant["slug"], updated)
-        # Keep the merchant's own product cards in step with a renamed store.
-        if updated.get("name") != merchant.get("name"):
-            for product in _own_products(db, merchant["id"]):
-                product["merchantName"] = updated["name"]
-                put_row(db, "product", product["slug"], product)
         audit(db, "merchant", staff.email, "settings.update", merchant["slug"], "Store settings saved")
         db.commit()
         return {"settings": _merchant_settings(db, updated)}
+
+
+@router.post("/profile/request")
+def submit_profile_request(
+    session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+    payload: ProfileRequestIn = Body(...),
+):
+    """Submit a full seller profile snapshot for admin review; it is not live yet."""
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.store.manage")
+        merchant = _merchant_or_404(db, staff.subject_id)
+        profile = {key: (value.strip() if isinstance(value, str) else value)
+                   for key, value in payload.model_dump().items()}
+        if len(profile["name"]) < 2:
+            raise HTTPException(422, "Store name must be at least two characters")
+        if profile["businessEmail"] and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", profile["businessEmail"]):
+            raise HTTPException(422, "Enter a valid business contact email")
+        if profile["website"]:
+            parsed = urlparse(profile["website"])
+            if parsed.scheme != "https" or not parsed.netloc:
+                raise HTTPException(422, "Website links must start with https://")
+        pending = db.scalars(select(MerchantProfileRequest).where(
+            MerchantProfileRequest.merchant_id == merchant["id"],
+            MerchantProfileRequest.status == "pending_review",
+        )).all()
+        for previous in pending:
+            previous.status = "superseded"
+            previous.note = "Replaced by a newer seller submission."
+        request = MerchantProfileRequest(
+            id=new_id("mpr"), merchant_id=merchant["id"], profile=profile,
+            status="pending_review", note="", submitted_by=staff.email, submitted_at=now(),
+        )
+        db.add(request)
+        audit(db, "merchant", staff.email, "merchant.profile.submit", merchant["slug"], "Profile submitted for review")
+        db.commit()
+        return {"request": _profile_request_json(request)}
 
 
 # ── Media library ──────────────────────────────────────────────────────────

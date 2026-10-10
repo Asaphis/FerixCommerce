@@ -33,7 +33,8 @@ from core import (
     collections as collection_rows, decorate, find_merchant, find_product, get_user,
     hash_password, iso, line_key, merchants as merchant_rows, now, product_rows,
     public_user, put_row, require_user, sale_status, seed, store_card,
-    is_publicly_sellable, verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
+    marketplace_product_available, verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
+    merchant_follower_count,
 )
 
 from routers import admin as admin_router
@@ -296,7 +297,7 @@ def health():
 @app.get("/catalog/categories")
 def categories():
     with SessionLocal() as db:
-        rows = [p for p in product_rows(db) if is_publicly_sellable(p)]
+        rows = [p for p in product_rows(db) if marketplace_product_available(db, p)]
         return {"categories": sorted(
             [{**c, "count": sum(p.get("category") == c.get("slug") for p in rows)}
              for c in category_rows(db) if c.get("visible", True)],
@@ -403,7 +404,7 @@ def products(search: Optional[str] = None,
         # STRICT FILTER: Only approved products appear in public catalogs
         catalogue = decorate(db, [
             row for row in product_rows(db)
-            if is_publicly_sellable(row)
+            if marketplace_product_available(db, row)
         ])
         items = list(catalogue)
         q = (search or "").lower()
@@ -482,11 +483,11 @@ def products(search: Optional[str] = None,
 def product(slug: str):
     with SessionLocal() as db:
         found = find_product(db, slug)
-        if not found or not is_publicly_sellable(found):
+        if not found or not marketplace_product_available(db, found):
             raise HTTPException(404, "That product is not available")
         merchant = find_merchant(db, found["merchantId"])
         related = [p for p in product_rows(db)
-                   if is_publicly_sellable(p) and p["id"] != found["id"]
+                   if marketplace_product_available(db, p) and p["id"] != found["id"]
                    and (p.get("merchantId") == found.get("merchantId") or p.get("category") == found.get("category"))][:8]
         reviews = db.scalars(select(Review).where(Review.product_id == found["id"])).all()
         return {
@@ -508,7 +509,7 @@ def home():
     with SessionLocal() as db:
         # STRICT FILTER: Only approved products appear on homepage
         all_items = product_rows(db)
-        items = [p for p in all_items if is_publicly_sellable(p)]
+        items = [p for p in all_items if marketplace_product_available(db, p)]
         decorated = decorate(db, items)
         cats = category_rows(db)
         cols = collection_rows(db)
@@ -565,7 +566,7 @@ def category(slug: str, sort: str = "relevance"):
 @app.get("/catalog/collections")
 def collections():
     with SessionLocal() as db:
-        items = decorate(db, [p for p in product_rows(db) if is_publicly_sellable(p)])
+        items = decorate(db, [p for p in product_rows(db) if marketplace_product_available(db, p)])
         return {"collections": [{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in items),
                                  "products": [p for p in items if c["slug"] in (p.get("collections") or [])][:3]}
                                 for c in collection_rows(db) if c.get("visible", True)]}
@@ -583,7 +584,8 @@ def collection(slug: str, sort: str = "relevance"):
 @app.get("/catalog/stores")
 def stores(search: Optional[str] = None, sort: str = "top"):
     with SessionLocal() as db:
-        rows = [store_card(db, m) for m in merchant_rows(db)]
+        rows = [store_card(db, m) for m in merchant_rows(db)
+                if m.get("status", "active") == "active" and m.get("marketplaceEnabled", True)]
         q = (search or "").lower()
         rows = [m for m in rows if not q or q in m["name"].lower() or q in (m.get("tagline") or "").lower()]
         if sort == "new":
@@ -597,7 +599,7 @@ def stores(search: Optional[str] = None, sort: str = "top"):
 def store(slug: str):
     with SessionLocal() as db:
         merchant = find_merchant(db, slug)
-        if not merchant:
+        if not merchant or merchant.get("status", "active") != "active" or not merchant.get("marketplaceEnabled", True):
             raise HTTPException(404, "No store at that address")
         
         # STRICT CATALOG ISOLATION: Only display APPROVED products belonging to this specific merchant_id.
@@ -605,7 +607,7 @@ def store(slug: str):
         owned = decorate(db, [
             p for p in product_rows(db)
             if p.get("merchantId") == merchant["id"]
-            and is_publicly_sellable(p)
+            and marketplace_product_available(db, p)
         ])
         
         # Fetch catalog row for merchant stats
@@ -614,8 +616,8 @@ def store(slug: str):
             "products": len(owned),
             "rating": merchant.get("rating", 0.0),
             "reviewCount": merchant.get("reviewCount", 0),
-            "followers": merchant.get("followers", 0),
-            "follower_count": cat_row.follower_count if cat_row else 0,
+            "followers": merchant_follower_count(db, merchant["id"]),
+            "follower_count": merchant_follower_count(db, merchant["id"]),
             "total_reviews": cat_row.total_reviews if cat_row else 0,
             "average_rating": cat_row.average_rating if cat_row else 0.0,
             "success_rate": cat_row.success_rate if cat_row else 0.0,
@@ -648,7 +650,7 @@ def search(q: str = ""):
     with SessionLocal() as db:
         needle = q.lower()
         items = decorate(db, [p for p in product_rows(db)
-                              if is_publicly_sellable(p) and needle in json.dumps(p).lower()])
+                              if marketplace_product_available(db, p) and needle in json.dumps(p).lower()])
         found_stores = [store_card(db, m) for m in merchant_rows(db) if needle in m["name"].lower()]
         return {"query": q, "products": items[:24], "stores": found_stores,
                 "categories": [c for c in category_rows(db) if needle in c.get("name", "").lower()],
@@ -666,27 +668,12 @@ def follow_seller(merchant_id: str, x_session: Optional[str] = Header(None, alia
         if not merchant:
             raise HTTPException(404, "Seller not found")
         
-        # Get or create user's followed sellers list
-        followed = (user.settings or {}).get("followed_sellers", [])
+        followed = list((user.settings or {}).get("followed_sellers", []))
         if merchant["id"] not in followed:
             followed.append(merchant["id"])
             user.settings = {**(user.settings or {}), "followed_sellers": followed}
-            
-            # Increment seller's follower count in Catalog table
-            slug = merchant.get("slug")
-            cat_row = db.get(Catalog, f"merchant:{slug}")
-            if cat_row:
-                cat_row.follower_count = (cat_row.follower_count or 0) + 1
-                data = dict(cat_row.data or {})
-                data["followers"] = cat_row.follower_count
-                cat_row.data = data
-            else:
-                # Create catalog row if it doesn't exist
-                merchant["follower_count"] = (merchant.get("follower_count", 0) + 1)
-                put_row(db, "merchant", slug, merchant)
-            
             db.commit()
-            return {"following": True, "follower_count": cat_row.follower_count if cat_row else merchant.get("follower_count", 1)}
+            return {"following": True, "follower_count": merchant_follower_count(db, merchant["id"])}
         
         return {"following": True, "message": "Already following this seller"}
 
@@ -700,23 +687,12 @@ def unfollow_seller(merchant_id: str, x_session: Optional[str] = Header(None, al
         if not merchant:
             raise HTTPException(404, "Seller not found")
         
-        # Remove from user's followed sellers list
-        followed = (user.settings or {}).get("followed_sellers", [])
+        followed = list((user.settings or {}).get("followed_sellers", []))
         if merchant["id"] in followed:
             followed.remove(merchant["id"])
             user.settings = {**(user.settings or {}), "followed_sellers": followed}
-            
-            # Decrement seller's follower count in Catalog table
-            slug = merchant.get("slug")
-            cat_row = db.get(Catalog, f"merchant:{slug}")
-            if cat_row and cat_row.follower_count > 0:
-                cat_row.follower_count -= 1
-                data = dict(cat_row.data or {})
-                data["followers"] = cat_row.follower_count
-                cat_row.data = data
-            
             db.commit()
-            return {"following": False, "follower_count": cat_row.follower_count if cat_row else 0}
+            return {"following": False, "follower_count": merchant_follower_count(db, merchant["id"])}
         
         return {"following": False, "message": "Not following this seller"}
 
@@ -807,7 +783,7 @@ def add_cart(p: CartItemIn, session: Optional[str] = Header(None, alias="X-Ferix
         user = require_user(db, session) if session else None
         cart = cart_for(db, user.id if user else None, p.cartId or x_cart)
         product = find_product(db, p.productId)
-        if not product or not is_publicly_sellable(product):
+        if not product or not marketplace_product_available(db, product):
             raise HTTPException(404, "That product is not available")
         raw = next((x for x in cart.lines if x["productId"] == p.productId and x.get("variant") == p.variant), None)
         if raw:
@@ -892,7 +868,7 @@ def account(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         rows = [o.data for o in orders]
         spent = round(sum(o.get("total", 0) for o in rows), 2)
         reviews = user_reviews(db, user.id)
-        # Return the list of seller slugs this user is following
+        # Follow relationships store canonical seller IDs; the marketplace resolves them to cards.
         followed = (user.settings or {}).get("followed_sellers", [])
         return {
             "user": public_user(user), "orders": rows[:5],
@@ -1027,7 +1003,7 @@ def wishlist(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         user = require_user(db, session)
         wish = db.scalar(select(Wishlist).where(Wishlist.user_id == user.id))
         ids = wish.product_ids if wish else []
-        return {"wishlist": [p for p in product_rows(db) if p["id"] in ids and is_publicly_sellable(p)]}
+        return {"wishlist": [p for p in product_rows(db) if p["id"] in ids and marketplace_product_available(db, p)]}
 
 
 @app.post("/account/wishlist/toggle")
@@ -1035,7 +1011,7 @@ def toggle_wishlist(p: ProductIn, session: Optional[str] = Header(None, alias="X
     with SessionLocal() as db:
         user = require_user(db, session)
         product = find_product(db, p.productId)
-        if not product or not is_publicly_sellable(product):
+        if not product or not marketplace_product_available(db, product):
             raise HTTPException(404, "That product is not available")
         wish = db.scalar(select(Wishlist).where(Wishlist.user_id == user.id))
         if not wish:
@@ -1046,7 +1022,7 @@ def toggle_wishlist(p: ProductIn, session: Optional[str] = Header(None, alias="X
         ids.append(p.productId) if saved else ids.remove(p.productId)
         wish.product_ids = ids
         db.commit()
-        return {"saved": saved, "wishlist": [x for x in product_rows(db) if x["id"] in ids and is_publicly_sellable(x)]}
+        return {"saved": saved, "wishlist": [x for x in product_rows(db) if x["id"] in ids and marketplace_product_available(db, x)]}
 
 
 @app.get("/account/reviews")
@@ -1142,7 +1118,7 @@ def quote(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
             raise HTTPException(401, "Sign in, or leave an email address to see your total.")
         cart = cart_for(db, user.id, x_cart)
         if cart and any(
-            not (candidate := find_product(db, line["productId"])) or not is_publicly_sellable(candidate)
+            not (candidate := find_product(db, line["productId"])) or not marketplace_product_available(db, candidate)
             for line in cart.lines or []
         ):
             raise HTTPException(409, "A product in your cart is no longer available. Remove it before checkout.")
@@ -1174,7 +1150,7 @@ def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
             raise HTTPException(401, "Sign in, or leave an email address so your order can be confirmed.")
         cart = cart_for(db, user.id, x_cart)
         if cart and any(
-            not (candidate := find_product(db, line["productId"])) or not is_publicly_sellable(candidate)
+            not (candidate := find_product(db, line["productId"])) or not marketplace_product_available(db, candidate)
             for line in cart.lines or []
         ):
             raise HTTPException(409, "A product in your cart is no longer available. Remove it before checkout.")
@@ -1313,14 +1289,15 @@ def public_seller_profile(merchant_id: str):
         all_prods = product_rows(db)
         approved_products = [
             p for p in all_prods
-            if p.get("merchantId") == merchant["id"] and is_publicly_sellable(p)
+            if p.get("merchantId") == merchant["id"] and marketplace_product_available(db, p)
         ]
         return {
             "merchant": {
                 "id": merchant.get("id"), "slug": merchant.get("slug"),
                 "name": merchant.get("name"), "about": merchant.get("about", ""),
                 "location": merchant.get("location", ""), "website": merchant.get("website", ""),
-                "payment_methods": merchant.get("payment_methods", []),
+                "businessEmail": merchant.get("businessEmail", "") if merchant.get("showBusinessEmail") else "",
+                "businessPhone": merchant.get("businessPhone", "") if merchant.get("showPhone") else "",
                 "follower_count": merchant.get("follower_count", 0),
                 "total_reviews": merchant.get("total_reviews", 0),
                 "average_rating": merchant.get("average_rating", 0.0),

@@ -165,10 +165,6 @@ export type Order = {
 export type Activity = { id: string; label: string; detail: string; at: string; tone: string };
 
 export type Settings = {
-  name: string;
-  tagline: string;
-  about: string;
-  location: string;
   customDomain: string;
   marketplaceEnabled: boolean;
   accent: string;
@@ -179,8 +175,23 @@ export type Settings = {
   payoutCadence: string;
 };
 
+export type MerchantProfile = {
+  name: string; tagline: string; about: string; location: string;
+  businessName: string; businessEmail: string; businessPhone: string;
+  addressLine1: string; addressLine2: string; city: string; region: string;
+  postalCode: string; country: string; website: string;
+  showBusinessEmail: boolean; showPhone: boolean;
+};
+
+export type MerchantProfileRequest = {
+  id: string; profile: MerchantProfile; status: string; note: string;
+  submittedBy: string; submittedAt: string; reviewedBy: string; reviewedAt: string | null;
+};
+
 export type Dashboard = {
   merchant: Merchant;
+  profile: MerchantProfile;
+  profileRequest: MerchantProfileRequest | null;
   settings: Settings;
   summary: Summary;
   statuses: Record<string, number>;
@@ -482,7 +493,7 @@ export const getAnalytics = (session: string | null, days = 30) =>
 export const getPayouts = (session: string | null) => call<Payouts>("GET", "merchant/payouts", { session });
 
 export const getSettings = (session: string | null) =>
-  call<{ settings: Settings; merchant: Merchant; email: string; plan: string; templates: string[]; domain: string }>(
+  call<{ settings: Settings; profile: MerchantProfile; profileRequest: MerchantProfileRequest | null; merchant: Merchant; email: string; plan: string; templates: string[]; domain: string }>(
     "GET",
     "merchant/settings",
     { session },
@@ -490,6 +501,9 @@ export const getSettings = (session: string | null) =>
 
 export const updateSettings = (session: string | null, body: Record<string, unknown>) =>
   call<{ settings: Settings }>("PATCH", "merchant/settings", { body, session });
+
+export const submitProfileRequest = (session: string | null, body: MerchantProfile) =>
+  call<{ request: MerchantProfileRequest }>("POST", "merchant/profile/request", { body: body as unknown as Record<string, unknown>, session });
 
 // ── Storefront (Store Design) ──────────────────────────────────────────
 

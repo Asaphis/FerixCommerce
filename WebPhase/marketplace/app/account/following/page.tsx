@@ -5,6 +5,7 @@ import { listStores } from "@/lib/api";
 import { AccountShell } from "@/components/ferix/account-shell";
 import { StoreCard } from "@/components/ferix/cards";
 import { LinkButton } from "@/components/ferix/marks";
+import { toggleFollowAction } from "@/lib/actions";
 
 export const metadata = {
   title: "Followed stores — Ferixas",
@@ -16,7 +17,7 @@ export default async function FollowingPage() {
   const followed = new Set(account.follows);
 
   const feed = await listStores().catch(() => ({ stores: [], total: 0 }));
-  const stores = feed.stores.filter((store) => followed.has(store.slug));
+  const stores = feed.stores.filter((store) => followed.has(store.id));
 
   return (
     <AccountShell
@@ -36,7 +37,14 @@ export default async function FollowingPage() {
         <>
           <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3">
             {stores.map((store) => (
-              <StoreCard key={store.id} store={store} />
+              <div key={store.id}>
+                <StoreCard store={store} />
+                <form action={toggleFollowAction} className="mt-2 text-right">
+                  <input type="hidden" name="slug" value={store.slug} />
+                  <input type="hidden" name="follow" value="false" />
+                  <button type="submit" className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-soft hover:text-ember">Unfollow {store.name}</button>
+                </form>
+              </div>
             ))}
           </div>
           <p className="mt-4 font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-soft/80">
