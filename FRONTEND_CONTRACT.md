@@ -1,7 +1,7 @@
 # Ferixas frontend integration contract
 
 All three frontends use the existing hosted commerce REST API at
-**`https://api.ferixas.com`** by default. Every screen must read and write through
+**`https://shopapi.ferixas.com`** by default. Every screen must read and write through
 its app's `lib/api.ts`. Never hardcode records in a page or connect a frontend
 directly to PostgreSQL/Neon.
 
@@ -11,8 +11,8 @@ An alternate deployment can override the API host with both server and browser
 values:
 
 ```
-FERIX_API_BASE=https://api.ferixas.com
-NEXT_PUBLIC_FERIX_API_BASE=https://api.ferixas.com
+FERIX_API_BASE=https://shopapi.ferixas.com
+NEXT_PUBLIC_FERIX_API_BASE=https://shopapi.ferixas.com
 ```
 
 ## Demo sign-ins

@@ -616,5 +616,5 @@ function resolveApiBase(): string {
     process.env.API_URL;
 
   if (explicit?.trim()) return explicit.trim().replace(/\/+$/, "");
-  return "https://api.ferixas.com";
+  return "https://shopapi.ferixas.com";
 }

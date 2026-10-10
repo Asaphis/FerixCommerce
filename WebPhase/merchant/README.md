@@ -16,12 +16,12 @@ data — there is no mock or placeholder data anywhere in this app.
 The backend is the shared hosted commerce REST API, the same one the customer system uses.
 The frontend reads and writes through that API; it does not connect directly to PostgreSQL/Neon.
 
-The default API host is `https://api.ferixas.com`. For a deployment using another API host,
+The default API host is `https://shopapi.ferixas.com`. For a deployment using another API host,
 set both public and server values:
 
 ```
-FERIX_API_BASE=https://api.ferixas.com
-NEXT_PUBLIC_FERIX_API_BASE=https://api.ferixas.com
+FERIX_API_BASE=https://shopapi.ferixas.com
+NEXT_PUBLIC_FERIX_API_BASE=https://shopapi.ferixas.com
 ```
 
 ## Routes

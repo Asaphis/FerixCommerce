@@ -14,13 +14,13 @@ same platform backend:
 Every screen and every action goes through `lib/api.ts`. Nothing in the UI holds
 its own data — there is no mock or placeholder data anywhere in this app.
 
-The app uses the existing hosted commerce REST API at `https://api.ferixas.com`.
+The app uses the existing hosted commerce REST API at `https://shopapi.ferixas.com`.
 It never connects to PostgreSQL/Neon directly and does not run a mock or AI backend.
 To use another API hostname, set both values:
 
 ```
-FERIX_API_BASE=https://api.ferixas.com
-NEXT_PUBLIC_FERIX_API_BASE=https://api.ferixas.com
+FERIX_API_BASE=https://shopapi.ferixas.com
+NEXT_PUBLIC_FERIX_API_BASE=https://shopapi.ferixas.com
 ```
 
 No page or component needs to change.

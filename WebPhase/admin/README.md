@@ -13,7 +13,7 @@ The platform control room. One of three separate systems on the same backend:
 Every screen and every action goes through `lib/api.ts`. Nothing in the UI holds its own
 data — there is no mock or placeholder data anywhere in this app. Point `FERIX_API_BASE`
 at the hosted commerce API and the console follows with no code change. The default API
-host is `https://api.ferixas.com`; this app uses the REST API and never connects directly
+host is `https://shopapi.ferixas.com`; this app uses the REST API and never connects directly
 to PostgreSQL/Neon.
 
 ## Routes
@@ -51,7 +51,7 @@ systems cannot cross over.
 ## Environment
 
 ```
-FERIX_API_BASE=https://api.ferixas.com
-NEXT_PUBLIC_FERIX_API_BASE=https://api.ferixas.com
+FERIX_API_BASE=https://shopapi.ferixas.com
+NEXT_PUBLIC_FERIX_API_BASE=https://shopapi.ferixas.com
 CODEWORDS_API_KEY=
 ```
