@@ -181,6 +181,32 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
   return { message: "Product saved. It remains hidden on the Ferixas marketplace until Admin approves it." };
 }
 
+/**
+ * Move an already-saved product between the two destinations.
+ *
+ * Nothing is uploaded again: the same product record gains or loses the Ferixas
+ * listing and the own-website listing, and the move lands in the product's own
+ * history because the API records it as an audited destination event.
+ */
+export async function setProductDestinationAction(formData: FormData): Promise<void> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const body: { id: string; store?: boolean; marketplace?: boolean } = { id };
+  if (formData.has("store")) body.store = formData.get("store") === "on";
+  if (formData.has("marketplace")) body.marketplace = formData.get("marketplace") === "on";
+  let notice = "Destination updated.";
+  try {
+    const result = await api.setProductDestination(session, body);
+    notice = result.message || notice;
+  } catch (error) {
+    notice = error instanceof api.ApiError ? error.message : "We could not move that product.";
+  }
+  refresh("/products");
+  redirect(`/products?notice=${encodeURIComponent(notice)}`);
+}
+
 export async function deleteProductAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
   const id = String(formData.get("id") ?? "");

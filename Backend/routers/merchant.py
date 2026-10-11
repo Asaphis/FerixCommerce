@@ -22,7 +22,8 @@ from core import (
     audit, aware, collections as all_collections, categories as all_categories, find_category, find_merchant, find_product,
     hash_password, iso, issue_staff_session, merchant_follower_count,
     merchants as all_merchants, new_id, now, permissions_for, placeholder, products as all_products,
-    is_seller_marketplace_product, put_row, remove_media_blob, seller_products,
+    is_seller_marketplace_product, is_seller_product, put_row, remove_media_blob,
+    seller_catalog_products, seller_products,
     require_permission, require_staff, rows_of, storage_info, sync_pending_media,
     upload_media_blob, validate_media_upload, verify_password, media_json, seller_promotion_product_available,
 )
@@ -166,6 +167,16 @@ def _merchant_or_404(db, merchant_id: str) -> dict:
 
 def _own_products(db, merchant_id: str) -> list[dict]:
     return seller_products(db, merchant_id)
+
+
+def _catalog_products(db, merchant_id: str) -> list[dict]:
+    """The seller's whole library: Ferixas submissions and own-website products alike.
+
+    A product the seller keeps for their own website is still theirs to find, edit
+    and move onto Ferixas later, so the workspace lists every seller-owned record
+    and lets the channel filters separate the two destinations.
+    """
+    return seller_catalog_products(db, merchant_id)
 
 
 def _product_options(db) -> dict:
@@ -509,7 +520,7 @@ def products(
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
         sold30 = _merchant_product_units(db, merchant["id"], 30)
-        items = [dict(p, sold30d=sold30.get(p["id"], 0)) for p in _own_products(db, merchant["id"])]
+        items = [dict(p, sold30d=sold30.get(p["id"], 0)) for p in _catalog_products(db, merchant["id"])]
         low_at = _merchant_settings(db, merchant)["lowStockAt"]
 
         if search:
@@ -535,7 +546,7 @@ def products(
         else:
             items.sort(key=lambda p: p.get("createdAt", ""), reverse=True)
 
-        all_owned = _own_products(db, merchant["id"])
+        all_owned = _catalog_products(db, merchant["id"])
         return {
             "items": items,
             "total": len(items),
@@ -574,7 +585,7 @@ def product(
         if not lookup:
             raise HTTPException(400, "A product slug or id is required")
         found = find_product(db, lookup)
-        if not found or not is_seller_marketplace_product(found, merchant["id"]):
+        if not found or not is_seller_product(found, merchant["id"]):
             raise HTTPException(404, "Product not found in your catalogue")
         sold_all = _merchant_product_units(db, merchant["id"])
         sold30 = _merchant_product_units(db, merchant["id"], 30)
@@ -600,6 +611,7 @@ def _seller_product_history(db, product: dict, merchant_id: str) -> list[dict]:
         "product.changes": "Changes requested",
         "product.reject": "Listing rejected",
         "product.archive": "Listing archived",
+        "product.destination": "Destination changed",
         "merchant.product.update": "Listing updated by Admin",
         "merchant.product.archive": "Listing archived by Admin",
         "merchant.product.restore": "Listing restored by Admin",
@@ -808,6 +820,82 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         audit(db, "merchant", staff.email, "product.update", target["slug"], updated.get("title", ""))
         db.commit()
         return {"product": updated}
+
+
+class DestinationIn(BaseModel):
+    id: str
+    store: Optional[bool] = None
+    marketplace: Optional[bool] = None
+
+
+@router.post("/product/destination")
+def set_product_destination(
+    payload: DestinationIn = Body(...),
+    session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+):
+    """Move one saved product between the two destinations, without re-uploading it.
+
+    Own website: a plain toggle, available immediately.
+    Ferixas: turning it on (re)submits the product for Admin review. Turning it off
+    withdraws a submission that has not been approved yet; a listing that is already
+    live on Ferixas is unlisted by Admin, not silently pulled by the seller.
+    """
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.products.manage")
+        merchant = _merchant_or_404(db, staff.subject_id)
+        target = find_product(db, payload.id)
+        if not target or not is_seller_product(target, merchant["id"]):
+            raise HTTPException(404, "Product not found in your catalogue")
+        if payload.store is None and payload.marketplace is None:
+            raise HTTPException(400, "Choose where this product should be sold")
+
+        updated = dict(target)
+        channels = dict(target.get("channels") or {})
+        status = str(target.get("status") or "draft")
+        notes: list[str] = []
+
+        if payload.store is not None:
+            channels["store"] = bool(payload.store)
+            notes.append("added to your own website" if payload.store else "removed from your own website")
+
+        if payload.marketplace is not None:
+            if payload.marketplace:
+                channels["marketplace"] = True
+                if status != "approved":
+                    tags = list(dict.fromkeys(target.get("section_tags") or []))
+                    updated["status"] = "pending_review"
+                    updated["reviewStatus"] = "in_review"
+                    updated["reviewNote"] = ""
+                    updated["submittedAt"] = iso(now())
+                    updated["submittedBy"] = staff.email
+                    updated["placementRequests"] = tags
+                    updated["placementStatus"] = "pending_review" if tags else "none"
+                    notes.append("sent to Ferixas for review")
+            else:
+                if status == "approved":
+                    raise HTTPException(
+                        400,
+                        "This listing is live on Ferixas. Ask Admin to unlist it before moving it to your own website only.",
+                    )
+                channels["marketplace"] = False
+                updated["status"] = "draft"
+                updated["reviewStatus"] = "draft"
+                updated["placementStatus"] = "none"
+                updated["placementRequests"] = []
+                updated["submittedAt"] = None
+                updated["submittedBy"] = ""
+                notes.append("withdrawn from Ferixas review")
+
+        updated["channels"] = channels
+        updated["updatedAt"] = iso(now())
+        updated["id"] = target.get("id")
+        updated["merchantId"] = merchant["id"]
+        updated["slug"] = target.get("slug")
+        put_row(db, "product", target["slug"], updated)
+        audit(db, "merchant", staff.email, "product.destination", updated["slug"], ", ".join(notes) or "no change")
+        db.commit()
+        return {"product": updated, "message": " and ".join(notes).capitalize() or "Destination unchanged."}
 
 
 @router.delete("/product")

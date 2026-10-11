@@ -492,6 +492,12 @@ export const createProduct = (
 export const updateProduct = (session: string | null, body: Record<string, unknown>) =>
   call<{ product: Product }>("PATCH", "merchant/product", { body, session });
 
+/** Move an already-saved product between the Ferixas and own-website destinations. */
+export const setProductDestination = (
+  session: string | null,
+  body: { id: string; store?: boolean; marketplace?: boolean },
+) => call<{ product: Product; message: string }>("POST", "merchant/product/destination", { body, session });
+
 export const deleteProduct = (session: string | null, id: string) =>
   call<{ removed: string; remaining: number }>("DELETE", "merchant/product", { body: { id }, session });
 

@@ -6,6 +6,7 @@ import { FilterForm } from "@/components/studio/controls";
 import { Empty, Pill } from "@/components/studio/bits";
 import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
 import { Thumb } from "@/components/studio/marks";
+import { setProductDestinationAction } from "@/lib/actions";
 import { money, num, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -17,17 +18,35 @@ const SORTS = [
   { id: "title", label: "A to Z" },
 ];
 
+const DESTINATIONS = [
+  { id: "all", label: "Every destination" },
+  { id: "marketplace", label: "Ferixas" },
+  { id: "store", label: "My website" },
+];
+
+/** One place that builds this list's URLs, so a filter never drops another. */
+function productHref(params: { status?: string; sort?: string; search?: string; channel?: string }) {
+  const query = new URLSearchParams();
+  if (params.status && params.status !== "all") query.set("status", params.status);
+  if (params.sort && params.sort !== "new") query.set("sort", params.sort);
+  if (params.search) query.set("search", params.search);
+  if (params.channel && params.channel !== "all") query.set("channel", params.channel);
+  const value = query.toString();
+  return value ? `/products?${value}` : "/products";
+}
+
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; status?: string; sort?: string }>;
+  searchParams: Promise<{ search?: string; status?: string; sort?: string; channel?: string; notice?: string }>;
 }) {
-  const { search, status, sort } = await searchParams;
+  const { search, status, sort, channel, notice } = await searchParams;
   const { session } = await requireMerchant();
   const data = await listProducts(session, {
     search,
     status: status ?? "all",
     sort: sort ?? "new",
+    channel: channel ?? "all",
   });
 
   const filters = [
@@ -41,6 +60,9 @@ export default async function ProductsPage({
 
   return (
     <div className="grid gap-5">
+      {notice ? (
+        <p className="rounded-[3px] border border-lime/40 bg-lime/10 px-3.5 py-3 text-[12.5px] text-chalk">{notice}</p>
+      ) : null}
       <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
@@ -58,7 +80,7 @@ export default async function ProductsPage({
           {filters.map((filter) => (
             <Link
               key={filter.id}
-              href={filter.id === "all" ? "/products" : `/products?status=${filter.id}`}
+              href={productHref({ status: filter.id, sort, search, channel })}
               className={cn(
                 "min-h-11 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
                 (status ?? "all") === filter.id
@@ -97,6 +119,24 @@ export default async function ProductsPage({
             </select>
           </label>
         </FilterForm>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">Sold on</span>
+        {DESTINATIONS.map((option) => (
+          <Link
+            key={option.id}
+            href={productHref({ status, sort, search, channel: option.id })}
+            className={cn(
+              "min-h-9 rounded-[2px] border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+              (channel ?? "all") === option.id
+                ? "border-lime/40 bg-lime/10 text-lime"
+                : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
+            )}
+          >
+            {option.label}
+          </Link>
+        ))}
       </div>
 
       {data.items.length ? (
@@ -149,9 +189,33 @@ export default async function ProductsPage({
                 </TdDetail>
                 <Td>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <Pill tone="info">Ferixas</Pill>
+                    {product.channels?.marketplace ? <Pill tone="info">Ferixas</Pill> : null}
                     {product.channels?.store ? <Pill tone="neutral">My website</Pill> : null}
                   </div>
+                  <form action={setProductDestinationAction} className="mt-2">
+                    <input type="hidden" name="id" value={product.id} />
+                    {product.channels?.marketplace ? (
+                      <>
+                        <input type="hidden" name="store" value={product.channels.store ? "off" : "on"} />
+                        <button
+                          type="submit"
+                          className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                        >
+                          {product.channels.store ? "Remove from my website" : "Use on my website"}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <input type="hidden" name="marketplace" value="on" />
+                        <button
+                          type="submit"
+                          className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                        >
+                          Submit to Ferixas
+                        </button>
+                      </>
+                    )}
+                  </form>
                 </Td>
                 <Td>
                   <Pill

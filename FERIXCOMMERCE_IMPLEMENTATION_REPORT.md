@@ -168,3 +168,43 @@ saves use the reduced copy.
 **Validation after this pass:** 20 backend tests OK, PostgreSQL migration smoke
 (fresh seed + idempotence, legacy upgrade, future-schema refusal) passed, and
 `typecheck` plus production `build` passed for Admin, Seller and Shopper.
+
+## Product destinations, the seller library, and product history
+
+One product record, two destinations. This is the rule the seller surfaces now
+enforce end to end:
+
+- `channels.marketplace` — the **Ferixas Marketplace** listing. A seller submission
+  always starts here as `pending_review` and stays hidden until Admin approves it.
+- `channels.store` — the seller's **own website** listing. Recorded on the same
+  record now, so a product is never uploaded twice; it becomes live when Studio ships.
+
+**Where a seller finds everything they uploaded.** Seller → Products is the library.
+It lists every seller-owned record, including products kept for their own website
+only, and can be filtered three ways: by status, by search (title or SKU), and by
+**destination** (`Every destination` / `Ferixas` / `My website`). Every filter link
+preserves the others, so narrowing by destination never silently drops the search.
+
+**Moving a product without re-uploading it.** Each row carries the action for its
+current state:
+
+- *Use on my website* / *Remove from my website* — toggles the own-website
+  destination instantly; the Ferixas submission is untouched.
+- *Submit to Ferixas* — shown when a product is not a marketplace listing; it
+  reuses the same record, restores its requested product sections and returns it to
+  review.
+- Withdrawing a submission that has not been approved yet returns the product to
+  `draft` while keeping the record and its own-website listing. A listing that is
+  already **live** on Ferixas cannot be pulled silently by the seller: that is an
+  Admin unlist, and the API answers with a plain 400 explaining it.
+
+**Product history.** Every destination move is written as an audited
+`product.destination` event and appears in the product's own timeline on the Seller
+product page ("Destination changed"), beside submissions, approvals, requested
+changes, edits and stock adjustments.
+
+**Verified:** 24 backend tests pass, including the new destination contract tests
+(`tests/test_seller_channels.py`) which cover both destinations at submission, moving
+a saved product between them, withdrawing and re-submitting the same record, the
+library still listing a withdrawn product, and the history entry the move produces.
+All three frontends typecheck and build.

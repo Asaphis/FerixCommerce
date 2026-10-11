@@ -92,3 +92,49 @@ class SellerChannelTest(unittest.TestCase):
     def test_a_seller_cannot_submit_outside_the_marketplace(self):
         rejected = self.submit(marketplace=False, store=True)
         self.assertEqual(rejected.status_code, 400, rejected.text)
+
+    def test_a_saved_product_moves_between_destinations_without_being_uploaded_again(self):
+        created = self.submit(store=False)
+        self.assertEqual(created.status_code, 200, created.text)
+        product = created.json()["product"]
+        self.assertEqual(product["channels"], {"store": False, "marketplace": True})
+
+        # Same product, now also kept for the seller's own website.
+        added = self.client.post("/merchant/product/destination", json={
+            "session": self.session, "id": product["id"], "store": True,
+        })
+        self.assertEqual(added.status_code, 200, added.text)
+        self.assertEqual(added.json()["product"]["channels"], {"store": True, "marketplace": True})
+        self.assertEqual(added.json()["product"]["id"], product["id"])
+
+        # Withdraw the Ferixas submission; the record and its own-website listing stay.
+        withdrawn = self.client.post("/merchant/product/destination", json={
+            "session": self.session, "id": product["id"], "marketplace": False,
+        })
+        self.assertEqual(withdrawn.status_code, 200, withdrawn.text)
+        draft = withdrawn.json()["product"]
+        self.assertEqual(draft["channels"], {"store": True, "marketplace": False})
+        self.assertEqual(draft["status"], "draft")
+
+        # A withdrawn product is still the seller's: it is listed and readable.
+        library = self.client.get("/merchant/products", params={"channel": "store", "session": self.session})
+        self.assertEqual(library.status_code, 200, library.text)
+        self.assertIn(product["id"], [item["id"] for item in library.json()["items"]])
+        readable = self.client.get("/merchant/product", params={"id": product["id"], "session": self.session})
+        self.assertEqual(readable.status_code, 200, readable.text)
+
+        # Re-submitting reuses the same record and returns it to review.
+        resubmitted = self.client.post("/merchant/product/destination", json={
+            "session": self.session, "id": product["id"], "marketplace": True,
+        })
+        self.assertEqual(resubmitted.status_code, 200, resubmitted.text)
+        again = resubmitted.json()["product"]
+        self.assertEqual(again["channels"], {"store": True, "marketplace": True})
+        self.assertEqual(again["status"], "pending_review")
+        self.assertEqual(again["id"], product["id"])
+
+        # Every move is part of the product's own history.
+        detail = self.client.get("/merchant/product", params={"id": product["id"], "session": self.session})
+        self.assertEqual(detail.status_code, 200, detail.text)
+        labels = [event["label"] for event in detail.json()["history"]]
+        self.assertIn("Destination changed", labels)
