@@ -113,7 +113,7 @@ export default async function ProductsPage({
                     <Thumb seed={product.slug} className="h-10 w-10 shrink-0" />
                     <div className="min-w-0">
                       <Link
-                        href={`/products/${product.slug}`}
+                        href={`/products/${product.id}`}
                         className="block truncate text-[13px] font-medium text-chalk hover:text-lime md:max-w-[260px]"
                       >
                         {product.title}
@@ -148,7 +148,10 @@ export default async function ProductsPage({
                   {num(product.sold30d)}
                 </TdDetail>
                 <Td>
-                  <Pill tone="info">Ferixas marketplace</Pill>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Pill tone="info">Ferixas</Pill>
+                    {product.channels?.store ? <Pill tone="neutral">My website</Pill> : null}
+                  </div>
                 </Td>
                 <Td>
                   <Pill
@@ -171,7 +174,7 @@ export default async function ProductsPage({
                 </Td>
                 <TdEnd>
                   <Link
-                    href={`/products/${product.slug}`}
+                    href={`/products/${product.id}`}
                     className="inline-flex min-h-[44px] items-center font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
                   >
                     Edit

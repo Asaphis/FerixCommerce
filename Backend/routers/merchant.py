@@ -724,7 +724,10 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
             "variants": payload.variants or [], "status": "pending_review",
             "reviewStatus": "in_review", "reviewNote": "",
-            "channels": {"store": False, "marketplace": True},
+            # A seller submission is always a Ferixas Marketplace listing awaiting
+            # review. The optional second destination is the seller's own website:
+            # recorded on the same record now, live when Studio ships.
+            "channels": {"store": bool(payload.store), "marketplace": True},
             "createdAt": iso(now()), "updatedAt": iso(now()), "sold30d": 0, "views30d": 0,
             "seoTitle": payload.seoTitle or payload.title,
             "seoDescription": payload.seoDescription or (payload.description or "")[:155],
@@ -792,7 +795,11 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             updated["brandId"] = brand.get("id") if brand else None
             updated["brandSlug"] = brand.get("slug") if brand else None
             updated["brandName"] = brand.get("name") if brand else None
-        updated["channels"] = {"store": False, "marketplace": True}
+        stored_channels = target.get("channels") or {}
+        updated["channels"] = {
+            "store": bool(payload.store) if payload.store is not None else bool(stored_channels.get("store")),
+            "marketplace": True,
+        }
         updated["updatedAt"] = iso(now())
         updated["id"] = target.get("id")
         updated["merchantId"] = merchant["id"]

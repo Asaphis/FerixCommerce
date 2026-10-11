@@ -166,7 +166,10 @@ class ProductLifecycleTest(unittest.TestCase):
         product = created.json()["product"]
         self.assertEqual(product["status"], "pending_review")
         self.assertEqual(product["reviewStatus"], "in_review")
-        self.assertFalse(product["channels"]["store"])
+        # The seller asked for this product on their own website as well. That intent
+        # is recorded on the same record; the marketplace submission is unchanged and
+        # still has to pass Admin review before anything is public.
+        self.assertTrue(product["channels"]["store"])
         self.assertTrue(product["channels"]["marketplace"])
         self.assertEqual(product["sku"], "SELLER-TEST-001")
         self.assertEqual(product["bullets"], ["Durable", "Lightweight"])

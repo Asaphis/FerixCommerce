@@ -115,31 +115,14 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       compareAt: compareRaw ? Number(compareRaw) : null,
       stock: Number(formData.get("stock") ?? 0),
       status: "pending_review",
-      store: false,
+      store: formData.get("store") === "on",
       marketplace: true,
       description: String(formData.get("description") ?? "").trim() || null,
     });
-    // Verify the record can be read through the same authenticated API path
-    // used by the redirected detail page. This prevents a successful POST from
-    // turning into a misleading generic 404 when production API/database
-    // instances are misaligned.
-    try {
-      await api.getProduct(session, created.product.slug);
-    } catch (slugError) {
-      if (!(slugError instanceof api.ApiError)) throw slugError;
-      try {
-        await api.getProduct(session, created.product.slug, created.product.id);
-      } catch (idError) {
-        if (idError instanceof api.ApiError) {
-          return {
-            error: `Product was saved, but Seller detail lookup failed (${idError.status}). Product ID: ${created.product.id}.`,
-          };
-        }
-        throw idError;
-      }
-    }
     refresh("/products");
-    redirect(`/products/${created.product.slug}`);
+    // Redirect on the record id: the seller's own catalogue is keyed by id after
+    // a submission, so a slug is never the thing that decides the page opens.
+    redirect(`/products/${created.product.id}`);
   } catch (error) {
     if (error instanceof api.ApiError) return { error: error.message };
     throw error;
@@ -186,7 +169,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
       compareAt: compareRaw ? Number(compareRaw) : null,
       stock: Number(formData.get("stock") ?? 0),
       status: "pending_review",
-      store: false,
+      store: formData.get("store") === "on",
       marketplace: true,
       description: String(formData.get("description") ?? "").trim(),
       images,

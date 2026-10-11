@@ -13,7 +13,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useActionState } from "react";
-import { ImagePlus, Save, X } from "lucide-react";
+import { Check, ImagePlus, Save, X } from "lucide-react";
 import { apiImageUrl, type Product } from "@/lib/api";
 import { SubmitButton } from "@/components/studio/controls";
 import { Field, Notice, inputClass, selectClass, textareaClass } from "@/components/studio/forms";
@@ -172,13 +172,26 @@ export function ProductForm({
           </Panel>
 
           <Panel>
-            <PanelHead title="Selling destination" />
+            <PanelHead title="Where this product goes" />
             <div className="grid gap-2">
-              <label className="flex items-center gap-2.5 rounded-[6px] border border-lime/40 bg-lime/5 p-3 text-[12px] font-semibold text-chalk">
-                <input type="checkbox" checked readOnly className="size-4 accent-[#e4572e]" /> Ferixas Marketplace
-              </label>
-              <label className="flex items-center justify-between gap-3 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk-dim">
-                <span>Independent Seller Website</span><span className="font-mono text-[9px] uppercase tracking-[0.12em]">Studio coming soon</span>
+              <div className="flex items-start gap-2.5 rounded-[6px] border border-lime/40 bg-lime/5 p-3 text-[12px] text-chalk">
+                <Check width={15} height={15} className="mt-[2px] shrink-0 text-lime" />
+                <span>
+                  <span className="font-semibold">Ferixas Marketplace</span> — this submission goes to Admin review and
+                  stays hidden until it is approved.
+                </span>
+              </div>
+              <label className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk">
+                <input
+                  type="checkbox"
+                  name="store"
+                  defaultChecked={Boolean(product?.channels?.store)}
+                  className="mt-0.5 size-4 shrink-0 accent-[#e4572e]"
+                />
+                <span>
+                  <span className="font-semibold">My own website</span> — also use this same product on your Studio
+                  website once it ships. Recorded now, so you never upload it twice.
+                </span>
               </label>
             </div>
             <input type="hidden" name="marketplace" value="on" />

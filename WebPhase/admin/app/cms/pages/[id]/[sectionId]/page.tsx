@@ -104,7 +104,7 @@ const CHOICES: Record<string, EditorField[]> = {
       { value: "3", label: "Three" },
       { value: "4", label: "Four" },
     ] },
-    { key: "rowsPerSet", title: "Rows per face", options: [
+    { key: "rowsPerSet", title: "Rows per page", options: [
       { value: "1", label: "One" },
       { value: "2", label: "Two" },
       { value: "3", label: "Three" },
@@ -215,7 +215,6 @@ function initialOption(field: EditorField, section: CmsSection) {
   const value = section[field.key];
   if (value !== undefined && value !== null) return asOption(field, value);
   const defaults: Record<string, Record<string, string>> = {
-    category_grid: { across: "2", rowsPerSet: "2", layout: "groups", seeAll: "true" },
     hero_banner: { mediaOnly: "false" },
     hero_slim: { mediaOnly: "false" },
   };
@@ -474,8 +473,12 @@ export default async function CmsSectionEditor({
                 ) : String(section.type) === "category_grid" ? (
                   <div className="grid min-h-[140px] place-items-center bg-[#f4f6f8] p-5 text-center">
                     <div>
-                      <p className="font-display text-[16px] font-semibold text-chalk">Department faces</p>
-                      <p className="mt-1 text-[12px] text-chalk-dim">{Number(section.across) || 2} across × {Number(section.rowsPerSet) || 2} rows = {(Number(section.across) || 2) * (Number(section.rowsPerSet) || 2)} departments per swipe.</p>
+                      <p className="font-display text-[16px] font-semibold text-chalk">Departments</p>
+                      <p className="mt-1 text-[12px] text-chalk-dim">
+                        Every department renders as a tile
+                        {Number(section.across) ? `, ${Number(section.across)} across` : " at the standard width"}
+                        {Number(section.rowsPerSet) ? `, ${Number(section.rowsPerSet)} rows per page` : ""}.
+                      </p>
                       <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-chalk-dim">{String(section.layout ?? "groups")} · {String(section.seeAll) === "false" ? "no See all link" : "See all link on"}</p>
                     </div>
                   </div>
@@ -486,7 +489,7 @@ export default async function CmsSectionEditor({
                 )}
               </div>
               <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                {isHeroSection ? previewMediaOnly ? "Media only · no copy, button or shading" : `Text ${String(section.align ?? "left")} · ${previewMediaUrl ? "media overlay" : "brand fallback"}` : String(section.type) === "category_grid" ? "The actual department imagery and swipe faces appear on the storefront" : "Preview depends on the section's live content"}
+                {isHeroSection ? previewMediaOnly ? "Media only · no copy, button or shading" : `Text ${String(section.align ?? "left")} · ${previewMediaUrl ? "media overlay" : "brand fallback"}` : String(section.type) === "category_grid" ? "Department tiles render from the live departments list" : "Preview depends on the section's live content"}
               </p>
             </Panel>
 
