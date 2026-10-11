@@ -89,6 +89,31 @@ class SellerChannelTest(unittest.TestCase):
         self.assertEqual(updated.status_code, 200, updated.text)
         self.assertEqual(updated.json()["product"]["channels"], {"store": True, "marketplace": True})
 
+    def test_the_section_picker_answers_before_a_product_exists(self):
+        """The upload form must list product sections, not a "nothing here yet" placeholder."""
+        login = self.client.post("/admin/login", json={
+            "email": "admin@ferixas.test", "password": "TestOnly-Password-123!",
+        })
+        self.assertEqual(login.status_code, 200, login.text)
+        admin = login.json()["token"]
+
+        fresh = self.client.get("/admin/product/sections", headers={"X-Ferix-Session": admin})
+        self.assertEqual(fresh.status_code, 200, fresh.text)
+        body = fresh.json()
+        self.assertTrue(body["available"], "the new-product form saw no product sections")
+        self.assertEqual(body["placements"], [])
+        self.assertTrue(all(row.get("documentTitle") for row in body["available"]))
+
+        # Asking for an existing product adds only the "already placed here" half.
+        placed = self.client.get(
+            "/admin/product/sections", headers={"X-Ferix-Session": admin}, params={"slug": "any-product"},
+        )
+        self.assertEqual(placed.status_code, 200, placed.text)
+        self.assertEqual(
+            [row["sectionId"] for row in body["available"]],
+            [row["sectionId"] for row in placed.json()["available"]],
+        )
+
     def test_a_seller_cannot_submit_outside_the_marketplace(self):
         rejected = self.submit(marketplace=False, store=True)
         self.assertEqual(rejected.status_code, 400, rejected.text)

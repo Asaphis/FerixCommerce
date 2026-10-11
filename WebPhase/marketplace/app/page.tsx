@@ -416,18 +416,17 @@ export default async function HomePage() {
             </section>
           );
         }
-        const curated = home.placements?.[section.id] ?? [];
-        const products = source === "selected" || source === "curated"
-          ? curated
-          : source === "new" ? arrivals : trending;
+        // A product section shows exactly the products the catalogue assigned to it
+        // from the product form. The CMS sets how the row looks, never what is in it.
+        const products = home.placements?.[section.id] ?? [];
         if (!products.length) return null;
         const shown = limit ? products.slice(0, limit) : products;
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
               <SectionHead
-              title={section.title ?? (source === "selected" || source === "curated" ? "Featured products" : source === "new" ? "New arrivals" : "Trending picks")}
+              title={section.title ?? "Featured products"}
               action={
-                <Link href={`/browse?sort=${source === "new" ? "new" : "best"}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
+                <Link href="/browse?sort=best" className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
                   See all <ArrowRight width={14} height={14} />
                 </Link>
               }

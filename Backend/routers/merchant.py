@@ -188,9 +188,17 @@ def _product_options(db) -> dict:
     sections = []
     product_section_types = {"product_carousel", "product_grid"}
     for document in db.scalars(select(ContentDocument)).all():
-        if document.owner_type != "platform" or document.status != "published":
+        if document.owner_type != "platform":
             continue
-        source = document.data or {}
+        # A page being edited still carries the sections a seller may be asked to fill,
+        # so it is offered with its state shown rather than hidden without explanation.
+        draft = db.scalar(
+            select(ContentVersion)
+            .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
+            .order_by(ContentVersion.version.desc())
+        )
+        source = (draft.data if draft is not None else document.data) or {}
+        page_status = "draft" if draft is not None else document.status
         for section in source.get("sections", []):
             section_type = str(section.get("type") or "")
             if section_type in product_section_types and section.get("visible", True):
@@ -200,8 +208,7 @@ def _product_options(db) -> dict:
                     "documentTitle": document.title,
                     "documentType": document.document_type,
                     "sectionType": section_type,
-                    "source": section.get("source") or "curated",
-                    "status": "published",
+                    "status": page_status,
                 })
     return {"categories": categories, "brands": brands, "collections": collections, "sections": sections}
 

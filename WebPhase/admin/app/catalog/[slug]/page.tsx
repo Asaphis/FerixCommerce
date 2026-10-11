@@ -168,7 +168,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
             <Field title="Package dimensions"><input name="package_dimensions" defaultValue={product.package_dimensions ?? ""} className={inputClass} placeholder="30 × 20 × 10 cm" /></Field>
             <Field title="Shipping origin"><input name="shipping_origin" defaultValue={product.shipping_origin ?? ""} className={inputClass} placeholder="Lagos, NG" /></Field>
           </div>
-          <Field title="Marketplace sections">
+          <Field title="Product sections">
             {sections.length ? (
               <div className="grid gap-4">
                 {Object.entries(sectionGroups).map(([page, pageSections]) => <fieldset key={page} className="grid gap-2"><legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend><div className="grid gap-2 sm:grid-cols-2">{pageSections.map((section) => {
@@ -201,7 +201,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
               </div>
             ) : (
               <p className="text-[12px] text-chalk-dim">
-                No sections can hold a product yet. Add a product row to a page in the CMS first.
+                No page has a product section yet. Add one in the CMS, then assign products to it here.
               </p>
             )}
           </Field>

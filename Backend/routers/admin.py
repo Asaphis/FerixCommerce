@@ -2557,7 +2557,7 @@ def _placement_json(row) -> dict:
 
 @router.get("/product/sections")
 def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
-                     slug: str = Query(...)):
+                     slug: str = Query("")):
     """Where one product sits, and every section it could sit in.
 
     The second half is what the upload form needs: every section in the CMS that
@@ -2569,7 +2569,9 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         staff = require_staff(db, session, "admin")
         require_permission(staff, "catalog.manage")
 
-        placements = [_placement_json(row) for row in db.scalars(
+        # The new-product form has no slug yet and needs exactly the same list the edit
+        # form shows: only the "already placed here" half needs a product to look up.
+        placements = [] if not slug.strip() else [_placement_json(row) for row in db.scalars(
             select(SectionPlacement).where(SectionPlacement.product_slug == slug)).all()]
 
         available = []

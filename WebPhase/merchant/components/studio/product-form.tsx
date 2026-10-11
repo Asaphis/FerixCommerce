@@ -206,7 +206,7 @@ export function ProductForm({
           </Panel>
 
           <Panel>
-            <PanelHead title="Marketplace sections" />
+            <PanelHead title="Product sections" />
             <div className="grid gap-4">
               {Object.entries(sectionGroups).map(([page, pageSections]) => (
                 <fieldset key={page} className="grid gap-2">
@@ -216,7 +216,12 @@ export function ProductForm({
                   </div>
                 </fieldset>
               ))}
-              {!sections.length ? <p className="text-[12px] text-chalk-dim">No marketplace sections are available.</p> : null}
+              {!sections.length ? (
+                <p className="text-[12px] text-chalk-dim">
+                  No product section exists yet. Ferixas adds the product sections in the CMS; this product is still
+                  submitted for review without one.
+                </p>
+              ) : null}
             </div>
           </Panel>
 

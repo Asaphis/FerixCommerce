@@ -80,21 +80,9 @@ const INTERRUPT: EditorField[] = [
 ];
 const CHOICES: Record<string, EditorField[]> = {
   product_carousel: [
-    { key: "source", title: "Which products", options: [
-      { value: "flash", label: "Today's deals" },
-      { value: "trending", label: "Trending" },
-      { value: "new", label: "New arrivals" },
-      { value: "selected", label: "Products approved for this section" },
-      { value: "related", label: "Related to a product" },
-    ] },
     ...ARRANGEMENT,
   ],
   product_grid: [
-    { key: "source", title: "Which products", options: [
-      { value: "selected", label: "Products approved for this section" },
-      { value: "trending", label: "Trending" },
-      { value: "new", label: "New arrivals" },
-    ] },
     ...ARRANGEMENT,
   ],
   category_grid: [
@@ -484,7 +472,9 @@ export default async function CmsSectionEditor({
                   </div>
                 ) : (
                   <div className="grid min-h-[140px] place-items-center bg-[#f4f6f8] px-5 py-6 text-center text-[12px] text-chalk-dim">
-                    {DRAW_FROM[String(section.type)] ? `This section draws from your ${DRAW_FROM[String(section.type)].label}. The storefront uses its live content and layout settings.` : "This section is rendered from its own content and the page's published settings."}
+                    {["product_carousel", "product_grid"].includes(String(section.type))
+                      ? "This section shows the products the catalogue assigns to it from the product form. The CMS only sets how it looks."
+                      : DRAW_FROM[String(section.type)] ? `This section draws from your ${DRAW_FROM[String(section.type)].label}. The storefront uses its live content and layout settings.` : "This section is rendered from its own content and the page's published settings."}
                   </div>
                 )}
               </div>
