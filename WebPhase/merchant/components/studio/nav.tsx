@@ -150,7 +150,12 @@ export function StudioBottomNav() {
         className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#102d43]/95 backdrop-blur-md md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto grid max-w-[560px] grid-cols-6">
+        {/* The column count follows the destinations, so the bar is always evenly
+            filled and never leaves an empty slot at the end. */}
+        <ul
+          className="mx-auto grid max-w-[560px]"
+          style={{ gridTemplateColumns: `repeat(${items.length + 1}, minmax(0, 1fr))` }}
+        >
           {items.map((item) => {
             const Icon = iconFor(item);
             const active = isActivePath(pathname, item.href);

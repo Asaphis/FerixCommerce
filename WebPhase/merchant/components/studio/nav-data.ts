@@ -60,14 +60,15 @@ export const NAV_GROUPS: NavGroupData[] = [
 
 export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
 
-/** The five destinations worth permanent slots in the phone thumb zone. */
-export const MOBILE_PRIMARY = [
-  "/",
-  "/orders",
-  "/products",
-  "/audience",
-  "/store-design",
-];
+/**
+ * The destinations worth a permanent slot in the phone thumb zone.
+ *
+ * Studio is deliberately not one of them: a builder that has not shipped yet does
+ * not earn a thumb slot, and it already sits in the "More" drawer with every other
+ * destination. The bar holds four jobs plus "More", and its columns are counted
+ * from this list so no empty slot is ever left at the end.
+ */
+export const MOBILE_PRIMARY = ["/", "/orders", "/products", "/audience"];
 
 export function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
