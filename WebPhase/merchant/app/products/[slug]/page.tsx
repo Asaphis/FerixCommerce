@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
-import { getProduct, getProductOptions, ApiError } from "@/lib/api";
+import { getProduct, getProductOptions, listProducts, ApiError } from "@/lib/api";
 import { ProductDeleteForm } from "@/components/studio/product-delete-form";
 import { ProductForm } from "@/components/studio/product-form";
 import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
@@ -17,7 +17,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     data = await getProduct(session, slug);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
-      return (
+      const catalogue = await listProducts(session).catch(() => null);
+      const match = catalogue?.items?.find((item) => item.slug === slug || item.id === slug);
+      if (match?.id) {
+        data = await getProduct(session, match.slug, match.id);
+      } else return (
         <div className="grid gap-4">
           <Link href="/products" className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim hover:text-chalk">
             <ArrowLeft width={12} height={12} /> All products

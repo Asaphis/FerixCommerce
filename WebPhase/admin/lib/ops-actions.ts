@@ -68,40 +68,26 @@ function productPayload(form: FormData) {
 }
 
 
-/**
- * Put a product into every section that was ticked on the form.
- *
- * It only ever places. A section that is not ticked is left alone rather than removed,
- * because a form that has not been shown a product's existing placements would otherwise
- * untick them all and quietly take the product out of every section it was in.
- */
-async function placeTickedSections(session: string, form: FormData, slug: string, title: string) {
-  let available: api.SectionOption[] = [];
-  try {
-    available = (await api.getProductSections(session, slug)).available;
-  } catch {
-    return;
-  }
-  for (const section of available) {
+/** Persist the complete section checkbox state for one authoritative product. */
+async function syncProductSections(session: string, form: FormData, slug: string, title: string) {
+  const current = await api.getProductSections(session, slug);
+  const sections = current.available.filter((section) => {
     const key = `section__${section.documentId}__${section.sectionId}`;
-    if (form.get(key) !== "on") continue;
+    return form.get(key) === "on";
+  }).map((section) => {
+    const key = `section__${section.documentId}__${section.sectionId}`;
     const price = str(form, `price${key}`);
     const quantity = str(form, `qty${key}`);
-    try {
-      await api.placeProductInSection(session, {
-        slug,
-        documentId: section.documentId,
-        sectionId: section.sectionId,
-        sectionType: section.sectionType,
-        title,
-        ...(price ? { price: Number(price) } : {}),
-        ...(quantity ? { quantity: Number(quantity) } : {}),
-      });
-    } catch {
-      // One section failing to take the product must not lose the product itself.
-      continue;
-    }
-  }
+    return {
+      documentId: section.documentId,
+      sectionId: section.sectionId,
+      sectionType: section.sectionType,
+      title,
+      ...(price ? { price: Number(price) } : {}),
+      ...(quantity ? { quantity: Number(quantity) } : {}),
+    };
+  });
+  await api.replaceProductSections(session, { slug, sections });
 }
 
 export async function createCatalogProductAction(form: FormData): Promise<void> {
@@ -115,11 +101,13 @@ export async function createCatalogProductAction(form: FormData): Promise<void> 
   const chosen = uploaded || str(form, "mediaLibraryUrl") || str(form, "imageUrl");
   if (chosen) payload.images = [chosen];
   try {
-    await api.createCatalogProduct(session, payload as unknown as Record<string, unknown>);
+    const created = await api.createCatalogProduct(session, payload as unknown as Record<string, unknown>);
+    const product = created.product as { slug?: string; title?: string };
+    if (!product.slug) throw new Error("The API did not return the created product slug.");
+    await syncProductSections(session, form, product.slug, product.title || String(payload.title ?? ""));
   } catch {
     return;
   }
-  await placeTickedSections(session, form, String(payload.slug ?? ""), String(payload.title ?? ""));
   refresh("/catalog");
   redirect("/catalog");
 }
@@ -134,11 +122,13 @@ export async function updateCatalogProductAction(form: FormData): Promise<void> 
   const chosen = uploaded || str(form, "mediaLibraryUrl") || str(form, "imageUrl");
   if (chosen) payload.images = [chosen];
   try {
-    await api.updateCatalogProduct(session, { id, ...payload } as unknown as Record<string, unknown>);
+    const updated = await api.updateCatalogProduct(session, { id, ...payload } as unknown as Record<string, unknown>);
+    const product = updated.product as { slug?: string; title?: string };
+    if (!product.slug) throw new Error("The API did not return the updated product slug.");
+    await syncProductSections(session, form, product.slug, product.title || String(payload.title ?? ""));
   } catch {
     return;
   }
-  await placeTickedSections(session, form, str(form, "slug"), String(payload.title ?? ""));
   refresh("/catalog");
   revalidatePath(`/catalog/${str(form, "slug")}`);
 }

@@ -2395,6 +2395,12 @@ class PlacementRefIn(BaseModel):
     id: str
 
 
+class PlacementSetIn(BaseModel):
+    productId: Optional[str] = None
+    slug: Optional[str] = None
+    sections: list[dict] = []
+
+
 def _placement_json(row) -> dict:
     return {
         "id": row.id, "productId": row.product_id, "slug": row.product_slug,
@@ -2521,6 +2527,55 @@ def product_section_remove(session: Optional[str] = Header(None, alias="X-Ferix-
         audit(db, "admin", staff.email, "product.section.remove", slug, payload.id)
         db.commit()
         return {"removed": payload.id}
+
+
+@router.put("/product/sections")
+def product_sections_replace(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                             payload: PlacementSetIn = Body(...)):
+    """Replace all placements for a platform product in one transaction."""
+    from core import SectionPlacement
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
+        product = find_product(db, payload.productId or payload.slug or "")
+        if not product or not is_platform_product(product):
+            raise HTTPException(404, "That platform product does not exist")
+        requested = []
+        seen: set[tuple[str, str]] = set()
+        for item in payload.sections:
+            document_id, section_id = str(item.get("documentId") or ""), str(item.get("sectionId") or "")
+            key = (document_id, section_id)
+            if not document_id or not section_id or key in seen:
+                continue
+            document = db.get(ContentDocument, document_id)
+            if not document or document.owner_type != "platform":
+                raise HTTPException(400, "Choose only platform CMS sections")
+            draft = db.scalar(select(ContentVersion).where(
+                ContentVersion.document_id == document_id, ContentVersion.status == "draft"
+            ).order_by(ContentVersion.version.desc()))
+            source = (draft.data if draft is not None else document.data) or {}
+            section = next((value for value in source.get("sections", [])
+                            if value.get("id") == section_id
+                            and value.get("type") in ("product_grid", "product_carousel")
+                            and value.get("visible", True)), None)
+            if not section:
+                raise HTTPException(400, "Choose only active product sections")
+            seen.add(key)
+            requested.append((document_id, section_id, section, item))
+        for row in db.scalars(select(SectionPlacement).where(SectionPlacement.product_id == product["id"])).all():
+            db.delete(row)
+        for document_id, section_id, section, item in requested:
+            db.add(SectionPlacement(
+                id=new_id("plc"), product_id=product["id"], product_slug=product["slug"],
+                document_id=document_id, section_id=section_id, section_type=section.get("type", ""),
+                price=float(item.get("price") if item.get("price") is not None else product.get("price") or 0),
+                compare_at=float(item.get("compareAt") or product.get("compareAt") or 0),
+                quantity=int(item.get("quantity") if item.get("quantity") is not None else product.get("stock") or 0),
+                position=int(item.get("position") or 1),
+            ))
+        audit(db, "admin", staff.email, "product.sections.replace", product["slug"], str(len(requested)))
+        db.commit()
+        return {"productId": product["id"], "slug": product["slug"], "count": len(requested)}
 
 # ── Removing a seller account ──────────────────────────────────────────────
 # Owner only, and refused while the seller has orders. An order is a record of what

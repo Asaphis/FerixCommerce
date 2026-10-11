@@ -425,6 +425,10 @@ export const getProductSections = (session: string | null, slug: string) =>
 
 export const placeProductInSection = (session: string | null, body: Record<string, unknown>) =>
   call<{ placement: { id: string } }>("POST", "admin/product/section", { session, body });
+export const removeProductFromSection = (session: string | null, id: string) =>
+  call<{ removed: string }>("DELETE", "admin/product/section", { session, body: { id } });
+export const replaceProductSections = (session: string | null, body: Record<string, unknown>) =>
+  call<{ productId: string; slug: string; count: number }>("PUT", "admin/product/sections", { session, body });
 
 /** Products waiting on the platform, with what each submission is waiting for. */
 export type ReviewItem = {
