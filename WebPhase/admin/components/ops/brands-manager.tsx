@@ -1,7 +1,7 @@
 "use client";
 import { useActionState, useState } from "react";
 import { ImagePlus, Pencil, Plus, Save, Trash2, X } from "lucide-react";
-import type { AdminBrand } from "@/lib/api";
+import { assetUrl, type AdminBrand } from "@/lib/api";
 import { saveBrandAction, deleteBrandAction, type FormState } from "@/lib/actions";
 import { Notice } from "@/components/ops/notice";
 import { Panel, PanelHead, Pill } from "@/components/ops/bits";
@@ -19,18 +19,18 @@ export default function BrandsManager({ initialBrands, loadError, libraryAssets 
   const [deleteState, deleteAction] = useActionState<FormState, FormData>(deleteBrandAction, {});
   const active = selected ?? blank;
   return <div className="grid gap-6">
-    <PageHeader eyebrow="Content / catalogue" title="Brands" description="Manage the brand directory used across the storefront." action={<OpsButton variant="primary" onClick={() => setSelected(blank)}><Plus width={15} /> New brand</OpsButton>} />
+    <PageHeader eyebrow="Content / catalogue" title="Brands" action={<OpsButton variant="primary" onClick={() => setSelected(blank)}><Plus width={15} /> New brand</OpsButton>} />
     {loadError ? <div className="rounded-[.55rem] border border-rose/40 bg-rose/10 px-4 py-3 text-[13px] text-rose">Could not load brands: {loadError}</div> : null}
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,390px)] lg:items-start">
       <Panel flush><div className="p-4 sm:p-5"><PanelHead title="Brand directory" hint={`${initialBrands.length} saved brands`} />
         {initialBrands.length ? <div className="mt-4 grid gap-2">{initialBrands.map((brand) => <div key={brand.id} className="flex min-w-0 items-center gap-3 rounded-[.55rem] border border-hairline bg-panel px-3 py-3 sm:px-4">
-          <div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[.45rem] bg-panel-2 text-ink-soft">{brand.imageUrl ? <img src={brand.imageUrl} alt="" className="size-full object-cover" /> : <ImagePlus width={17} />}</div>
+          <div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-[.45rem] bg-panel-2 text-ink-soft">{brand.imageUrl ? <img src={assetUrl(brand.imageUrl)} alt="" className="size-full object-cover" /> : <ImagePlus width={17} />}</div>
           <div className="min-w-0 flex-1"><p className="truncate text-[14px] font-semibold text-chalk">{brand.name}</p><p className="truncate font-mono text-[10px] uppercase tracking-[.12em] text-chalk-dim">/{brand.slug} · pos {brand.position}</p></div>
           <Pill tone={brand.visible ? "mint" : "neutral"}>{brand.visible ? "Visible" : "Hidden"}</Pill>{brand.featured ? <Pill tone="amber">Featured</Pill> : null}
           <button type="button" aria-label={`Edit ${brand.name}`} onClick={() => setSelected(brand)} className="grid size-10 shrink-0 place-items-center rounded-[.45rem] text-chalk-dim hover:bg-panel-2 hover:text-chalk"><Pencil width={15} /></button>
         </div>)}</div> : <div className="mt-4 rounded-[.55rem] border border-dashed border-hairline px-5 py-12 text-center"><p className="text-[14px] font-semibold text-chalk">No brands yet</p><p className="mt-1 text-[13px] text-chalk-dim">Create the first directory entry to make it available to shoppers.</p></div>}
       </div></Panel>
-      <Panel><PanelHead title={active.id ? "Edit brand" : "New brand"} hint="Changes save to the platform CMS." />
+      <Panel><PanelHead title={active.id ? "Edit brand" : "New brand"} />
         <form action={saveAction} className="mt-4 grid gap-3"><input type="hidden" name="id" value={active.id} />
           <Field title="Name"><input name="name" required defaultValue={active.name} key={`${active.id}-name`} className={tableInputClass} placeholder="Northstar Audio" /></Field>
           <Field title="Slug"><input name="slug" required defaultValue={active.slug} key={`${active.id}-slug`} className={tableInputClass} placeholder="northstar-audio" /></Field>

@@ -35,7 +35,6 @@ export default async function AnalyticsPage({
       <PageHeader
         eyebrow="Platform analytics"
         title="Growth across the marketplace"
-        description={`Paid marketplace GMV, commission and order volume over the last ${range} days, split by seller, department and plan.`}
         action={RANGES.map((option) => (
           <Link
             key={option}
@@ -61,7 +60,7 @@ export default async function AnalyticsPage({
 
       <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
         <Panel>
-          <PanelHead title="GMV by day" hint={`Daily platform value over ${range} days`} />
+          <PanelHead title="GMV by day" />
           <TrendChart values={gmv} labels={labels} />
           <div className="mt-5 border-t border-hairline pt-4">
             <Eyebrow>Orders by day</Eyebrow>

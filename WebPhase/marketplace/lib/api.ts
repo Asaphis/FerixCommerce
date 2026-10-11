@@ -450,7 +450,10 @@ export const listProducts = (params: Params) => call<ProductList>("GET", "catalo
 
 export const getProduct = (slug: string) => call<ProductDetail>("GET", "catalog/product", { params: { slug } });
 
-export const getCategories = () => call<{ categories: Category[] }>("GET", "catalog/categories");
+export const getCategories = async () => {
+  const result = await call<{ categories: Category[] }>("GET", "catalog/categories");
+  return { ...result, categories: result.categories.filter((category) => category.count > 0) };
+};
 
 export const getCategory = (slug: string, sort = "relevance") =>
   call<{ category: Category } & ProductList>("GET", "catalog/category", { params: { slug, sort } });

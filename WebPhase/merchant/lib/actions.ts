@@ -82,8 +82,11 @@ export async function createProductAction(_prev: FormState, formData: FormData):
   const session = await readSession();
   if (!session) redirect("/login");
   const title = String(formData.get("title") ?? "").trim();
+  const category = String(formData.get("category") ?? "").trim();
   const price = Number(formData.get("price") ?? 0);
   if (title.length < 2) return { error: "Give the product a title." };
+  if (!category) return { error: "Choose a category managed by Ferixas." };
+  if (formData.get("marketplace_acknowledgement") !== "on") return { error: "Confirm that this listing is intended for the Ferixas Marketplace." };
   if (!Number.isFinite(price) || price <= 0) return { error: "Enter a price greater than zero." };
   const files = formData.getAll("mediaFiles").filter((value): value is File => value instanceof File && value.size > 0);
   if (!readImageUrls(formData).length && !files.length) return { error: "Add at least one product image." };
@@ -92,7 +95,7 @@ export async function createProductAction(_prev: FormState, formData: FormData):
     const images = await uploadProductImages(session, formData, readImageUrls(formData));
     const created = await api.createProduct(session, {
       title,
-      category: String(formData.get("category") ?? ""),
+      category,
       brandId: String(formData.get("brandId") ?? "") || null,
       section_tags: formData.getAll("section_tags").map(String),
       sku: String(formData.get("sku") ?? "").trim(),
@@ -150,7 +153,10 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
   const slug = String(formData.get("slug") ?? "");
   if (!id) return { error: "Which product?" };
   const title = String(formData.get("title") ?? "").trim();
+  const category = String(formData.get("category") ?? "").trim();
   if (title.length < 2) return { error: "Give the product a title." };
+  if (!category) return { error: "Choose a category managed by Ferixas." };
+  if (formData.get("marketplace_acknowledgement") !== "on") return { error: "Confirm that this listing is intended for the Ferixas Marketplace." };
   const price = Number(formData.get("price") ?? 0);
   if (!Number.isFinite(price) || price <= 0) return { error: "Enter a price greater than zero." };
   const files = formData.getAll("mediaFiles").filter((value): value is File => value instanceof File && value.size > 0);
@@ -161,7 +167,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
     await api.updateProduct(session, {
       id,
       title,
-      category: String(formData.get("category") ?? ""),
+      category,
       brandId: String(formData.get("brandId") ?? ""),
       section_tags: formData.getAll("section_tags").map(String),
       sku: String(formData.get("sku") ?? "").trim(),

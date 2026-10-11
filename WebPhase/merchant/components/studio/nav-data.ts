@@ -50,16 +50,23 @@ export const NAV_GROUPS: NavGroupData[] = [
       { href: "/analytics", label: "Analytics", icon: "chart" },
     ],
   },
+  {
+    label: "Storefront",
+    items: [
+      { href: "/store-design", label: "Studio", icon: "paintbrush", soon: true },
+    ],
+  },
 ];
 
 export const ALL_NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((group) => group.items);
 
-/** The four destinations worth a permanent slot in the phone thumb zone. */
+/** The five destinations worth permanent slots in the phone thumb zone. */
 export const MOBILE_PRIMARY = [
   "/",
   "/orders",
   "/products",
   "/audience",
+  "/store-design",
 ];
 
 export function isActivePath(pathname: string, href: string) {

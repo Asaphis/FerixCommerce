@@ -39,7 +39,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
 
       <div className="grid gap-3 xl:grid-cols-[1.45fr_1fr]">
         <Panel>
-          <PanelHead title="Revenue by day" hint={`Recorded sales · ${range} days`} />
+          <PanelHead title="Revenue by day" />
           {totalRevenue || totalOrders ? <><BarChart values={revenue} labels={labels} /><div className="mt-4 border-t border-hairline pt-3"><Eyebrow>Orders by day</Eyebrow><BarChart values={orders} labels={labels} tone="azure" /></div></> : <p className="py-5 text-[12px] text-chalk-dim">Your sales trend will appear when an order is recorded.</p>}
         </Panel>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">

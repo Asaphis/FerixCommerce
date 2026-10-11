@@ -27,7 +27,7 @@ export function PromotionForm({ products }: { products: Option[] }) {
   return (
     <form action={action} className="grid gap-3">
       <Panel>
-        <PanelHead title="New promotion" hint="Name it, pick the products, set the sale price" />
+        <PanelHead title="New promotion" />
         <div className="grid gap-4">
           <Field title="Promotion name">
             <input name="name" className={inputClass} placeholder="Weekend drop" required />
@@ -46,9 +46,6 @@ export function PromotionForm({ products }: { products: Option[] }) {
               <input name="endsAt" type="datetime-local" className={inputClass} />
             </Field>
           </div>
-          <p className="font-mono text-[9.5px] leading-relaxed text-chalk-dim/70">
-            The platform confirms the final window when the promotion goes live.
-          </p>
           <Field title="Status">
             <select name="status" defaultValue="draft" className={selectClass}>
               <option value="draft">Draft — not live</option>
@@ -60,7 +57,7 @@ export function PromotionForm({ products }: { products: Option[] }) {
       </Panel>
 
       <Panel>
-        <PanelHead title="Products on sale" hint="A sale price per product, with an optional quantity cap" />
+        <PanelHead title="Products on sale" />
         {items.length ? (
           <div className="grid gap-2.5">
             {items.map((item, index) => (

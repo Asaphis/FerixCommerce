@@ -93,7 +93,7 @@ function Notice({ state }: { state: FormState }) {
   return null;
 }
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({ mode, returnTo }: { mode: "login" | "register"; returnTo?: string }) {
   const [state, action] = useActionState<FormState, FormData>(
     mode === "login" ? loginAction : registerAction,
     {},
@@ -101,6 +101,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <form action={action} className="grid grid-cols-1 gap-4">
+      {returnTo ? <input type="hidden" name="return" value={returnTo} /> : null}
       {mode === "register" ? (
         <Field title="Full name">
           <input name="name" className={field} placeholder="Ada Bello" autoComplete="name" required />
@@ -126,14 +127,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       {mode === "login" ? (
         <p className="text-center text-[12.5px] text-ink-soft">
           New to Ferixas?{" "}
-          <Link href="/register" className="text-ink underline decoration-ember decoration-2 underline-offset-4">
+            <Link href={returnTo ? `/register?return=${encodeURIComponent(returnTo)}` : "/register"} className="text-ink underline decoration-ember decoration-2 underline-offset-4">
             Create an account
           </Link>
         </p>
       ) : (
         <p className="text-center text-[12.5px] text-ink-soft">
           Already have an account?{" "}
-          <Link href="/login" className="text-ink underline decoration-ember decoration-2 underline-offset-4">
+          <Link href={returnTo ? `/login?return=${encodeURIComponent(returnTo)}` : "/login"} className="text-ink underline decoration-ember decoration-2 underline-offset-4">
             Sign in
           </Link>
         </p>
@@ -186,10 +187,11 @@ export function AddressForm({ address }: { address?: Address }) {
   );
 }
 
-export function ReviewForm({ productId, review }: { productId?: string; review?: Review }) {
+export function ReviewForm({ productId, review, returnTo }: { productId?: string; review?: Review; returnTo?: string }) {
   const [state, action] = useActionState<FormState, FormData>(saveReviewAction, {});
   return (
     <form action={action} className="grid grid-cols-1 gap-4">
+      {returnTo ? <input type="hidden" name="return" value={returnTo} /> : null}
       {review ? <input type="hidden" name="id" value={review.id} /> : null}
       {productId ? <input type="hidden" name="productId" value={productId} /> : null}
       <Field title="Rating">

@@ -1,0 +1,74 @@
+name: FerixCommerce quality gates
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ferixas_test
+          POSTGRES_PASSWORD: ferixas_test
+          POSTGRES_DB: ferixas_test_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ferixas_test -d ferixas_test_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      FERIXAS_ENV: test
+      FERIXAS_TEST_STAFF_PASSWORD: TestOnly-CI-Password-123!
+      FERIXAS_TEST_POSTGRES_URL: postgresql+psycopg://ferixas_test:ferixas_test@127.0.0.1:5432/ferixas_test_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: Backend/requirements.txt
+      - name: Install backend dependencies
+        run: python -m pip install -r Backend/requirements.txt
+      - name: Run isolated backend contract tests
+        working-directory: Backend
+        run: python -m unittest discover -s tests -v
+      - name: Verify PostgreSQL migrations and fresh seed
+        working-directory: Backend
+        run: python tests/postgres_migration_smoke.py
+
+  frontend:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [WebPhase/admin, WebPhase/merchant, WebPhase/marketplace]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - name: Install locked dependencies
+        working-directory: ${{ matrix.app }}
+        run: npm ci
+      - name: Typecheck
+        working-directory: ${{ matrix.app }}
+        run: npm run typecheck
+      - name: Production build
+        working-directory: ${{ matrix.app }}
+        run: npm run build

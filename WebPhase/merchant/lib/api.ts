@@ -71,11 +71,15 @@ export type Product = {
   variants: Variant[];
   status: "pending_review" | "approved" | "rejected" | "draft" | "archived";
   reviewStatus?: string;
+  reviewNote?: string;
   rejection_reason?: string;
   channels: Channels;
   tags: string[];
   section_tags?: string[];
   createdAt: string;
+  updatedAt?: string;
+  submittedAt?: string;
+  submittedBy?: string;
   sold30d: number;
   views30d: number | null;
   images?: string[];
@@ -227,6 +231,15 @@ export type ProductDetail = {
   sold: number;
   lowStockAt: number;
   categories: string[];
+  history: ProductHistoryEvent[];
+};
+
+export type ProductHistoryEvent = {
+  id: string;
+  label: string;
+  actor: "Admin" | "Seller";
+  at: string;
+  detail: string;
 };
 
 export type InventoryRow = {

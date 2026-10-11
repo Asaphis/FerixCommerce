@@ -59,7 +59,6 @@ export default async function AdvertsPage({ searchParams }: { searchParams: Prom
         }
         eyebrow="Marketplace"
         title="Advertisements"
-        description="Promotions that run inside a page's product list, with their own dates."
         action={
           <>
             <Pill tone="mint">{counts.running} running</Pill>
@@ -80,7 +79,7 @@ export default async function AdvertsPage({ searchParams }: { searchParams: Prom
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)] xl:items-start">
         <Panel flush>
           <div className="p-4 pb-3 sm:p-5 sm:pb-3">
-            <PanelHead title="Running and scheduled" hint={`${counts.explore} placed in the product list`} />
+            <PanelHead title="Running and scheduled" />
           </div>
           {adverts.length ? (
             <ul className="grid gap-2 px-4 pb-4 sm:px-5 sm:pb-5">

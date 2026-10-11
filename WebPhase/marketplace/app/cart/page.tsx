@@ -70,7 +70,7 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
           ))}
 
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
-            Each seller packs and ships their own items. One payment, one order number.
+            Each seller packs and ships their own items. Secure marketplace payment is not available yet, so no order is created from this cart.
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
             ) : null}
 
             <LinkButton href="/checkout" className="mt-5 w-full">
-              Checkout · {money(cart.total)}
+              Checkout status
               <ArrowRight width={15} height={15} />
             </LinkButton>
             <Link
@@ -105,7 +105,7 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
           </div>
 
           <p className="mt-3 flex items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
-            <ShoppingBag width={12} height={12} /> One checkout across every seller
+            <ShoppingBag width={12} height={12} /> Payment setup required before checkout
           </p>
         </aside>
       </div>

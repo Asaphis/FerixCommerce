@@ -39,10 +39,10 @@ export default async function CustomersPage({
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <StatTile label="Buyers" value={num(data.segments.all ?? 0)} sub="Distinct customers" />
+        <StatTile label="Buyers" value={num(data.segments.all ?? 0)} />
         <StatTile label="VIP" value={num(data.segments.vip ?? 0)} sub="Spent $600 or more" accent="lime" />
         <StatTile label="Returning" value={num(data.segments.returning ?? 0)} sub="Ordered more than once" accent="azure" />
-        <StatTile label="Lifetime value" value={money(data.lifetime, { cents: false })} sub="Across every customer" accent="sand" />
+        <StatTile label="Lifetime value" value={money(data.lifetime, { cents: false })} accent="sand" />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -123,12 +123,6 @@ export default async function CustomersPage({
         <Empty title="No customers match" body="Clear the search and the segment filter to see everyone." />
       )}
 
-      <Panel>
-        <PanelHead title="Where customers come from" />
-        <p className="text-[12.5px] leading-relaxed text-chalk-dim">
-          Customer records are derived from orders, so this list is always in step with your order queue.
-        </p>
-      </Panel>
     </div>
   );
 }

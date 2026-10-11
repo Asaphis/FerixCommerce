@@ -43,12 +43,11 @@ export default async function OrdersPage({
         <StatTile
           label="Waiting on you"
           value={num(data.awaiting)}
-          sub="Not dispatched yet"
           icon={<Package width={15} height={15} />}
           accent="sand"
         />
-        <StatTile label="In transit" value={num(data.counts.shipped ?? 0)} sub="With the carrier" icon={<Truck width={15} height={15} />} accent="azure" />
-        <StatTile label="Delivered" value={num(data.counts.delivered ?? 0)} sub="Completed" accent="lime" />
+        <StatTile label="In transit" value={num(data.counts.shipped ?? 0)} icon={<Truck width={15} height={15} />} accent="azure" />
+        <StatTile label="Delivered" value={num(data.counts.delivered ?? 0)} accent="lime" />
         <StatTile label="Paid order value" value={money(data.revenue, { cents: false })} sub="Confirmed payment · Ferixas marketplace" accent="chalk" />
       </div>
 

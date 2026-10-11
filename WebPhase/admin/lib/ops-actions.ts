@@ -24,6 +24,11 @@ const csv = (form: FormData, key: string) =>
     .map((part) => part.trim())
     .filter(Boolean);
 
+function fail(path: string, error: unknown, fallback: string): never {
+  const message = error instanceof api.ApiError ? error.message : fallback;
+  redirect(`${path}?error=${encodeURIComponent(message)}`);
+}
+
 async function uploadedMediaUrl(
   session: string,
   form: FormData,
@@ -45,15 +50,21 @@ function actionError(error: unknown, fallback: string): FormState {
 // ── Catalogue ──────────────────────────────────────────────────────────
 
 function productPayload(form: FormData) {
+  const variants = lines(form, "variants").map((line) => {
+    const [name, values] = line.split(":", 2);
+    return { name: name.trim(), values: (values ?? "").split("|").map((value) => value.trim()).filter(Boolean) };
+  }).filter((variant) => variant.name && variant.values.length);
   return {
     title: str(form, "title"),
     slug: str(form, "slug") || undefined,
     category: str(form, "category", "home"),
+    brand: str(form, "brand"),
     description: str(form, "description"),
     bullets: lines(form, "bullets"),
     price: Number(form.get("price") ?? 0),
     compareAt: form.get("compareAt") ? Number(form.get("compareAt")) : null,
     stock: Number(form.get("stock") ?? 0),
+    lowStockAt: Number(form.get("lowStockAt") ?? 8),
     sku: str(form, "sku"),
     status: str(form, "status", "draft"),
     featured: bool(form, "featured"),
@@ -62,8 +73,14 @@ function productPayload(form: FormData) {
     collections: csv(form, "collections"),
     tags: csv(form, "tags"),
     images: lines(form, "images"),
+    variants,
     seoTitle: str(form, "seoTitle"),
     seoDescription: str(form, "seoDescription"),
+    shipping_amount: form.get("shipping_amount") ? Number(form.get("shipping_amount")) : null,
+    estimated_delivery_days: form.get("estimated_delivery_days") ? Number(form.get("estimated_delivery_days")) : null,
+    package_weight: form.get("package_weight") ? Number(form.get("package_weight")) : null,
+    package_dimensions: str(form, "package_dimensions"),
+    shipping_origin: str(form, "shipping_origin"),
   };
 }
 
@@ -99,14 +116,14 @@ export async function createCatalogProductAction(form: FormData): Promise<void> 
   // the device, an asset from the library, or a pasted address, in that order.
   const uploaded = await uploadedMediaUrl(session, form, "mediaFile", "image", String(payload.title), "products");
   const chosen = uploaded || str(form, "mediaLibraryUrl") || str(form, "imageUrl");
-  if (chosen) payload.images = [chosen];
+  if (chosen) payload.images = [...new Set([...(payload.images as string[]), chosen])];
   try {
     const created = await api.createCatalogProduct(session, payload as unknown as Record<string, unknown>);
     const product = created.product as { slug?: string; title?: string };
     if (!product.slug) throw new Error("The API did not return the created product slug.");
     await syncProductSections(session, form, product.slug, product.title || String(payload.title ?? ""));
-  } catch {
-    return;
+  } catch (error) {
+    fail("/catalog/new", error, "We could not create this product.");
   }
   refresh("/catalog");
   redirect("/catalog");
@@ -120,14 +137,14 @@ export async function updateCatalogProductAction(form: FormData): Promise<void> 
   const payload = productPayload(form);
   const uploaded = await uploadedMediaUrl(session, form, "mediaFile", "image", String(payload.title ?? "Product"), "products");
   const chosen = uploaded || str(form, "mediaLibraryUrl") || str(form, "imageUrl");
-  if (chosen) payload.images = [chosen];
+  if (chosen) payload.images = [...new Set([...(payload.images as string[]), chosen])];
   try {
     const updated = await api.updateCatalogProduct(session, { id, ...payload } as unknown as Record<string, unknown>);
     const product = updated.product as { slug?: string; title?: string };
     if (!product.slug) throw new Error("The API did not return the updated product slug.");
     await syncProductSections(session, form, product.slug, product.title || String(payload.title ?? ""));
-  } catch {
-    return;
+  } catch (error) {
+    fail(`/catalog/${encodeURIComponent(str(form, "slug"))}`, error, "We could not save this product.");
   }
   refresh("/catalog");
   revalidatePath(`/catalog/${str(form, "slug")}`);
@@ -141,8 +158,8 @@ export async function deleteCatalogProductAction(form: FormData): Promise<void> 
   if (!id) return;
   try {
     await api.deleteCatalogProduct(session, id);
-  } catch {
-    return;
+  } catch (error) {
+    fail("/catalog", error, "We could not remove this product.");
   }
   refresh("/catalog");
   if (slug) redirect("/catalog");
@@ -198,8 +215,8 @@ export async function deleteBannerAction(form: FormData): Promise<void> {
   if (!id) return;
   try {
     await api.deleteBanner(session, id);
-  } catch {
-    return;
+  } catch (error) {
+    fail("/cms/banners", error, "We could not remove this banner.");
   }
   refresh("/cms/banners");
 }
@@ -239,8 +256,8 @@ export async function deleteCategoryAction(form: FormData): Promise<void> {
   if (!slug) return;
   try {
     await api.deleteCategory(session, slug);
-  } catch {
-    return;
+  } catch (error) {
+    fail("/cms/categories", error, "We could not remove this department.");
   }
   refresh("/cms/categories");
 }
@@ -274,8 +291,8 @@ export async function deleteCollectionAction(form: FormData): Promise<void> {
   if (!slug) return;
   try {
     await api.deleteCollection(session, slug);
-  } catch {
-    return;
+  } catch (error) {
+    fail("/cms/collections", error, "We could not remove this collection.");
   }
   refresh("/cms/collections");
 }
@@ -311,8 +328,8 @@ export async function removeMediaAction(form: FormData): Promise<void> {
   if (!id) return;
   try {
     await api.removeMedia(session, id);
-  } catch {
-    return;
+  } catch (error) {
+    fail("/cms/media", error, "We could not remove this media asset.");
   }
   refresh("/cms/media");
 }
@@ -324,16 +341,20 @@ export async function saveHomepageAction(_previous: FormState, form: FormData): 
   if (!session) redirect("/login");
   const documentId = str(form, "documentId", "doc_marketplace_home");
   const ids = form.getAll("sectionId").map(String);
-  const sections = ids.map((id, index) => ({
-    id,
-    type: str(form, `type_${id}`, "rich_text"),
-    title: str(form, `title_${id}`),
-    subtitle: str(form, `subtitle_${id}`),
-    ctaLabel: str(form, `ctaLabel_${id}`),
-    ctaHref: str(form, `ctaHref_${id}`),
-    position: Number(form.get(`position_${id}`) ?? index + 1),
-    visible: form.get(`visible_${id}`) === "on",
-  }));
+  const sections = ids.map((id, index) => {
+    const type = str(form, `type_${id}`, "rich_text");
+    const suppressSupportingLine = ["category_grid", "brand_carousel", "product_carousel", "featured_stores", "product_grid"].includes(type);
+    return {
+      id,
+      type,
+      title: str(form, `title_${id}`),
+      subtitle: suppressSupportingLine ? "" : str(form, `subtitle_${id}`),
+      ctaLabel: str(form, `ctaLabel_${id}`),
+      ctaHref: str(form, `ctaHref_${id}`),
+      position: Number(form.get(`position_${id}`) ?? index + 1),
+      visible: form.get(`visible_${id}`) === "on",
+    };
+  });
   try {
     await api.saveDocument(session, { id: documentId, data: { sections }, note: "Homepage saved" });
   } catch (error) {
@@ -348,8 +369,8 @@ export async function publishHomepageAction(form: FormData): Promise<void> {
   if (!session) redirect("/login");
   try {
     await api.publishDocument(session, str(form, "documentId", "doc_marketplace_home"));
-  } catch {
-    return;
+  } catch (error) {
+    fail("/cms/homepage", error, "We could not publish the homepage.");
   }
   refresh("/cms/homepage");
   refresh("/cms/publishing");
@@ -362,8 +383,8 @@ export async function restoreVersionAction(form: FormData): Promise<void> {
   if (!versionId) return;
   try {
     await api.restoreDocumentVersion(session, versionId);
-  } catch {
-    return;
+  } catch (error) {
+    fail("/cms/homepage", error, "We could not restore this version.");
   }
   refresh("/cms/homepage");
   refresh("/cms/publishing");
@@ -375,7 +396,7 @@ export async function savePromotionAction(form: FormData): Promise<void> {
   const session = await readSession();
   if (!session) redirect("/login");
   const name = str(form, "name");
-  if (!name) return;
+  if (!name) redirect("/promotions?error=Enter%20a%20promotion%20name.");
   const productIds = form.getAll("itemProductId").map(String);
   const items = productIds
     .map((productId, index) => ({
@@ -395,8 +416,8 @@ export async function savePromotionAction(form: FormData): Promise<void> {
       status: str(form, "status", "draft"),
       items,
     });
-  } catch {
-    return;
+  } catch (error) {
+    fail("/promotions", error, "We could not save this promotion.");
   }
   refresh("/promotions");
 }
@@ -408,8 +429,8 @@ export async function deletePromotionAction(form: FormData): Promise<void> {
   if (!id) return;
   try {
     await api.deletePromotion(session, id);
-  } catch {
-    return;
+  } catch (error) {
+    fail("/promotions", error, "We could not remove this promotion.");
   }
   refresh("/promotions");
 }
@@ -424,8 +445,8 @@ export async function updatePayoutAction(form: FormData): Promise<void> {
   if (!id || !status) return;
   try {
     await api.updatePayout(session, { id, status });
-  } catch {
-    return;
+  } catch (error) {
+    fail("/payouts", error, "Payout status could not be changed.");
   }
   refresh("/payouts");
 }
@@ -445,11 +466,13 @@ export async function saveStaffAction(form: FormData): Promise<void> {
       email: email || undefined,
       role: str(form, "role", "admin"),
       password: str(form, "password") || undefined,
+      permissions: bool(form, "customPermissions") ? form.getAll("permissions").map(String) : undefined,
     });
-  } catch {
-    return;
+  } catch (error) {
+    fail("/team", error, "We could not save this team member.");
   }
   refresh("/team");
+  redirect("/team?saved=1");
 }
 
 export async function deleteStaffAction(form: FormData): Promise<void> {
@@ -459,8 +482,9 @@ export async function deleteStaffAction(form: FormData): Promise<void> {
   if (!id) return;
   try {
     await api.deleteStaff(session, id);
-  } catch {
-    return;
+  } catch (error) {
+    fail("/team", error, "We could not remove this team member.");
   }
   refresh("/team");
+  redirect("/team?saved=1");
 }

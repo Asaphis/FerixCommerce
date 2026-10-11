@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Boxes, Plus, Search, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCatalog } from "@/lib/api";
+import { assetUrl, listCatalog } from "@/lib/api";
 import { FilterForm, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
@@ -9,6 +9,7 @@ import { deleteCatalogProductAction } from "@/lib/ops-actions";
 import { money, num, titleCase } from "@/lib/format";
 
 const STATUS_TONE: Record<string, "mint" | "amber" | "neutral" | "rose"> = {
+  approved: "mint",
   active: "mint",
   draft: "amber",
   archived: "neutral",
@@ -60,7 +61,7 @@ export default async function CatalogPage({
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-3">
-        <Readout label="Ferixas Official products" value={num(official)} sub={`${data.counts.active ?? 0} active`} icon={<Boxes width={15} height={15} />} />
+        <Readout label="Ferixas Official products" value={num(official)} sub={`${data.counts.approved ?? 0} approved`} icon={<Boxes width={15} height={15} />} />
         <Readout label="Filtered results" value={num(data.total)} sub="Official products matching filters" tone="violet" />
         <Readout label="Stock value" value={money(value, { cents: false })} sub="At listed price" tone="amber" />
       </div>
@@ -82,6 +83,7 @@ export default async function CatalogPage({
           </select>
           <select name="status" defaultValue={status ?? "all"} className={selectClass}>
             <option value="all">Every status</option>
+            <option value="approved">Approved</option>
             <option value="active">Active</option>
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
@@ -114,7 +116,7 @@ export default async function CatalogPage({
                       <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={product.image}
+                          src={assetUrl(product.image)}
                           alt={product.title}
                           className="h-10 w-10 shrink-0 rounded-[2px] border border-hairline object-cover"
                         />

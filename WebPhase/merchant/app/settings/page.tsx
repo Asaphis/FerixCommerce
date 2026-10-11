@@ -24,7 +24,6 @@ export default async function SettingsPage() {
         <StatTile
           label="Marketplace"
           value={data.settings.marketplaceEnabled ? "Listed" : "Off"}
-          sub="Ferixas marketplace participation"
           accent={data.settings.marketplaceEnabled ? "lime" : "sand"}
         />
         <StatTile label="Latest profile request" value={data.profileRequest?.status.replaceAll("_", " ") ?? "none"} sub="Public changes require Admin approval" accent={data.profileRequest?.status === "pending_review" ? "sand" : "azure"} />

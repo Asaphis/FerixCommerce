@@ -37,7 +37,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     }
     throw error;
   }
-  const { product, sold, lowStockAt } = data;
+  const { product, sold, lowStockAt, history } = data;
+  const reviewStatus = product.reviewStatus ?? product.status;
+  const requestedChanges = reviewStatus === "changes_requested" && product.reviewNote?.trim();
 
   return (
     <div className="grid gap-5">
@@ -70,7 +72,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <ProductDeleteForm id={product.id} />
       </header>
 
-      {product.status === "rejected" && product.rejection_reason ? (
+      {requestedChanges ? (
+        <Panel>
+          <div className="border-l-2 border-amber bg-amber/5 p-4">
+            <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-amber">Changes requested by Admin</p>
+            <p className="mt-2 text-[13px] text-chalk">{requestedChanges}</p>
+            <p className="mt-2 font-mono text-[10.5px] text-chalk-dim">Update the listing and submit again. It remains hidden until the next review decision.</p>
+          </div>
+        </Panel>
+      ) : product.status === "rejected" && product.rejection_reason ? (
         <Panel>
           <div className="border-l-2 border-rose bg-rose/5 p-4">
             <div className="flex items-start gap-3">
@@ -99,8 +109,35 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </Panel>
       ) : null}
 
+      {!history?.length && (product.submittedAt || product.updatedAt) ? (
+        <p className="font-mono text-[10px] text-chalk-dim">
+          {product.submittedAt ? `Submitted ${dateShort(product.submittedAt)}` : "Listing created"}
+          {product.updatedAt ? ` · Updated ${dateShort(product.updatedAt)}` : ""}
+        </p>
+      ) : null}
+
+      {history?.length ? (
+        <Panel>
+          <PanelHead title="Product history" />
+          <ol className="grid gap-3">
+            {history.map((event) => (
+              <li key={event.id} className="grid grid-cols-[10px_minmax(0,1fr)] gap-3">
+                <span aria-hidden="true" className="mt-1.5 size-2 rounded-full bg-lime" />
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                    <p className="text-[12px] font-medium text-chalk">{event.label}</p>
+                    <p className="font-mono text-[9.5px] text-chalk-dim">{dateShort(event.at)} · {event.actor}</p>
+                  </div>
+                  {event.detail ? <p className="mt-1 break-words text-[11px] leading-relaxed text-chalk-dim">{event.detail}</p> : null}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Panel>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-3">
-        <StatTile label="Price" value={money(product.price)} sub={product.compareAt ? `was ${money(product.compareAt)}` : "no discount"} />
+        <StatTile label="Price" value={money(product.price)} sub={product.compareAt ? `was ${money(product.compareAt)}` : undefined} />
         <StatTile
           label="In stock"
           value={String(product.stock)}

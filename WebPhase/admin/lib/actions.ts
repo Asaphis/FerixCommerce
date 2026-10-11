@@ -45,16 +45,19 @@ export async function signOutAction(): Promise<void> {
 
 export async function merchantStatusAction(formData: FormData): Promise<void> {
   const session = await readSession();
+  if (!session) redirect("/login");
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "");
-  if (!session || !id || !status) return;
+  if (!id || !status) redirect("/merchants?error=Choose%20a%20merchant%20and%20status.");
   try {
     await api.updateMerchant(session, { id, status });
-  } catch {
-    return;
+  } catch (error) {
+    const message = error instanceof api.ApiError ? error.message : "We could not update this merchant's status.";
+    redirect(`/merchants?error=${encodeURIComponent(message)}`);
   }
   refresh("/merchants");
   revalidatePath(`/merchants/${id}`);
+  redirect("/merchants?saved=1");
 }
 
 export async function saveMerchantAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -322,6 +325,11 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
       } else {
         next[key] = text;
       }
+    }
+
+    if (["category_grid", "brand_carousel", "product_carousel", "featured_stores", "product_grid"].includes(String(current.type))) {
+      delete next.subtitle;
+      delete next.eyebrow;
     }
 
     const mediaFile = formData.get("field_mediaFile");

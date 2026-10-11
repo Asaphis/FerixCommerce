@@ -14,7 +14,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
   return (
     <form action={action} className="grid gap-3">
       <Panel>
-        <PanelHead title="Marketplace participation" hint="Ferixas listings and seller preferences" />
+        <PanelHead title="Marketplace participation" />
         <div className="grid gap-4">
           <label className="flex cursor-pointer items-start gap-3 rounded-[7px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
             <input
@@ -25,9 +25,6 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             />
             <span>
               <span className="block text-[13px] font-medium text-chalk">Sell on the Ferixas marketplace</span>
-              <span className="block text-[12px] text-chalk-dim">
-                Pause Marketplace listings
-              </span>
             </span>
           </label>
 
@@ -54,7 +51,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
       </Panel>
 
       <Panel>
-        <PanelHead title="Working style" hint="How the workspace behaves" />
+        <PanelHead title="Working style" />
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="flex cursor-pointer items-start gap-3 rounded-[7px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
             <input
@@ -65,7 +62,6 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             />
             <span>
               <span className="block text-[13px] font-medium text-chalk">Email me on a Ferixas marketplace order</span>
-              <span className="block text-[12px] text-chalk-dim">Sent as soon as the order lands</span>
             </span>
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-[7px] border border-hairline p-3.5 transition-colors hover:border-chalk-dim">
@@ -77,7 +73,6 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             />
             <span>
               <span className="block text-[13px] font-medium text-chalk">Start orders as processing</span>
-              <span className="block text-[12px] text-chalk-dim">Skip the first manual step on every order</span>
             </span>
           </label>
         </div>

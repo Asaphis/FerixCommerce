@@ -22,11 +22,10 @@ export default async function PayoutsPage() {
         <StatTile
           label="Recorded payout net"
           value={data.available ? money(data.balance, { cents: false }) : "—"}
-          sub="Recorded ledger"
           icon={<Wallet width={15} height={15} />}
         />
-        <StatTile label="Recorded pending" value={data.available ? money(data.pending, { cents: false }) : "—"} sub="Recorded ledger" accent="sand" />
-        <StatTile label="Recorded paid" value={data.available ? money(data.paidToDate, { cents: false }) : "—"} sub="Recorded ledger" accent="lime" />
+        <StatTile label="Recorded pending" value={data.available ? money(data.pending, { cents: false }) : "—"} accent="sand" />
+        <StatTile label="Recorded paid" value={data.available ? money(data.paidToDate, { cents: false }) : "—"} accent="lime" />
         <StatTile label="Commission rate" value={`${data.commissionPct}%`} sub="On marketplace sales only" accent="azure" />
       </div>
 

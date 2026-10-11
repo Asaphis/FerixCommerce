@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useActionState } from "react";
 import { ImagePlus, Save, X } from "lucide-react";
-import type { Product } from "@/lib/api";
+import { apiImageUrl, type Product } from "@/lib/api";
 import { SubmitButton } from "@/components/studio/controls";
 import { Field, Notice, inputClass, selectClass, textareaClass } from "@/components/studio/forms";
 import { Panel, PanelHead, Pill } from "@/components/studio/bits";
@@ -66,7 +66,7 @@ export function ProductForm({
     setDraft((current) => ({ ...current, [key]: value }) as typeof current);
   };
 
-  const lead = previews[0] ?? images[0] ?? null;
+  const lead = previews[0] ?? apiImageUrl(images[0]) ?? null;
   const price = Number(draft.price) || 0;
   const was = Number(draft.compareAt) || 0;
   const discount = was > price && price > 0 ? Math.round(((was - price) / was) * 100) : 0;
@@ -88,11 +88,12 @@ export function ProductForm({
             <div className="grid gap-4">
               <Field title="Product title">
                 <input name="title" value={draft.title} onChange={set("title")} className={inputClass} required />
+                <p className="mt-1.5 text-[11px] leading-relaxed text-chalk-dim">Slug is set on first submission and stays fixed.</p>
               </Field>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field title="Department">
-                  <select name="category" value={draft.category} onChange={set("category")} className={selectClass}>
-                    <option value="">No category</option>
+                  <select name="category" value={draft.category} onChange={set("category")} className={selectClass} required aria-label="Category">
+                    <option value="" disabled>Select a category</option>
                     {categories.map((category) => <option key={category} value={category}>{category}</option>)}
                   </select>
                 </Field>
@@ -126,7 +127,7 @@ export function ProductForm({
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {images.map((url, index) => (
                     <div key={url} className="group relative overflow-hidden rounded-[12px] border border-hairline bg-panel-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}<img src={url} alt={`Product image ${index + 1}`} className="aspect-square w-full object-cover" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}<img src={apiImageUrl(url) ?? url} alt={`Product image ${index + 1}`} className="aspect-square w-full object-cover" />
                       {index === 0 ? <span className="absolute left-1.5 top-1.5 rounded-full bg-ember px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-white">Lead</span> : null}
                       <button type="button" aria-label={`Remove product image ${index + 1}`} onClick={() => setImages((current) => current.filter((_, item) => item !== index))} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full bg-[#17232b]/80 text-white opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"><X width={14} height={14} /></button>
                     </div>
@@ -184,18 +185,25 @@ export function ProductForm({
           </Panel>
 
           <Panel>
+            <PanelHead title="Submission intent" />
+            <label className="flex items-start gap-2.5 rounded-[6px] border border-lime/30 bg-lime/5 p-3 text-[12px] text-chalk">
+              <input name="marketplace_acknowledgement" type="checkbox" required className="mt-0.5 size-4 shrink-0 accent-[#e4572e]" />
+              <span>I confirm this listing is for Ferixas Marketplace. It stays hidden until approved; edits to approved listings return to review.</span>
+            </label>
+          </Panel>
+
+          <Panel>
             <PanelHead title="Marketplace sections" />
-            <p className="mb-3 text-[12px] text-chalk-dim">Select product sections configured in CMS.</p>
             <div className="grid gap-4">
               {Object.entries(sectionGroups).map(([page, pageSections]) => (
                 <fieldset key={page} className="grid gap-2">
                   <legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {pageSections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="block text-[10.5px] text-chalk-dim">{section.sectionType === "product_grid" ? "Product grid" : "Product carousel"}{section.status === "draft" ? " · draft" : ""}</span></span></label>)}
+                    {pageSections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}{section.status === "draft" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· draft</span> : null}</span></label>)}
                   </div>
                 </fieldset>
               ))}
-              {!sections.length ? <p className="text-[12px] text-chalk-dim">No product sections are configured in CMS.</p> : null}
+              {!sections.length ? <p className="text-[12px] text-chalk-dim">No marketplace sections are available.</p> : null}
             </div>
           </Panel>
 

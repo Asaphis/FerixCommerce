@@ -8,9 +8,8 @@ import { CatalogListing } from "@/components/ferix/catalog-listing";
  * of its own - nothing to share, nothing to bookmark, nothing a shopper could return to.
  * This gives it one.
  *
- * The brand is passed as a filter rather than locked, because the browse listing locks
- * department, collection and store but not brand: a shopper arriving here can still
- * narrow the brand's own products.
+ * The canonical brand slug is locked into the shared listing so sort, filters and
+ * pagination cannot silently drop it.
  */
 export default async function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -23,8 +22,9 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
 
   return (
     <CatalogListing
-      query={{ brand: slug }}
+      query={{}}
       basePath={`/brands/${slug}`}
+      locked={{ brand: slug }}
       heading={name}
       crumbs={[
         { label: "Home", href: "/" },

@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import HTTPException
-from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, create_engine, select
+from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, create_engine, inspect, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 # ── Configuration ──────────────────────────────────────────────────────────
@@ -43,7 +43,13 @@ SESSION_DAYS = 7             # the absolute life of a session, never extended
 SESSION_IDLE_MINUTES = 60     # untouched for this long and the session is dead
 ROOT = Path(__file__).resolve().parent
 SEED_PATH = ROOT / "seed.json"
-DEMO_PASSWORD = "Ferixas123"
+# Privileged credentials are never sourced from code or seed fixtures.
+# Test environments may provide an explicit password through the process environment.
+TEST_STAFF_PASSWORD = os.getenv("FERIXAS_TEST_STAFF_PASSWORD", "").strip()
+BOOTSTRAP_SECRET = os.getenv("FERIXAS_BOOTSTRAP_SECRET", "").strip()
+ENVIRONMENT = os.getenv("FERIXAS_ENV", os.getenv("ENVIRONMENT", "development")).strip().lower()
+PRODUCTION_ENVIRONMENTS = {"production", "prod"}
+SCHEMA_VERSION = 2
 PLACEHOLDER = "https://picsum.photos/seed/{seed}/900/900"
 UPLOAD_ROOT = ROOT / "uploads" if "ROOT" in globals() else Path(__file__).resolve().parent / "uploads"
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
@@ -537,6 +543,14 @@ class Payout(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending")
     method: Mapped[str] = mapped_column(String(60), default="Bank transfer")
     date: Mapped[str] = mapped_column(String(40), default="")
+
+
+class SchemaVersion(Base):
+    """Singleton schema version used to make readiness explicit and fail closed."""
+    __tablename__ = "schema_versions"
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    version: Mapped[int] = mapped_column(default=0)
+    applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class AuditLog(Base):
@@ -1046,6 +1060,33 @@ def is_seller_marketplace_product(product: dict, merchant_id: Optional[str] = No
     return isinstance(channels, dict) and channels.get("marketplace") is True
 
 
+def is_public_store(merchant: Optional[dict]) -> bool:
+    """Canonical public seller gate shared by every shopper-facing surface."""
+    return bool(merchant and str(merchant.get("status", "active")).lower() == "active"
+                and merchant.get("marketplaceEnabled", True) is True)
+
+
+PUBLIC_SECTION_TYPES = {"product_grid", "product_carousel"}
+
+def visible_published_sections(document: Optional[ContentDocument]) -> list[dict]:
+    if not document or document.status != "published":
+        return []
+    sections = (document.data or {}).get("sections") or []
+    return sorted([s for s in sections if isinstance(s, dict) and s.get("visible", True)],
+                  key=lambda s: s.get("position", 0))
+
+
+def public_taxonomy(row: Optional[dict]) -> bool:
+    return bool(row and row.get("visible", True) is True)
+
+
+def seller_promotion_product_available(db: Session, product: dict, merchant_id: str) -> bool:
+    """Current ownership, approval, channel and merchant state for seller promotions."""
+    return bool(is_seller_marketplace_product(product, merchant_id)
+                and str(product.get("status") or "").lower() == "approved"
+                and marketplace_product_available(db, product))
+
+
 def approved_products(db: Session) -> list[dict]:
     """Only approved products for public marketplace display."""
     return [p for p in products(db) if marketplace_product_available(db, p)]
@@ -1219,24 +1260,22 @@ def line_key(line: dict) -> str:
 
 
 def cart_for(db: Session, user_id: Optional[str], cart_id: Optional[str]) -> Optional[Cart]:
-    if user_id:
-        cart = db.scalar(select(Cart).where(Cart.user_id == user_id))
-        if cart:
-            return cart
+    """Resolve only an authenticated owner's cart; never attach a caller to another cart."""
+    if not user_id:
+        raise HTTPException(401, "Sign in to use a cart")
+    owned = db.scalar(select(Cart).where(Cart.user_id == user_id))
     if cart_id:
-        cart = db.get(Cart, cart_id)
-        if cart:
-            return cart
-        cart = Cart(id=cart_id, user_id=user_id, lines=[])
-        db.add(cart)
-        db.flush()
-        return cart
-    if user_id:
-        cart = Cart(id=new_id("cart"), user_id=user_id, lines=[])
-        db.add(cart)
-        db.flush()
-        return cart
-    return None
+        requested = db.get(Cart, cart_id)
+        if requested and requested.user_id != user_id:
+            raise HTTPException(403, "That cart does not belong to your account")
+        if requested:
+            return requested
+    if owned:
+        return owned
+    cart = Cart(id=cart_id or new_id("cart"), user_id=user_id, lines=[])
+    db.add(cart)
+    db.flush()
+    return cart
 
 
 def cart_payload(db: Session, cart: Optional[Cart]) -> dict:
@@ -1298,7 +1337,10 @@ def sale_status(sale: FlashSale) -> str:
 
 
 def active_sale_price(db: Session, product_id: str) -> Optional[dict]:
-    """The best live flash-sale price for a product, or None."""
+    """The best live flash-sale price for a currently valid product, or None."""
+    product = find_product(db, product_id)
+    if not product or not marketplace_product_available(db, product):
+        return None
     for sale in db.scalars(select(FlashSale)).all():
         if sale_status(sale) != "live":
             continue
@@ -1485,6 +1527,11 @@ def seed(db: Session) -> None:
         seo = row.get("seo") or {}
         put_row(db, "product", row["slug"], {
             **row,
+            "status": "approved",
+            "channels": {"store": False, "marketplace": True},
+            "demoListing": True,
+            "demoNotice": "Demo catalogue listing — not a real sale or social-proof record.",
+            "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0, "sold30d": 0,
             "merchantSlug": merchant["slug"] if merchant else row["merchantId"],
             "merchantName": merchant["name"] if merchant else row["merchantId"],
             "images": row.get("images") or catalogue_images("products", row["slug"]) or [placeholder(f"{row['slug']}-{i}") for i in (1, 2, 3)],
@@ -1495,6 +1542,10 @@ def seed(db: Session) -> None:
             "seoTitle": row.get("seoTitle") or seo.get("title") or row["title"],
             "seoDescription": row.get("seoDescription") or seo.get("description") or row.get("description", "")[:155],
             "updatedAt": row.get("createdAt", iso(now())),
+            "demoListing": True,
+            "demoNotice": "Demo catalogue listing — not a real sale or social-proof record.",
+            "sold30d": 0,
+            "reviewCount": 0,
         })
     for index, row in enumerate(data.get("banners", [])):
         banner_id = row.get("id", f"banner-{index + 1}")
@@ -1607,22 +1658,22 @@ def seed(db: Session) -> None:
              "message": "Free delivery over $120 · 30-day returns",
              "position": 2, "visible": True},
             {"id": "sec_categories", "type": "category_grid", "name": "Department tiles",
-             "title": "Shop by department", "subtitle": "Ten departments, one checkout",
+             "title": "Shop by department",
              "limit": 10, "showAsTile": True, "position": 3, "visible": True},
             {"id": "sec_brands", "type": "brand_carousel", "name": "Brand row",
-             "title": "Shop by brand", "subtitle": "Verified makers across the marketplace",
+             "title": "Shop by brand",
              "limit": 8, "layout": "slider", "position": 4, "visible": True},
             {"id": "sec_home_slots", "type": "promo_slots", "name": "Promotion slots",
              "subtitle": "Advertisement", "adEvery": 2, "limit": 2, "placement": "home",
              "position": 5, "visible": True},
             {"id": "sec_flash", "type": "product_carousel", "name": "Today's deals",
-             "title": "Today's deals", "subtitle": "Limited windows, limited stock",
+             "title": "Today's deals",
              "source": "flash", "limit": 8, "position": 6, "visible": True},
             {"id": "sec_trending", "type": "product_carousel", "name": "Trending",
-             "title": "Trending this week", "subtitle": "What shoppers are buying",
+             "title": "Trending this week",
              "source": "trending", "limit": 8, "position": 7, "visible": True},
             {"id": "sec_stores", "type": "featured_stores", "name": "Stores worth following",
-             "title": "Stores worth following", "subtitle": "Verified merchants across the platform",
+             "title": "Stores worth following",
              "limit": 3, "layout": "rows", "showFollow": True, "position": 8, "visible": True},
             {"id": "sec_footer", "type": "footer", "name": "Footer",
              "position": 9, "visible": True},
@@ -1662,12 +1713,6 @@ def seed(db: Session) -> None:
         ],
     )
 
-    demo = User(id="usr_demo", name="Ferixas Demo Shopper", email="demo@ferixas.com",
-                password_hash=hash_password(DEMO_PASSWORD),
-                settings={"language": "English", "currency": "USD", "marketingEmails": True,
-                          "orderEmails": True, "smsUpdates": False, "profilePublic": False})
-    db.add(demo)
-    db.add(Wishlist(id="wish_demo", user_id=demo.id, product_ids=[]))
 
     # A launch flash sale so the promotion engine has real data to resolve.
     sale = FlashSale(
@@ -1680,7 +1725,7 @@ def seed(db: Session) -> None:
         db.add(FlashSaleItem(
             id=new_id("fsi"), sale_id=sale.id, product_id=product["id"],
             merchant_id=product["merchantId"],
-            sale_price=round(product["price"] * 0.8, 2), quantity_limit=25, sold_quantity=index * 3,
+            sale_price=round(product["price"] * 0.8, 2), quantity_limit=25, sold_quantity=0,
         ))
 
     db.commit()
@@ -1688,75 +1733,68 @@ def seed(db: Session) -> None:
 
 
 def _seed_staff(db: Session) -> None:
-    """Create merchant and operator sign-ins once."""
+    """Create staff only from an explicit test credential; production uses bootstrap."""
     if db.scalar(select(StaffUser.id).limit(1)):
+        return
+    if ENVIRONMENT in PRODUCTION_ENVIRONMENTS:
+        if not BOOTSTRAP_SECRET:
+            raise RuntimeError("FERIXAS_BOOTSTRAP_SECRET is required before privileged bootstrap")
+        return
+    if not TEST_STAFF_PASSWORD:
         return
     for merchant in merchants(db):
         email = f"owner@{merchant['slug']}.ferixas.com"
-        db.add(StaffUser(
-            id=new_id("stf"), subject_type="merchant", subject_id=merchant["id"],
-            name=f"{merchant['name']} owner", email=email, password_hash=hash_password(DEMO_PASSWORD),
-            role="merchant", permissions=permissions_for("merchant"),
-        ))
-    for email, name, role in (
-        ("info@ferixas.com", "Ferixas Platform Owner", "owner"),
-        ("admin@ferixas.com", "Platform Administrator", "admin"),
-        ("ops@ferixas.com", "Operations Desk", "ops"),
-        ("content@ferixas.com", "Content Desk", "content"),
-    ):
-        db.add(StaffUser(
-            id=new_id("stf"), subject_type="admin", subject_id="platform",
-            name=name, email=email, password_hash=hash_password(DEMO_PASSWORD),
-            role=role, permissions=permissions_for(role),
-        ))
+        db.add(StaffUser(id=new_id("stf"), subject_type="merchant", subject_id=merchant["id"],
+                         name=f"{merchant['name']} owner", email=email,
+                         password_hash=hash_password(TEST_STAFF_PASSWORD), role="merchant",
+                         permissions=permissions_for("merchant")))
+    db.add(StaffUser(id=new_id("stf"), subject_type="admin", subject_id="platform",
+                     name="Test Platform Owner", email="admin@ferixas.test",
+                     password_hash=hash_password(TEST_STAFF_PASSWORD), role="owner",
+                     permissions=permissions_for("owner")))
     db.commit()
 
-
-
 def migrate() -> None:
-    """Bring an existing database up to what the models now expect.
-
-    create_all creates missing TABLES and nothing else - it never alters a table
-    that already exists. The session tables gained last_seen_at, and on a database
-    provisioned before that change every session lookup fails with "no such
-    column", which is to say nobody can sign in on any surface.
-
-    This attempts each change and treats "already there" as success. It does not
-    ask the database what columns exist first: a reflection-based version of this
-    silently decided the column was present and added nothing, which is worse
-    than failing, because the deploy then looks fine until the first sign-in.
-    """
+    """Apply idempotent schema changes and fail closed on every required error."""
     from sqlalchemy import text
-
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    if "schema_versions" not in tables:
+        SchemaVersion.__table__.create(bind=engine, checkfirst=True)
+        inspector = inspect(engine)
+        tables = set(inspector.get_table_names())
     stamp = "TIMESTAMP WITH TIME ZONE" if engine.dialect.name.startswith("postgres") else "TIMESTAMP"
-    statements = [
-        f"ALTER TABLE staff_sessions ADD COLUMN last_seen_at {stamp}",
-        f"ALTER TABLE sessions ADD COLUMN last_seen_at {stamp}",
-        "ALTER TABLE catalog_records ADD COLUMN status VARCHAR(30) DEFAULT 'pending_review'",
-        "ALTER TABLE catalog_records ADD COLUMN owner_type VARCHAR(20)",
-        "ALTER TABLE catalog_records ADD COLUMN rejection_reason TEXT",
-        "ALTER TABLE catalog_records ADD COLUMN shipping_amount FLOAT",
-        "ALTER TABLE catalog_records ADD COLUMN estimated_delivery_days INT",
-        "ALTER TABLE catalog_records ADD COLUMN package_weight FLOAT",
-        "ALTER TABLE catalog_records ADD COLUMN package_dimensions VARCHAR(100)",
-        "ALTER TABLE catalog_records ADD COLUMN shipping_origin VARCHAR(200)",
-        "ALTER TABLE catalog_records ADD COLUMN follower_count INT DEFAULT 0",
-        "ALTER TABLE catalog_records ADD COLUMN total_reviews INT DEFAULT 0",
-        "ALTER TABLE catalog_records ADD COLUMN average_rating FLOAT DEFAULT 0.0",
-        "ALTER TABLE catalog_records ADD COLUMN success_rate FLOAT DEFAULT 0.0",
-        "ALTER TABLE catalog_records ADD COLUMN delivery_rate FLOAT DEFAULT 0.0",
-    ]
-    for statement in statements:
-        try:
-            with engine.begin() as connection:
-                connection.execute(text(statement))
-            print(f"[ferixas] migrated: {statement}")
-        except Exception as error:
-            message = str(error).lower()
-            if "duplicate column" in message or "already exists" in message:
-                continue
-            print(f"[ferixas] migration could not run ({statement}): {error}")
+    required = {
+        "staff_sessions": {"last_seen_at": f"{stamp}"}, "sessions": {"last_seen_at": f"{stamp}"},
+        "catalog_records": {"status": "VARCHAR(30)", "owner_type": "VARCHAR(20)",
+          "rejection_reason": "TEXT", "shipping_amount": "FLOAT", "estimated_delivery_days": "INTEGER",
+          "package_weight": "FLOAT", "package_dimensions": "VARCHAR(100)", "shipping_origin": "VARCHAR(200)",
+          "follower_count": "INTEGER DEFAULT 0", "total_reviews": "INTEGER DEFAULT 0",
+          "average_rating": "FLOAT DEFAULT 0.0", "success_rate": "FLOAT DEFAULT 0.0", "delivery_rate": "FLOAT DEFAULT 0.0"},
+    }
+    with engine.begin() as connection:
+        for table, columns in required.items():
+            existing = {col["name"] for col in inspect(connection).get_columns(table)}
+            for name, sql_type in columns.items():
+                if name not in existing:
+                    connection.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}"))
+        version = connection.execute(text("SELECT version FROM schema_versions WHERE id = 'current'" )).scalar()
+        if version is None:
+            connection.execute(text("INSERT INTO schema_versions (id, version, applied_at) VALUES ('current', :version, CURRENT_TIMESTAMP)"), {"version": SCHEMA_VERSION})
+        elif int(version) > SCHEMA_VERSION:
+            raise RuntimeError(f"Database schema version {version} is newer than application {SCHEMA_VERSION}")
+        elif int(version) < SCHEMA_VERSION:
+            connection.execute(text("UPDATE schema_versions SET version = :version, applied_at = CURRENT_TIMESTAMP WHERE id = 'current'"), {"version": SCHEMA_VERSION})
+    verify = inspect(engine)
+    if not all(name in {c["name"] for c in verify.get_columns(table)} for table, columns in required.items() for name in columns):
+        raise RuntimeError("Required schema columns are missing after migration")
 
+def schema_ready() -> bool:
+    try:
+        row = SessionLocal().scalar(select(SchemaVersion).where(SchemaVersion.id == "current"))
+        return bool(row and row.version == SCHEMA_VERSION)
+    except Exception:
+        return False
 
 def ensure_seed() -> None:
     Base.metadata.create_all(engine)

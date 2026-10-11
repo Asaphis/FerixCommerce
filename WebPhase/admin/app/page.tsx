@@ -35,6 +35,7 @@ export default async function OverviewPage() {
 
   const { settings, totals, windows, statuses, topMerchants, needsAttention, recentOrders } = data;
   const merchantMax = Math.max(...topMerchants.map((merchant) => merchant.gmv), 1);
+  const hasMerchantSales = topMerchants.some((merchant) => merchant.gmv > 0);
   const orderPipeline = [
     { label: "Needs action", value: statuses.processing ?? 0, tone: "amber" as const },
     { label: "In transit", value: statuses.shipped ?? 0, tone: "signal" as const },
@@ -66,17 +67,26 @@ export default async function OverviewPage() {
 
       <div className="grid min-w-0 gap-3 xl:grid-cols-[1.4fr_1fr]">
         <Panel>
-          <PanelHead title="Marketplace reporting" />
-          <p className="text-[12px] text-chalk-dim">Confirmed Marketplace sales and commission.</p>
+          <PanelHead title="Marketplace reporting" action={<Link href="/analytics" className="inline-flex items-center gap-1 text-[11px] font-bold text-signal">Open analytics <ArrowRight width={12} height={12} /></Link>} />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-[2px] border border-hairline bg-white px-3 py-2.5">
+              <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-chalk-dim">GMV · 30 days</p>
+              <p className="mt-1 font-display text-[18px] font-semibold tabular-nums text-chalk">{money(windows.month.gmv, { cents: false })}</p>
+            </div>
+            <div className="rounded-[2px] border border-hairline bg-white px-3 py-2.5">
+              <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-chalk-dim">Commission · 30 days</p>
+              <p className="mt-1 font-display text-[18px] font-semibold tabular-nums text-chalk">{money(windows.month.commission, { cents: false })}</p>
+            </div>
+          </div>
         </Panel>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-          <Panel>
+          {totals.orders ? <Panel>
             <PanelHead title="Order pipeline" />
-            {totals.orders ? <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {orderPipeline.map((row) => <div key={row.label} className="flex items-center justify-between gap-2 rounded-[2px] border border-hairline px-2.5 py-2"><span className="text-[10px] text-chalk-dim">{row.label}</span><Pill tone={row.tone}>{row.value}</Pill></div>)}
-            </div> : <p className="text-[12px] text-chalk-dim">Order activity will appear when transactions are recorded.</p>}
-          </Panel>
+            </div>
+          </Panel> : null}
           <Panel>
             <PanelHead title="Merchants to review" action={<Link href="/merchants" className="text-[11px] font-bold text-signal">All merchants <ArrowRight className="inline" width={12} height={12} /></Link>} />
             {needsAttention.length ? <ul className="grid gap-2">{needsAttention.slice(0, 4).map((merchant) => <li key={merchant.id} className="flex items-center justify-between gap-2 rounded-[2px] border border-hairline px-2.5 py-2"><Link href={`/merchants/${merchant.id}`} className="truncate text-[11px] font-medium text-chalk hover:text-signal">{merchant.name}</Link><Pill tone={merchant.status === "suspended" ? "rose" : "amber"}><AlertTriangle width={10} height={10} /> {merchant.status}</Pill></li>)}</ul> : <p className="text-[12px] text-chalk-dim">No merchants need review.</p>}
@@ -84,13 +94,13 @@ export default async function OverviewPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-2">
-        <Panel>
+      <div className={`grid gap-3 ${hasMerchantSales ? "xl:grid-cols-2" : ""}`}>
+        {hasMerchantSales ? <Panel>
           <PanelHead title="Top merchants" action={<Link href="/merchants" className="text-[11px] font-bold text-signal">View all <ArrowRight className="inline" width={12} height={12} /></Link>} />
-          {topMerchants.some((merchant) => merchant.gmv > 0) ? <ul className="grid gap-3">{topMerchants.slice(0, 5).map((merchant) => <li key={merchant.id}>
+          <ul className="grid gap-3">{topMerchants.slice(0, 5).map((merchant) => <li key={merchant.id}>
             <div className="mb-1 flex items-center justify-between gap-2"><Link href={`/merchants/${merchant.id}`} className="truncate text-[12px] font-medium text-chalk hover:text-signal">{merchant.name}</Link><span className="font-mono text-[11px] font-semibold text-chalk">{money(merchant.gmv, { cents: false })}</span></div><Meter value={merchant.gmv} max={merchantMax} /><p className="mt-1 text-[9px] text-chalk-dim">{merchant.orders} recorded orders</p>
-          </li>)}</ul> : <p className="text-[12px] text-chalk-dim">No recorded sales yet.</p>}
-        </Panel>
+          </li>)}</ul>
+        </Panel> : null}
         <Panel>
           <PanelHead title="Platform health" />
           <div className="grid grid-cols-2 gap-2">

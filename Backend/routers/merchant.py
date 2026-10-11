@@ -5,7 +5,8 @@ frontend works against the real database without a single UI change.
 """
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+import os
 import re
 from urllib.parse import urlparse
 from typing import Optional
@@ -16,14 +17,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from core import (
-    DEMO_PASSWORD, ContentDocument, ContentVersion, FlashSale, FlashSaleItem,
+    AuditLog, ContentDocument, ContentVersion, FlashSale, FlashSaleItem,
     InventoryLog, MediaAsset, MerchantProfileRequest, Order, Payout, Review, SessionLocal, StaffSession,
     audit, aware, collections as all_collections, categories as all_categories, find_category, find_merchant, find_product,
     hash_password, iso, issue_staff_session, merchant_follower_count,
     merchants as all_merchants, new_id, now, permissions_for, placeholder, products as all_products,
     is_seller_marketplace_product, put_row, remove_media_blob, seller_products,
     require_permission, require_staff, rows_of, storage_info, sync_pending_media,
-    upload_media_blob, validate_media_upload, verify_password, media_json,
+    upload_media_blob, validate_media_upload, verify_password, media_json, seller_promotion_product_available,
 )
 
 router = APIRouter(prefix="/merchant", tags=["merchant"])
@@ -578,13 +579,90 @@ def product(
         sold_all = _merchant_product_units(db, merchant["id"])
         sold30 = _merchant_product_units(db, merchant["id"], 30)
         product_data = {**found, "sold30d": sold30.get(found["id"], 0), "views30d": None}
+        history = _seller_product_history(db, found, merchant["id"])
         return {
             "product": product_data,
             "stock": found.get("stock", 0),
             "sold": sold_all.get(found["id"], 0),
             "lowStockAt": _merchant_settings(db, merchant)["lowStockAt"],
             "categories": sorted({p.get("category") for p in _own_products(db, merchant["id"]) if p.get("category")}) or [found.get("category")],
+            "history": history,
         }
+
+
+def _seller_product_history(db, product: dict, merchant_id: str) -> list[dict]:
+    """Return a small, owner-scoped timeline from immutable audit/inventory events."""
+    labels = {
+        "product.create": "Submitted for review",
+        "product.submit": "Resubmitted for review",
+        "product.update": "Listing updated and sent for review",
+        "product.approve": "Listing approved",
+        "product.changes": "Changes requested",
+        "product.reject": "Listing rejected",
+        "product.archive": "Listing archived",
+        "merchant.product.update": "Listing updated by Admin",
+        "merchant.product.archive": "Listing archived by Admin",
+        "merchant.product.restore": "Listing restored by Admin",
+        "product.section": "Marketplace placement updated",
+        "product.section.remove": "Marketplace placement removed",
+        "product.sections.replace": "Marketplace placements updated",
+    }
+    product_id = str(product.get("id") or "")
+    slug = str(product.get("slug") or "")
+    targets = {value for value in (product_id, slug) if value}
+    if not targets:
+        return []
+    cutoff = None
+    try:
+        created = datetime.fromisoformat(str(product.get("createdAt") or "").replace("Z", "+00:00"))
+        cutoff = aware(created)
+    except (TypeError, ValueError):
+        pass
+
+    events: list[dict] = []
+    audit_rows = db.scalars(
+        select(AuditLog)
+        .where(AuditLog.target.in_(targets), AuditLog.action.in_(tuple(labels)))
+        .order_by(AuditLog.created_at.desc())
+        .limit(200)
+    ).all()
+    for row in audit_rows:
+        happened = aware(row.created_at)
+        # Slug-targeted legacy events must not bleed into a later listing if a
+        # removed slug is ever reused. Product creation time is the lower bound.
+        if cutoff and happened < cutoff:
+            continue
+        event = {
+            "id": row.id,
+            "label": labels[row.action],
+            "actor": "Admin" if row.actor_type == "admin" else "Seller",
+            "at": iso(happened),
+            "detail": str(row.detail or "")[:300] if row.action in {"product.changes", "product.reject"} else "",
+            "_sort": happened,
+        }
+        events.append(event)
+
+    inventory_rows = db.scalars(
+        select(InventoryLog)
+        .where(InventoryLog.product_id == product_id, InventoryLog.merchant_id == merchant_id)
+        .order_by(InventoryLog.created_at.desc())
+        .limit(100)
+    ).all()
+    for row in inventory_rows:
+        happened = aware(row.created_at)
+        events.append({
+            "id": row.id,
+            "label": "Stock adjusted",
+            "actor": "Seller",
+            "at": iso(happened),
+            "detail": f"{row.delta:+d} units · {row.reason}"[:300],
+            "_sort": happened,
+        })
+
+    events.sort(key=lambda item: item["_sort"], reverse=True)
+    for event in events:
+        event.pop("_sort", None)
+    return events[:100]
 
 
 def _slugify(value: str) -> str:
@@ -610,9 +688,11 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         if not payload.marketplace:
             raise HTTPException(400, "Enable the Ferixas marketplace listing to submit this product for review.")
         options = _product_options(db)
-        category = next((c for c in options["categories"] if c.get("slug") == payload.category), None) if payload.category else None
-        if payload.category and not category:
-            raise HTTPException(400, "Choose a category managed by Ferixas, or leave it unassigned.")
+        if not payload.category or not payload.category.strip():
+            raise HTTPException(400, "Choose a category managed by Ferixas.")
+        category = next((c for c in options["categories"] if c.get("slug") == payload.category), None)
+        if not category:
+            raise HTTPException(400, "Choose a category managed by Ferixas.")
         brand = next((b for b in options["brands"] if b.get("id") == payload.brandId or b.get("slug") == payload.brandId), None) if payload.brandId else None
         if payload.brandId and not brand:
             raise HTTPException(400, "Choose a brand managed by Ferixas, or leave it unassigned.")
@@ -620,7 +700,9 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         section_tags = list(dict.fromkeys(payload.section_tags or []))
         if any(section not in allowed_sections for section in section_tags):
             raise HTTPException(400, "Choose only active product sections from the Ferixas CMS.")
-        slug = payload.slug or _slugify(payload.title)
+        # Seller-facing policy: the slug is generated once from the first title and
+        # remains stable on edits. Do not accept a caller-supplied create slug.
+        slug = _slugify(payload.title)
         if find_product(db, slug):
             slug = f"{slug}-{new_id('x', 4)}"
         price = float(payload.price or 0)
@@ -675,8 +757,8 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         updated = dict(target)
         options = _product_options(db)
         category = next((c for c in options["categories"] if c.get("slug") == payload.category), None) if payload.category else None
-        if payload.category and not category:
-            raise HTTPException(400, "Choose a category managed by Ferixas, or leave it unassigned.")
+        if payload.category is not None and not category:
+            raise HTTPException(400, "Choose a category managed by Ferixas.")
         brand = next((b for b in options["brands"] if b.get("id") == payload.brandId or b.get("slug") == payload.brandId), None) if payload.brandId else None
         if payload.brandId and not brand:
             raise HTTPException(400, "Choose a brand managed by Ferixas, or leave it unassigned.")
@@ -730,11 +812,35 @@ def delete_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         target = find_product(db, str(payload.get("id") or payload.get("slug") or ""))
         if not target or not is_seller_marketplace_product(target, merchant["id"]):
             raise HTTPException(404, "Product not found in your catalogue")
-        from core import drop_row
+        from core import drop_row, Order, Review, SectionPlacement, Cart, Wishlist, FlashSaleItem, InventoryLog
+        product_id = target["id"]
+        has_order = any(product_id in {str(i.get("productId") or i.get("product_id") or i.get("id")) for i in (row.data or {}).get("items", []) if isinstance(i, dict)}
+                        for row in db.scalars(select(Order)).all())
+        has_history = bool(has_order
+            or db.scalar(select(Review.id).where(Review.product_id == product_id).limit(1))
+            or db.scalar(select(SectionPlacement.id).where(SectionPlacement.product_id == product_id).limit(1))
+            or db.scalar(select(FlashSaleItem.id).where(FlashSaleItem.product_id == product_id).limit(1))
+            or db.scalar(select(InventoryLog.id).where(InventoryLog.product_id == product_id).limit(1)))
+        if has_history:
+            archived = dict(target)
+            archived["status"] = "archived"
+            archived["reviewStatus"] = "archived"
+            archived["channels"] = {"store": False, "marketplace": False}
+            archived["archivedAt"] = iso(now())
+            put_row(db, "product", target["slug"], archived)
+            for placement_row in db.scalars(select(SectionPlacement).where(SectionPlacement.product_id == product_id)).all():
+                db.delete(placement_row)
+            for cart_row in db.scalars(select(Cart)).all():
+                cart_row.lines = [line for line in (cart_row.lines or []) if line.get("productId") != product_id]
+            for wishlist in db.scalars(select(Wishlist)).all():
+                wishlist.product_ids = [value for value in (wishlist.product_ids or []) if value != product_id]
+            audit(db, "merchant", staff.email, "product.archive", target["slug"], "Historical references preserved")
+            db.commit()
+            return {"archived": product_id, "remaining": len(_own_products(db, merchant["id"])), "message": "Product archived because historical references exist; order and review history was preserved."}
         drop_row(db, "product", target["slug"])
         audit(db, "merchant", staff.email, "product.delete", target["slug"], target.get("title", ""))
         db.commit()
-        return {"removed": target["id"], "remaining": len(_own_products(db, merchant["id"]))}
+        return {"removed": product_id, "remaining": len(_own_products(db, merchant["id"]))}
 
 
 # ── Inventory ──────────────────────────────────────────────────────────────
@@ -1323,10 +1429,12 @@ def _doc_json(doc: ContentDocument) -> dict:
 def storefront(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        if os.getenv("FERIXAS_STUDIO_ENABLED", "0") != "1":
+            return {"document": None, "designEngine": "coming_soon",
+                    "message": "Studio — Coming Soon. Marketplace products are managed under Products; independent website design is not available yet."}
         doc = _storefront_doc(db, staff.subject_id)
         db.commit()
-        return {"document": _doc_json(doc), "designEngine": "coming_soon",
-                "message": "The visual Store Design engine is coming soon. Your storefront content is ready to edit."}
+        return {"document": _doc_json(doc), "designEngine": "enabled"}
 
 
 @router.patch("/storefront")
@@ -1334,6 +1442,8 @@ def update_storefront(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
         require_permission(staff, "merchant.store.manage")
+        if os.getenv("FERIXAS_STUDIO_ENABLED", "0") != "1":
+            raise HTTPException(503, "Studio is coming soon; no storefront changes were applied.")
         doc = _storefront_doc(db, staff.subject_id)
         data = dict(doc.data or {})
         for field in ("sections", "theme", "navigation", "pages"):
@@ -1358,6 +1468,8 @@ def publish_storefront(session: Optional[str] = Header(None, alias="X-Ferix-Sess
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
         require_permission(staff, "merchant.store.manage")
+        if os.getenv("FERIXAS_STUDIO_ENABLED", "0") != "1":
+            raise HTTPException(503, "Studio is coming soon; no storefront changes were applied.")
         doc = _storefront_doc(db, staff.subject_id)
         doc.status = "published"
         doc.updated_at = now()
@@ -1400,17 +1512,32 @@ def create_promotion(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         merchant = _merchant_or_404(db, staff.subject_id)
         if not payload.name:
             raise HTTPException(400, "A promotion needs a name")
+        status = payload.status or "draft"
+        if status not in {"draft", "scheduled", "live"}:
+            raise HTTPException(422, "Promotion status must be draft, scheduled, or live")
         sale = FlashSale(
             id=new_id("sale"), name=payload.name, headline=payload.headline or "",
             banner_url=payload.bannerUrl or placeholder(f"sale-{merchant['slug']}"),
             starts_at=now(), ends_at=now() + timedelta(days=7),
-            status=payload.status or "draft", owner_type="merchant", owner_id=merchant["id"],
+            status=status, owner_type="merchant", owner_id=merchant["id"],
         )
         db.add(sale)
         for item in payload.items or []:
-            db.add(FlashSaleItem(id=new_id("fsi"), sale_id=sale.id, product_id=item.get("productId", ""),
-                                 merchant_id=merchant["id"], sale_price=float(item.get("salePrice", 0)),
-                                 quantity_limit=int(item.get("quantityLimit", 0))))
+            product = find_product(db, str(item.get("productId") or ""))
+            if not product or not seller_promotion_product_available(db, product, merchant["id"]):
+                raise HTTPException(409, "Promotions may include only your approved, marketplace-enabled products")
+            try:
+                sale_price = float(item.get("salePrice", 0))
+                quantity_limit = int(item.get("quantityLimit", 0))
+            except (TypeError, ValueError):
+                raise HTTPException(422, "Promotion price and quantity must be valid")
+            if sale_price <= 0 or sale_price >= float(product.get("price") or 0):
+                raise HTTPException(422, "Sale price must be positive and below the current product price")
+            if quantity_limit < 1 or quantity_limit > int(product.get("stock") or 0):
+                raise HTTPException(422, "Promotion quantity must be within current stock")
+            db.add(FlashSaleItem(id=new_id("fsi"), sale_id=sale.id, product_id=product["id"],
+                                 merchant_id=merchant["id"], sale_price=sale_price,
+                                 quantity_limit=quantity_limit))
         audit(db, "merchant", staff.email, "promotion.create", sale.name, merchant["slug"])
         db.commit()
         return {"sale": {"id": sale.id, "name": sale.name, "status": sale.status}}

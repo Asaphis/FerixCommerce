@@ -1,57 +1,26 @@
-# Ferixas — Admin Console (WebPhase/admin)
+# Ferixas Admin Console
 
-The platform control room. One of three separate systems on the same backend:
+The platform-operator Next.js application. It calls the shared FastAPI API via `lib/api.ts` and does not access PostgreSQL directly.
 
-| System   | Audience                 | State |
-|----------|--------------------------|-------|
-| Customer | Shoppers                 | Built |
-| Seller   | Merchants running a shop | Built |
-| **Admin** (this project) | Platform operators | Built |
+## Run and build
 
-## How it talks to the backend
-
-Every screen and every action goes through `lib/api.ts`. Nothing in the UI holds its own
-data — there is no mock or placeholder data anywhere in this app. Point `FERIX_API_BASE`
-at the hosted commerce API and the console follows with no code change. The default API
-host is `https://shopapi.ferixas.com`; this app uses the REST API and never connects directly
-to PostgreSQL/Neon.
-
-## Routes
-
-`/login` · `/` (overview) · `/merchants` · `/merchants/[id]` · `/users` · `/users/[id]` ·
-`/orders` · `/analytics` · `/settings`
-
-## Demo operator
-
-```
-info@ferixas.com / Ferixas123
+```bash
+npm ci
+FERIX_API_BASE=http://localhost:8000 npm run dev
+npm run typecheck
+npm run build
 ```
 
-Also `admin@ferixas.com` and `ops@ferixas.com`.
+Set the matching server-side and public API base variables from `.env.example` for the deployment. Do not commit credentials. The application does **not** have a shared demo password. Test-only staff can be created by setting `FERIXAS_ENV=test` and `FERIXAS_TEST_STAFF_PASSWORD` in an isolated disposable test database. Production's first owner is created through the one-time `FERIXAS_BOOTSTRAP_SECRET` workflow; see [`../../Backend/README.md`](../../Backend/README.md).
 
-## Backend surface this app uses
+## Main areas
 
-```
-POST   /admin/login       POST   /admin/logout      GET  /admin/me
-GET    /admin/overview    GET    /admin/merchants   GET  /admin/merchant
-PATCH  /admin/merchant    GET    /admin/users       GET  /admin/user
-GET    /admin/orders      GET    /admin/analytics   GET  /admin/settings
-PATCH  /admin/settings
-```
+- Seller and product review queues
+- Ferixas Official catalogue
+- Storefront CMS, brands, banners, media and placements
+- Orders, customers, analytics and platform settings
+- Role-based team access and audit trail
 
-The operator session token travels inside the request body (writes) or the query string
-(reads), because the runtime proxy does not forward custom headers.
+## Operational limits
 
-## Access separation
-
-Operator sessions are prefixed `a_`, merchant sessions `m_`. A merchant token is refused by
-every admin endpoint and an operator token is refused by the merchant endpoints, so the two
-systems cannot cross over.
-
-## Environment
-
-```
-FERIX_API_BASE=https://shopapi.ferixas.com
-NEXT_PUBLIC_FERIX_API_BASE=https://shopapi.ferixas.com
-CODEWORDS_API_KEY=
-```
+Provider-dependent payment, refund, payout and delivery operations are blocked until their provider flow is configured and verified. A disabled or unavailable operation should show its API error rather than imply success. See the platform README for the full architecture and verification commands.

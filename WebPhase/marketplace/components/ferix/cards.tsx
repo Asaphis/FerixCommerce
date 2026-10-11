@@ -43,7 +43,7 @@ export function ProductCard({
       </Link>
 
       <div className="flex flex-1 flex-col p-2.5 sm:p-3.5">
-        <Link href={`/store/${product.merchantSlug}`} className="hidden truncate font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember sm:block">
+        <Link href={`/store/${product.merchantSlug}`} className="block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:text-ember sm:text-[10px] sm:tracking-[0.14em]">
           {product.merchantName}
         </Link>
         <Link href={href} className="mt-1 line-clamp-2 min-h-[2.25em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">

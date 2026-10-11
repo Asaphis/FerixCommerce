@@ -52,17 +52,20 @@ export function SubmitButton({
   variant = "primary",
   className,
   pendingLabel,
+  ariaLabel,
 }: {
   children: React.ReactNode;
   variant?: Variant;
   className?: string;
   pendingLabel?: string;
+  ariaLabel?: string;
 }) {
   const { pending } = useFormStatus();
   return (
     <button
       type="submit"
       disabled={pending}
+      aria-label={ariaLabel}
       className={cn(
         "inline-flex cursor-pointer items-center justify-center gap-2 rounded-[2px] px-3.5 py-2.5 text-[12.5px] font-medium transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60",
         VARIANTS[variant],

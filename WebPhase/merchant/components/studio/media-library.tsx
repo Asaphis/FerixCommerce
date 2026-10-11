@@ -13,7 +13,7 @@ export function MediaForm() {
   return (
     <form action={action} encType="multipart/form-data" className="grid gap-3">
       <Panel>
-        <PanelHead title="Add media" hint="Upload a file or link an asset that is already online" />
+        <PanelHead title="Add media" />
         <div className="grid gap-4">
           <Field title="Upload from device">
             <input name="file" type="file" accept="image/*,video/*" className={inputClass} />

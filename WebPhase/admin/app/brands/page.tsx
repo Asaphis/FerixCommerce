@@ -116,8 +116,6 @@ export default async function BrandsPage() {
         }
         eyebrow="Records"
         title="Brands"
-        description="The makers a shopper can browse by. A page's brand band shows these, and how that band is arranged is set in the CMS."
-        action={<Pill tone="mint">{brands.length} brands</Pill>}
       />
 
       {loadError ? (
@@ -127,10 +125,7 @@ export default async function BrandsPage() {
       ) : null}
 
       <Panel>
-        <PanelHead
-          title="Add a brand"
-          hint="It appears on the shop once it is visible, in the position you give it."
-        />
+        <PanelHead title="Add a brand" />
         <CmsActionForm action={saveBrandAction} className="mt-4 grid gap-3">
           <div className="grid gap-3 md:grid-cols-2">
             <Field title="Name">

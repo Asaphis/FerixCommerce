@@ -61,7 +61,7 @@ export function buildHref(basePath: string, query: Query, patch: Record<string, 
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     const single = one(value);
-    if (single && key !== "page" && key !== "q" && key !== "search") params.set(key, single);
+    if (single && key !== "page") params.set(key, single);
   }
   for (const [key, value] of Object.entries(patch)) {
     if (value === undefined || value === "") params.delete(key);
@@ -71,7 +71,7 @@ export function buildHref(basePath: string, query: Query, patch: Record<string, 
   return `${basePath}${search ? `?${search}` : ""}`;
 }
 
-export type Locked = { category?: string; collection?: string; store?: string };
+export type Locked = { brand?: string; category?: string; collection?: string; store?: string };
 
 export async function CatalogListing({
   query,
@@ -88,6 +88,7 @@ export async function CatalogListing({
 }) {
   const filters = {
     search: one(query.q) ?? one(query.search),
+    brand: locked.brand ?? one(query.brand),
     category: locked.category ?? one(query.category),
     collection: locked.collection ?? one(query.collection),
     store: locked.store ?? one(query.store),
@@ -235,6 +236,7 @@ export async function CatalogListing({
         </div>
 
         <AutoForm action={basePath} method="get" className="flex items-center gap-2">
+          {locked.brand ? <input type="hidden" name="brand" value={locked.brand} /> : null}
           {locked.category ? <input type="hidden" name="category" value={locked.category} /> : null}
           {locked.collection ? <input type="hidden" name="collection" value={locked.collection} /> : null}
           {locked.store ? <input type="hidden" name="store" value={locked.store} /> : null}
@@ -347,10 +349,7 @@ export async function CatalogListing({
             <section className="mt-8 border-t border-line-warm pt-6">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
-                    {brandRow?.subtitle ?? "Verified makers"}
-                  </span>
-                  <h2 className="mt-1 font-display text-[18px] font-semibold text-ink">
+                  <h2 className="font-display text-[18px] font-semibold text-ink">
                     {brandRow?.title ?? "Shop by brand"}
                   </h2>
                 </div>
@@ -433,7 +432,7 @@ function FilterPanel({
 }: {
   query: Query;
   basePath: string;
-  filters: { category?: string; store?: string; minPrice?: string; maxPrice?: string; rating?: string; inStock?: string; onSale?: string };
+  filters: { brand?: string; category?: string; store?: string; minPrice?: string; maxPrice?: string; rating?: string; inStock?: string; onSale?: string };
   facets: Facets;
   locked: Locked;
 }) {

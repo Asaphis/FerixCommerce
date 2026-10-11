@@ -1,6 +1,5 @@
-import { ImageOff } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
-import { listMedia } from "@/lib/api";
+import { apiImageUrl, listMedia } from "@/lib/api";
 import { MediaDelete, MediaForm } from "@/components/studio/media-library";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/studio/bits";
 import { dateShort, relative } from "@/lib/format";
@@ -21,12 +20,6 @@ export default async function MediaPage() {
         <Pill tone={configured ? "success" : "warn"}>{data.storage === "cloudinary" ? "cloudinary connected" : "local MVP storage"}</Pill>
       </header>
 
-      {!configured ? (
-        <p className="rounded-[2px] border border-sand/35 bg-sand/10 px-3.5 py-3 text-[12.5px] leading-relaxed text-sand">
-          Files upload to the backend's local media store for this MVP. Add Cloudinary later for durable,
-          CDN-backed production storage; external image and video URLs remain supported.
-        </p>
-      ) : null}
 
       <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
         <div className="grid content-start gap-3">
@@ -35,7 +28,7 @@ export default async function MediaPage() {
 
         <Panel flush>
           <div className="flex flex-wrap items-center justify-between gap-3 p-5 pb-4">
-            <PanelHead title="Library" hint={`${data.assets.length} asset(s) stored`} />
+            <PanelHead title="Library" />
           </div>
 
           {data.assets.length ? (
@@ -45,7 +38,7 @@ export default async function MediaPage() {
                   <div className="overflow-hidden rounded-[2px] border border-hairline bg-panel-2">
                     {asset.kind === "video" ? (
                       <video
-                        src={asset.url}
+                        src={apiImageUrl(asset.url) ?? undefined}
                         muted
                         playsInline
                         preload="metadata"
@@ -54,7 +47,7 @@ export default async function MediaPage() {
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={asset.url}
+                        src={apiImageUrl(asset.url) ?? undefined}
                         alt={asset.alt || "Media asset"}
                         loading="lazy"
                         className="aspect-[4/3] w-full object-cover"
@@ -90,9 +83,6 @@ export default async function MediaPage() {
             </div>
           )}
 
-          <p className="flex items-center gap-2 border-t border-hairline px-5 py-3.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim/70">
-            <ImageOff width={11} height={11} /> Local uploads are available now; Cloudinary is an optional production adapter
-          </p>
         </Panel>
       </div>
     </div>

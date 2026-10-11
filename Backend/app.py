@@ -36,7 +36,7 @@ from core import (
     record_merchant_follow_activity, require_user, sale_status, seed, store_card,
     is_seller_product, marketplace_product_available, paid_marketplace_product_units,
     verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
-    merchant_follower_count,
+    merchant_follower_count, is_public_store, public_taxonomy, visible_published_sections, schema_ready,
 )
 
 from routers import admin as admin_router
@@ -286,8 +286,11 @@ def info():
 def health():
     with SessionLocal() as db:
         db.execute(select(Catalog.key).limit(1))
+        from core import StaffUser, ENVIRONMENT, PRODUCTION_ENVIRONMENTS
+        if ENVIRONMENT in PRODUCTION_ENVIRONMENTS and not db.scalar(select(StaffUser.id).limit(1)):
+            raise HTTPException(503, "Privileged bootstrap is required before the service is ready")
         return {
-            "ok": True, "database": "ok",
+            "ok": True, "database": "ok", "schemaVersion": 2,
             "storage": "cloudinary-configured" if os.getenv("CLOUDINARY_URL") else "local-mvp",
             "mail": "resend-configured" if os.getenv("RESEND_API_KEY") else "pending-configuration",
             "payments": "configured" if os.getenv("PAYMENT_PROVIDER_KEY") else "pending-configuration",
@@ -530,7 +533,7 @@ def home():
         )
 
         doc = db.get(ContentDocument, "doc_marketplace_home")
-        content = (doc.data if doc and doc.status == "published" else None) or {"sections": []}
+        content = {"sections": visible_published_sections(doc)}
 
         # CMS owns the published section structure. SectionPlacement owns the
         # approved membership of curated/product sections. Seller requests never
@@ -539,6 +542,8 @@ def home():
         if doc and doc.status == "published":
             product_by_id = {p.get("id"): p for p in items}
             current_time = now()
+            visible_sections = {s.get("id"): s for s in visible_published_sections(doc)
+                               if s.get("type") in {"product_grid", "product_carousel"}}
             placement_rows = db.scalars(
                 select(SectionPlacement).where(SectionPlacement.document_id == doc.id)
             ).all()
@@ -546,6 +551,8 @@ def home():
                 if row.starts_at and row.starts_at > current_time:
                     continue
                 if row.ends_at and row.ends_at < current_time:
+                    continue
+                if row.section_id not in visible_sections:
                     continue
                 product = product_by_id.get(row.product_id)
                 if not product:
@@ -583,7 +590,7 @@ def home():
             "flashSale": ({"id": sale.id, "name": sale.name, "headline": sale.headline,
                            "endsAt": iso(sale.ends_at), "bannerUrl": sale.banner_url,
                            "products": safe_products(flash_items[:8])} if sale else None),
-            "stores": [store_card(db, m) for m in ms],
+            "stores": [store_card(db, m) for m in ms if is_public_store(m)],
             # Hook for a future CMS `featured_brands` section. The existing
             # document contract remains untouched; clients can opt into this
             # data without requiring a schema migration.
@@ -595,7 +602,7 @@ def home():
 @app.get("/catalog/category")
 def category(slug: str, sort: str = "relevance"):
     with SessionLocal() as db:
-        found = next((c for c in category_rows(db) if c["slug"] == slug), None)
+        found = next((c for c in category_rows(db) if c["slug"] == slug and public_taxonomy(c)), None)
         if not found:
             raise HTTPException(404, "That category does not exist")
     return {"category": found, **products(category=slug, sort=sort)}
@@ -607,13 +614,13 @@ def collections():
         items = decorate(db, [p for p in product_rows(db) if marketplace_product_available(db, p)])
         return {"collections": [{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in items),
                                  "products": public_products(db, [p for p in items if c["slug"] in (p.get("collections") or [])][:3])}
-                                for c in collection_rows(db) if c.get("visible", True)]}
+                                for c in collection_rows(db) if public_taxonomy(c)]}
 
 
 @app.get("/catalog/collection")
 def collection(slug: str, sort: str = "relevance"):
     with SessionLocal() as db:
-        found = next((c for c in collection_rows(db) if c["slug"] == slug), None)
+        found = next((c for c in collection_rows(db) if c["slug"] == slug and public_taxonomy(c)), None)
         if not found:
             raise HTTPException(404, "That collection does not exist")
     return {"collection": found, **products(collection=slug, sort=sort, perPage=48)}
@@ -622,8 +629,7 @@ def collection(slug: str, sort: str = "relevance"):
 @app.get("/catalog/stores")
 def stores(search: Optional[str] = None, sort: str = "top"):
     with SessionLocal() as db:
-        rows = [store_card(db, m) for m in merchant_rows(db)
-                if m.get("status", "active") == "active" and m.get("marketplaceEnabled", True)]
+        rows = [store_card(db, m) for m in merchant_rows(db) if is_public_store(m)]
         q = (search or "").lower()
         rows = [m for m in rows if not q or q in m["name"].lower() or q in (m.get("tagline") or "").lower()]
         if sort == "new":
@@ -637,7 +643,7 @@ def stores(search: Optional[str] = None, sort: str = "top"):
 def store(slug: str):
     with SessionLocal() as db:
         merchant = find_merchant(db, slug)
-        if not merchant or merchant.get("status", "active") != "active" or not merchant.get("marketplaceEnabled", True):
+        if not is_public_store(merchant):
             raise HTTPException(404, "No store at that address")
         
         # STRICT CATALOG ISOLATION: Only display APPROVED products belonging to this specific merchant_id.
@@ -683,9 +689,9 @@ def search(q: str = ""):
         items = decorate(db, [p for p in product_rows(db)
                               if marketplace_product_available(db, p)
                               and needle in json.dumps(public_product_fields(p)).lower()])
-        found_stores = [store_card(db, m) for m in merchant_rows(db) if needle in m["name"].lower()]
+        found_stores = [store_card(db, m) for m in merchant_rows(db) if is_public_store(m) and needle in m["name"].lower()]
         return {"query": q, "products": public_products(db, items[:24]), "stores": found_stores,
-                "categories": [c for c in category_rows(db) if needle in c.get("name", "").lower()],
+                "categories": [c for c in category_rows(db) if public_taxonomy(c) and needle in c.get("name", "").lower()],
                 "suggestions": []}
 
 
@@ -811,16 +817,16 @@ def get_cart(session: Optional[str] = Query(None), cartId: Optional[str] = Query
              x_session: Optional[str] = Header(None, alias="X-Ferix-Session"),
              x_cart: Optional[str] = Header(None, alias="X-Ferix-Cart")):
     with SessionLocal() as db:
-        user = get_user(db, session or x_session)
-        return cart_payload(db, cart_for(db, user.id if user else None, cartId or x_cart))
+        user = require_user(db, session or x_session)
+        return cart_payload(db, cart_for(db, user.id, cartId or x_cart))
 
 
 @app.post("/cart/items")
 def add_cart(p: CartItemIn, session: Optional[str] = Header(None, alias="X-Ferix-Session"),
              x_cart: Optional[str] = Header(None, alias="X-Ferix-Cart")):
     with SessionLocal() as db:
-        user = require_user(db, session) if session else None
-        cart = cart_for(db, user.id if user else None, p.cartId or x_cart)
+        user = require_user(db, session)
+        cart = cart_for(db, user.id, p.cartId or x_cart)
         product = find_product(db, p.productId)
         if not product or not marketplace_product_available(db, product):
             raise HTTPException(404, "That product is not available")
@@ -834,10 +840,10 @@ def add_cart(p: CartItemIn, session: Optional[str] = Header(None, alias="X-Ferix
 
 
 @app.patch("/cart/items")
-def set_cart(p: CartQtyIn, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+def set_cart(p: CartQtyIn, session: Optional[str] = Header(None, alias="X-Ferix-Session"), x_cart: Optional[str] = Header(None, alias="X-Ferix-Cart")):
     with SessionLocal() as db:
         user = require_user(db, session)
-        cart = cart_for(db, user.id, None)
+        cart = cart_for(db, user.id, p.cartId or x_cart)
         cart.lines = [x for x in cart.lines if line_key(x) != p.key or p.qty == 0]
         for line in cart.lines:
             if line_key(line) == p.key:
@@ -847,10 +853,10 @@ def set_cart(p: CartQtyIn, session: Optional[str] = Header(None, alias="X-Ferix-
 
 
 @app.delete("/cart/items")
-def remove_cart(p: CartKeyIn, session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+def remove_cart(p: CartKeyIn, session: Optional[str] = Header(None, alias="X-Ferix-Session"), x_cart: Optional[str] = Header(None, alias="X-Ferix-Cart")):
     with SessionLocal() as db:
         user = require_user(db, session)
-        cart = cart_for(db, user.id, None)
+        cart = cart_for(db, user.id, p.cartId or x_cart)
         cart.lines = [x for x in cart.lines if line_key(x) != p.key]
         db.commit()
         return cart_payload(db, cart)
@@ -1092,6 +1098,8 @@ def add_review(p: ReviewIn, session: Optional[str] = Header(None, alias="X-Ferix
         received = False
         for past in db.scalars(select(Order).where(Order.user_id == user.id)).all():
             order = past.data or {}
+            if str(order.get("payment") or "").lower() not in {"paid", "captured", "succeeded", "settled"}:
+                continue
             if str(order.get("fulfillment") or "").lower() != "delivered":
                 continue
             for item in order.get("items") or []:
@@ -1102,7 +1110,9 @@ def add_review(p: ReviewIn, session: Optional[str] = Header(None, alias="X-Ferix
             if received:
                 break
         if not received:
-            raise HTTPException(403, "You can review this once your order has been delivered")
+            raise HTTPException(403, "You can review this once a paid order has been delivered")
+        if db.scalar(select(Review).where(Review.user_id == user.id, Review.product_id == p.productId)):
+            raise HTTPException(409, "You have already reviewed this product")
         data = {**p.model_dump(), "id": "rev_" + uuid.uuid4().hex[:10], "date": iso(now()), "verified": True, "helpful": 0}
         db.add(Review(id=data["id"], user_id=user.id, product_id=p.productId, data=data))
         db.commit()
@@ -1156,15 +1166,8 @@ def shipping():
 def quote(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Session"),
           x_cart: Optional[str] = Header(None, alias="X-Ferix-Cart")):
     with SessionLocal() as db:
-        # A guest may see their totals before committing to buy, and without an account
-        # the email is what the total belongs to.
-        if session:
-            user = require_user(db, session)
-        elif p.email and "@" in p.email:
-            user = guest_shopper(db, p.email)
-        else:
-            raise HTTPException(401, "Sign in, or leave an email address to see your total.")
-        cart = cart_for(db, user.id, x_cart)
+        user = require_user(db, session)
+        cart = cart_for(db, user.id, p.cartId or x_cart)
         if cart and any(
             not (candidate := find_product(db, line["productId"])) or not marketplace_product_available(db, candidate)
             for line in cart.lines or []
@@ -1188,15 +1191,8 @@ def quote(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
 def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Session"),
           x_cart: Optional[str] = Header(None, alias="X-Ferix-Cart")):
     with SessionLocal() as db:
-        # Signing in is one way to check out; giving an email so the order can be confirmed
-        # is the other. Without either there is nobody to place the order for.
-        if session:
-            user = require_user(db, session)
-        elif p.email and "@" in p.email:
-            user = guest_shopper(db, p.email)
-        else:
-            raise HTTPException(401, "Sign in, or leave an email address so your order can be confirmed.")
-        cart = cart_for(db, user.id, x_cart)
+        user = require_user(db, session)
+        cart = cart_for(db, user.id, p.cartId or x_cart)
         if cart and any(
             not (candidate := find_product(db, line["productId"])) or not marketplace_product_available(db, candidate)
             for line in cart.lines or []
@@ -1208,31 +1204,6 @@ def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
         # No payment-provider integration exists yet. Do not create an order,
         # claim a payment, or decrement inventory for an uncollected payment.
         raise HTTPException(503, "Checkout is not available yet because secure payment processing is not configured.")
-
-
-def guest_shopper(db: Session, email: str) -> User:
-    """The account behind a guest checkout.
-
-    A guest's order has to belong to somebody - the order table has no room for an
-    anonymous one - so an order placed without signing in gets a shopper record for the
-    email that was typed. It carries an unguessable password hash, so nobody can sign in
-    as them through this route. If they register with the same address later, the orders
-    they placed as a guest are already theirs.
-    """
-    normalised = email.strip().lower()
-    existing = db.scalar(select(User).where(User.email == normalised))
-    if existing:
-        return existing
-    user = User(
-        id="usr_" + uuid.uuid4().hex[:10],
-        name=(normalised.split("@")[0] or "Guest")[:60],
-        email=normalised,
-        password_hash=hash_password(secrets.token_urlsafe(32)),
-        settings={"language": "English", "currency": "USD", "orderEmails": True, "guest": True},
-    )
-    db.add(user)
-    db.flush()
-    return user
 
 
 # ── Mounted surfaces ───────────────────────────────────────────────────────
@@ -1332,7 +1303,7 @@ def public_seller_profile(merchant_id: str):
     """Public Seller Profile: ONLY approved products for that merchant."""
     with SessionLocal() as db:
         merchant = find_merchant(db, merchant_id)
-        if not merchant or merchant.get("status", "active") != "active" or not merchant.get("marketplaceEnabled", True):
+        if not is_public_store(merchant):
             raise HTTPException(404, "Seller not found")
         approved_products = [p for p in product_rows(db)
                              if is_seller_product(p, merchant["id"])

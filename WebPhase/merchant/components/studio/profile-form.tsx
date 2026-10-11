@@ -88,7 +88,6 @@ export function ProfileForm({
             <Field title="Business / legal name"><input name="businessName" defaultValue={draft.businessName} className={inputClass} /></Field>
             <Field title="Public location (city / region / country)"><input name="location" defaultValue={draft.location} className={inputClass} placeholder="e.g. Accra, Ghana" /></Field>
             <Field title="Marketplace profile logo URL"><input name="logo" defaultValue={draft.logo} className={inputClass} maxLength={2048} placeholder="https://… or /media/…" /></Field>
-            <p className="-mt-2 text-[10.5px] leading-relaxed text-chalk-dim sm:col-span-2">Use a secure image URL or a Ferixas media path. The logo appears on your Ferixas seller profile only after Admin approval.</p>
             <Field title="Business website (verification only)"><input name="website" type="url" defaultValue={draft.website} className={inputClass} placeholder="https://yourbusiness.example" /></Field>
             <p className="-mt-2 text-[10.5px] leading-relaxed text-chalk-dim sm:col-span-2">This URL is for business verification only. It will not be linked, embedded, or treated as your store on Ferixas.</p>
             <div className="sm:col-span-2"><Field title="Tagline"><input name="tagline" defaultValue={draft.tagline} className={inputClass} maxLength={180} /></Field></div>
@@ -115,7 +114,7 @@ export function ProfileForm({
       </form>
 
       <Panel>
-        <PanelHead title="Profile submission history" hint="Each request keeps its decision and reviewer note. Earlier public profile data is not overwritten by an unapproved request." action={<Pill tone={history.some((item) => item.status === "pending_review") ? "amber" : "neutral"}>{history.length} requests</Pill>} />
+        <PanelHead title="Profile submission history" />
         {history.length ? <div className="grid gap-2">
           {history.map((item) => (
             <article key={item.id} className="rounded-[8px] border border-hairline bg-panel-2 p-3">

@@ -6,8 +6,9 @@ import { FerixMark, Eyebrow } from "@/components/ferix/marks";
 import { assetUrl } from "@/lib/api";
 import { readSession } from "@/lib/session";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ return?: string }> }) {
   if (await readSession()) redirect("/account");
+  const returnTo = (await searchParams).return;
   const heroImage = assetUrl("/media/banners/bnr_launch.jpg");
 
   return (
@@ -19,14 +20,14 @@ export default async function LoginPage() {
             <Eyebrow className="mt-5 block">Welcome back</Eyebrow>
             <h1 className="mt-1.5 font-display text-[25px] font-bold leading-tight text-ink sm:text-[30px]">Sign in to Ferixas</h1>
             <p className="mt-1.5 max-w-[38ch] text-[12px] text-ink-soft">One account for your marketplace orders and saved items.</p>
-            <div className="mt-6"><AuthForm mode="login" /></div>
+            <div className="mt-6"><AuthForm mode="login" returnTo={returnTo} /></div>
             <p className="mt-5 text-center text-[11px] text-ink-soft">Shopping as a guest? <Link href="/browse" className="font-semibold text-ember hover:underline">Explore the marketplace</Link></p>
           </div>
         </section>
 
         <AuthBenefitsPanel
           imageUrl={heroImage}
-          ctaHref="/register"
+          ctaHref={returnTo ? `/register?return=${encodeURIComponent(returnTo)}` : "/register"}
           ctaLabel="New to Ferixas? Create an account"
         />
       </div>

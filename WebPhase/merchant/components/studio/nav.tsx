@@ -44,7 +44,7 @@ function iconFor(link: NavItem): LucideIcon {
 function SoonTag() {
   return (
     <span className="rounded-[2px] border border-white/10 px-1 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-white/55">
-      Soon
+      Coming soon
     </span>
   );
 }
@@ -71,6 +71,7 @@ export function StudioSidebar() {
                   key={item.href}
                   href={item.href}
                   aria-current={active ? "page" : undefined}
+                  aria-label={`${item.label}${item.soon ? " (Coming soon)" : ""}`}
                   className={cn(
                     "flex min-h-[44px] items-center gap-2.5 rounded-[2px] px-3 text-[12.5px] transition-colors",
                     FOCUS_RING,
@@ -149,7 +150,7 @@ export function StudioBottomNav() {
         className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#102d43]/95 backdrop-blur-md md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="mx-auto grid max-w-[560px] grid-cols-5">
+        <ul className="mx-auto grid max-w-[560px] grid-cols-6">
           {items.map((item) => {
             const Icon = iconFor(item);
             const active = isActivePath(pathname, item.href);
@@ -158,6 +159,7 @@ export function StudioBottomNav() {
                 <Link
                   href={item.href}
                   aria-current={active ? "page" : undefined}
+                  aria-label={`${item.label}${item.soon ? " (Coming soon)" : ""}`}
                   className={cn(
                     "relative flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-lime",
@@ -171,7 +173,8 @@ export function StudioBottomNav() {
                     )}
                   />
                   <Icon width={19} height={19} strokeWidth={active ? 2.3 : 1.8} />
-                  {item.label}
+                  <span>{item.label}</span>
+                  {item.soon ? <span className="text-[7px] leading-none text-white/45">Coming soon</span> : null}
                 </Link>
               </li>
             );
@@ -264,6 +267,7 @@ function MoreDrawer({ onClose }: { onClose: () => void }) {
                       href={item.href}
                       onClick={onClose}
                       aria-current={active ? "page" : undefined}
+                      aria-label={`${item.label}${item.soon ? " (Coming soon)" : ""}`}
                       className={cn(
                         "flex min-h-[48px] items-center gap-3 rounded-[2px] px-3 text-[13.5px] transition-colors",
                         FOCUS_RING,

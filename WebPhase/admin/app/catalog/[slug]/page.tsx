@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCatalog, listMedia, getProductSections, type SectionOption } from "@/lib/api";
+import { listCatalog, listMedia, listBrands, getProductSections, type SectionOption } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
@@ -10,9 +10,8 @@ import { Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits"
 import { deleteCatalogProductAction, updateCatalogProductAction } from "@/lib/ops-actions";
 import { money, num, relative, titleCase } from "@/lib/format";
 
-export default async function ProductEditorPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const { session } = await requireAdmin();
+export default async function ProductEditorPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ error?: string }> }) {
+  const [{ slug }, { error }, { session }] = await Promise.all([params, searchParams, requireAdmin()]);
   const library = await listMedia(session).catch(() => ({ assets: [], storage: "" }));
   // An asset carries its human-readable bit under whichever name the record has used over
   // time. The picker needs one plain url and label, so it falls back through them.
@@ -21,7 +20,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
     return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
   });
   const { available: sections, placements } = await getProductSections(session, slug).catch(() => ({ available: [], placements: [] }));
-  const data = await listCatalog(session, {});
+  const [data, { brands }] = await Promise.all([listCatalog(session, {}), listBrands(session).catch(() => ({ brands: [] }))]);
   const product = data.products.find((row) => row.slug === slug);
   if (!product) notFound();
   const sectionGroups = sections.reduce<Record<string, SectionOption[]>>((groups, section) => {
@@ -32,6 +31,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
 
   return (
     <div className="grid min-w-0 gap-5">
+      {error ? <p role="alert" className="rounded-[8px] border border-rose/30 bg-rose/10 px-3 py-2 text-[12px] text-rose">{error}</p> : null}
       <header>
         <Link
           href="/catalog"
@@ -86,6 +86,12 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
                 ))}
               </select>
             </Field>
+            <Field title="Brand">
+              <select name="brand" defaultValue={product.brand ?? product.brandName ?? ""} className={selectClass}>
+                <option value="">No brand</option>
+                {brands.filter((brand) => brand.visible).map((brand) => <option key={brand.id} value={brand.slug}>{brand.name}</option>)}
+              </select>
+            </Field>
             <Field title="SKU">
               <input name="sku" defaultValue={product.sku} className={inputClass} />
             </Field>
@@ -105,6 +111,9 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
             <Field title="Stock on hand">
               <input name="stock" type="number" min="0" defaultValue={product.stock} className={inputClass} />
             </Field>
+            <Field title="Low-stock alert at">
+              <input name="lowStockAt" type="number" min="1" defaultValue={product.lowStockAt ?? 8} className={inputClass} />
+            </Field>
             <Field title="Status">
               <select name="status" defaultValue={product.status} className={selectClass}>
                 <option value="draft">Draft — not sellable</option>
@@ -116,19 +125,30 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
               <input name="collections" defaultValue={product.collections.join(", ")} className={inputClass} />
             </Field>
             <Field title="Tags">
-              <input name="tags" placeholder="comma separated" className={inputClass} />
+              <input name="tags" defaultValue={(product.tags ?? []).join(", ")} placeholder="comma separated" className={inputClass} />
             </Field>
           </div>
           <Field title="Description">
-            <textarea name="description" placeholder="Leave blank to keep the current description." className={textareaClass} />
+            <textarea name="description" defaultValue={product.description ?? ""} placeholder="Product description" className={textareaClass} />
           </Field>
           <Field title="Highlights — one per line">
-            <textarea name="bullets" placeholder={"One highlight per line"} className={textareaClass} />
+            <textarea name="bullets" defaultValue={(product.bullets ?? []).join("\n")} placeholder={"One highlight per line"} className={textareaClass} />
+          </Field>
+          <Field title="Variants — one per line (Name: value | value)">
+            <textarea name="variants" defaultValue={(product.variants ?? []).map((variant) => `${variant.name}: ${variant.values.join(" | ")}`).join("\n")} placeholder={"Colour: Black | White\nSize: Small | Large"} className={textareaClass} />
           </Field>
         </Panel>
 
         <Panel className="grid gap-4">
-          <PanelHead title="Media and Marketplace sections" />
+          <PanelHead title="Search listing" />
+          <div className="grid gap-3 md:grid-cols-2">
+            <Field title="SEO title"><input name="seoTitle" defaultValue={product.seoTitle ?? ""} className={inputClass} /></Field>
+            <Field title="SEO description"><input name="seoDescription" defaultValue={product.seoDescription ?? ""} className={inputClass} /></Field>
+          </div>
+        </Panel>
+
+        <Panel className="grid gap-4">
+          <PanelHead title="Media, shipping and placement" />
           <MediaUploadField
             key="product-image"
             urlName="imageUrl"
@@ -138,6 +158,16 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
             urlLabel="Product image URL"
             fileLabel="Upload a product image"
           />
+          <Field title="Images — one URL per line (existing images are kept unless removed here)">
+            <textarea name="images" defaultValue={(product.images?.length ? product.images : [product.image]).filter(Boolean).join("\n")} className={textareaClass} />
+          </Field>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Field title="Shipping amount"><input name="shipping_amount" type="number" step="0.01" min="0" defaultValue={product.shipping_amount ?? ""} className={inputClass} placeholder="Optional" /></Field>
+            <Field title="Estimated delivery (days)"><input name="estimated_delivery_days" type="number" min="0" defaultValue={product.estimated_delivery_days ?? ""} className={inputClass} placeholder="Optional" /></Field>
+            <Field title="Package weight (kg)"><input name="package_weight" type="number" step="0.01" min="0" defaultValue={product.package_weight ?? ""} className={inputClass} placeholder="Optional" /></Field>
+            <Field title="Package dimensions"><input name="package_dimensions" defaultValue={product.package_dimensions ?? ""} className={inputClass} placeholder="30 × 20 × 10 cm" /></Field>
+            <Field title="Shipping origin"><input name="shipping_origin" defaultValue={product.shipping_origin ?? ""} className={inputClass} placeholder="Lagos, NG" /></Field>
+          </div>
           <Field title="Marketplace sections">
             {sections.length ? (
               <div className="grid gap-4">
@@ -159,9 +189,9 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
                           className="mt-0.5 size-4 shrink-0 accent-signal"
                         />
                         <span className="min-w-0">
-                          <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName}</span>
+                          <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName || "Unnamed section"}</span>
                           <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                            {section.documentTitle} · {section.sectionType}{section.placements ? ` · ${section.placements} already` : ""}
+                            {section.documentTitle || "Unknown page"} · {section.sectionType || "unknown type"}{section.placements ? ` · ${section.placements} already` : ""}
                           </span>
                         </span>
                       </label>

@@ -37,7 +37,6 @@ export default async function UsersPage({
       <PageHeader
         eyebrow="User oversight"
         title="Customer accounts"
-        description="Every shopper registered on the platform, with their spending, saved items and order history. Accounts are shared across the marketplace and every merchant storefront."
       />
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">

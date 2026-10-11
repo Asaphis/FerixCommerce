@@ -5,8 +5,9 @@ import { Eyebrow, FerixMark } from "@/components/ferix/marks";
 import { assetUrl } from "@/lib/api";
 import { readSession } from "@/lib/session";
 
-export default async function RegisterPage() {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ return?: string }> }) {
   if (await readSession()) redirect("/account");
+  const returnTo = (await searchParams).return;
   const heroImage = assetUrl("/media/banners/bnr_launch.jpg");
 
   return (
@@ -16,7 +17,7 @@ export default async function RegisterPage() {
         <Eyebrow className="mt-6 block">New account</Eyebrow>
         <h1 className="mt-2 font-display text-[28px] font-semibold text-ink">Create your Ferixas account</h1>
         <div className="mt-7">
-          <AuthForm mode="register" />
+          <AuthForm mode="register" returnTo={returnTo} />
         </div>
         <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
           By creating an account you agree to the buyer terms and the returns policy.
@@ -25,7 +26,7 @@ export default async function RegisterPage() {
 
       <AuthBenefitsPanel
         imageUrl={heroImage}
-        ctaHref="/login"
+          ctaHref={returnTo ? `/login?return=${encodeURIComponent(returnTo)}` : "/login"}
         ctaLabel="Already have an account? Sign in"
         className="rounded-[3px] rounded-tr-[18px] border border-line-warm shadow-[0_12px_36px_rgba(16,45,67,0.08)] max-lg:rounded-none max-lg:border-0 max-lg:shadow-none"
       />

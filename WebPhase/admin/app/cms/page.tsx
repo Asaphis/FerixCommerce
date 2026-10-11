@@ -111,7 +111,7 @@ export default async function CmsPage() {
       </Panel>
 
       <Panel>
-        <PanelHead title="Libraries" hint="What each page's sections draw from" />
+        <PanelHead title="Libraries" />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {AREAS.map(({ href, label, detail, Icon }) => (
             <Link

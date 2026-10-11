@@ -250,7 +250,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               Reviews are attached to your account, so you can edit or delete them later.
             </p>
             <div className="mt-4">
-              <ReviewForm productId={product.id} />
+              <ReviewForm productId={product.id} returnTo={`/product/${product.slug}`} />
             </div>
           </div>
         </div>

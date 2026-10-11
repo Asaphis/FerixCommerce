@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import localFont from "next/font/local";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { OpsShell } from "@/components/ops/shell";
+import { QueryFeedback } from "@/components/ops/query-feedback";
 
 const display = localFont({
   src: [{ path: "./fonts/bricolage-grotesque.woff2", weight: "200 800", style: "normal" }],
@@ -41,6 +43,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}>
         <OpsShell>{children}</OpsShell>
+        <Suspense fallback={null}><QueryFeedback /></Suspense>
         <Toaster position="top-center" />
       </body>
     </html>

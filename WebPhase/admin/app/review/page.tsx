@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Check, ExternalLink, RotateCcw, X } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { ApiError, assetUrl, listMerchantProfileRequests, listReviewQueue } from "@/lib/api";
+import { ApiError, assetUrl, getProductSections, listMerchantProfileRequests, listReviewQueue } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass } from "@/components/ops/table";
@@ -19,6 +19,12 @@ type ReviewTab = (typeof tabs)[number]["id"];
 
 function apiError(error: unknown) {
   return error instanceof ApiError ? error.message : "The review service could not be reached. Try again shortly.";
+}
+
+function submittedLabel(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" });
 }
 
 function TabLink({ tab, active, merchantId, count }: { tab: ReviewTab; active: boolean; merchantId?: string; count?: number }) {
@@ -47,6 +53,23 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const profiles = profilesResult.status === "fulfilled" ? profilesResult.value.items : [];
   const visibleProducts = merchantId ? products.filter((item) => item.merchantId === merchantId) : products;
   const visibleProfiles = merchantId ? profiles.filter((item) => item.merchantId === merchantId) : profiles;
+  const placementLabels = new Map<string, string[]>();
+  await Promise.all(visibleProducts.map(async (item) => {
+    const tags = item.section_tags ?? [];
+    try {
+      const { available } = await getProductSections(session, item.slug);
+      placementLabels.set(item.id, tags.map((tag) => {
+        const [documentId, sectionId] = tag.split("__", 2);
+        const section = available.find((candidate) => candidate.documentId === documentId && candidate.sectionId === sectionId);
+        return `${section?.documentTitle || documentId || "Unknown page"} · ${section?.sectionName || sectionId || "Unknown section"} · ${section?.sectionType || "unknown type"}`;
+      }));
+    } catch {
+      placementLabels.set(item.id, tags.map((tag) => {
+        const [documentId, sectionId] = tag.split("__", 2);
+        return `${documentId || "Unknown page"} · ${sectionId || "Unknown section"} · unknown type`;
+      }));
+    }
+  }));
   const productsLoaded = productsResult.status === "fulfilled";
   const profilesLoaded = profilesResult.status === "fulfilled";
   const allQueuesLoaded = productsLoaded && profilesLoaded;
@@ -64,7 +87,6 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         }
         eyebrow="Marketplace · governance"
         title="Review queue"
-        description="Seller-submitted marketplace listings and profile changes are reviewed here. Merchant records remain for management; nothing is published until the appropriate review is approved."
         action={<Pill tone={!allQueuesLoaded ? "rose" : totalWaiting ? "amber" : "mint"}>{allQueuesLoaded ? `${totalWaiting} awaiting review` : "Review data unavailable"}</Pill>}
       />
 
@@ -85,7 +107,6 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         <section className="grid gap-4" aria-labelledby="product-queue-heading">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="product-queue-heading" className="font-display text-[17px] font-semibold text-chalk">Product listings</h2>
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">Submitted products only</span>
           </div>
           {productsResult.status === "rejected" ? (
             <Panel><PanelHead title="Product review could not load" /><p className="text-[12px] leading-relaxed text-rose">{apiError(productsResult.reason)}</p></Panel>
@@ -95,7 +116,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
                 <PanelHead
                   title={item.title || "Untitled listing"}
                   hint={`${item.merchantName} · ${money(item.price)} · stock ${item.stock}`}
-                  action={<Pill tone={String(item.reviewStatus) === "changes_requested" ? "amber" : "violet"}>{String(item.reviewStatus).replace(/_/g, " ")}</Pill>}
+                  action={<div className="flex flex-wrap items-center justify-end gap-2"><Pill tone="amber">Pending review</Pill><Pill tone={String(item.reviewStatus) === "changes_requested" ? "amber" : "violet"}>{String(item.reviewStatus).replace(/_/g, " ")}</Pill></div>}
                 />
                 <div className="grid gap-3 sm:grid-cols-[112px_minmax(0,1fr)]">
                   {item.images?.length ? (
@@ -119,8 +140,8 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
                   <p><span className="text-chalk-dim">Category:</span> {item.category || "Unassigned"} · <span className="text-chalk-dim">Brand:</span> {item.brandName || "Unassigned"}</p>
                   <p><span className="text-chalk-dim">Shipping:</span> {item.shipping_amount == null ? "Not supplied" : money(item.shipping_amount)} · {item.estimated_delivery_days ? `${item.estimated_delivery_days} day estimate` : "no ETA"}</p>
                   <p><span className="text-chalk-dim">Package:</span> {[item.package_weight ? `${item.package_weight} kg` : "", item.package_dimensions, item.shipping_origin].filter(Boolean).join(" · ") || "Not supplied"}</p>
-                  <p><span className="text-chalk-dim">Submitted:</span> {item.submittedAt || "—"} by {item.submittedBy || "seller"}</p>
-                  <p className="sm:col-span-2"><span className="text-chalk-dim">Requested CMS sections:</span> {item.section_tags?.length ? item.section_tags.join(", ") : "No section request"}</p>
+                  <p><span className="text-chalk-dim">Submitted:</span> {submittedLabel(item.submittedAt)} by {item.submittedBy || "seller"}</p>
+                  <p className="sm:col-span-2"><span className="text-chalk-dim">Requested CMS sections:</span> {placementLabels.get(item.id)?.length ? placementLabels.get(item.id)?.join(", ") : "No section request"}</p>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <CmsActionForm action={approveProductAction} className="inline-flex items-center gap-2">

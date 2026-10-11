@@ -29,9 +29,9 @@ export default async function AudiencePage() {
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-        <StatTile label="Current followers" value={num(audience.followers)} sub="Actual shopper follows" icon={<Users />} accent="azure" />
-        <StatTile label="New follows · 30d" value={num(audience.follows30d)} sub="Recorded account actions" icon={<UserPlus />} accent="lime" />
-        <StatTile label="Unfollows · 30d" value={num(audience.unfollows30d)} sub="Recorded account actions" icon={<UserMinus />} accent="sand" />
+        <StatTile label="Current followers" value={num(audience.followers)} icon={<Users />} accent="azure" />
+        <StatTile label="New follows · 30d" value={num(audience.follows30d)} icon={<UserPlus />} accent="lime" />
+        <StatTile label="Unfollows · 30d" value={num(audience.unfollows30d)} icon={<UserMinus />} accent="sand" />
         <StatTile label="Net growth · 30d" value={`${audience.net30d > 0 ? "+" : ""}${num(audience.net30d)}`} sub="Follows minus unfollows" icon={<Users />} accent={audience.net30d < 0 ? "ember" : "azure"} />
       </div>
 
@@ -78,7 +78,7 @@ export default async function AudiencePage() {
         </Panel>
 
         <Panel>
-          <PanelHead title="Product reviews" hint="Persisted reviews for products in your catalogue." action={<Pill tone={reviews.summary.reviewCount ? "success" : "neutral"}>{num(reviews.summary.reviewCount)} reviews</Pill>} />
+          <PanelHead title="Product reviews" action={<Pill tone={reviews.summary.reviewCount ? "success" : "neutral"}>{num(reviews.summary.reviewCount)} reviews</Pill>} />
           <div className="mb-4 grid grid-cols-[auto_1fr] items-center gap-3 rounded-[8px] border border-hairline bg-panel-2 p-3">
             <div className="flex items-center gap-1.5"><Star width={19} height={19} className="fill-amber text-amber" /><span className="font-display text-[22px] font-bold text-chalk">{rating == null ? "—" : rating.toFixed(1)}</span></div>
             <p className="text-[11px] leading-relaxed text-chalk-dim">{reviews.summary.reviewCount ? "Average rating from recorded marketplace reviews." : "No marketplace reviews have been recorded yet. Seed display counters are not used."}</p>

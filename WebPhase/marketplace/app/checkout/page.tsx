@@ -3,38 +3,33 @@ import { redirect } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { getShipping, quoteCheckout, getAddresses, ApiError } from "@/lib/api";
 import { readCredentials } from "@/lib/session";
-import { AddressForm, PlaceOrderForm, ShippingPicker } from "@/components/ferix/forms";
+import { AddressForm, ShippingPicker } from "@/components/ferix/forms";
 import { Eyebrow, LinkButton } from "@/components/ferix/marks";
 import { money } from "@/lib/format";
 
 export default async function CheckoutPage({
   searchParams,
 }: {
-  searchParams: Promise<{ shipping?: string; address?: string; email?: string }>;
+  searchParams: Promise<{ shipping?: string; address?: string }>;
 }) {
-  const { shipping: shippingParam, address: addressParam, email: emailParam } = await searchParams;
+  const { shipping: shippingParam, address: addressParam } = await searchParams;
   const creds = await readCredentials();
-  // Signing in is one way to check out; leaving an email is the other. Nobody is sent to a
-  // sign-in page they did not ask for.
-  const isGuest = !creds.session;
-  const typedEmail = (emailParam ?? "").trim();
-  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typedEmail);
+  // The backend requires an authenticated shopper for quote and place-order calls.
+  // Gate before either request rather than presenting a guest form the backend cannot fulfill.
+  if (!creds.session) redirect(`/login?return=${encodeURIComponent("/checkout")}`);
 
   const shippingMethod = shippingParam ?? "standard";
   let quoteFailed: string | null = null;
-  const [{ options, paymentMethods, freeShippingOver }, quote, account] = await Promise.all([
+  const [{ options, freeShippingOver }, quote, account] = await Promise.all([
     getShipping(),
     quoteCheckout(
-      { addressId: addressParam ?? "", shippingMethod, email: emailLooksValid ? typedEmail : undefined },
+      { addressId: addressParam ?? "", shippingMethod },
       creds,
     ).catch((error) => {
-      // An empty cart, or a guest who has not given an email yet, is a step rather than a
-      // failure. Anything else is a real fault and is shown rather than thrown at the runtime.
       if (error instanceof ApiError && [401, 409, 422].includes(error.status)) return null;
       quoteFailed = error instanceof ApiError ? error.message : "The totals could not be worked out just now.";
       return null;
     }),
-    // A guest has no saved addresses, and asking for them must not take the page down.
     getAddresses(creds).catch(() => ({ addresses: [] })),
   ]);
 
@@ -43,14 +38,11 @@ export default async function CheckoutPage({
     addressParam ?? addressList.find((address) => address.isDefault)?.id ?? addressList[0]?.id;
 
   if (!quote) {
-    const missingEmail = isGuest && !emailLooksValid;
-    const malformed = isGuest && typedEmail.length > 0 && !emailLooksValid;
-
     return (
       <div className="mx-auto max-w-[720px] px-4 py-12">
         <Eyebrow>Checkout</Eyebrow>
         <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">
-          {missingEmail ? "Your email, to begin" : "There is nothing to check out"}
+          {quoteFailed ? "Checkout is temporarily unavailable" : "There is nothing to check out"}
         </h1>
 
         {quoteFailed ? (
@@ -63,81 +55,35 @@ export default async function CheckoutPage({
           </p>
         ) : null}
 
-        {missingEmail ? (
-          <>
-            <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-soft">
-              No account needed. Leave an email address and your order confirmation goes there — and if you
-              register with the same address later, the order is already yours.
-            </p>
-
-            <form method="get" action="/checkout" className="mt-6 grid gap-3 rounded-[3px] border border-line-warm bg-white p-5">
-              <input type="hidden" name="shipping" value={shippingMethod} />
-              <label className="grid gap-1.5">
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">Email address</span>
-                <input
-                  name="email"
-                  type="email"
-                  required
-                  defaultValue={typedEmail}
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  aria-invalid={malformed}
-                  className="h-11 rounded-[2px] border border-line-warm bg-bone-soft px-3 text-[13.5px] text-ink outline-none focus:border-ink/40"
-                />
-              </label>
-
-              {malformed ? (
-                <p role="status" className="text-[12.5px] text-[#a33022]">
-                  That does not look like an email address — it needs an @ and a domain, like you@example.com.
-                </p>
-              ) : null}
-
-              <div>
-                <button
-                  type="submit"
-                  className="inline-flex min-h-11 items-center rounded-[3px] bg-ink px-4 text-[13px] font-semibold text-white"
-                >
-                  See my totals
-                </button>
-              </div>
-              <p className="text-[12px] text-ink-soft">
-                Delivery is asked for on the next step, and nothing is charged until you place the order.
-              </p>
-            </form>
-          </>
-        ) : (
-          <>
-            <p className="mt-2.5 text-[13.5px] text-ink-soft">
-              Add something to your cart and it will show up here with delivery and totals worked out.
-            </p>
-            <LinkButton href="/browse" className="mt-6">
-              Browse the marketplace
-            </LinkButton>
-          </>
-        )}
+        <p className="mt-2.5 text-[13.5px] text-ink-soft">
+          {quoteFailed ? "Secure payment processing is not configured, so no order was created and your cart is untouched." : "Add something to your cart and it will show up here with delivery and totals worked out."}
+        </p>
+        <LinkButton href={quoteFailed ? "/cart" : "/browse"} className="mt-6">
+          {quoteFailed ? "Back to cart" : "Browse the marketplace"}
+        </LinkButton>
       </div>
     );
   }
 
-  const step = !addressList.length ? 1 : 2;
+  const step = chosenAddress ? 2 : 1;
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8">
       <Eyebrow>Checkout</Eyebrow>
       <h1 className="mt-2 font-display text-[28px] font-semibold leading-tight tracking-[-0.02em] text-ink">
-        {step === 1 ? "Where should this go?" : "Review and pay"}
+        {step === 1 ? "Where should this go?" : "Review your delivery"}
       </h1>
       <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
         {quote.totals.itemCount === 1 ? "One item" : `${quote.totals.itemCount} items`} from{" "}
         {quote.cart.merchants.length === 1 ? "one seller" : `${quote.cart.merchants.length} sellers`}. Each seller
-        ships separately, but this is one payment and one order number.
+        ships separately, but checkout remains paused until secure payment processing is configured.
       </p>
 
       {/* Three steps, drawn as one progression rather than three loose tags: a done step
           carries a tick, the step you are on is the only dark one, and the ones ahead are
           quiet. A shopper should be able to see how much is left without reading. */}
       <ol className="mt-6 grid grid-cols-3 gap-2 sm:gap-3" aria-label="Checkout progress">
-        {["Delivery address", "Shipping and payment", "Confirmation"].map((label, index) => {
+        {["Delivery address", "Shipping", "Checkout availability"].map((label, index) => {
           const position = index + 1;
           const done = position < step;
           const current = position === step;
@@ -234,33 +180,11 @@ export default async function CheckoutPage({
           </section>
 
           <section className="rounded-[3px] border border-line-warm bg-white p-5">
-            <Eyebrow>Step 3 · Payment</Eyebrow>
-            <div className="mt-3 grid gap-2">
-              {paymentMethods.map((method) => (
-                <div key={method.id} className="flex items-center justify-between gap-3 rounded-[2px] border border-line-warm p-3">
-                  <span>
-                    <span className="block text-[13.5px] font-medium text-ink">{method.label}</span>
-                    <span className="block text-[12px] text-ink-soft">{method.detail}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[3px] border border-line-warm bg-white p-5">
-            <Eyebrow>Step 4 · Place the order</Eyebrow>
+            <Eyebrow>Step 3 · Checkout availability</Eyebrow>
             <p className="mt-1.5 text-[13px] text-ink-soft">
-              Pick the address and payment method, then place the order. The order appears in your account straight
-              away.
+              Secure payment processing is not configured yet. No payment method is enabled, and no order can be
+              placed until the provider is connected.
             </p>
-            <div className="mt-4">
-              <PlaceOrderForm
-                addresses={addressList}
-                shippingMethod={shippingMethod}
-                paymentMethods={paymentMethods}
-                defaultAddressId={chosenAddress}
-              />
-            </div>
           </section>
         </div>
 

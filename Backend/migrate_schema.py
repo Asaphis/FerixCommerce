@@ -11,6 +11,7 @@ if not DATABASE_URL:
     raise SystemExit("DATABASE_URL must be configured for the hosted PostgreSQL database.")
 
 from sqlalchemy import create_engine, text, inspect
+SCHEMA_VERSION = 2
 from core import Base
 
 if DATABASE_URL.startswith("postgres://"):
@@ -37,34 +38,33 @@ NEW_COLUMNS = {
 }
 
 def run_migration():
-    print("Creating tables if they don't exist...")
+    """Apply required columns atomically and fail closed on incompatible schemas."""
     Base.metadata.create_all(engine)
-    print("Tables created/verified.")
-    
-    with engine.connect() as conn:
-        inspector = inspect(engine)
-        tables = inspector.get_table_names()
-        
-        if "catalog_records" not in tables:
-            print("catalog_records table not found after create_all. This is unexpected.")
-            return
-            
-        existing_columns = {col["name"] for col in inspector.get_columns("catalog_records")}
-        
-        for col_name, col_type in NEW_COLUMNS.items():
-            if col_name not in existing_columns:
-                print(f"Adding column: {col_name} ({col_type})")
-                alter_stmt = f"ALTER TABLE catalog_records ADD COLUMN {col_name} {col_type}"
-                try:
-                    conn.execute(text(alter_stmt))
-                    conn.commit()
-                    print(f"  -> Successfully added {col_name}")
-                except Exception as e:
-                    print(f"  -> Error adding {col_name}: {e}")
-            else:
-                print(f"Column {col_name} already exists, skipping.")
-                
-    print("Migration completed successfully.")
+    with engine.begin() as conn:
+        conn.execute(text("CREATE TABLE IF NOT EXISTS schema_versions (id VARCHAR(40) PRIMARY KEY, version INTEGER NOT NULL, applied_at TIMESTAMP NOT NULL)"))
+        required = {
+            "staff_sessions": {"last_seen_at": "TIMESTAMP"}, "sessions": {"last_seen_at": "TIMESTAMP"},
+            "catalog_records": {name: typ for name, typ in NEW_COLUMNS.items()},
+        }
+        for table, columns in required.items():
+            existing = {col["name"] for col in inspect(conn).get_columns(table)}
+            for name, col_type in columns.items():
+                if name not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {col_type}"))
+        version = conn.execute(text("SELECT version FROM schema_versions WHERE id='current'")).scalar()
+        if version is not None and int(version) > SCHEMA_VERSION:
+            raise RuntimeError(f"Database schema version {version} is newer than application {SCHEMA_VERSION}")
+        if version is None:
+            conn.execute(text("INSERT INTO schema_versions (id, version, applied_at) VALUES ('current', :version, CURRENT_TIMESTAMP)"), {"version": SCHEMA_VERSION})
+        elif int(version) < SCHEMA_VERSION:
+            conn.execute(text("UPDATE schema_versions SET version=:version, applied_at=CURRENT_TIMESTAMP WHERE id='current'"), {"version": SCHEMA_VERSION})
+    final = inspect(engine)
+    for table, columns in required.items():
+        names = {col["name"] for col in final.get_columns(table)}
+        missing = set(columns) - names
+        if missing:
+            raise RuntimeError(f"Migration incomplete for {table}: {sorted(missing)}")
+    print(f"Migration completed successfully at schema version {SCHEMA_VERSION}.")
 
 if __name__ == "__main__":
     run_migration()

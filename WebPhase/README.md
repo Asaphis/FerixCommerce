@@ -1,30 +1,44 @@
-# WebPhase — the three systems
+# Ferixas Commerce
 
-Each system is built on its own. They share one backend.
+Ferixas is split into three Next.js applications backed by one FastAPI API. Run each web app from its own folder; none should connect to PostgreSQL directly.
 
-| Folder | System | Audience | State |
-|---|---|---|---|
-| `marketplace/` | **Customer** | Shoppers | Built |
-| `merchant/` | **Seller** | Merchants running their shop | Not started |
-| `admin/` | **Admin** | Platform operators | Not started |
+| Folder | Surface | Purpose |
+|---|---|---|
+| `marketplace/` | Shopper | Public marketplace, cart, checkout and account |
+| `merchant/` | Seller | Seller catalogue, inventory, orders, audience and workspace |
+| `admin/` | Admin | Platform catalogue, seller review, CMS and operations |
 
-## marketplace/ — the customer system
+## Local development
 
-A Next.js app. It is its own project root: run npm commands from inside it.
+1. Start the API from `../Backend` after configuring `DATABASE_URL` to a PostgreSQL instance (Neon is the intended database). The application intentionally has no local SQLite runtime fallback.
+2. In a separate terminal, start one web surface:
 
+```bash
+cd marketplace   # or merchant / admin
+npm ci
+FERIX_API_BASE=http://localhost:8000 npm run dev
 ```
-cd WebPhase/marketplace
-npm install
-npm run dev
+
+Configure the web app's server-side and public API base variables as required by its `.env.example`; never commit secrets or production tokens. For the local fonts and build requirements, use Node 22 and the committed lockfile.
+
+## Verification
+
+From the repository root, install backend/frontend dependencies and set `FERIXAS_TEST_POSTGRES_URL` to a disposable local PostgreSQL database named `ferixas_test_*`, then run:
+
+```bash
+make verify
 ```
 
-Every screen gets its data by calling the backend — there is no mock or
-placeholder data in the app itself.
+Individual targets are `make backend-test`, `make postgres-smoke`, and `make frontend-check`. The PostgreSQL smoke creates and removes only its own uniquely named test schemas and refuses non-local hosts or a database name without the test prefix. Backend contract tests use a separate disposable SQLite database guarded by `FERIXAS_ENV=test`; SQLite remains test-only and is not a supported runtime fallback.
 
-- `_specs/` holds the original per-page notes (home, products, cart, checkout,
-  account) that came with the repo. They describe intent, not the build.
-- `.env.example` lists the two settings the deployed app needs.
+GitHub Actions runs the same backend contract, PostgreSQL migration/seed, and three frontend build/typecheck gates on pull requests and pushes to `main`.
 
-## Status of admin/
+## Product and deployment boundaries
 
-No specification has been written for admin yet, so it is untouched.
+- Seed catalogue rows are clearly marked demo listings, not actual orders or social-proof data.
+- Seller listings remain private until the Admin approval workflow accepts them; public pages use the active-store, approved-product and marketplace-channel gates.
+- Payment capture, refunds, payouts, and real email/media delivery require configured, verified providers. UI states must not imply those provider actions succeeded when the backend has refused or not performed them.
+- Seller Studio storefront design is explicitly read-only/coming soon until the design engine is implemented.
+- Production deployment, account creation and live provider setup are separate from local code verification; this repository does not claim that a live deployment was performed.
+
+See [`../Backend/README.md`](../Backend/README.md) for API setup, production bootstrap and provider configuration.

@@ -46,7 +46,6 @@ const TEXT_FIELDS: Record<string, EditorField[]> = {
 const TITLED = ["category_grid", "brand_carousel", "product_carousel", "featured_stores", "product_grid"];
 const FALLBACK: EditorField[] = [
   { key: "title", title: "Title" },
-  { key: "subtitle", title: "Description", long: true },
 ];
 
 /** The choices each kind of section carries. */
@@ -176,29 +175,6 @@ const COUNTS: Record<string, EditorField[]> = {
   ],
 };
 
-/** Section types in plain words. A type with no entry falls back to its own name. */
-const SECTION_LABELS: Record<string, string> = {
-  hero_banner: "Hero banner",
-  hero_slim: "Banner",
-  promo_strip: "Message strip",
-  promo_slots: "Promotion slots",
-  category_grid: "Department tiles",
-  brand_carousel: "Brand row",
-  product_carousel: "Product row",
-  product_grid: "Product list",
-  featured_stores: "Stores",
-  featured_collection: "Collection",
-  footer: "Footer",
-  product_gallery: "Gallery",
-  buy_box: "Buy box",
-  delivery_block: "Delivery and returns",
-  reviews: "Reviews",
-};
-
-function sectionLabel(section: { type?: string; name?: string }) {
-  return SECTION_LABELS[String(section.type)] ?? section.name ?? "Section";
-}
-
 /** Where each kind of band gets its records, so the editor can point there. */
 const DRAW_FROM: Record<string, { href: string; label: string }> = {
   category_grid: { href: "/departments", label: "departments" },
@@ -307,7 +283,6 @@ export default async function CmsSectionEditor({
             <ArrowLeft width={13} height={13} /> {page?.title ?? "Content"}
           </Link>
         }
-        eyebrow={section ? sectionLabel(section) : undefined}
         title={section?.name || "That section"}
         action={
           section ? (

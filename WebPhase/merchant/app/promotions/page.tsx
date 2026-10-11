@@ -1,6 +1,6 @@
 import { PromotionForm } from "@/components/studio/promotion-form";
 import { requireMerchant } from "@/lib/data";
-import { listPromotions } from "@/lib/api";
+import { apiImageUrl, listPromotions } from "@/lib/api";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/studio/bits";
 import { dateShort, money, num, titleCase } from "@/lib/format";
 
@@ -36,13 +36,13 @@ export default async function PromotionsPage() {
                     </div>
                     <p className="mt-1.5 text-[12.5px] text-chalk-dim">{sale.headline || "No headline yet"}</p>
                     <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
-                      {dateShort(sale.startsAt)} → {dateShort(sale.endsAt)} · {sale.items.length} product(s)
+                      {dateShort(sale.startsAt)} → {dateShort(sale.endsAt)}
                     </p>
                   </div>
                   {sale.bannerUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={sale.bannerUrl}
+                      src={apiImageUrl(sale.bannerUrl) ?? undefined}
                       alt={`${sale.name} banner`}
                       loading="lazy"
                       className="h-14 w-24 shrink-0 rounded-[2px] border border-hairline object-cover"
@@ -98,25 +98,9 @@ export default async function PromotionsPage() {
 
         <div className="grid content-start gap-3">
           <PromotionForm products={data.products} />
-          <Panel>
-            <PanelHead title="How this works" />
-            <ul className="grid gap-2.5 text-[12.5px] leading-relaxed text-chalk-dim">
-              <li className="rounded-[2px] border border-hairline p-3">
-                <span className="block text-chalk">Price window</span>
-                The sale price applies only while the promotion is live.
-              </li>
-              <li className="rounded-[2px] border border-hairline p-3">
-                <span className="block text-chalk">Product record</span>
-                Your catalogue price, stock and channels stay exactly as they are.
-              </li>
-            </ul>
-          </Panel>
         </div>
       </div>
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim/70">
-        {data.sales.length} promotion(s) · {data.products.length} product(s) available to promote
-      </p>
     </div>
   );
 }

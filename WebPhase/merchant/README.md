@@ -1,67 +1,22 @@
-# Ferixas — Seller System
+# Ferixas Seller Workspace
 
-The merchant workspace. One of three separate systems on the same platform backend:
+The merchant-facing Next.js application for catalogue, inventory, orders, customers, analytics, payouts, promotions and profile settings. It calls the shared FastAPI API through `lib/api.ts`; it does not access PostgreSQL directly.
 
-| System | Audience | State |
-|---|---|---|
-| Customer | Shoppers | Built |
-| **Seller** (this project) | Merchants running their shop | Built |
-| Admin | Platform operators | Not started |
+## Run and build
 
-## How it talks to the backend
-
-Every screen and every action goes through `lib/api.ts`. Nothing in the UI holds its own
-data — there is no mock or placeholder data anywhere in this app.
-
-The backend is the shared hosted commerce REST API, the same one the customer system uses.
-The frontend reads and writes through that API; it does not connect directly to PostgreSQL/Neon.
-
-The default API host is `https://shopapi.ferixas.com`. For a deployment using another API host,
-set both public and server values:
-
-```
-FERIX_API_BASE=https://shopapi.ferixas.com
-NEXT_PUBLIC_FERIX_API_BASE=https://shopapi.ferixas.com
+```bash
+npm ci
+FERIX_API_BASE=http://localhost:8000 npm run dev
+npm run typecheck
+npm run build
 ```
 
-## Routes
+Configure the server-side and public API base variables from `.env.example` for the deployment. There is no shared seller demo password: seller accounts are provisioned through the platform's authorized account workflow. Test fixtures and test-only credentials are described in [`../../Backend/README.md`](../../Backend/README.md); never use them in production.
 
-`/login` · `/` (dashboard) · `/products` · `/products/new` · `/products/[slug]` ·
-`/inventory` · `/orders` · `/orders/[id]` · `/customers` · `/customers/[id]` ·
-`/analytics` · `/payouts` · `/settings`
+## Product lifecycle
 
-## Demo store
+Seller-owned listings are private until approved by an Admin. Store profile edits that change marketplace-visible fields use the review queue. Suspended or marketplace-disabled sellers, unapproved listings and listings with the marketplace channel off are not publicly discoverable. Seller Studio is marked **Coming soon** and remains read-only until its design engine is implemented.
 
-Any seller on the platform signs in with their own email and the shared demo password:
+## Mobile navigation
 
-```
-owner@abc-electronics.ferixas.com / Ferixas123
-```
-
-Other stores: `aurasound`, `nova-fashion`, `sahel-supply`, `lumen-home`, `pixel-gaming`,
-`verdant-beauty`, `ferixas-official`.
-
-## Backend surface this app uses
-
-```
-POST   /merchant/login             POST   /merchant/logout
-GET    /merchant/me                GET    /merchant/dashboard
-GET    /merchant/products          GET    /merchant/product
-POST   /merchant/product           PATCH  /merchant/product
-DELETE /merchant/product           GET    /merchant/inventory
-POST   /merchant/inventory/adjust  GET    /merchant/orders
-GET    /merchant/order             POST   /merchant/orders/status
-GET    /merchant/customers         GET    /merchant/customer
-GET    /merchant/analytics         GET    /merchant/payouts
-GET    /merchant/settings          PATCH  /merchant/settings
-```
-
-The merchant session token travels inside the request body (writes) or the query string
-(reads), because the runtime proxy does not forward custom headers.
-
-## The core idea this workspace demonstrates
-
-Seller products are scoped to the authenticated merchant and submitted to the Ferixas
-marketplace for review. Only approved listings and an approved seller profile appear on
-Ferixas. A seller's independent website is separate: its pages, domain, and storefront
-content are not embedded or represented as a Ferixas marketplace store.
+The workspace keeps five primary links in the bottom bar and groups all destinations in the accessible More drawer. The drawer is safe-area aware and closes on navigation or Escape.

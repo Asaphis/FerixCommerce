@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import re
+import secrets
 from typing import Optional
 
 from fastapi import APIRouter, Body, File, Form, Header, HTTPException, Query, Request, UploadFile
@@ -16,17 +17,37 @@ from sqlalchemy import select
 from core import (
     AuditLog, ContentDocument, ContentVersion, FlashSale, FlashSaleItem, LedgerEntry,
     MediaAsset, MerchantProfileRequest, Order, Payout, ROLE_PERMISSIONS, SessionLocal, StaffSession, StaffUser, User,
-    audit, collections as all_collections, categories as all_categories, find_merchant,
+    audit, brands as all_brands, collections as all_collections, categories as all_categories, find_merchant,
     find_product, iso, issue_staff_session, media_json, merchants as all_merchants,
     is_platform_product, is_seller_marketplace_product, is_seller_product, marketplace_product_available,
-    merchant_follower_count, merchant_review_summary, new_id, now,
+    merchant_follower_count, merchant_review_summary, new_id, now, is_public_store,
     permissions_for, placeholder, product_owner_kind, products as all_products,
     find_category, put_row, drop_row, seller_catalog_products, seller_products,
     remove_media_blob, require_permission, require_staff, rows_of, storage_info,
-    sync_pending_media, upload_media_blob, validate_media_upload, verify_password,
+    sync_pending_media, upload_media_blob, validate_media_upload, verify_password, hash_password, BOOTSTRAP_SECRET,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.post("/bootstrap")
+def bootstrap(payload: BootstrapIn):
+    """Create exactly one owner from the deployment-injected one-time secret."""
+    if not BOOTSTRAP_SECRET or not secrets.compare_digest(payload.secret, BOOTSTRAP_SECRET):
+        raise HTTPException(403, "Bootstrap is not available")
+    if len(payload.password) < 12:
+        raise HTTPException(422, "Bootstrap password must be at least 12 characters")
+    with SessionLocal() as db:
+        if db.scalar(select(StaffUser.id).limit(1)):
+            raise HTTPException(409, "Privileged bootstrap has already been completed")
+        email = payload.email.strip().lower()
+        row = StaffUser(id=new_id("stf"), subject_type="admin", subject_id="platform",
+                        name=payload.name.strip(), email=email, password_hash=hash_password(payload.password),
+                        role="owner", permissions=permissions_for("owner"))
+        db.add(row)
+        audit(db, "system", "bootstrap", "bootstrap.consume", email, "Initial owner created")
+        db.commit()
+        return {"ok": True, "email": email, "message": "Bootstrap completed; the secret cannot be reused."}
 
 DEFAULT_SETTINGS = {
     "platformName": "Ferixas",
@@ -44,6 +65,13 @@ DEFAULT_SETTINGS = {
 # ── Payloads ───────────────────────────────────────────────────────────────
 
 class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+class BootstrapIn(BaseModel):
+    secret: str
+    name: str
     email: str
     password: str
 
@@ -81,17 +109,29 @@ class ProductPatch(BaseModel):
     slug: Optional[str] = None
     title: Optional[str] = None
     category: Optional[str] = None
+    brand: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
     compareAt: Optional[float] = None
     stock: Optional[int] = None
+    lowStockAt: Optional[int] = None
+    sku: Optional[str] = None
     status: Optional[str] = None
     featured: Optional[bool] = None
     store: Optional[bool] = None
     marketplace: Optional[bool] = None
     images: Optional[list[str]] = None
+    bullets: Optional[list[str]] = None
+    variants: Optional[list[dict]] = None
     collections: Optional[list[str]] = None
     tags: Optional[list[str]] = None
+    seoTitle: Optional[str] = None
+    seoDescription: Optional[str] = None
+    shipping_amount: Optional[float] = None
+    estimated_delivery_days: Optional[int] = None
+    package_weight: Optional[float] = None
+    package_dimensions: Optional[str] = None
+    shipping_origin: Optional[str] = None
 
 
 class SellerProductPatch(BaseModel):
@@ -964,9 +1004,15 @@ def user(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str
                          "title": r.get("title", ""), "body": r.get("body", ""), "date": r.get("date", "")} for r in reviews],
             "wishlist": [{"id": p["id"], "slug": p["slug"], "title": p["title"], "price": p["price"],
                           "merchantName": p.get("merchantName", "")} for p in saved],
-            "follows": [],
+            "follows": [{"id": merchant["id"], "slug": merchant.get("slug", ""), "name": merchant.get("name", ""),
+                         "card": {"id": merchant["id"], "slug": merchant.get("slug", ""), "name": merchant.get("name", ""),
+                                  "logo": merchant.get("logo", ""), "verified": merchant.get("verified", False)}}
+                        for merchant_id in ((found.settings or {}).get("followed_sellers") or [])
+                        if (merchant := find_merchant(db, str(merchant_id))) and is_public_store(merchant)],
             "stats": {"orders": row["orders"], "spent": row["spent"], "averageOrder": row["averageOrder"],
-                      "addresses": len(addresses), "reviews": len(reviews), "saved": len(saved), "follows": 0},
+                      "addresses": len(addresses), "reviews": len(reviews), "saved": len(saved),
+                      "follows": sum(1 for merchant_id in ((found.settings or {}).get("followed_sellers") or [])
+                                    if (merchant := find_merchant(db, str(merchant_id))) and is_public_store(merchant))},
         }
 
 
@@ -1155,8 +1201,19 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
             "products": [{"id": p["id"], "slug": p["slug"], "title": p["title"], "sku": p.get("sku", ""),
                           "price": p.get("price", 0), "compareAt": p.get("compareAt"), "stock": p.get("stock", 0),
                           "status": p.get("status", "active"), "category": p.get("category", ""),
+                          "brand": p.get("brand", ""), "brandName": p.get("brandName", ""),
                           "merchantId": p.get("merchantId", ""), "merchantName": p.get("merchantName", ""),
                           "image": (p.get("images") or [placeholder(p["slug"])])[0],
+                          "images": p.get("images", []), "description": p.get("description", ""),
+                          "bullets": p.get("bullets", []), "variants": p.get("variants", []),
+                          "tags": p.get("tags", []), "seoTitle": p.get("seoTitle", ""),
+                          "seoDescription": p.get("seoDescription", ""),
+                          "lowStockAt": p.get("lowStockAt", 8),
+                          "shipping_amount": p.get("shipping_amount"),
+                          "estimated_delivery_days": p.get("estimated_delivery_days"),
+                          "package_weight": p.get("package_weight"),
+                          "package_dimensions": p.get("package_dimensions", ""),
+                          "shipping_origin": p.get("shipping_origin", ""),
                           "channels": p.get("channels") or {}, "featured": p.get("featured", False),
                           "collections": p.get("collections", []), "sold30d": sold30.get(p["id"], 0),
                           "updatedAt": p.get("updatedAt", "")} for p in filtered],
@@ -1184,7 +1241,25 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             owner = {"id": "ferixas-official", "name": "Ferixas Official", "slug": "ferixas-official"}
         if not owner:
             raise HTTPException(404, "Choose an existing seller for this product")
-        price = float(payload.get("price") or 0)
+        try:
+            price = float(payload.get("price") or 0)
+            stock = max(0, int(payload.get("stock") or 0))
+            compare_at = float(payload["compareAt"]) if payload.get("compareAt") not in (None, "") else None
+            shipping_amount = float(payload["shipping_amount"]) if payload.get("shipping_amount") not in (None, "") else None
+            estimated_delivery_days = int(payload["estimated_delivery_days"]) if payload.get("estimated_delivery_days") not in (None, "") else None
+            package_weight = float(payload["package_weight"]) if payload.get("package_weight") not in (None, "") else None
+            low_stock_at = max(1, int(payload.get("lowStockAt") or 8))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Check the product price, stock and shipping values")
+        if price < 0 or (compare_at is not None and compare_at < 0) or (shipping_amount is not None and shipping_amount < 0) or (package_weight is not None and package_weight < 0) or (estimated_delivery_days is not None and estimated_delivery_days < 0):
+            raise HTTPException(400, "Price, stock and shipping values cannot be negative")
+        brand_key = str(payload.get("brand") or "").strip()
+        brand = next((b for b in all_brands(db) if brand_key and brand_key in {str(b.get("id") or ""), str(b.get("slug") or "")}), None)
+        if brand_key and not brand:
+            raise HTTPException(400, "Choose a brand from the managed brand list")
+        status = str(payload.get("status") or ("draft" if is_platform else "pending_review"))
+        if is_platform and status not in {"draft", "approved", "archived"}:
+            raise HTTPException(400, "Choose draft, approved or archived status")
         
         # Seller-owned catalog records always enter the same admin review gate,
         # including products created on a seller's behalf by an operator.
@@ -1197,12 +1272,14 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "category": payload.get("category") or "home",
             "description": payload.get("description") or "",
             "bullets": payload.get("bullets") or [], "tags": payload.get("tags") or [],
+            "brand": brand.get("slug", brand.get("id", "")) if brand else "",
+            "brandName": brand.get("name", "") if brand else "",
             "collections": payload.get("collections") or [],
             "images": payload.get("images") or [placeholder(f"{slug}-{i}") for i in (1, 2, 3)],
-            "plates": [], "price": price, "compareAt": payload.get("compareAt"), "discount": None,
+            "plates": [], "price": price, "compareAt": compare_at, "discount": None,
             "cost": round(price * 0.6, 2),
             "sku": payload.get("sku") or f"FX-{new_id('', 5).upper()}",
-            "stock": int(payload.get("stock") or 0), "lowStockAt": 8,
+            "stock": stock, "lowStockAt": low_stock_at,
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
             "variants": payload.get("variants") or [], "status": (payload.get("status") or default_status) if is_platform else "pending_review",
             "reviewStatus": "in_review" if not is_platform else None,
@@ -1212,6 +1289,11 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "createdAt": iso(now()), "updatedAt": iso(now()), "sold30d": 0, "views30d": 0,
             "seoTitle": payload.get("seoTitle") or title,
             "seoDescription": payload.get("seoDescription") or (payload.get("description") or "")[:155],
+            "shipping_amount": shipping_amount,
+            "estimated_delivery_days": estimated_delivery_days,
+            "package_weight": package_weight,
+            "package_dimensions": str(payload.get("package_dimensions") or "").strip(),
+            "shipping_origin": str(payload.get("shipping_origin") or "").strip(),
             "origin": origin,
         }
         put_row(db, "product", slug, product)
@@ -1231,14 +1313,34 @@ def catalog_update(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         if not is_platform_product(target):
             raise HTTPException(403, "Seller-owned products must be managed through the seller review workflow.")
         updated = dict(target)
-        for field in ("title", "category", "description", "status", "images", "collections", "tags", "compareAt", "featured"):
-            value = getattr(payload, field, None)
-            if value is not None:
-                updated[field] = value
+        if payload.status is not None and payload.status not in {"draft", "approved", "archived"}:
+            raise HTTPException(400, "Choose draft, approved or archived status")
+        for field in ("title", "category", "description", "status", "images", "bullets", "variants", "collections", "tags", "compareAt", "featured", "sku", "lowStockAt", "seoTitle", "seoDescription", "shipping_amount", "estimated_delivery_days", "package_weight", "package_dimensions", "shipping_origin"):
+            if field in payload.model_fields_set:
+                updated[field] = getattr(payload, field)
+        if "brand" in payload.model_fields_set:
+            brand_key = str(payload.brand or "").strip()
+            brand = next((b for b in all_brands(db) if brand_key and brand_key in {str(b.get("id") or ""), str(b.get("slug") or "")}), None)
+            if brand_key and not brand:
+                raise HTTPException(400, "Choose a brand from the managed brand list")
+            updated["brand"] = brand.get("slug", brand.get("id", "")) if brand else ""
+            updated["brandName"] = brand.get("name", "") if brand else ""
         if payload.price is not None:
+            if payload.price < 0:
+                raise HTTPException(400, "Price cannot be negative")
             updated["price"] = float(payload.price)
         if payload.stock is not None:
+            if payload.stock < 0:
+                raise HTTPException(400, "Stock cannot be negative")
             updated["stock"] = int(payload.stock)
+        if payload.lowStockAt is not None and payload.lowStockAt < 1:
+            raise HTTPException(400, "Low-stock threshold must be at least one")
+        if payload.estimated_delivery_days is not None and payload.estimated_delivery_days < 0:
+            raise HTTPException(400, "Estimated delivery cannot be negative")
+        if payload.shipping_amount is not None and payload.shipping_amount < 0:
+            raise HTTPException(400, "Shipping amount cannot be negative")
+        if payload.package_weight is not None and payload.package_weight < 0:
+            raise HTTPException(400, "Package weight cannot be negative")
         if payload.store is not None or payload.marketplace is not None:
             channels = dict(updated.get("channels") or {})
             if payload.store is not None:
@@ -1446,11 +1548,19 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
                     ))
                 updated["approvedSectionTags"].append(request)
         elif decision == "changes":
+            from core import SectionPlacement
+            for old_placement in db.scalars(select(SectionPlacement).where(SectionPlacement.product_id == target["id"])).all():
+                db.delete(old_placement)
+            audit(db, "admin", staff.email, "placement.remove", target["slug"], "changes_requested")
             updated["reviewStatus"] = "changes_requested"
             updated["reviewNote"] = note
             updated["placementStatus"] = "changes_requested"
             # stays pending_review so it stays out of the shop
         else:
+            from core import SectionPlacement
+            for old_placement in db.scalars(select(SectionPlacement).where(SectionPlacement.product_id == target["id"])).all():
+                db.delete(old_placement)
+            audit(db, "admin", staff.email, "placement.remove", target["slug"], "rejected")
             updated["status"] = "rejected"
             updated["rejectionReason"] = note or "Admin rejected"
             updated["rejection_reason"] = note or "Admin rejected"
@@ -2048,25 +2158,53 @@ def staff_save(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "settings.manage")
+        role = payload.role
+        if role is not None and role not in ROLE_PERMISSIONS:
+            raise HTTPException(400, "Choose a role from the available role list")
+        allowed_permissions = {permission for values in ROLE_PERMISSIONS.values() for permission in values}
+        if payload.permissions is not None and not set(payload.permissions).issubset(allowed_permissions):
+            raise HTTPException(400, "One or more permissions are not recognized")
         if payload.id:
             row = db.get(StaffUser, payload.id)
             if not row:
                 raise HTTPException(404, "Team member not found")
+            if row.subject_type != "admin" or row.subject_id != "platform":
+                raise HTTPException(404, "Team member not found")
+            role = role or row.role
+            if role not in ROLE_PERMISSIONS:
+                raise HTTPException(400, "This team member has an unsupported role")
+            if payload.permissions is not None and "*" in payload.permissions and (staff.role != "owner" or role != "owner"):
+                raise HTTPException(403, "Full platform access is reserved for an owner role")
+            if payload.id == staff.id and payload.role is not None and role != staff.role:
+                raise HTTPException(400, "You cannot change your own role")
         else:
             if not payload.email:
                 raise HTTPException(400, "An email is required")
+            email = payload.email.strip().lower()
+            if db.scalar(select(StaffUser.id).where(StaffUser.email == email)):
+                raise HTTPException(409, "A team account with that email already exists")
+            if not payload.password or len(payload.password) < 12:
+                raise HTTPException(400, "Use a password with at least 12 characters")
+            if role == "owner" and staff.role != "owner":
+                raise HTTPException(403, "Only an owner can grant the owner role")
+            if payload.permissions is not None and "*" in payload.permissions and role != "owner":
+                raise HTTPException(403, "Full platform access is reserved for an owner role")
             row = StaffUser(id=new_id("stf"), subject_type="admin", subject_id="platform",
-                            name=payload.name or payload.email, email=payload.email.lower(),
-                            password_hash="", role=payload.role or "admin", permissions=[])
+                            name=payload.name or email, email=email,
+                            password_hash="", role=role or "admin", permissions=[])
             db.add(row)
+        if row.role == "owner" and staff.role != "owner":
+            raise HTTPException(403, "Only an owner can manage an owner account")
         if payload.name:
             row.name = payload.name
         if payload.role:
-            row.role = payload.role
-            row.permissions = payload.permissions or permissions_for(payload.role)
+            row.role = role
+            row.permissions = payload.permissions if payload.permissions is not None else permissions_for(role)
         elif payload.permissions is not None:
             row.permissions = payload.permissions
         if payload.password:
+            if len(payload.password) < 12:
+                raise HTTPException(400, "Use a password with at least 12 characters")
             from core import hash_password
             row.password_hash = hash_password(payload.password)
         if not row.password_hash:
@@ -2085,8 +2223,12 @@ def staff_delete(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
         row = db.get(StaffUser, str(payload.get("id")))
         if not row:
             raise HTTPException(404, "Team member not found")
+        if row.subject_type != "admin" or row.subject_id != "platform":
+            raise HTTPException(404, "Team member not found")
         if row.email == staff.email:
             raise HTTPException(400, "You cannot remove your own account")
+        if row.role == "owner" and staff.role != "owner":
+            raise HTTPException(403, "Only an owner can remove an owner account")
         db.delete(row)
         audit(db, "admin", staff.email, "staff.delete", row.email, "")
         db.commit()

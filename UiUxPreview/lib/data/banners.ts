@@ -27,7 +27,7 @@ export const MARKETPLACE_BANNERS: Banner[] = [
     kind: "image",
     eyebrow: "Autumn on Ferixas",
     headline: "Seven merchants.\nOne cart. One checkout.",
-    body: "Audio, tailoring, home, gaming and pantry goods \u2014 bought together from seven independent stores, delivered separately.",
+    body: "Shop audio, fashion, home and more from independent Ferixas stores.",
     ctaLabel: "Shop the marketplace",
     ctaHref: "/browse",
     secondaryLabel: "Meet the stores",

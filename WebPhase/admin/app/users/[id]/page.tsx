@@ -125,7 +125,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           </Panel>
 
           <Panel>
-            <PanelHead title="Saved items" hint={`${stats.saved} kept for later`} />
+            <PanelHead title="Saved items" />
             {wishlist.length ? (
               <ul className="space-y-2.5">
                 {wishlist.slice(0, 6).map((item) => (
@@ -141,7 +141,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           </Panel>
 
           <Panel>
-            <PanelHead title="Reviews" hint={`${stats.reviews} written`} />
+            <PanelHead title="Reviews" />
             {reviews.length ? (
               <ul className="space-y-3">
                 {reviews.map((review) => (

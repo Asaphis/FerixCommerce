@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCatalog, listMedia, getProductSections, type SectionOption } from "@/lib/api";
+import { listCatalog, listMedia, listBrands, getProductSections, type SectionOption } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
@@ -9,8 +9,8 @@ import { Eyebrow, Panel, PanelHead } from "@/components/ops/bits";
 import { createCatalogProductAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
 
-export default async function NewProductPage() {
-  const { session } = await requireAdmin();
+export default async function NewProductPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const [{ error }, { session }] = await Promise.all([searchParams, requireAdmin()]);
   const library = await listMedia(session).catch(() => ({ assets: [], storage: "" }));
   // An asset carries its human-readable bit under whichever name the record has used over
   // time. The picker needs one plain url and label, so it falls back through them.
@@ -19,7 +19,7 @@ export default async function NewProductPage() {
     return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
   });
   const { available: sections, placements } = await getProductSections(session, "").catch(() => ({ available: [], placements: [] }));
-  const { categories, collections } = await listCatalog(session, {});
+  const [{ categories, collections }, { brands }] = await Promise.all([listCatalog(session, {}), listBrands(session).catch(() => ({ brands: [] }))]);
   const sectionGroups = sections.reduce<Record<string, SectionOption[]>>((groups, section) => {
     const key = section.documentTitle || "Marketplace";
     (groups[key] ??= []).push(section);
@@ -28,6 +28,7 @@ export default async function NewProductPage() {
 
   return (
     <div className="grid min-w-0 gap-5">
+      {error ? <p role="alert" className="rounded-[8px] border border-rose/30 bg-rose/10 px-3 py-2 text-[12px] text-rose">{error}</p> : null}
       <header>
         <Link
           href="/catalog"
@@ -62,6 +63,12 @@ export default async function NewProductPage() {
                 ))}
               </select>
             </Field>
+            <Field title="Brand">
+              <select name="brand" defaultValue="" className={selectClass}>
+                <option value="">No brand</option>
+                {brands.filter((brand) => brand.visible).map((brand) => <option key={brand.id} value={brand.slug}>{brand.name}</option>)}
+              </select>
+            </Field>
             <Field title="SKU">
               <input name="sku" placeholder="FX-A1001" className={inputClass} />
             </Field>
@@ -73,6 +80,9 @@ export default async function NewProductPage() {
             </Field>
             <Field title="Stock on hand">
               <input name="stock" type="number" min="0" defaultValue="0" className={inputClass} />
+            </Field>
+            <Field title="Low-stock alert at">
+              <input name="lowStockAt" type="number" min="1" defaultValue="8" className={inputClass} />
             </Field>
             <Field title="Status">
               <select name="status" defaultValue="draft" className={selectClass}>
@@ -91,10 +101,13 @@ export default async function NewProductPage() {
           <Field title="Highlights — one per line">
             <textarea name="bullets" placeholder={"Active noise cancelling\n40-hour battery"} className={textareaClass} />
           </Field>
+          <Field title="Variants — one per line (Name: value | value)">
+            <textarea name="variants" placeholder={"Colour: Black | White\nSize: Small | Large"} className={textareaClass} />
+          </Field>
         </Panel>
 
         <Panel className="grid gap-4">
-          <PanelHead title="Media and Marketplace sections" />
+          <PanelHead title="Media, shipping and placement" />
           <MediaUploadField
             key="product-image"
             urlName="imageUrl"
@@ -104,6 +117,16 @@ export default async function NewProductPage() {
             urlLabel="Product image URL"
             fileLabel="Upload a product image"
           />
+          <Field title="Additional image URLs — one per line">
+            <textarea name="images" placeholder="https://cdn.example.com/product-side.jpg" className={textareaClass} />
+          </Field>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Field title="Shipping amount"><input name="shipping_amount" type="number" step="0.01" min="0" className={inputClass} placeholder="Optional" /></Field>
+            <Field title="Estimated delivery (days)"><input name="estimated_delivery_days" type="number" min="0" className={inputClass} placeholder="Optional" /></Field>
+            <Field title="Package weight (kg)"><input name="package_weight" type="number" step="0.01" min="0" className={inputClass} placeholder="Optional" /></Field>
+            <Field title="Package dimensions"><input name="package_dimensions" className={inputClass} placeholder="30 × 20 × 10 cm" /></Field>
+            <Field title="Shipping origin"><input name="shipping_origin" className={inputClass} placeholder="Lagos, NG" /></Field>
+          </div>
           <Field title="Marketplace sections">
             {sections.length ? (
               <div className="grid gap-4">
@@ -125,9 +148,9 @@ export default async function NewProductPage() {
                           className="mt-0.5 size-4 shrink-0 accent-signal"
                         />
                         <span className="min-w-0">
-                          <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName}</span>
+                          <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName || "Unnamed section"}</span>
                           <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                            {section.documentTitle} · {section.sectionType}{section.placements ? ` · ${section.placements} already` : ""}
+                            {section.documentTitle || "Unknown page"} · {section.sectionType || "unknown type"}{section.placements ? ` · ${section.placements} already` : ""}
                           </span>
                         </span>
                       </label>

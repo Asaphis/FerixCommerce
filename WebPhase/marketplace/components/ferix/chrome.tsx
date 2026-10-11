@@ -62,7 +62,6 @@ export function FerixHeader({
             <FerixMark className="h-7 w-7" /><span className="font-display text-[14px] font-extrabold tracking-[0.08em] text-ink">FERIXAS</span>
           </Link>
           <div className="ml-auto flex items-center gap-1">
-            <Link href="/search" aria-label="Search" className="grid h-9 w-9 place-items-center text-ink-soft hover:text-ember"><Search width={19} height={19} /></Link>
             <Link href="/cart" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`} className="inline-flex h-9 items-center gap-1.5 rounded-[2px] rounded-tr-[9px] bg-ember px-2.5 text-[11px] font-bold text-white">
               <ShoppingBag width={15} height={15} /><span>{cartCount > 99 ? "99+" : cartCount}</span>
             </Link>

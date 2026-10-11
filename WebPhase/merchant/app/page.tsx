@@ -5,7 +5,7 @@ import { getDashboard } from "@/lib/api";
 import { signOutAction } from "@/lib/actions";
 import { SubmitButton } from "@/components/studio/controls";
 import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
-import { compact, dateShort, money, num, relative, titleCase } from "@/lib/format";
+import { dateShort, money, num, relative, titleCase } from "@/lib/format";
 
 function statusTone(status: string) {
   if (status === "delivered") return "success" as const;
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
         <StatTile label="Revenue · 30 days" value={money(summary.revenue30d, { cents: false })} sub="Recorded orders" icon={<ChartNoAxesCombined width={15} height={15} />} />
         <StatTile label="Orders · 30 days" value={num(summary.orders30d)} sub={`${statuses.processing ?? 0} need attention`} icon={<ShoppingCart width={15} height={15} />} accent="azure" />
         <StatTile label="Products" value={num(counts.products)} sub={`${counts.published} published`} icon={<Package width={15} height={15} />} accent="chalk" />
-        <StatTile label="Marketplace followers" value={num(counts.followers)} sub="Real shopper follows" icon={<Users width={15} height={15} />} accent="sand" />
+        <StatTile label="Marketplace followers" value={num(counts.followers)} icon={<Users width={15} height={15} />} accent="sand" />
       </div>
 
       <nav aria-label="Seller quick actions" className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
@@ -160,7 +160,6 @@ export default async function DashboardPage() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-3 text-[10px] text-chalk-dim">
-        <span>{compact(counts.products)} products · {counts.published} published</span>
         <Link href="/payouts" className="inline-flex items-center gap-1 font-semibold text-signal"><Wallet width={12} height={12} /> View payout history <ArrowRight width={12} height={12} /></Link>
       </div>
     </div>
@@ -181,8 +180,7 @@ function DataUnavailable({ title, reason }: { title: string; reason: string }) {
       <section className="rounded-[14px] border border-hairline bg-panel p-5">
         <p className="font-display text-[16px] font-semibold text-chalk">The commerce API could not be reached</p>
         <p className="mt-1.5 max-w-[70ch] text-[13px] leading-relaxed text-chalk-dim">
-          Nothing was lost and nothing was changed. Set FERIX_API_BASE in this app&apos;s environment to the address
-          of the commerce API, then reload. Every other screen in the console keeps working.
+          Set FERIX_API_BASE in this app&apos;s environment to the commerce API address, then reload.
         </p>
         <p className="mt-3 rounded-[10px] bg-panel-2 px-3 py-2 font-mono text-[11px] break-words text-chalk-dim">{reason}</p>
       </section>

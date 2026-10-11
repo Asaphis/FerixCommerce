@@ -42,7 +42,6 @@ export default async function MerchantsPage({
       <PageHeader
         eyebrow="Store management"
         title="Merchants"
-        description="Seller records for the Ferixas marketplace. Open a seller to review performance, manage approved Ferixas listings, and control account access."
       />
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">

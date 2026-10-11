@@ -187,7 +187,8 @@ export default async function HomePage() {
     ...home.official,
     ...home.under100,
   ]);
-  const categories = home.categories.length ? home.categories : categoryFallback(catalogue);
+  const categories = (home.categories.length ? home.categories : categoryFallback(catalogue))
+    .filter((category) => category.count > 0);
   const trending = uniqueProducts(home.trending).slice(0, 8);
   const arrivals = uniqueProducts(home.newArrivals).slice(0, 8);
   const flash = uniqueProducts(home.flashSale?.products ?? []);
@@ -318,7 +319,6 @@ export default async function HomePage() {
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-1 pt-5 sm:px-6 sm:pt-7 lg:pt-8">
             <SectionHead
               title={section.title ?? "Shop by department"}
-              eyebrow={section.eyebrow ?? (isGrouped ? "Four to a face" : "Browse departments")}
               action={
                 seeAllDepartments ? (
                   <Link href="/browse" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
@@ -334,8 +334,8 @@ export default async function HomePage() {
               isGrouped ? (
                 <TileSwiper
                   categories={shown}
-                  /* Four to a face unless the section says otherwise: two across, two down. The
-                     next four are a swipe away rather than another screenful of scrolling. */
+                  /* Two across and two down by default. The next set is a swipe away rather
+                     than another screenful of scrolling. */
                   across={Number((section as { across?: number }).across) || 2}
                   rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
                   size="large"
@@ -365,7 +365,6 @@ export default async function HomePage() {
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
             <SectionHead
-              eyebrow={section.subtitle ?? "Verified makers across the marketplace"}
               title={section.title ?? "Shop by brand"}
               action={
                 brandSeeAll ? (
@@ -409,7 +408,6 @@ export default async function HomePage() {
             <section key={section.id ?? index} className="mt-6 border-y border-line-warm bg-white sm:mt-8">
               <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7">
                 <SectionHead
-                  eyebrow={section.subtitle ?? "Limited-time offers"}
                   title={section.title ?? home.flashSale?.headline ?? home.flashSale?.name ?? "Today's deals"}
                   className="mb-3"
                 />
@@ -426,8 +424,7 @@ export default async function HomePage() {
         const shown = limit ? products.slice(0, limit) : products;
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
-            <SectionHead
-              eyebrow={section.subtitle ?? (source === "selected" || source === "curated" ? "Selected for this section" : source === "new" ? "Fresh on Ferixas" : "Popular right now")}
+              <SectionHead
               title={section.title ?? (source === "selected" || source === "curated" ? "Featured products" : source === "new" ? "New arrivals" : "Trending picks")}
               action={
                 <Link href={`/browse?sort=${source === "new" ? "new" : "best"}`} className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
@@ -479,7 +476,6 @@ export default async function HomePage() {
           <section key={section.id ?? index} className="border-y border-line-warm bg-white">
             <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
               <SectionHead
-                eyebrow={section.subtitle ?? "Independent shops, one marketplace"}
                 title={section.title ?? "Meet the stores"}
                 action={
                   <Link href="/stores" className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">

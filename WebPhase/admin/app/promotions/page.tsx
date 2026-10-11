@@ -1,6 +1,6 @@
 import { Megaphone, Plus } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listPromotions } from "@/lib/api";
+import { assetUrl, listPromotions } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
@@ -45,7 +45,7 @@ export default async function PromotionsPage() {
                 <div className="flex min-w-0 items-start gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={sale.bannerUrl}
+                    src={assetUrl(sale.bannerUrl)}
                     alt={sale.name}
                     className="h-16 w-24 shrink-0 rounded-[2px] border border-hairline object-cover"
                   />

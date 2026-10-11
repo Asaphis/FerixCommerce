@@ -35,7 +35,7 @@ export default async function InventoryPage({
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <StatTile label="SKUs" value={num(data.totals.skus)} sub="Active catalogue lines" />
+        <StatTile label="SKUs" value={num(data.totals.skus)} />
         <StatTile label="Units on hand" value={num(data.totals.units)} sub={`${num(data.totals.reserved)} reserved for open orders`} accent="azure" />
         <StatTile
           label="Low stock"
@@ -127,14 +127,6 @@ export default async function InventoryPage({
         />
       )}
 
-      <Panel>
-        <PanelHead title="How stock moves" />
-        <p className="text-[12.5px] leading-relaxed text-chalk-dim">
-          A sale reduces on-hand stock. An open order shows as reserved until you mark it shipped, so you do
-          not oversell. A manual adjustment adds or removes units with a reason, recorded against your
-          account.
-        </p>
-      </Panel>
     </div>
   );
 }

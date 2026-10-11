@@ -24,7 +24,7 @@ function refreshAll() {
  */
 function safeReturn(formData: FormData, fallback: string): string {
   const raw = String(formData.get("return") ?? "").trim();
-  if (!raw.startsWith("/") || raw.startsWith("//")) return fallback;
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\") || /[\u0000-\u001f]/.test(raw)) return fallback;
   return raw;
 }
 
@@ -266,7 +266,7 @@ export async function setDefaultAddressAction(formData: FormData): Promise<void>
 
 export async function saveReviewAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const creds = await readCredentials();
-  if (!creds.session) redirect("/login");
+  if (!creds.session) redirect(`/login?return=${encodeURIComponent(safeReturn(formData, "/account/reviews"))}`);
   const id = String(formData.get("id") ?? "");
   const productId = String(formData.get("productId") ?? "");
   const rating = Number(formData.get("rating") ?? 5);

@@ -45,7 +45,6 @@ export default async function ProductsPage({
         <div className="min-w-0">
           <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
-          <p className="mt-1.5 text-[12px] text-chalk-dim">Marketplace listings</p>
         </div>
         <Link
           href="/products/new"
@@ -190,9 +189,6 @@ export default async function ProductsPage({
         />
       )}
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim/70">
-        {data.total} shown · {data.counts.all} in the catalogue · low stock at {data.lowStockAt} units
-      </p>
     </div>
   );
 }

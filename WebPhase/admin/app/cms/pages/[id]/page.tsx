@@ -55,7 +55,6 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
         }
         eyebrow={page?.documentType}
         title={page?.title ?? "That page"}
-        description={page ? `${page.sectionCount} sections, in the order the storefront builds them.` : undefined}
         action={
           page ? (
             <>
@@ -80,7 +79,6 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
         <Panel>
           <PanelHead
             title="Add a section"
-            hint="It lands at the bottom of the draft, empty and switched on. Open it to fill it in, then publish."
           />
           <CmsActionForm action={addCmsSectionAction} className="mt-4 flex flex-wrap items-end gap-3">
             <input type="hidden" name="id" value={page.id} />
@@ -108,7 +106,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
       {page?.sections?.length ? (
         <Panel flush>
           <div className="p-4 pb-3 sm:p-5 sm:pb-3">
-            <PanelHead title="Sections" hint="Move a section to reorder the storefront. Switch one off to take it off the shop without deleting it." />
+            <PanelHead title="Sections" />
           </div>
           <ul className="grid gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
             {page.sections.map((section, index) => (
@@ -125,7 +123,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="direction" value="up" />
-                  <SubmitButton variant="outline" pendingLabel="…" className="px-2 py-1.5">
+                  <SubmitButton variant="outline" pendingLabel="…" ariaLabel={`Move ${section.name || section.type} up`} className="px-2 py-1.5">
                     <ArrowUp width={13} height={13} />
                   </SubmitButton>
                 </CmsActionForm>
@@ -133,7 +131,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="direction" value="down" />
-                  <SubmitButton variant="outline" pendingLabel="…" className="px-2 py-1.5">
+                  <SubmitButton variant="outline" pendingLabel="…" ariaLabel={`Move ${section.name || section.type} down`} className="px-2 py-1.5">
                     <ArrowDown width={13} height={13} />
                   </SubmitButton>
                 </CmsActionForm>
@@ -166,7 +164,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                 <CmsActionForm action={removeCmsSectionAction} className="flex items-center gap-1">
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
-                  <SubmitButton variant="danger" pendingLabel="…" className="px-2.5 py-1.5">
+                  <SubmitButton variant="danger" pendingLabel="…" ariaLabel={`Delete ${section.name || section.type}`} className="px-2.5 py-1.5">
                     <Trash2 width={13} height={13} />
                   </SubmitButton>
                 </CmsActionForm>
@@ -182,7 +180,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
           </ul>
         </Panel>
       ) : (
-        <Empty title="No sections on this page" body="A section is one band of the page: a hero, a row of departments, a product strip." />
+        <Empty title="No sections on this page" body="Add a section above." />
       )}
 
       {page?.publishedSections?.length ? (

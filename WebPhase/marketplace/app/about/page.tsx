@@ -6,7 +6,7 @@ import { Eyebrow, LinkButton } from "@/components/ferix/marks";
 export const metadata: Metadata = {
   title: "About Ferixas",
   description:
-    "Ferixas is a multi-merchant marketplace: independent stores sell through one cart and one checkout, with buyer protection on every order.",
+    "Ferixas is a multi-merchant marketplace: independent stores list products through one cart, while marketplace checkout remains paused until secure payment processing is configured.",
 };
 
 const STEPS = [
@@ -20,13 +20,13 @@ const STEPS = [
     Icon: Package,
     step: "02",
     title: "Your basket stays transparent",
-    body: "Items from different sellers remain clearly attributed to their owners. Marketplace payment capture is not available yet, so no order or seller payout is reported as paid until a confirmed payment flow is enabled.",
+        body: "Items from different sellers remain clearly attributed to their owners. Marketplace payment capture is not available yet, so no order, buyer-protection promise or seller payout is created until a confirmed payment flow is enabled.",
   },
   {
     Icon: Receipt,
     step: "03",
     title: "Each seller ships, we hold the promise",
-    body: "Once checkout is enabled, seller-owned shipments and payment status will be shown separately. Ferixas will display order and buyer-protection details only when they are backed by a confirmed order.",
+        body: "Once checkout is enabled, seller-owned shipments and payment status will be shown separately. Ferixas will display order and buyer-protection details only when they are backed by a confirmed order.",
   },
 ];
 
@@ -46,7 +46,7 @@ export default function AboutPage() {
       </h1>
       <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
         Ferixas brings independent seller profiles and approved product listings together. Seller websites remain
-        separate, and checkout stays unavailable until the payment flow is ready.
+        separate, and checkout stays unavailable until secure payment processing is ready.
       </p>
 
       <section className="mt-8">

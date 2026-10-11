@@ -21,8 +21,6 @@ export default async function CmsSectionsPage() {
         }
         eyebrow="Content"
         title="Promotional sections"
-        description="Create and manage sections like Flash Sale, Trending, Best Selling, and Newest Arrivals. Sellers can request their products be featured in these sections."
-        action={<Pill tone={sections.length ? "info" : "neutral"}>{sections.length} sections</Pill>}
       />
 
       <CreateCmsSectionForm />

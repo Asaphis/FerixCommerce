@@ -140,12 +140,11 @@ export function Eyebrow({ children, className }: { children: ReactNode; classNam
 }
 
 export function SectionHead({
-  eyebrow,
   title,
   action,
   className,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   action?: ReactNode;
   className?: string;
@@ -153,8 +152,7 @@ export function SectionHead({
   return (
     <div className={cn("mb-6 flex flex-wrap items-end justify-between gap-3", className)}>
       <div>
-        <Eyebrow>{eyebrow}</Eyebrow>
-        <h2 className="mt-1.5 font-display text-[22px] font-semibold leading-tight text-ink sm:text-[27px]">{title}</h2>
+        <h2 className="font-display text-[22px] font-semibold leading-tight text-ink sm:text-[27px]">{title}</h2>
       </div>
       {action}
     </div>

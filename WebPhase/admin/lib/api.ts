@@ -417,7 +417,7 @@ export const deleteMerchant = (session: string | null, id: string) =>
 /** Where a product sits, and every section it could sit in. */
 export type SectionOption = {
   documentId: string; documentTitle: string; sectionId: string;
-  sectionName: string; sectionType: string; source?: string; placements: number;
+  sectionName?: string; sectionType?: string; source?: string; placements?: number;
 };
 export const getProductSections = (session: string | null, slug: string) =>
   call<{ placements: { id: string; documentId: string; sectionId: string; price: number }[]; available: SectionOption[] }>(
@@ -493,6 +493,8 @@ export type CatalogRow = {
   stock: number;
   status: string;
   category: string;
+  brand?: string;
+  brandName?: string;
   merchantId: string;
   merchantName: string;
   image: string;
@@ -500,7 +502,20 @@ export type CatalogRow = {
   featured: boolean;
   collections: string[];
   sold30d: number;
+  lowStockAt?: number;
   updatedAt: string;
+  images?: string[];
+  description?: string;
+  bullets?: string[];
+  tags?: string[];
+  variants?: { name: string; values: string[] }[];
+  seoTitle?: string;
+  seoDescription?: string;
+  shipping_amount?: number | null;
+  estimated_delivery_days?: number | null;
+  package_weight?: number | null;
+  package_dimensions?: string;
+  shipping_origin?: string;
 };
 
 export type CatalogList = {
@@ -628,6 +643,7 @@ export type ContentDocument = {
   data: { sections?: ContentSection[]; [key: string]: unknown };
   updatedAt: string;
   updatedBy: string;
+  draftStatus?: string;
 };
 
 export type ContentVersion = {

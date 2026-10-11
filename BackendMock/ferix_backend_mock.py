@@ -15,6 +15,7 @@
 
 import hashlib
 import json
+import os
 import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -29,8 +30,9 @@ FREE_SHIPPING_OVER = 120.0
 TAX_RATE = 0.075
 STANDARD_SHIPPING = 6.5
 EXPRESS_SHIPPING = 14.0
-DEMO_EMAIL = "demo@ferixas.com"
-DEMO_PASSWORD = "Ferixas123"
+# Optional local mock fixture only. Never seed an account with a source-controlled password.
+DEMO_EMAIL = os.getenv("FERIXAS_DEMO_EMAIL", "").strip().lower()
+DEMO_PASSWORD = os.getenv("FERIXAS_DEMO_PASSWORD", "")
 
 app = FastAPI(
     title="Ferixas Commerce API",
@@ -601,6 +603,10 @@ async def _cart_payload(redis: Any, ns: str, cart_id: str) -> Dict[str, Any]:
 
 
 async def _ensure_demo_user(redis: Any, ns: str) -> None:
+    if not DEMO_EMAIL or not DEMO_PASSWORD:
+        return
+    if len(DEMO_PASSWORD) < 12:
+        raise RuntimeError("FERIXAS_DEMO_PASSWORD must be at least 12 characters when demo seeding is enabled")
     existing = await redis.get(f"{ns}:users:email:{DEMO_EMAIL}")
     if existing:
         return

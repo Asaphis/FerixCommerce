@@ -31,11 +31,11 @@ export default async function PublishingPage() {
           <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Publishing</h1>
           
         </div>
-        <Pill tone={document.status === "published" ? "mint" : "amber"}>{document.status}</Pill>
+        <div className="flex flex-wrap gap-2"><Pill tone={document.draftStatus === "draft" ? "amber" : "neutral"}>{document.draftStatus === "draft" ? "Pending draft" : "No pending draft"}</Pill><Pill tone={document.status === "published" ? "mint" : "neutral"}>{document.status === "published" ? "Published live" : "Not published"}</Pill></div>
       </header>
 
       <Panel>
-        <PanelHead title="Homepage versions" hint={`Document ${DOCUMENT_ID}`} />
+        <PanelHead title="Homepage versions" />
         {versions.length === 0 ? (
           <Empty title="No versions yet" body="Saving the homepage creates the first version." />
         ) : (

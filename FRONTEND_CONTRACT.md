@@ -15,17 +15,9 @@ FERIX_API_BASE=https://shopapi.ferixas.com
 NEXT_PUBLIC_FERIX_API_BASE=https://shopapi.ferixas.com
 ```
 
-## Demo sign-ins
+## Account provisioning
 
-| Surface | Email | Password |
-|---|---|---|
-| Admin (owner) | `info@ferixas.com` | `Ferixas123` |
-| Admin (content) | `content@ferixas.com` | `Ferixas123` |
-| Admin (ops) | `ops@ferixas.com` | `Ferixas123` |
-| Merchant | `owner@abc-electronics.ferixas.com` | `Ferixas123` |
-
-Other merchants: `aurasound`, `nova-fashion`, `sahel-supply`, `lumen-home`,
-`pixel-gaming`, `verdant-beauty`, `ferixas-official`.
+There is no shared default password. Shoppers register through the Shopper app. Seller accounts are provisioned through the authorized platform workflow. The production Admin owner is created once using the `FERIXAS_BOOTSTRAP_SECRET` workflow documented in [`Backend/README.md`](Backend/README.md). An isolated local mock may seed a shopper fixture only when both `FERIXAS_DEMO_EMAIL` and a unique `FERIXAS_DEMO_PASSWORD` (at least 12 characters) are explicitly supplied; never use those variables in production.
 
 ## Page conventions
 

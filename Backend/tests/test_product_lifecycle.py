@@ -13,29 +13,120 @@ import uuid
 _DB = tempfile.NamedTemporaryFile(prefix="ferixas-lifecycle-test-", suffix=".db", delete=False)
 _DB.close()
 os.environ["DATABASE_URL"] = f"sqlite:///{_DB.name}"
+os.environ["FERIXAS_ENV"] = "test"
+os.environ["FERIXAS_TEST_STAFF_PASSWORD"] = "TestOnly-Password-123!"
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app import app  # noqa: E402
 from core import (ContentDocument, ContentVersion, MerchantProfileRequest, Order, SessionLocal,
                   Review, SessionToken, User, drop_row, find_merchant, hash_password, put_row)  # noqa: E402
+from test_support import reset_test_database  # noqa: E402
 
 
 class ProductLifecycleTest(unittest.TestCase):
     def setUp(self):
+        reset_test_database()
         self.client = TestClient(app)
         self.client.__enter__()
-        admin = self.client.post("/admin/login", json={"email": "admin@ferixas.com", "password": "Ferixas123"})
+        admin = self.client.post("/admin/login", json={"email": "admin@ferixas.test", "password": "TestOnly-Password-123!"})
         self.assertEqual(admin.status_code, 200, admin.text)
         self.admin = admin.json()["token"]
-        merchant = self.client.post("/merchant/login", json={"email": "owner@abc-electronics.ferixas.com", "password": "Ferixas123"})
+        merchant = self.client.post("/merchant/login", json={"email": "owner@abc-electronics.ferixas.com", "password": "TestOnly-Password-123!"})
         self.assertEqual(merchant.status_code, 200, merchant.text)
         self.merchant = merchant.json()["token"]
 
     def tearDown(self):
         self.client.__exit__(None, None, None)
 
+    def test_admin_catalog_product_fields_round_trip(self):
+        catalog = self.client.get("/admin/catalog/products", headers={"X-Ferix-Session": self.admin})
+        self.assertEqual(catalog.status_code, 200, catalog.text)
+        brands = self.client.get("/admin/cms/brands", headers={"X-Ferix-Session": self.admin}).json()["brands"]
+        brand = next(row for row in brands if row.get("visible"))
+        suffix = uuid.uuid4().hex[:8]
+        created = self.client.post("/admin/catalog/product", headers={"X-Ferix-Session": self.admin}, json={
+            "title": f"Admin contract {suffix}", "category": catalog.json()["categories"][0],
+            "brand": brand["slug"], "description": "Persist every editor field.",
+            "bullets": ["One", "Two"], "price": 42.5, "compareAt": 58.0,
+            "stock": 12, "lowStockAt": 3, "sku": f"ADMIN-{suffix}", "status": "draft",
+            "featured": True, "store": True, "marketplace": True,
+            "images": ["https://images.example.test/admin-contract.jpg"],
+            "collections": [], "tags": ["roundtrip", "admin"],
+            "variants": [{"name": "Colour", "values": ["Black", "Blue"]}],
+            "seoTitle": "Admin contract SEO", "seoDescription": "Persisted SEO description.",
+            "shipping_amount": 4.25, "estimated_delivery_days": 5,
+            "package_weight": 1.2, "package_dimensions": "20 x 15 x 10 cm",
+            "shipping_origin": "Lagos, NG",
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        product_id = created.json()["product"]["id"]
+        listed = self.client.get("/admin/catalog/products", headers={"X-Ferix-Session": self.admin}).json()
+        product = next(row for row in listed["products"] if row["id"] == product_id)
+        self.assertEqual(product["brand"], brand["slug"])
+        self.assertEqual(product["brandName"], brand["name"])
+        self.assertEqual(product["description"], "Persist every editor field.")
+        self.assertEqual(product["sku"], f"ADMIN-{suffix}")
+        self.assertEqual(product["bullets"], ["One", "Two"])
+        self.assertEqual(product["variants"][0]["values"], ["Black", "Blue"])
+        self.assertEqual(product["lowStockAt"], 3)
+        self.assertEqual(product["shipping_amount"], 4.25)
+        self.assertEqual(product["estimated_delivery_days"], 5)
+        self.assertEqual(product["package_weight"], 1.2)
+        self.assertEqual(product["package_dimensions"], "20 x 15 x 10 cm")
+        self.assertEqual(product["shipping_origin"], "Lagos, NG")
+        updated = self.client.patch("/admin/catalog/product", headers={"X-Ferix-Session": self.admin}, json={
+            "id": product_id, "description": "Updated without losing the rest.",
+            "compareAt": None, "brand": "", "lowStockAt": 2,
+            "seoTitle": "Updated SEO", "shipping_amount": None,
+        })
+        self.assertEqual(updated.status_code, 200, updated.text)
+        listed_after = self.client.get("/admin/catalog/products", headers={"X-Ferix-Session": self.admin}).json()
+        saved = next(row for row in listed_after["products"] if row["id"] == product_id)
+        self.assertEqual(saved["description"], "Updated without losing the rest.")
+        self.assertIsNone(saved["compareAt"])
+        self.assertEqual(saved["brand"], "")
+        self.assertEqual(saved["lowStockAt"], 2)
+        self.assertEqual(saved["seoTitle"], "Updated SEO")
+        self.assertIsNone(saved["shipping_amount"])
+
+    def test_admin_team_role_updates_preserve_permissions_and_block_self_lockout(self):
+        created = self.client.post("/admin/staff", headers={"X-Ferix-Session": self.admin}, json={
+            "name": "Role Contract", "email": "role-contract@example.test",
+            "role": "content", "password": "A-long-test-password-123!",
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        member = created.json()["staff"]
+        updated = self.client.post("/admin/staff", headers={"X-Ferix-Session": self.admin}, json={
+            "id": member["id"], "name": member["name"], "role": "ops",
+        })
+        self.assertEqual(updated.status_code, 200, updated.text)
+        self.assertEqual(updated.json()["staff"]["role"], "ops")
+        roles = self.client.get("/admin/staff", headers={"X-Ferix-Session": self.admin}).json()["roles"]
+        expected = next(role["permissions"] for role in roles if role["role"] == "ops")
+        self.assertEqual(updated.json()["staff"]["permissions"], expected)
+        custom = self.client.post("/admin/staff", headers={"X-Ferix-Session": self.admin}, json={
+            "id": member["id"], "role": "ops", "permissions": ["orders.view", "payouts.view"],
+        })
+        self.assertEqual(custom.status_code, 200, custom.text)
+        self.assertEqual(custom.json()["staff"]["permissions"], ["orders.view", "payouts.view"])
+        escalation = self.client.post("/admin/staff", headers={"X-Ferix-Session": self.admin}, json={
+            "id": member["id"], "role": "content", "permissions": ["*"],
+        })
+        self.assertEqual(escalation.status_code, 403, escalation.text)
+        duplicate = self.client.post("/admin/staff", headers={"X-Ferix-Session": self.admin}, json={
+            "name": "Duplicate", "email": "ROLE-CONTRACT@example.test",
+            "role": "ops", "password": "A-long-test-password-123!",
+        })
+        self.assertEqual(duplicate.status_code, 409, duplicate.text)
+        team = self.client.get("/admin/staff", headers={"X-Ferix-Session": self.admin}).json()["staff"]
+        self_id = next(row["id"] for row in team if row["email"] == "admin@ferixas.test")
+        self_edit = self.client.post("/admin/staff", headers={"X-Ferix-Session": self.admin}, json={
+            "id": self_id, "role": "content",
+        })
+        self.assertEqual(self_edit.status_code, 400, self_edit.text)
+
     def test_submission_stays_private_until_admin_approval(self):
-        other_login = self.client.post("/merchant/login", json={"email": "owner@aurasound.ferixas.com", "password": "Ferixas123"})
+        other_login = self.client.post("/merchant/login", json={"email": "owner@aurasound.ferixas.com", "password": "TestOnly-Password-123!"})
         self.assertEqual(other_login.status_code, 200, other_login.text)
         other_token = other_login.json()["token"]
         first_items = self.client.get("/merchant/products", headers={"X-Ferix-Session": self.merchant}).json()["items"]
@@ -141,14 +232,20 @@ class ProductLifecycleTest(unittest.TestCase):
         self.assertNotIn("status", public.json()["product"])
         self.assertEqual(public.json()["product"]["stockStatus"], "in_stock")
 
+        shopper = self.client.post("/auth/register", json={
+            "name": "Checkout Test Shopper", "email": f"checkout-{uuid.uuid4().hex[:8]}@example.com",
+            "password": "Shopper-Test-Password-123!",
+        })
+        self.assertEqual(shopper.status_code, 200, shopper.text)
+        shopper_session = shopper.json()["token"]
         cart_id = "lifecycle-checkout-cart"
-        added = self.client.post("/cart/items", headers={"X-Ferix-Cart": cart_id}, json={
+        added = self.client.post("/cart/items", headers={"X-Ferix-Session": shopper_session, "X-Ferix-Cart": cart_id}, json={
             "productId": product["id"], "qty": 1, "cartId": cart_id,
         })
         self.assertEqual(added.status_code, 200, added.text)
         with SessionLocal() as db:
             before = len(db.query(Order).all())
-        placed = self.client.post("/checkout/place", headers={"X-Ferix-Cart": cart_id}, json={
+        placed = self.client.post("/checkout/place", headers={"X-Ferix-Session": shopper_session, "X-Ferix-Cart": cart_id}, json={
             "email": "checkout-test@example.com", "cartId": cart_id,
             "line1": "1 Example Road", "city": "Test City", "country": "Testland",
         })
@@ -160,12 +257,69 @@ class ProductLifecycleTest(unittest.TestCase):
         self.assertEqual(inventory.status_code, 200, inventory.text)
         self.assertEqual(inventory.json()["stock"], 4)
 
+    def test_seller_product_history_includes_review_and_inventory_events(self):
+        created = self.client.post("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
+            "title": "Lifecycle Timeline Product", "category": "electronics", "price": 18.5,
+            "stock": 7, "marketplace": True,
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        product = created.json()["product"]
+
+        edited = self.client.patch("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
+            "id": product["id"], "title": "Lifecycle Timeline Product Updated", "category": "electronics",
+            "price": 19.5, "marketplace": True,
+        })
+        self.assertEqual(edited.status_code, 200, edited.text)
+        decision = self.client.post("/admin/review/decision", headers={"X-Ferix-Session": self.admin}, json={
+            "id": product["id"], "decision": "changes", "note": "Add the product's maker details.",
+        })
+        self.assertEqual(decision.status_code, 200, decision.text)
+        adjusted = self.client.post("/merchant/inventory/adjust", headers={"X-Ferix-Session": self.merchant}, json={
+            "id": product["id"], "delta": -2, "reason": "Damaged unit",
+        })
+        self.assertEqual(adjusted.status_code, 200, adjusted.text)
+
+        detail = self.client.get("/merchant/product", headers={"X-Ferix-Session": self.merchant}, params={"id": product["id"]})
+        self.assertEqual(detail.status_code, 200, detail.text)
+        events = detail.json()["history"]
+        labels = [event["label"] for event in events]
+        self.assertIn("Submitted for review", labels)
+        self.assertIn("Listing updated and sent for review", labels)
+        self.assertIn("Changes requested", labels)
+        stock_event = next(event for event in events if event["label"] == "Stock adjusted")
+        self.assertIn("-2 units", stock_event["detail"])
+        self.assertEqual(stock_event["actor"], "Seller")
+        review_event = next(event for event in events if event["label"] == "Changes requested")
+        self.assertEqual(review_event["detail"], "Add the product's maker details.")
+        self.assertEqual(review_event["actor"], "Admin")
+        self.assertNotIn("owner@", str(events))
+
+        private = self.client.get("/merchant/product", headers={"X-Ferix-Session": self.merchant}, params={"id": "unknown-product-id"})
+        self.assertEqual(private.status_code, 404)
+
     def test_seller_cannot_create_listing_with_unmanaged_category(self):
         response = self.client.post("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
             "title": "Invalid Taxonomy Product", "category": "seller-invented", "price": 10,
             "stock": 1, "marketplace": True,
         })
         self.assertEqual(response.status_code, 400, response.text)
+        missing = self.client.post("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
+            "title": "Missing Department Product", "price": 10, "stock": 1, "marketplace": True,
+        })
+        self.assertEqual(missing.status_code, 400, missing.text)
+        created = self.client.post("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
+            "title": "Stable Seller Slug", "slug": "crafted-slug", "category": "electronics",
+            "price": 10, "stock": 1, "marketplace": True,
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        product = created.json()["product"]
+        self.assertEqual(product["slug"], "stable-seller-slug")
+        updated = self.client.patch("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
+            "id": product["id"], "slug": "attempted-renamed-slug", "title": "Renamed stable listing",
+            "category": "electronics", "price": 10, "stock": 1, "marketplace": True,
+        })
+        self.assertEqual(updated.status_code, 200, updated.text)
+        self.assertEqual(updated.json()["product"]["slug"], "stable-seller-slug")
 
     def test_seller_profile_requires_review_and_private_contact_stays_private(self):
         with SessionLocal() as db:

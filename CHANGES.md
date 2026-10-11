@@ -260,36 +260,25 @@ POST   /merchant/product (now validates marketplace channel)
 
 ---
 
-## Next Steps
+## Remaining release work
 
-1. **Deploy to Production:**
-   - Push changes to GitHub
-   - Run migration script on production database
-   - Test all workflows
+This section replaces the original, now-stale launch checklist. The Admin review queue, seller status/reason display, review controls and follow actions are present in the current source; their production behavior still needs isolated integration validation.
 
-2. **Update Frontend:**
-   - Add "Pending Review" badge to seller dashboard
-   - Add rejection reason display
-   - Add follow/unfollow buttons to seller profiles
-   - Add admin review queue UI
-   - Add approve/reject buttons in admin panel
+1. Select and document the production hosting topology; add provider-specific manifests and CI/release checks. No production deploy or database migration was performed as part of the repository correction.
+2. Test schema migrations and seed idempotence against disposable PostgreSQL fixtures (empty, legacy, partial and incompatible schemas) before touching production data.
+3. Complete the connected payment-provider decision and test capture, refund, payout and settlement flows. Until then, checkout intentionally does not create an order or claim a payment.
+4. Complete seller product lifecycle/history presentation and cross-surface copy-density review; keep Seller Studio read-only/Coming Soon.
+5. Run browser/device QA for responsive layouts, touch targets, keyboard and screen-reader accessibility, and provider-disabled checkout messaging.
 
-3. **Future Enhancements:**
-   - Email notifications (seller when approved/rejected, admin when new submission)
-   - Bulk approval/rejection
-   - Advanced filtering in review queue
-   - Seller performance metrics dashboard
-   - Automatic approval for trusted sellers
+For the source issue matrix, see [`FerixCommerce-review-audit.md`](../FerixCommerce-review-audit.md). For implementation evidence and remaining work, see [`FERIXCOMMERCE_IMPLEMENTATION_REPORT.md`](FERIXCOMMERCE_IMPLEMENTATION_REPORT.md).
 
 ---
 
-## Notes
+## Important limits
 
-- All changes are backward compatible with data migration
-- UI continues to work with existing functionality
-- No database schema changes required (fields already existed)
-- Audit logging implemented for all approval actions
-- Follow system ready for future seller updates/notifications
+- A source-level correction does not prove compatibility with the live database. Run forward/rollback policy checks against a staging copy first.
+- Provider-dependent financial actions are not implemented merely because the UI or API has a status field; require a real verified provider result.
+- The repository has isolated backend tests and frontend typecheck/build scripts, but no deployment manifest or full CI gate is configured yet.
 
 ---
 

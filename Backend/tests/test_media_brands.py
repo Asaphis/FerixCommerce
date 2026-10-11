@@ -13,22 +13,26 @@ import unittest
 _DB = tempfile.NamedTemporaryFile(prefix="ferixas-backend-test-", suffix=".db", delete=False)
 _DB.close()
 os.environ["DATABASE_URL"] = f"sqlite:///{_DB.name}"
+os.environ["FERIXAS_ENV"] = "test"
+os.environ["FERIXAS_TEST_STAFF_PASSWORD"] = "TestOnly-Password-123!"
 os.environ.pop("CLOUDINARY_URL", None)
 PNG_1X1 = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/VwAAAABJRU5ErkJggg==")
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app import app  # noqa: E402
 from core import SessionLocal, backfill_catalogue_media, put_row, rows_of  # noqa: E402
+from test_support import reset_test_database  # noqa: E402
 
 
 class MediaAndBrandContractTest(unittest.TestCase):
     def setUp(self):
+        reset_test_database()
         self.client = TestClient(app)
         self.client.__enter__()
-        login = self.client.post("/admin/login", json={"email": "content@ferixas.com", "password": "Ferixas123"})
+        login = self.client.post("/admin/login", json={"email": "admin@ferixas.test", "password": "TestOnly-Password-123!"})
         self.assertEqual(login.status_code, 200, login.text)
         self.admin = login.json()["token"]
-        merchant = self.client.post("/merchant/login", json={"email": "owner@abc-electronics.ferixas.com", "password": "Ferixas123"})
+        merchant = self.client.post("/merchant/login", json={"email": "owner@abc-electronics.ferixas.com", "password": "TestOnly-Password-123!"})
         self.assertEqual(merchant.status_code, 200, merchant.text)
         self.merchant = merchant.json()["token"]
 

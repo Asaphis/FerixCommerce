@@ -62,10 +62,6 @@ The signed-in session token and the cart id travel inside the request body
 (writes) or the query string (reads), because the runtime proxy does not forward
 custom headers.
 
-## Demo account
+## Shopper accounts
 
-A seeded shopper with past orders, addresses and saved items:
-
-```
-demo@ferixas.com / Ferixas123
-```
+There is no shared shopper password. Create an account through the registration flow. Past orders, saved items and addresses appear only for the signed-in account that owns them. Optional local mock fixtures require explicit local-only credentials; production never seeds a common shopper login.
