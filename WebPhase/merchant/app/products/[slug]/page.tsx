@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getProduct, getProductOptions, ApiError } from "@/lib/api";
@@ -17,7 +16,21 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   try {
     data = await getProduct(session, slug);
   } catch (error) {
-    if (error instanceof ApiError && error.status === 404) notFound();
+    if (error instanceof ApiError && error.status === 404) {
+      return (
+        <div className="grid gap-4">
+          <Link href="/products" className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim hover:text-chalk">
+            <ArrowLeft width={12} height={12} /> All products
+          </Link>
+          <Panel className="border-sand/40 bg-sand/5">
+            <PanelHead title="Product unavailable" />
+            <p className="text-[13px] text-chalk">The product could not be reopened with this Seller session.</p>
+            <p className="mt-2 font-mono text-[10px] text-chalk-dim">Slug: {slug}</p>
+            <Link href="/products" className="mt-4 inline-flex min-h-10 items-center rounded-[2px] bg-lime px-3 text-[12px] font-semibold text-void">Return to products</Link>
+          </Panel>
+        </div>
+      );
+    }
     throw error;
   }
   const { product, sold, lowStockAt } = data;
@@ -82,7 +95,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </Panel>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-3">
         <StatTile label="Price" value={money(product.price)} sub={product.compareAt ? `was ${money(product.compareAt)}` : "no discount"} />
         <StatTile
           label="In stock"
@@ -91,17 +104,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           accent={product.stock <= lowStockAt ? "sand" : "chalk"}
         />
         <StatTile label="Sold to date" value={num(sold)} sub={`${num(product.sold30d)} in the last 30 days`} accent="azure" />
-        <StatTile label="Product views" value="Coming soon" sub="Visitor tracking is not connected" accent="sand" />
       </div>
 
       <ProductForm product={product} categories={options.categories.map((item) => item.slug)} brands={options.brands} sections={options.sections} />
 
       <Panel>
-        <PanelHead
-          title="Ferixas marketplace listing"
-        />
-        <p className="text-[13px] text-chalk">This listing appears on Ferixas only after Admin approval. Your separate website is not part of this listing.</p>
-        <p className="mt-1 font-mono text-[10.5px] text-chalk-dim">ferixas.com · {merchant.commissionPct ?? 10}% commission on settled marketplace sales</p>
+        <PanelHead title="Marketplace listing" />
+        <p className="text-[12px] text-chalk-dim">Admin approval required · {merchant.commissionPct ?? 10}% commission</p>
       </Panel>
     </div>
   );

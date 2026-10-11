@@ -82,6 +82,9 @@ class ProductLifecycleTest(unittest.TestCase):
         self.assertEqual(product["variants"][0]["values"], ["Black", "Blue"])
         self.assertEqual(product["package_weight"], 1.2)
         self.assertEqual(product["collections"], [collections[0]["slug"]] if collections else [])
+        query_session_detail = self.client.get("/merchant/product", params={"slug": product["slug"], "session": self.merchant})
+        self.assertEqual(query_session_detail.status_code, 200, query_session_detail.text)
+        self.assertEqual(query_session_detail.json()["product"]["id"], product["id"])
         self.assertEqual(self.client.get("/catalog/product", params={"slug": product["slug"]}).status_code, 404)
 
         merchant_products = self.client.get("/merchant/products", headers={"X-Ferix-Session": self.merchant})

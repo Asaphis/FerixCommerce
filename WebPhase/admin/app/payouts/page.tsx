@@ -31,7 +31,7 @@ export default async function PayoutsPage() {
 
       <Panel className="border-amber/30 bg-amber/5">
         <div className="flex flex-wrap items-center gap-2">
-          <Pill tone="amber">Coming soon</Pill>
+          <Pill tone="neutral">Records only</Pill>
           <p className="text-[13px] text-chalk">{data.message}</p>
         </div>
       </Panel>

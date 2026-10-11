@@ -156,14 +156,6 @@ export default async function DashboardPage() {
             <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Approved listings</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.published)}</p><p className="text-[10px] text-chalk-dim">visible on Ferixas</p></div>
             <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Followers</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.followers)}</p><p className="text-[10px] text-chalk-dim">current shopper follows</p></div>
           </div>
-          <p className="mt-3 text-[11px] text-chalk-dim">Shoppers see your approved Ferixas profile, not pages from your separate website.</p>
-        </Panel>
-        <Panel>
-          <PanelHead title="Traffic insights" />
-          <div className="flex min-h-[74px] items-center justify-between gap-3 rounded-[2px] bg-[#fff7f2] px-3.5">
-            <div><p className="text-[13px] font-semibold text-chalk">Coming soon</p><p className="mt-0.5 text-[11px] text-chalk-dim">Visitor and conversion tracking is not connected.</p></div>
-            <ChartNoAxesCombined width={20} height={20} className="shrink-0 text-signal" />
-          </div>
         </Panel>
       </div>
 

@@ -81,6 +81,7 @@ export type Product = {
   compareAt: number | null;
   discount: number | null;
   stockStatus?: "in_stock" | "limited" | "out_of_stock";
+  availableQuantity?: number;
   rating: number | null;
   reviewCount: number;
   ratingBreakdown: Record<string, number>;

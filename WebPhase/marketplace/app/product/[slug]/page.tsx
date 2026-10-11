@@ -2,13 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowRight, Check, Heart, MapPin, RotateCcw, ShieldCheck, Truck } from "lucide-react";
-import { getProduct, ApiError, assetUrl } from "@/lib/api";
+import { getProduct, ApiError } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { toggleWishlistAction } from "@/lib/actions";
 import { AddToCartButton, AddToCartForm } from "@/components/ferix/add-to-cart";
 import { ReviewForm } from "@/components/ferix/forms";
 import { ProductRail, RatingBars, ReviewList } from "@/components/ferix/cards";
-import { Eyebrow, LinkButton, Plate, Pill, Price, SectionHead, Stars, StockNote } from "@/components/ferix/marks";
+import { ProductGallery } from "@/components/ferix/product-gallery";
+import { Eyebrow, Pill, Price, SectionHead, Stars, StockNote } from "@/components/ferix/marks";
 import { compact, dateShort, money } from "@/lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -36,6 +37,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const { product, merchant, reviews, related, shipping, returns } = detail;
   const saved = await savedIds();
   const isSaved = saved.includes(product.id);
+  const maxQuantity = Math.max(1, Math.min(product.availableQuantity ?? (product.stockStatus === "out_of_stock" ? 0 : 10), 10));
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8">
@@ -53,25 +55,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div>
-          <Plate
-            seed={product.slug}
-            accent="#e4572e"
-            src={assetUrl(product.images?.[0])}
-            alt={product.title}
-            className="aspect-[4/3] w-full"
-          />
-          <div className="mt-3 grid grid-cols-4 gap-3">
-            {(product.images?.length ? product.images.slice(0, 4) : [null, null, null, null]).map((image, index) => (
-              <Plate
-                key={image ?? index}
-                seed={`${product.slug}-${index + 1}`}
-                accent="#e4572e"
-                src={assetUrl(image)}
-                alt={`${product.title} view ${index + 1}`}
-                className={`aspect-square w-full ${index === 0 ? "ring-2 ring-ink" : "opacity-70"}`}
-              />
-            ))}
-          </div>
+          <ProductGallery slug={product.slug} title={product.title} images={product.images} />
         </div>
 
         <div>
@@ -164,7 +148,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                   defaultValue="1"
                   className="h-10 rounded-[2px] border border-line-warm bg-white px-2 text-[13px] text-ink outline-none focus:border-ink"
                 >
-                  {Array.from({ length: product.stockStatus === "out_of_stock" ? 1 : 10 }, (_, i) => i + 1).map((qty) => (
+                  {Array.from({ length: maxQuantity }, (_, i) => i + 1).map((qty) => (
                     <option key={qty} value={qty}>
                       {qty}
                     </option>

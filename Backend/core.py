@@ -1360,6 +1360,10 @@ def public_product_fields(product: dict) -> dict:
     except (TypeError, ValueError):
         stock, low_stock_at = 0, 8
     public["stockStatus"] = "out_of_stock" if stock == 0 else "limited" if stock <= low_stock_at else "in_stock"
+    # The shopper needs a safe purchase ceiling, but not internal reserved-stock
+    # or cost fields. This value is refreshed from the same product row used by
+    # cart validation.
+    public["availableQuantity"] = stock
     return public
 
 

@@ -14,7 +14,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useActionState } from "react";
-import { ImagePlus, Save, ShieldCheck, TriangleAlert, X } from "lucide-react";
+import { ImagePlus, Save, X } from "lucide-react";
 import type { Product } from "@/lib/api";
 import { SubmitButton } from "@/components/studio/controls";
 import { Field, Notice, inputClass, selectClass, textareaClass } from "@/components/studio/forms";
@@ -67,14 +67,6 @@ export function ProductForm({
   const was = Number(draft.compareAt) || 0;
   const discount = was > price && price > 0 ? Math.round(((was - price) / was) * 100) : 0;
 
-  const checks = [
-    { ok: draft.title.trim().length > 0, label: "Title" },
-    { ok: previews.length + images.length > 0, label: "At least one image" },
-    { ok: price > 0, label: "Price" },
-    { ok: true, label: "Marketplace submission" },
-  ];
-  const ready = checks.every((check) => check.ok);
-
   return (
     <form action={action} className="grid gap-4" encType="multipart/form-data">
       {product ? (
@@ -107,7 +99,6 @@ export function ProductForm({
                   </select>
                 </Field>
               </div>
-              <p className="-mt-2 text-[11.5px] text-chalk-dim">Categories and brands are managed by Ferixas. Leave these unassigned if no suitable option exists.</p>
               <Field title="Description">
                 <textarea name="description" value={draft.description} onChange={set("description")} className={textareaClass} placeholder="What it is, who it is for, what makes it worth buying" />
               </Field>
@@ -177,13 +168,13 @@ export function ProductForm({
 
           <Panel>
             <PanelHead title="Where it sells" />
-            <p className="text-[12.5px] leading-relaxed text-chalk-dim">Seller product listings are submitted to Ferixas marketplace only and stay hidden until Admin approval. Your separate website and its pages are not imported or displayed here; shoppers see your approved Ferixas seller profile.</p>
+            <p className="text-[12px] text-chalk-dim">Marketplace listing · Admin approval required</p>
             <input type="hidden" name="marketplace" value="on" />
           </Panel>
 
           <Panel>
             <PanelHead title="Request a CMS section placement (optional)" />
-            <p className="mb-3 text-[12px] text-chalk-dim">Choose where you would like this product to appear. This is a request only: Admin approves the product and the final CMS placement.</p>
+            <p className="mb-3 text-[12px] text-chalk-dim">Admin approves placement after product review.</p>
             <div className="grid gap-2 sm:grid-cols-2">
               {sections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[10px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="block text-[10.5px] text-chalk-dim">{section.documentTitle} · {section.sectionType === "product_grid" ? "Product grid" : "Product carousel"}{section.source && section.source !== "curated" ? ` · ${section.source}` : ""}{section.status === "draft" ? " · draft" : ""}</span></span></label>)}
               {!sections.length ? <p className="text-[12px] text-chalk-dim">No eligible product sections are available in CMS.</p> : null}
@@ -192,7 +183,6 @@ export function ProductForm({
 
           <Panel>
             <PanelHead title="Shipping and package details" />
-            <p className="mb-3 text-[12px] leading-relaxed text-chalk-dim">These details are saved with your submission for review. Buyer checkout currently uses Ferixas shipping options and rates; the product shipping amount below does not yet set the checkout charge.</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field title="Shipping amount"><input name="shipping_amount" type="number" min="0" step="0.01" defaultValue={product?.shipping_amount ?? 0} className={inputClass} /></Field>
               <Field title="Estimated delivery (days)"><input name="estimated_delivery_days" type="number" min="0" defaultValue={product?.estimated_delivery_days ?? 0} className={inputClass} /></Field>
@@ -237,27 +227,11 @@ export function ProductForm({
             </div>
           </Panel>
 
-          <Panel>
-            <PanelHead title="Before it sells" action={ready ? <Pill tone="success">Ready</Pill> : <Pill tone="amber">{checks.filter((c) => !c.ok).length} left</Pill>} />
-            <ul className="grid gap-2">
-              {checks.map((check) => (
-                <li key={check.label} className="flex items-center gap-2.5 text-[12.5px]">
-                  {check.ok ? (
-                    <ShieldCheck width={15} height={15} className="shrink-0 text-mint" />
-                  ) : (
-                    <TriangleAlert width={15} height={15} className="shrink-0 text-amber" />
-                  )}
-                  <span className={check.ok ? "text-chalk-dim" : "text-chalk"}>{check.label}</span>
-                </li>
-              ))}
-            </ul>
-          </Panel>
         </aside>
       </div>
 
       <div className="sticky bottom-[78px] z-20 flex flex-wrap items-center gap-3 rounded-[14px] border border-hairline bg-panel/95 p-3 backdrop-blur md:bottom-0">
         <SubmitButton pendingLabel="Saving"><Save width={14} height={14} /> {product ? "Save changes" : "Create the product"}</SubmitButton>
-        {!ready ? <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">Saved as a draft until it is complete</span> : null}
         <span className="ml-auto"><Notice state={state} /></span>
       </div>
     </form>

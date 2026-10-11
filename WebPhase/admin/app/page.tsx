@@ -67,8 +67,7 @@ export default async function OverviewPage() {
       <div className="grid min-w-0 gap-3 xl:grid-cols-[1.4fr_1fr]">
         <Panel>
           <PanelHead title="Marketplace reporting" />
-          <p className="text-[12px] leading-relaxed text-chalk-dim">Sales, orders and commission on this dashboard include confirmed Ferixas marketplace transactions only. Seller websites are separate and are not included.</p>
-          <p className="mt-3 border-t border-hairline pt-3 text-[10px] text-chalk-dim">Traffic and conversion reports: <span className="font-semibold text-signal">Coming soon</span></p>
+          <p className="text-[12px] text-chalk-dim">Confirmed Marketplace sales and commission.</p>
         </Panel>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">

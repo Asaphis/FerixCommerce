@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ChartNoAxesCombined } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getAnalytics } from "@/lib/api";
 import { Bar as BarRow, Eyebrow, Panel, PanelHead, StatTile } from "@/components/studio/bits";
@@ -46,10 +46,6 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
           <Panel>
             <PanelHead title="Ferixas marketplace sales" />
             {data.byChannel.marketplace > 0 ? <div><div className="mb-1 flex items-center justify-between gap-2 text-[11px]"><span className="text-chalk-dim">Paid and not cancelled</span><span className="font-mono font-semibold text-chalk">{money(data.byChannel.marketplace, { cents: false })}</span></div><BarRow value={data.byChannel.marketplace} max={channelMax} tone="azure" /></div> : <p className="text-[12px] text-chalk-dim">Confirmed marketplace sales will appear here when payments are connected.</p>}
-          </Panel>
-          <Panel>
-            <PanelHead title="Traffic reports" />
-            <div className="flex min-h-[68px] items-center justify-between gap-3 rounded-[2px] bg-[#fff7f2] px-3"><div><p className="text-[12px] font-semibold text-chalk">Coming soon</p><p className="mt-0.5 text-[10px] text-chalk-dim">Visitor and conversion tracking is not connected.</p></div><ChartNoAxesCombined width={19} height={19} className="shrink-0 text-signal" /></div>
           </Panel>
         </div>
       </div>

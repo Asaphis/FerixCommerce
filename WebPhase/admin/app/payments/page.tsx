@@ -42,7 +42,7 @@ export default async function PaymentsPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <Pill tone="amber">Coming soon</Pill>
+              <Pill tone="neutral">Records only</Pill>
               <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
                 provider: {data.provider}
               </span>

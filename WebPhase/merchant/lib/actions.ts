@@ -95,7 +95,6 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       category: String(formData.get("category") ?? ""),
       brandId: String(formData.get("brandId") ?? "") || null,
       section_tags: formData.getAll("section_tags").map(String),
-      collections: formData.getAll("collections").map(String),
       sku: String(formData.get("sku") ?? "").trim(),
       lowStockAt: Number(formData.get("lowStockAt") ?? 8),
       bullets: String(formData.get("bullets") ?? "").split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
@@ -117,6 +116,20 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       marketplace: true,
       description: String(formData.get("description") ?? "").trim() || null,
     });
+    // Verify the record can be read through the same authenticated API path
+    // used by the redirected detail page. This prevents a successful POST from
+    // turning into a misleading generic 404 when production API/database
+    // instances are misaligned.
+    try {
+      await api.getProduct(session, created.product.slug);
+    } catch (verifyError) {
+      if (verifyError instanceof api.ApiError) {
+        return {
+          error: `Product was created but could not be reopened (${created.product.slug}). Check the Seller API deployment before trying again.`,
+        };
+      }
+      throw verifyError;
+    }
     refresh("/products");
     redirect(`/products/${created.product.slug}`);
   } catch (error) {
@@ -146,7 +159,6 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
       category: String(formData.get("category") ?? ""),
       brandId: String(formData.get("brandId") ?? ""),
       section_tags: formData.getAll("section_tags").map(String),
-      collections: formData.getAll("collections").map(String),
       sku: String(formData.get("sku") ?? "").trim(),
       lowStockAt: Number(formData.get("lowStockAt") ?? 8),
       bullets: String(formData.get("bullets") ?? "").split(/\r?\n/).map((value) => value.trim()).filter(Boolean),

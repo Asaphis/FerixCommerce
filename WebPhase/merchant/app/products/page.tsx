@@ -45,7 +45,7 @@ export default async function ProductsPage({
         <div className="min-w-0">
           <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
-          <p className="mt-1.5 max-w-[70ch] text-[12px] text-chalk-dim">This catalogue manages only your Ferixas marketplace listings. Your separate website is not imported or displayed here.</p>
+          <p className="mt-1.5 text-[12px] text-chalk-dim">Marketplace listings</p>
         </div>
         <Link
           href="/products/new"
