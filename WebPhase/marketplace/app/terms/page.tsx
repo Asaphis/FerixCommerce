@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Eyebrow } from "@/components/ferix/marks";
+
 
 export const metadata: Metadata = {
   title: "Terms of service — Ferixas",
@@ -112,7 +112,6 @@ const CLAUSES: Clause[] = [
 export default function TermsPage() {
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8 lg:px-6">
-      <Eyebrow>Legal</Eyebrow>
       <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">Terms of service</h1>
       <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
         Last updated 1 October 2026 · Applies to every Ferixas marketplace

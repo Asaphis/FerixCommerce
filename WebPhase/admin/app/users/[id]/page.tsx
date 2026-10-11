@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Bookmark, Mail, MapPin, Phone, Star } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { getUser, ApiError } from "@/lib/api";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { CellLabel, DataTable, Row, Td, TdLead } from "@/components/ops/table";
 import { KeyValue } from "@/components/ops/marks";
 import { money, num, relative } from "@/lib/format";
@@ -36,7 +36,6 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           {user.initials}
         </span>
         <div>
-          <Eyebrow>Customer account</Eyebrow>
           <h1 className="mt-1 font-display text-[23px] font-semibold text-chalk">{user.name}</h1>
           <p className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">
             Registered{" "}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowRight, Check, Heart, MapPin, RotateCcw, ShieldCheck, Truck } from "lucide-react";
+import { ArrowRight, Check, Heart, MapPin, RotateCcw, Truck } from "lucide-react";
 import { getProduct, ApiError } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { toggleWishlistAction } from "@/lib/actions";
@@ -222,10 +222,6 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <span className="text-[13px] text-ink">{returns}</span>
             </div>
             <div className="flex items-start gap-2.5">
-              <ShieldCheck width={15} height={15} className="mt-[2px] shrink-0 text-ember" />
-              <span className="text-[13px] text-ink">Buyer protection on every marketplace order</span>
-            </div>
-            <div className="flex items-start gap-2.5">
               <MapPin width={15} height={15} className="mt-[2px] shrink-0 text-ember" />
               <span className="text-[13px] text-ink">Dispatched from {merchant.location}</span>
             </div>
@@ -241,7 +237,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
         <div>
-          <SectionHead eyebrow="Reviews" title="What buyers say about this product" />
+          <SectionHead title="Reviews" />
           <ReviewList reviews={reviews} />
 
           <div className="mt-8 rounded-[3px] border border-line-warm bg-white p-5">
@@ -259,8 +255,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       {related.length ? (
         <section className="mt-14">
           <SectionHead
-            eyebrow="More like this"
-            title={`Also from ${merchant.name} and this department`}
+            title="Related products"
             action={
               <Link
                 href={`/store/${merchant.slug}`}

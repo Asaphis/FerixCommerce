@@ -57,7 +57,6 @@ export default async function AccountPage() {
     <AccountShell
       account={account}
       title="Overview"
-      description="Your orders, saved items and delivery details in one place."
     >
       {/* ── tracking ───────────────────────────────────────────────── */}
       {focus ? (

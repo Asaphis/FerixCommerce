@@ -1,6 +1,6 @@
 import { getCollections } from "@/lib/api";
 import { CollectionCard } from "@/components/ferix/cards";
-import { EmptyState, Eyebrow, LinkButton } from "@/components/ferix/marks";
+import { EmptyState, LinkButton } from "@/components/ferix/marks";
 
 export const metadata = {
   title: "Collections — Ferixas",
@@ -12,7 +12,6 @@ export default async function CollectionsPage() {
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-6 lg:px-6 lg:py-8">
-      <Eyebrow>Curated by Ferixas</Eyebrow>
       <h1 className="mt-2 font-display text-[24px] font-semibold leading-tight text-ink lg:text-[32px]">Collections</h1>
       <p className="mt-2 max-w-[68ch] text-[13px] leading-relaxed text-ink-soft lg:text-[13.5px]">
         Each edit gathers products from several sellers around one idea, so you can shop a look or a need without

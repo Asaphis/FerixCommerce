@@ -17,7 +17,6 @@ export default async function LoginPage() {
         {heroImage ? <><img src={heroImage} alt="Ferixas marketplace operations" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-45" /><div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#112b3b]/95 via-[#112b3b]/80 to-[#0e7284]/55" /></> : null}
         <div className="relative max-w-[530px]">
           <OpsMark className="h-10 w-10" />
-          <Eyebrow className="mt-5 block text-signal">Platform operations</Eyebrow>
           <h1 className="mt-2 max-w-[17ch] font-display text-[26px] font-bold leading-tight text-white sm:text-[34px]">A safer marketplace for everyone.</h1>
           <p className="mt-2 max-w-[42ch] text-[12px] text-white/80">Monitor and manage Ferixas from one console.</p>
           <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-[450px]">

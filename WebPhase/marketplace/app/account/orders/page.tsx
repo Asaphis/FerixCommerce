@@ -30,7 +30,6 @@ export default async function OrdersPage({
     <AccountShell
       account={account}
       title="Orders"
-      description="Every seller's parcel in one list. Each seller packs and ships their own items, so one order can arrive in more than one delivery."
     >
       <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0">
         {FILTERS.map((filter) => (

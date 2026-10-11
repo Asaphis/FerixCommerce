@@ -34,7 +34,6 @@ const DESKS = [
 export default function ContactPage() {
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8 lg:px-6">
-      <Eyebrow>Support</Eyebrow>
       <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">Contact Ferixas</h1>
       <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
         Two ways in: the seller who owns your order, or the platform team. If it is about a specific parcel, the seller

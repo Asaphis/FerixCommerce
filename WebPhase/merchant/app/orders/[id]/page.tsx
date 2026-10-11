@@ -5,7 +5,7 @@ import { requireMerchant } from "@/lib/data";
 import { getOrder, ApiError } from "@/lib/api";
 import { OrderStatusForms } from "@/components/studio/order-status-form";
 import { SubmitButton } from "@/components/studio/controls";
-import { Eyebrow, Panel, PanelHead, Pill } from "@/components/studio/bits";
+import { Panel, PanelHead, Pill } from "@/components/studio/bits";
 import { statusTone } from "@/components/studio/order-bits";
 import { dateLong, money, titleCase } from "@/lib/format";
 
@@ -35,7 +35,6 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
       <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Eyebrow>Order</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{order.number}</h1>
           <p className="mt-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">
             Placed {dateLong(order.placedAt)} · Ferixas marketplace

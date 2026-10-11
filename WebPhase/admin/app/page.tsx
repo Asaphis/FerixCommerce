@@ -5,7 +5,7 @@ import { getOverview } from "@/lib/api";
 import { signOutAction } from "@/lib/actions";
 import { SubmitButton } from "@/components/ops/controls";
 import { Meter } from "@/components/ops/bits";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { compact, dateShort, money, num, relative, titleCase } from "@/lib/format";
 
 function statusTone(status: string) {
@@ -46,7 +46,7 @@ export default async function OverviewPage() {
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div><Eyebrow>Platform</Eyebrow><h1 className="mt-1.5 font-display text-[23px] font-bold leading-tight text-chalk sm:text-[28px]">Overview</h1></div>
+        <div><h1 className="mt-1.5 font-display text-[23px] font-bold leading-tight text-chalk sm:text-[28px]">Overview</h1></div>
         <form action={signOutAction}><SubmitButton variant="outline" pendingLabel="Signing out">Sign out</SubmitButton></form>
       </header>
 

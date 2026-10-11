@@ -40,7 +40,6 @@ export default async function CheckoutPage({
   if (!quote) {
     return (
       <div className="mx-auto max-w-[720px] px-4 py-12">
-        <Eyebrow>Checkout</Eyebrow>
         <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">
           {quoteFailed ? "Checkout is temporarily unavailable" : "There is nothing to check out"}
         </h1>
@@ -69,16 +68,9 @@ export default async function CheckoutPage({
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8">
-      <Eyebrow>Checkout</Eyebrow>
       <h1 className="mt-2 font-display text-[28px] font-semibold leading-tight tracking-[-0.02em] text-ink">
         {step === 1 ? "Where should this go?" : "Review your delivery"}
       </h1>
-      <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
-        {quote.totals.itemCount === 1 ? "One item" : `${quote.totals.itemCount} items`} from{" "}
-        {quote.cart.merchants.length === 1 ? "one seller" : `${quote.cart.merchants.length} sellers`}. Each seller
-        ships separately, but checkout remains paused until secure payment processing is configured.
-      </p>
-
       {/* Three steps, drawn as one progression rather than three loose tags: a done step
           carries a tick, the step you are on is the only dark one, and the ones ahead are
           quiet. A shopper should be able to see how much is left without reading. */}

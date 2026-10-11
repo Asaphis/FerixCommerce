@@ -33,9 +33,8 @@ const mono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Ferixas — one catalogue, every channel",
-  description:
-    "Shop seven independent merchant stores from one cart and one checkout, on Ferixas.",
+  title: "Ferixas Marketplace",
+  description: "Approved products from independent sellers.",
   icons: { icon: "/favicon.svg" },
 };
 

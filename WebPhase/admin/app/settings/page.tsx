@@ -2,7 +2,7 @@ import { Check, ServerCog, ShieldCheck, Users2 } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { getSettings } from "@/lib/api";
 import { SettingsForm } from "@/components/ops/settings-form";
-import { Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { num } from "@/lib/format";
 
 export default async function SettingsPage() {
@@ -13,9 +13,7 @@ export default async function SettingsPage() {
   return (
     <div className="grid min-w-0 gap-5">
       <header>
-        <Eyebrow>Platform settings</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{settings.platformName} configuration</h1>
-        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">

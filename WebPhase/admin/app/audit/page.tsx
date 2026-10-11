@@ -2,7 +2,7 @@ import Link from "next/link";
 import { History } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { getAudit } from "@/lib/api";
-import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +28,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   return (
     <div className="grid min-w-0 gap-5">
       <header>
-        <Eyebrow>Control</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Audit log</h1>
-        
       </header>
 
       <div className="flex flex-wrap gap-1.5">
@@ -52,8 +50,8 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
 
       {filtered.length === 0 ? (
         <Empty
-          title="Nothing recorded here yet"
-          body="Changes made in the console, the CMS and the seller workspace all land in this log."
+          title="No events recorded"
+          body="Clear the filter to see the full log."
         />
       ) : (
         <Panel flush className="overflow-hidden">

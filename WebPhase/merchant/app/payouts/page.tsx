@@ -1,7 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Landmark, Wallet } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getPayouts } from "@/lib/api";
-import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { money, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
@@ -13,9 +13,7 @@ export default async function PayoutsPage() {
   return (
     <div className="grid gap-5">
       <header className="shrinkable">
-        <Eyebrow>Payouts</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Money</h1>
-        
+        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Payouts</h1>
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -103,9 +101,6 @@ export default async function PayoutsPage() {
             </p>
           </div>
         </div>
-        <p className="mt-4 rounded-[2px] border border-hairline bg-panel-2 px-3 py-2.5 text-[12px] leading-relaxed text-chalk-dim">
-          Only recorded payout entries appear here. Payment capture and settlement are not connected, so order value is not treated as seller income.
-        </p>
       </Panel>
     </div>
   );

@@ -3,9 +3,9 @@ import { Receipt, Search } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listOrders } from "@/lib/api";
 import { FilterForm } from "@/components/ops/controls";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { Distribution } from "@/components/ops/marks";
-import { compact, dateShort, money, num, relative, titleCase } from "@/lib/format";
+import { dateShort, money, num, relative, titleCase } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CellLabel, DataTable, PageHeader, Row, Td, TdDetail, TdLead, TablePanel } from "@/components/ops/table";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
@@ -44,10 +44,7 @@ export default async function OrdersPage({
   return (
     <div className="grid min-w-0 gap-5">
       <header>
-        <Eyebrow>Order oversight</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Marketplace orders</h1>
-        <p className="mt-1 text-[12px] text-chalk-dim">Ferixas Marketplace orders</p>
-        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -206,15 +203,6 @@ export default async function OrdersPage({
             />
           </Panel>
 
-          <Panel>
-            <PanelHead title="Reading this table" />
-            <p className="text-[12.5px] leading-relaxed text-chalk-dim">
-              Each row is one Ferixas marketplace order. Commission is calculated only from confirmed marketplace item sales.
-            </p>
-            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim/70">
-              {compact(data.gmv)} of paid value · {compact(data.commission)} retained
-            </p>
-          </Panel>
         </div>
       </div>
     </div>

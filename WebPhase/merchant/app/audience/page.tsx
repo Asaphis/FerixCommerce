@@ -1,5 +1,5 @@
 import { MessageSquareText, Star, UserMinus, UserPlus, Users } from "lucide-react";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Empty, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { requireMerchant } from "@/lib/data";
 import { getFollowerActivity, getSellerReviews } from "@/lib/api";
 import { dateLong, num } from "@/lib/format";
@@ -21,7 +21,6 @@ export default async function AudiencePage() {
   return (
     <div className="grid min-w-0 gap-5">
       <header>
-        <Eyebrow>Business · Audience</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Followers and reviews</h1>
         <p className="mt-1 max-w-3xl text-[12.5px] leading-relaxed text-chalk-dim">
           Real Ferixas account follows and reviews for your products. Shopper identities and private account details are never shown here.

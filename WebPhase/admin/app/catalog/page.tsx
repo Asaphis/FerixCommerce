@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/data";
 import { assetUrl, listCatalog } from "@/lib/api";
 import { FilterForm, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass } from "@/components/ops/table";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { deleteCatalogProductAction } from "@/lib/ops-actions";
 import { money, num, titleCase } from "@/lib/format";
 
@@ -39,7 +39,6 @@ export default async function CatalogPage({
     <div className="grid min-w-0 gap-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
           
         </div>

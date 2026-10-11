@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/data";
 import { assetUrl, listPromotions } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass } from "@/components/ops/table";
-import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { deletePromotionAction, savePromotionAction } from "@/lib/ops-actions";
 import { money, num } from "@/lib/format";
 
@@ -27,9 +27,7 @@ export default async function PromotionsPage() {
   return (
     <div className="grid min-w-0 gap-5">
       <header>
-        <Eyebrow>Marketplace</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Promotions</h1>
-        
       </header>
 
       {sales.length === 0 ? (

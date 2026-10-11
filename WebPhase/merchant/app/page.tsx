@@ -4,7 +4,7 @@ import { requireMerchant } from "@/lib/data";
 import { getDashboard } from "@/lib/api";
 import { signOutAction } from "@/lib/actions";
 import { SubmitButton } from "@/components/studio/controls";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Empty, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { dateShort, money, num, relative, titleCase } from "@/lib/format";
 
 function statusTone(status: string) {
@@ -46,7 +46,6 @@ export default async function DashboardPage() {
     <div className="grid min-w-0 gap-4 sm:gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <Eyebrow>Seller centre</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-bold leading-tight text-chalk sm:text-[28px]">Welcome back, {merchant.name}</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -147,16 +146,6 @@ export default async function DashboardPage() {
             </ul> : <p className="text-[12px] text-chalk-dim">No items are below your {settings.lowStockAt}-unit alert.</p>}
           </Panel>
         </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Panel>
-          <PanelHead title="Ferixas marketplace presence" action={<Link href="/audience" className="text-[11px] font-bold text-signal">View audience <ArrowRight className="inline" width={12} height={12} /></Link>} />
-          <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Approved listings</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.published)}</p><p className="text-[10px] text-chalk-dim">visible on Ferixas</p></div>
-            <div className="rounded-[2px] border border-hairline p-3"><Eyebrow>Followers</Eyebrow><p className="mt-1.5 font-mono text-[18px] font-bold text-chalk">{num(counts.followers)}</p><p className="text-[10px] text-chalk-dim">current shopper follows</p></div>
-          </div>
-        </Panel>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline pt-3 text-[10px] text-chalk-dim">

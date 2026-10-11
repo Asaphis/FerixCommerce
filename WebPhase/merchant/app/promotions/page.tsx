@@ -1,7 +1,7 @@
 import { PromotionForm } from "@/components/studio/promotion-form";
 import { requireMerchant } from "@/lib/data";
 import { apiImageUrl, listPromotions } from "@/lib/api";
-import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/studio/bits";
+import { Empty, Panel, PanelHead, Pill } from "@/components/studio/bits";
 import { dateShort, money, num, titleCase } from "@/lib/format";
 
 function statusTone(status: string) {
@@ -18,9 +18,7 @@ export default async function PromotionsPage() {
   return (
     <div className="grid gap-5">
       <header>
-        <Eyebrow>Catalogue</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Promotions</h1>
-        
       </header>
 
       <div className="grid gap-3 lg:grid-cols-[1.55fr_1fr]">

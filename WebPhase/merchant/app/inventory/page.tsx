@@ -3,7 +3,7 @@ import { AlertTriangle, PackageX } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getInventory } from "@/lib/api";
 import { StockAdjust } from "@/components/studio/stock-adjust";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Empty, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { Thumb } from "@/components/studio/marks";
 import { money, num } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -29,9 +29,7 @@ export default async function InventoryPage({
   return (
     <div className="grid gap-5">
       <header className="shrinkable">
-        <Eyebrow>Inventory</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Stock</h1>
-        
+        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Inventory</h1>
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -121,10 +119,7 @@ export default async function InventoryPage({
           </DataTable>
         </TablePanel>
       ) : (
-        <Empty
-          title="Nothing in this state"
-          body="Switch back to every SKU, or check again once stock moves."
-        />
+        <Empty title="Nothing in this state" body="Switch back to every SKU." />
       )}
 
     </div>

@@ -1,7 +1,7 @@
 import { Wallet } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listPayouts } from "@/lib/api";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { money, num } from "@/lib/format";
 
 const STATUS_TONE: Record<string, "mint" | "amber" | "neutral"> = {
@@ -17,9 +17,7 @@ export default async function PayoutsPage() {
   return (
     <div className="grid min-w-0 gap-5">
       <header>
-        <Eyebrow>Commerce</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Payouts</h1>
-        
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">

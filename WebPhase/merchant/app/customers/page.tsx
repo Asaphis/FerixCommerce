@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { listCustomers } from "@/lib/api";
 import { FilterForm } from "@/components/studio/controls";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Empty, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { money, num, relative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
@@ -33,9 +33,7 @@ export default async function CustomersPage({
   return (
     <div className="grid gap-5">
       <header className="shrinkable">
-        <Eyebrow>Customers</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Who buys from you</h1>
-        
+        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Customers</h1>
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -120,7 +118,7 @@ export default async function CustomersPage({
           </DataTable>
         </TablePanel>
       ) : (
-        <Empty title="No customers match" body="Clear the search and the segment filter to see everyone." />
+        <Empty title="No customers match" body="Clear the filters to see everyone." />
       )}
 
     </div>

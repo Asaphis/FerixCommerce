@@ -404,10 +404,10 @@ export function TrustStrip() {
     <section className="border-y border-line-warm bg-bone-soft/60">
       <div className="mx-auto grid max-w-[1240px] gap-6 px-4 py-8 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "Delivery in 2-5 days", body: "Tracked across seven countries" },
-          { title: "Buyer protection", body: "Refunded if it never arrives" },
-          { title: "30-day returns", body: "Free on orders above $120" },
-          { title: "Merchant support", body: "Answered by the seller, not a bot" },
+          { title: "Approved listings", body: "Reviewed before they appear" },
+          { title: "Independent sellers", body: "Each packs and ships their own items" },
+          { title: "Returns", body: "As set out in the returns policy" },
+          { title: "Support", body: "Seller for products, Ferixas for the platform" },
         ].map((item) => (
           <div key={item.title} className="flex items-start gap-3">
             <Truck width={19} height={19} strokeWidth={1.5} className="mt-0.5 shrink-0 text-ember" />

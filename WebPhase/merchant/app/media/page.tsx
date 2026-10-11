@@ -1,7 +1,7 @@
 import { requireMerchant } from "@/lib/data";
 import { apiImageUrl, listMedia } from "@/lib/api";
 import { MediaDelete, MediaForm } from "@/components/studio/media-library";
-import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/studio/bits";
+import { Empty, Panel, PanelHead, Pill } from "@/components/studio/bits";
 import { dateShort, relative } from "@/lib/format";
 
 export default async function MediaPage() {
@@ -13,13 +13,11 @@ export default async function MediaPage() {
     <div className="grid gap-5">
       <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Media</h1>
           
         </div>
         <Pill tone={configured ? "success" : "warn"}>{data.storage === "cloudinary" ? "cloudinary connected" : "local MVP storage"}</Pill>
       </header>
-
 
       <div className="grid gap-3 lg:grid-cols-[1fr_2fr]">
         <div className="grid content-start gap-3">

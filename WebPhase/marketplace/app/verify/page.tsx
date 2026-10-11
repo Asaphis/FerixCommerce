@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { VerifyEmailFlow } from "@/components/ferix/auth-flows";
-import { Eyebrow, FerixMark } from "@/components/ferix/marks";
+import { FerixMark } from "@/components/ferix/marks";
 
 export const metadata: Metadata = {
   title: "Verify your email — Ferixas",
@@ -20,7 +20,6 @@ export default async function VerifyPage({
     <div className="mx-auto flex min-h-[70vh] max-w-[440px] flex-col justify-center px-4 py-10">
       <div className="rounded-[3px] border border-line-warm bg-white p-5 lg:p-6">
         <FerixMark className="h-8 w-8" />
-        <Eyebrow className="mt-5 block">Email verification</Eyebrow>
         <h1 className="mt-2 font-display text-[24px] font-semibold leading-tight text-ink">
           {expired ? "That verification link has expired" : "Confirm your email address"}
         </h1>

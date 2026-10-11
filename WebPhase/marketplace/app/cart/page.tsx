@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ShoppingBag } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cartState } from "@/lib/data";
 import { CartLineRow } from "@/components/ferix/cards";
 import { EmptyState, Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
@@ -14,7 +14,7 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
       <div className="mx-auto max-w-[1240px] px-4 py-16">
         <EmptyState
           title="Your cart is empty"
-          body="Anything you add from the marketplace or a merchant store lands here, and it stays one order and one checkout."
+          body="Items you add from the marketplace appear here."
           action={<LinkButton href="/browse">Start shopping</LinkButton>}
         />
       </div>
@@ -29,8 +29,7 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
         </p>
       ) : null}
       <SectionHead
-        eyebrow="Cart"
-        title={`${cart.count} item${cart.count === 1 ? "" : "s"} from ${cart.merchants.length} seller${cart.merchants.length === 1 ? "" : "s"}`}
+        title="Your cart"
       />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
@@ -70,7 +69,7 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
           ))}
 
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
-            Each seller packs and ships their own items. Secure marketplace payment is not available yet, so no order is created from this cart.
+            Secure marketplace payment is not available yet, so no order is created from this cart.
           </p>
         </div>
 
@@ -104,9 +103,6 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
             </Link>
           </div>
 
-          <p className="mt-3 flex items-center justify-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
-            <ShoppingBag width={12} height={12} /> Payment setup required before checkout
-          </p>
         </aside>
       </div>
     </div>

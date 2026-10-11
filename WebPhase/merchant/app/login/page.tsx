@@ -18,7 +18,6 @@ export default async function LoginPage() {
         {heroImage ? <><img src={heroImage} alt="Ferixas seller workspace" className="absolute inset-0 -z-20 h-full w-full object-cover opacity-55" /><div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#102a3a]/95 via-[#102a3a]/70 to-[#e4572e]/40" /></> : null}
         <div className="relative max-w-[520px]">
           <FerixasMark className="h-10 w-10" />
-          <Eyebrow className="mt-5 block text-lime">Seller centre</Eyebrow>
           <h1 className="mt-2 max-w-[18ch] font-display text-[26px] font-bold leading-tight text-white sm:text-[34px]">Grow your store on Ferixas.</h1>
         </div>
       </section>

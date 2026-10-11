@@ -3,7 +3,7 @@ import { Plus, Search } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { listProducts } from "@/lib/api";
 import { FilterForm } from "@/components/studio/controls";
-import { Empty, Eyebrow, Pill } from "@/components/studio/bits";
+import { Empty, Pill } from "@/components/studio/bits";
 import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
 import { Thumb } from "@/components/studio/marks";
 import { money, num, titleCase } from "@/lib/format";
@@ -43,7 +43,6 @@ export default async function ProductsPage({
     <div className="grid gap-5">
       <header className="shrinkable flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <Eyebrow>Catalogue</Eyebrow>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
         </div>
         <Link

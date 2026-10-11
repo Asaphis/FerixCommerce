@@ -17,7 +17,6 @@ import {
   Package,
   Search,
   Settings,
-  ShieldCheck,
   Star,
   Store,
   User2,
@@ -226,8 +225,8 @@ export function FerixMobileMenu({ categories, user }: { categories: Category[]; 
               </ul>
             </nav>
 
-            <div className="mt-auto border-t border-line-warm px-4 py-4">
-              {user ? (
+            {user ? (
+              <div className="mt-auto border-t border-line-warm px-4 py-4">
                 <form action={signOutAction}>
                   <button
                     type="submit"
@@ -237,13 +236,8 @@ export function FerixMobileMenu({ categories, user }: { categories: Category[]; 
                     Sign out
                   </button>
                 </form>
-              ) : (
-                <p className="flex items-center gap-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-soft">
-                  <ShieldCheck width={13} height={13} />
-                  Buyer protection on every order
-                </p>
-              )}
-            </div>
+              </div>
+            ) : null}
           </div>
         </div>
         ,

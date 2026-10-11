@@ -2,7 +2,7 @@ import Link from "next/link";
 import { listStores } from "@/lib/api";
 import { StoreCard } from "@/components/ferix/cards";
 import { AutoForm } from "@/components/ferix/add-to-cart";
-import { Eyebrow } from "@/components/ferix/marks";
+
 
 export default async function StoresPage({
   searchParams,
@@ -16,7 +16,6 @@ export default async function StoresPage({
     <div className="mx-auto max-w-[1240px] px-4 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow>Merchant stores</Eyebrow>
           <h1 className="mt-2 font-display text-[28px] font-semibold text-ink">Every store on Ferixas</h1>
           <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
             Each store runs its own branded shopfront, and the same catalogue feeds the marketplace.

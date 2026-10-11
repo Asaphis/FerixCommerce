@@ -4,7 +4,7 @@ import { ArrowLeft, AlertTriangle, ExternalLink, MapPin, Percent, Store, Trash2 
 import { requireAdmin } from "@/lib/data";
 import { getMerchant, ApiError, type MerchantDetail } from "@/lib/api";
 import { MerchantForm } from "@/components/ops/merchant-form";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { deleteMerchantAction, restrictMerchantAction, suspendMerchantAction } from "@/lib/actions";
@@ -65,7 +65,6 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
             {merchant.name.slice(0, 1)}
           </span>
           <div>
-            <Eyebrow>Merchant</Eyebrow>
             <h1 className="mt-1 font-display text-[23px] font-semibold text-chalk">{merchant.name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Pill tone={statusTone(merchant.status)}>

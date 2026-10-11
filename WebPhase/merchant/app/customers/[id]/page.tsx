@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
 import { getCustomer, ApiError } from "@/lib/api";
-import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { statusTone } from "@/components/studio/order-bits";
 import { dateShort, money, titleCase } from "@/lib/format";
 
@@ -36,7 +36,6 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             {customer.name.split(" ").map((part) => part[0]).slice(0, 2).join("")}
           </span>
           <div>
-            <Eyebrow>Customer</Eyebrow>
             <h1 className="mt-1 font-display text-[22px] font-semibold text-chalk">{customer.name}</h1>
             <p className="mt-1 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">{customer.location}</p>
           </div>

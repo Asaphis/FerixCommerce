@@ -1,6 +1,6 @@
 import { requireMerchant } from "@/lib/data";
 import { ProductForm } from "@/components/studio/product-form";
-import { Eyebrow } from "@/components/studio/bits";
+
 import { getProductOptions } from "@/lib/api";
 
 export default async function NewProductPage() {
@@ -10,7 +10,6 @@ export default async function NewProductPage() {
   return (
     <div className="grid gap-4">
       <header>
-        <Eyebrow>Catalogue</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">New product</h1>
       </header>
 

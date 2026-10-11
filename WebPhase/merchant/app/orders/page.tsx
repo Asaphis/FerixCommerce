@@ -5,7 +5,7 @@ import { listOrders } from "@/lib/api";
 import { setOrderStatusRequestAction } from "@/lib/actions";
 import { FilterForm } from "@/components/studio/controls";
 import { ConfirmAction } from "@/components/studio/confirm-action";
-import { Empty, Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Empty, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { CellLabel, DataTable, Row, TablePanel, Td, TdDetail, TdEnd, TdLead } from "@/components/studio/table";
 import { carriersLabel, statusTone } from "@/components/studio/order-bits";
 import { dateShort, money, num, relative, titleCase } from "@/lib/format";
@@ -34,9 +34,7 @@ export default async function OrdersPage({
   return (
     <div className="grid gap-5">
       <header className="shrinkable">
-        <Eyebrow>Orders</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Order queue</h1>
-        
+        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Orders</h1>
       </header>
 
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
@@ -163,9 +161,8 @@ export default async function OrdersPage({
       )}
 
       <Panel>
-          <PanelHead title="Ferixas marketplace orders" />
         <p className="text-[12.5px] leading-relaxed text-chalk-dim">
-          Only Ferixas marketplace orders appear here. Shipment is available after payment is confirmed. Cancelling changes the order status; it does not issue an automatic payment refund.
+          Shipment requires confirmed payment. Cancelling changes the order status only; it does not issue a refund.
         </p>
       </Panel>
     </div>

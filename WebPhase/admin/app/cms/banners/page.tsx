@@ -27,7 +27,6 @@ export default async function BannersPage() {
           Content
         </Link>
         <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Banners</h1>
-        
       </header>
 
       {banners.length === 0 ? (

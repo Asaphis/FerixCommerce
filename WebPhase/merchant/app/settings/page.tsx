@@ -2,7 +2,7 @@ import { requireMerchant } from "@/lib/data";
 import { getSettings } from "@/lib/api";
 import { SettingsForm } from "@/components/studio/settings-form";
 import { ProfileForm } from "@/components/studio/profile-form";
-import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { dateLong, num } from "@/lib/format";
 
 export default async function SettingsPage() {
@@ -12,9 +12,7 @@ export default async function SettingsPage() {
   return (
     <div className="grid gap-5">
       <header>
-          <Eyebrow>Marketplace settings</Eyebrow>
-        <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{data.profile.name}</h1>
-        
+          <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{data.profile.name}</h1>
       </header>
 
       <div id="seller-profile"><ProfileForm profile={data.profile} request={data.profileRequest} history={data.profileHistory} /></div>

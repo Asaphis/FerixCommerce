@@ -39,7 +39,6 @@ const OPTIONS = [
 export default function ShippingPolicyPage() {
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8 lg:px-6">
-      <Eyebrow>Policy</Eyebrow>
       <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">Shipping policy</h1>
       <p className="mt-2 max-w-[72ch] text-[13.5px] leading-relaxed text-ink-soft">
         Every merchant on Ferixas packs and dispatches their own items, so delivery is a promise between you and the

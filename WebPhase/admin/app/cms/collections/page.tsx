@@ -32,7 +32,6 @@ export default async function CollectionsPage() {
           Content
         </Link>
         <h1 className="mt-2 font-display text-[23px] font-semibold text-chalk">Collections</h1>
-        
       </header>
 
       {collections.length === 0 ? (

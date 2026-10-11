@@ -4,7 +4,7 @@ import { requireMerchant } from "@/lib/data";
 import { getProduct, getProductOptions, listProducts, ApiError } from "@/lib/api";
 import { ProductDeleteForm } from "@/components/studio/product-delete-form";
 import { ProductForm } from "@/components/studio/product-form";
-import { Eyebrow, Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
+import { Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
 import { Thumb } from "@/components/studio/marks";
 import { dateShort, money, num, titleCase } from "@/lib/format";
 
@@ -56,7 +56,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <div className="flex items-start gap-4">
           <Thumb seed={product.slug} className="h-16 w-16" />
           <div>
-            <Eyebrow>{titleCase(product.category)}</Eyebrow>
             <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">{product.title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Pill tone={product.status === "approved" ? "success" : product.status === "pending_review" ? "warn" : product.status === "rejected" ? "neutral" : "neutral"}>

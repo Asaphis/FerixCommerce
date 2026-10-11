@@ -26,13 +26,13 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Pr
   return (
     <div className="grid min-w-0 gap-4 sm:gap-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
-        <div><Eyebrow>Analytics</Eyebrow><h1 className="mt-1.5 font-display text-[23px] font-bold text-chalk sm:text-[27px]">Performance</h1></div>
+        <div><h1 className="mt-1.5 font-display text-[23px] font-bold text-chalk sm:text-[27px]">Analytics</h1></div>
         <div className="flex flex-wrap gap-1">{RANGES.map((option) => <Link key={option} href={`/analytics?days=${option}`} className={cn("inline-flex min-h-9 items-center rounded-[2px] border px-2.5 text-[10px] font-semibold transition-colors", range === option ? "border-signal bg-[#fff0e9] text-signal" : "border-hairline bg-white text-chalk-dim hover:text-chalk")}>{option}d</Link>)}</div>
       </header>
 
       <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         <StatTile label={`Revenue · ${range} days`} value={money(totalRevenue, { cents: false })} sub="Recorded orders" />
-        <StatTile label={`Orders · ${range} days`} value={num(totalOrders)} sub="Confirmed Ferixas marketplace orders" accent="azure" />
+        <StatTile label={`Orders · ${range} days`} value={num(totalOrders)} accent="azure" />
         <StatTile label="Best day" value={money(best?.revenue ?? 0, { cents: false })} sub={best?.date ?? "No recorded activity"} accent="sand" />
         <StatTile label="Repeat buyers" value={`${data.customers.repeatRate}%`} sub={`${data.customers.repeat} repeat buyers`} accent="lime" />
       </div>

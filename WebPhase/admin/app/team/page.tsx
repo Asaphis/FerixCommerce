@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/data";
 import { listStaff } from "@/lib/api";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass } from "@/components/ops/table";
-import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
+import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { deleteStaffAction, saveStaffAction } from "@/lib/ops-actions";
 import { dateLong, titleCase } from "@/lib/format";
 
@@ -21,9 +21,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
       {error ? <p role="alert" className="rounded-[8px] border border-rose/30 bg-rose/10 px-3 py-2 text-[12px] text-rose">{error}</p> : null}
       {saved ? <p role="status" className="rounded-[8px] border border-signal/30 bg-signal/10 px-3 py-2 text-[12px] text-signal">Team changes saved.</p> : null}
       <header>
-        <Eyebrow>Control</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Team and roles</h1>
-        
       </header>
 
       <Panel>

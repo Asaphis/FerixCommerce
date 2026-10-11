@@ -50,7 +50,6 @@ const NOT_ELIGIBLE = [
 export default function ReturnsPage() {
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8 lg:px-6">
-      <Eyebrow>Policy</Eyebrow>
       <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">Return policy</h1>
       <p className="mt-2 max-w-[72ch] text-[13.5px] leading-relaxed text-ink-soft">
         Thirty days to change your mind, whichever merchant you bought from. Return delivery is free on orders above

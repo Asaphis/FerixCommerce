@@ -16,12 +16,7 @@ function columnsAtWidth(phoneColumns: number, width: number) {
   return phoneColumns;
 }
 
-function numberWord(value: number) {
-  const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
-  return words[value] ?? String(value);
-}
-
-/** Departments grouped into full responsive faces with scroll-snap pagination. */
+/** Departments grouped into responsive pages with scroll-snap pagination. */
 export function TileSwiper({
   categories,
   across = 2,
@@ -39,10 +34,10 @@ export function TileSwiper({
   const phoneColumns = Math.min(4, Math.max(1, Math.round(Number(across) || 2)));
   const rows = Math.min(3, Math.max(1, Math.round(Number(rowsPerSet) || 2)));
   const [visibleColumns, setVisibleColumns] = useState(phoneColumns);
-  const perFace = visibleColumns * rows;
+  const perPage = visibleColumns * rows;
   const sets: Category[][] = [];
-  for (let index = 0; index < categories.length; index += perFace) {
-    sets.push(categories.slice(index, index + perFace));
+  for (let index = 0; index < categories.length; index += perPage) {
+    sets.push(categories.slice(index, index + perPage));
   }
 
   const rail = useRef<HTMLDivElement>(null);
@@ -65,7 +60,7 @@ export function TileSwiper({
   useEffect(() => {
     setActive(0);
     if (rail.current) rail.current.scrollLeft = 0;
-  }, [categories.length, perFace]);
+  }, [categories.length, perPage]);
 
   const gridStyle = { gridTemplateColumns: `repeat(${visibleColumns}, minmax(0, 1fr))` };
   const grid = cn("grid gap-2 sm:gap-3");
@@ -78,7 +73,7 @@ export function TileSwiper({
     );
   }
 
-  const goToFace = (index: number) => {
+  const goToPage = (index: number) => {
     const element = rail.current;
     if (!element) return;
     element.scrollTo({ left: index * element.clientWidth, behavior: "smooth" });
@@ -91,7 +86,7 @@ export function TileSwiper({
         onScroll={onScroll}
         className="no-scrollbar flex snap-x snap-mandatory overflow-x-auto pb-1"
         role="group"
-        aria-label={`Departments in ${sets.length} swipe faces`}
+        aria-label={`Departments, ${sets.length} pages`}
       >
         {sets.map((set, index) => (
           <div key={index} className="w-full shrink-0 snap-start pr-3 last:pr-0">
@@ -103,13 +98,13 @@ export function TileSwiper({
       </div>
 
       <div className="mt-2.5 flex flex-col items-center gap-1.5 text-center">
-        <div className="flex items-center justify-center" role="group" aria-label="Choose department face">
+        <div className="flex items-center justify-center" role="group" aria-label="Department pages">
           {sets.map((_, index) => (
             <button
               key={index}
               type="button"
-              onClick={() => goToFace(index)}
-              aria-label={`Show face ${index + 1} of ${sets.length}`}
+              onClick={() => goToPage(index)}
+              aria-label={`Show department page ${index + 1} of ${sets.length}`}
               aria-current={index === active ? "page" : undefined}
               className="grid h-7 w-7 cursor-pointer place-items-center"
             >
@@ -118,10 +113,7 @@ export function TileSwiper({
           ))}
         </div>
         <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-soft" aria-live="polite">
-          Face {active + 1} of {sets.length}
-        </p>
-        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-soft">
-          Swipe for the next {numberWord(perFace)}
+          Page {active + 1} of {sets.length}
         </p>
       </div>
     </div>

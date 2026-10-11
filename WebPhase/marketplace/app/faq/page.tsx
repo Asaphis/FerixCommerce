@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { Eyebrow, LinkButton } from "@/components/ferix/marks";
+import { LinkButton } from "@/components/ferix/marks";
 
 export const metadata: Metadata = {
   title: "Frequently asked questions — Ferixas",
@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 type Group = {
   id: string;
   title: string;
-  note: string;
   items: { q: string; a: string }[];
 };
 
@@ -20,7 +19,6 @@ const GROUPS: Group[] = [
   {
     id: "orders",
     title: "Orders",
-    note: "One cart, several sellers, sometimes several parcels.",
     items: [
       {
         q: "Why has only part of my order arrived?",
@@ -43,7 +41,6 @@ const GROUPS: Group[] = [
   {
     id: "payment",
     title: "Payment and pricing",
-    note: "One payment for the whole cart, split behind the scenes.",
     items: [
       {
         q: "When am I charged?",
@@ -66,7 +63,6 @@ const GROUPS: Group[] = [
   {
     id: "delivery",
     title: "Delivery",
-    note: "2–5 working days standard, 1–2 express, 24 hours to collect.",
     items: [
       {
         q: "How long will delivery take?",
@@ -89,7 +85,6 @@ const GROUPS: Group[] = [
   {
     id: "returns",
     title: "Returns and refunds",
-    note: "30 days, free return delivery above $120.",
     items: [
       {
         q: "How long do I have to return something?",
@@ -112,7 +107,6 @@ const GROUPS: Group[] = [
   {
     id: "account",
     title: "Your account",
-    note: "Sign-in, addresses, saved cards and reviews.",
     items: [
       {
         q: "How do I reset my password?",
@@ -135,7 +129,6 @@ const GROUPS: Group[] = [
   {
     id: "selling",
     title: "Selling on Ferixas",
-    note: "Approved seller profiles and marketplace listings.",
     items: [
       {
         q: "How do I open a merchant store?",
@@ -160,11 +153,7 @@ const GROUPS: Group[] = [
 export default function FaqPage() {
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-8 lg:px-6">
-      <Eyebrow>Support</Eyebrow>
       <h1 className="mt-2 font-display text-[26px] font-semibold text-ink">Frequently asked questions</h1>
-      <p className="mt-2 max-w-[62ch] text-[13.5px] leading-relaxed text-ink-soft">
-        Everything shoppers and sellers ask us most, grouped by topic. Tap a question to open it.
-      </p>
 
       <div className="mt-5 flex flex-wrap gap-1.5">
         {GROUPS.map((group) => (
@@ -179,12 +168,10 @@ export default function FaqPage() {
       </div>
 
       <section className="mt-8">
-        <h2 className="font-display text-[19px] font-semibold text-ink">Common questions, answered</h2>
-        <div className="mt-5 grid max-w-[80ch] gap-8">
+        <div className="grid max-w-[80ch] gap-8">
           {GROUPS.map((group) => (
             <div key={group.id} id={group.id} className="scroll-mt-24">
-              <h3 className="font-display text-[15.5px] font-semibold text-ink">{group.title}</h3>
-              <p className="mt-1 font-mono text-[10.5px] text-ink-soft">{group.note}</p>
+              <h2 className="font-display text-[15.5px] font-semibold text-ink">{group.title}</h2>
               <div className="mt-3 border-t border-line-warm">
                 {group.items.map((item) => (
                   <details key={item.q} className="group border-b border-line-warm">
@@ -208,14 +195,10 @@ export default function FaqPage() {
 
       <section className="mt-10 max-w-[80ch] rounded-[3px] border border-line-warm bg-white p-5">
         <h2 className="font-display text-[17px] font-semibold text-ink">Question not here?</h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">
-          Send it to us and we will answer it, then add it to this page. Most platform questions get a reply within one
-          working day.
-        </p>
         <div className="mt-4 flex flex-wrap gap-2.5">
           <LinkButton href="/contact">Contact support</LinkButton>
           <LinkButton href="/help" variant="outline">
-            Back to the help centre
+            Help
           </LinkButton>
         </div>
       </section>
