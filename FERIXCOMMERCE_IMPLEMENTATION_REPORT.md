@@ -133,3 +133,38 @@ Status key: **Implemented** means the source correction is present. **Implemente
 8. Plan a separate Recharts 3 migration: the installed Recharts 2.15.4 emitted a deprecation warning, but has no current npm audit finding and a major upgrade needs its own compatibility review.
 
 **Release conclusion:** the source corrections include the Seller event timeline, CI quality gates, guarded PostgreSQL migration smoke, security/ownership fixes, and UI/content cleanups. This is **not a certification of production readiness**. Payment-provider setup, review of existing CMS records, production database/deployment wiring, additional UI/device/accessibility coverage and release/rollback validation remain outstanding.
+
+## System-wide copy reduction (final pass)
+
+The copy requirement was applied across the whole product, not only the CMS
+sections that first exposed it:
+
+- **Page headers.** 46 pages in Admin, Seller and Shopper lost an eyebrow label
+  that only repeated the page title ("Catalogue / Products", "Orders / Order
+  queue", "Control / Audit log"). Each page now opens with its title alone.
+- **Route-accurate titles.** Vague headings were replaced with the name of the
+  surface they belong to: Seller "Performance" to "Analytics", "Who buys from
+  you" to "Customers", "Stock" to "Inventory", "Money" to "Payouts" and
+  "Order queue" to "Orders".
+- **Duplicate panels removed.** The Seller dashboard's marketplace-presence panel
+  (already shown as tiles), the Seller orders explainer that restated the table,
+  the Admin orders subtitle and the Admin "Reading this table" panel.
+- **Shopper copy.** Section heads show a title only; the Help centre was rebuilt
+  as topic links plus one contact block, with hard-coded merchant names and
+  repeated routing text removed; the FAQ lost its intro, per-group notes and
+  duplicate headings; the cart heading, empty state and duplicate payment notice
+  were trimmed; About now describes only approved listings, reviewed products and
+  the unavailable checkout.
+- **Accuracy fixes found while trimming.** The shared trust strip and the product
+  page no longer promise buyer protection or a 2–5 day delivery guarantee while
+  payment and settlement are unconfigured; the mobile drawer's buyer-protection
+  line was removed; the Shopper root metadata no longer claims a single checkout
+  or a fixed merchant count; the department carousel no longer says "face".
+
+Existing database rows are still not rewritten at deploy time: the CMS keeps
+whatever an administrator has saved. Only freshly seeded databases and subsequent
+saves use the reduced copy.
+
+**Validation after this pass:** 20 backend tests OK, PostgreSQL migration smoke
+(fresh seed + idempotence, legacy upgrade, future-schema refusal) passed, and
+`typecheck` plus production `build` passed for Admin, Seller and Shopper.
