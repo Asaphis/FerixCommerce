@@ -176,14 +176,9 @@ def _product_options(db) -> dict:
     sections = []
     product_section_types = {"product_carousel", "product_grid"}
     for document in db.scalars(select(ContentDocument)).all():
-        if document.owner_type != "platform":
+        if document.owner_type != "platform" or document.status != "published":
             continue
-        draft = db.scalar(
-            select(ContentVersion)
-            .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
-            .order_by(ContentVersion.version.desc())
-        )
-        source = (draft.data if draft is not None else document.data) or {}
+        source = document.data or {}
         for section in source.get("sections", []):
             section_type = str(section.get("type") or "")
             if section_type in product_section_types and section.get("visible", True):
@@ -191,9 +186,10 @@ def _product_options(db) -> dict:
                     "value": f"{document.id}__{section.get('id')}",
                     "name": section.get("name") or section.get("title") or section.get("type"),
                     "documentTitle": document.title,
+                    "documentType": document.document_type,
                     "sectionType": section_type,
                     "source": section.get("source") or "curated",
-                    "status": "draft" if draft is not None else "published",
+                    "status": "published",
                 })
     return {"categories": categories, "brands": brands, "collections": collections, "sections": sections}
 
@@ -565,11 +561,18 @@ def product_options(session: Optional[str] = Header(None, alias="X-Ferix-Session
 
 
 @router.get("/product")
-def product(session: Optional[str] = Header(None, alias="X-Ferix-Session"), slug: str = Query(...)):
+def product(
+    session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+    slug: Optional[str] = Query(None),
+    id: Optional[str] = Query(None),
+):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
         merchant = _merchant_or_404(db, staff.subject_id)
-        found = find_product(db, slug)
+        lookup = str(id or slug or "").strip()
+        if not lookup:
+            raise HTTPException(400, "A product slug or id is required")
+        found = find_product(db, lookup)
         if not found or not is_seller_marketplace_product(found, merchant["id"]):
             raise HTTPException(404, "Product not found in your catalogue")
         sold_all = _merchant_product_units(db, merchant["id"])

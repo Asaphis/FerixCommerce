@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCatalog, listMedia, getProductSections } from "@/lib/api";
+import { listCatalog, listMedia, getProductSections, type SectionOption } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
@@ -24,6 +24,11 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
   const data = await listCatalog(session, {});
   const product = data.products.find((row) => row.slug === slug);
   if (!product) notFound();
+  const sectionGroups = sections.reduce<Record<string, SectionOption[]>>((groups, section) => {
+    const key = section.documentTitle || "Marketplace";
+    (groups[key] ??= []).push(section);
+    return groups;
+  }, {});
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -123,7 +128,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
         </Panel>
 
         <Panel className="grid gap-4">
-          <PanelHead title="Media and channels" />
+          <PanelHead title="Media and Marketplace sections" />
           <MediaUploadField
             key="product-image"
             urlName="imageUrl"
@@ -133,10 +138,10 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
             urlLabel="Product image URL"
             fileLabel="Upload a product image"
           />
-          <Field title="Where it appears">
+          <Field title="Marketplace sections">
             {sections.length ? (
-              <div className="grid gap-2.5">
-                {sections.map((section) => {
+              <div className="grid gap-4">
+                {Object.entries(sectionGroups).map(([page, pageSections]) => <fieldset key={page} className="grid gap-2"><legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend><div className="grid gap-2 sm:grid-cols-2">{pageSections.map((section) => {
                   const slot = `${section.documentId}__${section.sectionId}`;
                   const placed = placements.some(
                     (row) => row.documentId === section.documentId && row.sectionId === section.sectionId,
@@ -160,19 +165,9 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
                           </span>
                         </span>
                       </label>
-                      {/* The questions this section asks, shown when it is ticked - by CSS, so it
-                          is right before the page hydrates and cannot disagree with the checkbox. */}
-                      <div className="mt-3 hidden gap-3 group-has-[:checked]:grid sm:grid-cols-2">
-                        <Field title="Its price there">
-                          <input name={`price__${slot}`} type="number" min={0} step="0.01" className={inputClass} placeholder="Leave blank to use the product's price" />
-                        </Field>
-                        <Field title="Its quantity there">
-                          <input name={`qty__${slot}`} type="number" min={0} className={inputClass} placeholder="Leave blank to use its stock" />
-                        </Field>
-                      </div>
                     </div>
                   );
-                })}
+                })}</div></fieldset>)}
               </div>
             ) : (
               <p className="text-[12px] text-chalk-dim">
@@ -181,11 +176,8 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
             )}
           </Field>
 
-          <div className="grid gap-2 sm:grid-cols-3">
-            <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
-              <input type="checkbox" name="store" defaultChecked={product.channels.store} className="size-4 accent-signal" />
-              Sell on the Ferixas store
-            </label>
+          <input type="hidden" name="store" value="on" />
+          <div className="grid gap-2">
             <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
               <input
                 type="checkbox"
@@ -193,11 +185,7 @@ export default async function ProductEditorPage({ params }: { params: Promise<{ 
                 defaultChecked={product.channels.marketplace}
                 className="size-4 accent-signal"
               />
-              List in the marketplace
-            </label>
-            <label className="flex items-center gap-2 text-[12.5px] text-chalk-dim">
-              <input type="checkbox" name="featured" defaultChecked={product.featured} className="size-4 accent-signal" />
-              Feature on the homepage
+              Publish on Ferixas Marketplace
             </label>
           </div>
         </Panel>

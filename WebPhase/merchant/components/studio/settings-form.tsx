@@ -26,7 +26,7 @@ export function SettingsForm({ settings }: { settings: Settings }) {
             <span>
               <span className="block text-[13px] font-medium text-chalk">Sell on the Ferixas marketplace</span>
               <span className="block text-[12px] text-chalk-dim">
-                Turn this off to pause your Ferixas listings. Your separate website is not displayed or managed as a Ferixas marketplace store.
+                Pause Marketplace listings
               </span>
             </span>
           </label>

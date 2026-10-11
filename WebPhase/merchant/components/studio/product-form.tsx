@@ -9,7 +9,6 @@
  * What changed is the arrangement the upload flow needed:
  *   · the fields sit in one column on the left, in the order you would say them
  *   · a live preview sits on the right and answers back as you type
- *   · a checklist names exactly what is still missing before publishing
  *   · Save and Cancel never scroll away
  */
 import { useEffect, useMemo, useState } from "react";
@@ -32,7 +31,7 @@ export function ProductForm({
   product?: Product;
   categories: string[];
   brands?: { id: string; slug: string; name: string }[];
-  sections?: { value: string; name: string; documentTitle: string; sectionType?: string; source?: string; status?: string }[];
+  sections?: { value: string; name: string; documentTitle: string; documentType?: string; sectionType?: string; source?: string; status?: string }[];
   storeName?: string;
 }) {
   const [state, action] = useActionState<FormState, FormData>(
@@ -43,6 +42,11 @@ export function ProductForm({
   const [files, setFiles] = useState<File[]>([]);
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
+  const sectionGroups = sections.reduce<Record<string, typeof sections>>((groups, section) => {
+    const key = section.documentTitle || "Marketplace";
+    (groups[key] ??= []).push(section);
+    return groups;
+  }, {});
 
   const [draft, setDraft] = useState({
     title: product?.title ?? "",
@@ -167,17 +171,31 @@ export function ProductForm({
           </Panel>
 
           <Panel>
-            <PanelHead title="Where it sells" />
-            <p className="text-[12px] text-chalk-dim">Marketplace listing · Admin approval required</p>
+            <PanelHead title="Selling destination" />
+            <div className="grid gap-2">
+              <label className="flex items-center gap-2.5 rounded-[6px] border border-lime/40 bg-lime/5 p-3 text-[12px] font-semibold text-chalk">
+                <input type="checkbox" checked readOnly className="size-4 accent-[#e4572e]" /> Ferixas Marketplace
+              </label>
+              <label className="flex items-center justify-between gap-3 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk-dim">
+                <span>Independent Seller Website</span><span className="font-mono text-[9px] uppercase tracking-[0.12em]">Studio coming soon</span>
+              </label>
+            </div>
             <input type="hidden" name="marketplace" value="on" />
           </Panel>
 
           <Panel>
-            <PanelHead title="Request a CMS section placement (optional)" />
-            <p className="mb-3 text-[12px] text-chalk-dim">Admin approves placement after product review.</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {sections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[10px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="block text-[10.5px] text-chalk-dim">{section.documentTitle} · {section.sectionType === "product_grid" ? "Product grid" : "Product carousel"}{section.source && section.source !== "curated" ? ` · ${section.source}` : ""}{section.status === "draft" ? " · draft" : ""}</span></span></label>)}
-              {!sections.length ? <p className="text-[12px] text-chalk-dim">No eligible product sections are available in CMS.</p> : null}
+            <PanelHead title="Marketplace sections" />
+            <p className="mb-3 text-[12px] text-chalk-dim">Select product sections configured in CMS.</p>
+            <div className="grid gap-4">
+              {Object.entries(sectionGroups).map(([page, pageSections]) => (
+                <fieldset key={page} className="grid gap-2">
+                  <legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {pageSections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="block text-[10.5px] text-chalk-dim">{section.sectionType === "product_grid" ? "Product grid" : "Product carousel"}{section.status === "draft" ? " · draft" : ""}</span></span></label>)}
+                  </div>
+                </fieldset>
+              ))}
+              {!sections.length ? <p className="text-[12px] text-chalk-dim">No product sections are configured in CMS.</p> : null}
             </div>
           </Panel>
 

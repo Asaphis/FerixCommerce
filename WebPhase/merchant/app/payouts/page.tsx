@@ -21,17 +21,17 @@ export default async function PayoutsPage() {
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <StatTile
           label="Recorded payout net"
-          value={data.available ? money(data.balance, { cents: false }) : "Coming soon"}
-          sub={data.available ? "Stored records; not provider-verified" : "Settlement is not connected"}
+          value={data.available ? money(data.balance, { cents: false }) : "—"}
+          sub="Recorded ledger"
           icon={<Wallet width={15} height={15} />}
         />
-        <StatTile label="Recorded pending" value={data.available ? money(data.pending, { cents: false }) : "Coming soon"} sub={data.available ? "Unverified payout ledger" : "No payout record yet"} accent="sand" />
-        <StatTile label="Recorded paid" value={data.available ? money(data.paidToDate, { cents: false }) : "Coming soon"} sub={data.available ? "Not provider-verified" : "No settlement record yet"} accent="lime" />
+        <StatTile label="Recorded pending" value={data.available ? money(data.pending, { cents: false }) : "—"} sub="Recorded ledger" accent="sand" />
+        <StatTile label="Recorded paid" value={data.available ? money(data.paidToDate, { cents: false }) : "—"} sub="Recorded ledger" accent="lime" />
         <StatTile label="Commission rate" value={`${data.commissionPct}%`} sub="On marketplace sales only" accent="azure" />
       </div>
 
       <Panel>
-        <PanelHead title="Payout schedule" hint={data.available ? `${data.cadence} settlement` : "Payout settlement is not configured yet"} action={<Pill tone={data.available ? "info" : "neutral"}>{data.available ? "Configured record" : "Coming soon"}</Pill>} />
+        <PanelHead title="Payout schedule" hint={data.available ? `${data.cadence} settlement` : "Records only"} action={<Pill tone={data.available ? "info" : "neutral"}>{data.available ? "Configured" : "Records only"}</Pill>} />
         <div className="grid gap-3 sm:grid-cols-3">
           {[
             { label: "Sale value", body: "The full value of the order, including delivery and tax." },

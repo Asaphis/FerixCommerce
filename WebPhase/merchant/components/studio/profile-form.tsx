@@ -79,8 +79,7 @@ export function ProfileForm({
             action={request ? <Pill tone={tone}>{request.status.replaceAll("_", " ")}</Pill> : null}
           />
           <p className="mb-4 text-[12px] leading-relaxed text-chalk-dim">
-            Ferixas shows your approved seller profile, not your separate website or its pages. Proposed changes stay private until an Admin approves them.
-            Your sign-in email and street address are private. Business email or phone is public only when you opt in below.
+            Changes stay private until Admin approval. Sign-in email and street address stay private.
           </p>
           {request?.note ? <p className="mb-3 rounded-[8px] border border-sand/30 bg-sand/5 p-3 text-[12px] text-sand">Reviewer note: {request.note}</p> : null}
           {request?.status === "pending_review" ? <p className="mb-3 rounded-[8px] border border-signal/30 bg-signal/5 p-3 text-[12px] text-chalk-dim">A review is pending. Submitting a new version will supersede that request; your current approved profile stays live.</p> : null}

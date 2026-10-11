@@ -82,7 +82,6 @@ export default async function AnalyticsPage({
                 </div>
                 <Meter value={data.byChannel.marketplace} max={channelMax} />
               </div>
-              <p className="text-[11px] leading-relaxed text-chalk-dim">Seller websites are outside Ferixas marketplace analytics and are not included in these totals.</p>
             </div>
           </Panel>
 

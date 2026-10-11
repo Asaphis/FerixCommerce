@@ -85,6 +85,8 @@ class ProductLifecycleTest(unittest.TestCase):
         query_session_detail = self.client.get("/merchant/product", params={"slug": product["slug"], "session": self.merchant})
         self.assertEqual(query_session_detail.status_code, 200, query_session_detail.text)
         self.assertEqual(query_session_detail.json()["product"]["id"], product["id"])
+        id_session_detail = self.client.get("/merchant/product", params={"id": product["id"], "session": self.merchant})
+        self.assertEqual(id_session_detail.status_code, 200, id_session_detail.text)
         self.assertEqual(self.client.get("/catalog/product", params={"slug": product["slug"]}).status_code, 404)
 
         merchant_products = self.client.get("/merchant/products", headers={"X-Ferix-Session": self.merchant})

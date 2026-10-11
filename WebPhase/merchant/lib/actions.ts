@@ -122,13 +122,18 @@ export async function createProductAction(_prev: FormState, formData: FormData):
     // instances are misaligned.
     try {
       await api.getProduct(session, created.product.slug);
-    } catch (verifyError) {
-      if (verifyError instanceof api.ApiError) {
-        return {
-          error: `Product was created but could not be reopened (${created.product.slug}). Check the Seller API deployment before trying again.`,
-        };
+    } catch (slugError) {
+      if (!(slugError instanceof api.ApiError)) throw slugError;
+      try {
+        await api.getProduct(session, created.product.slug, created.product.id);
+      } catch (idError) {
+        if (idError instanceof api.ApiError) {
+          return {
+            error: `Product was saved, but Seller detail lookup failed (${idError.status}). Product ID: ${created.product.id}.`,
+          };
+        }
+        throw idError;
       }
-      throw verifyError;
     }
     refresh("/products");
     redirect(`/products/${created.product.slug}`);

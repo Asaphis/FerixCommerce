@@ -432,14 +432,14 @@ export const getDashboard = (session: string | null) =>
 export const listProducts = (session: string | null, params: Params = {}) =>
   call<ProductList>("GET", "merchant/products", { params, session });
 
-export const getProduct = (session: string | null, slug: string) =>
-  call<ProductDetail>("GET", "merchant/product", { params: { slug }, session });
+export const getProduct = (session: string | null, slug: string, id?: string) =>
+  call<ProductDetail>("GET", "merchant/product", { params: { slug, id }, session });
 
 export type ProductOptions = {
   categories: { id?: string; slug: string; name: string }[];
   brands: { id: string; slug: string; name: string }[];
   collections?: { id?: string; slug: string; name: string }[];
-  sections: { value: string; name: string; documentTitle: string; sectionType?: string; source?: string; status?: string }[];
+  sections: { value: string; name: string; documentTitle: string; documentType?: string; sectionType?: string; source?: string; status?: string }[];
 };
 
 export const getProductOptions = (session: string | null) =>

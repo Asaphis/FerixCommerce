@@ -150,7 +150,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
           hint="Read-only here. The seller proposes profile changes; Admin reviews them in the Review queue."
           action={canManageAccount ? <Link href={`/review?tab=profiles&merchantId=${encodeURIComponent(merchant.id)}`} className="font-mono text-[10px] uppercase tracking-[0.12em] text-signal hover:underline">Review profile proposals</Link> : undefined}
         />
-        <p className="mb-3 text-[11px] leading-relaxed text-chalk-dim">This is the seller profile displayed on Ferixas. The seller’s separate website is not embedded here; contact and address details below are for Admin review and are not public by default.</p>
+        <p className="mb-3 text-[11px] text-chalk-dim">Approved profile data · contact fields are private unless opted in.</p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <KeyValue label="Profile name" value={detail.profile.name || merchant.name} />
           <KeyValue label="Tagline" value={detail.profile.tagline || "Not provided"} />
@@ -275,7 +275,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
 
       {canManageAccount ? (
         <Panel>
-          <PanelHead title="Account controls" hint="These actions apply immediately. Suspending blocks sign-in; marketplace restriction hides the seller’s Ferixas listings without changing their separate website." />
+          <PanelHead title="Account controls" hint="Changes apply immediately." />
           <div className="mt-4 flex flex-wrap items-center gap-2.5">
             <CmsActionForm action={suspendMerchantAction} className="inline-flex">
               <input type="hidden" name="id" value={merchant.id} />

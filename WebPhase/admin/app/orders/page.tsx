@@ -46,7 +46,7 @@ export default async function OrdersPage({
       <header>
         <Eyebrow>Order oversight</Eyebrow>
         <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Marketplace orders</h1>
-        <p className="mt-1 max-w-[70ch] text-[12px] leading-relaxed text-chalk-dim">Only Ferixas marketplace orders appear here. Orders and sales from sellers&apos; separate websites are not part of this console.</p>
+        <p className="mt-1 text-[12px] text-chalk-dim">Ferixas Marketplace orders</p>
         
       </header>
 

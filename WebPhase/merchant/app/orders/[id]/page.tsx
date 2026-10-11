@@ -129,7 +129,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <Panel>
             <PanelHead title="Channel" />
             <p className="text-[13px] text-chalk">Ferixas marketplace</p>
-            <p className="mt-1.5 text-[12px] leading-relaxed text-chalk-dim">Commission applies to paid marketplace item value. A seller’s separate website is not part of Ferixas orders.</p>
+            <p className="mt-1.5 text-[12px] text-chalk-dim">Commission: paid Marketplace item value</p>
           </Panel>
         </div>
       </div>
