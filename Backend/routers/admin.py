@@ -1886,6 +1886,8 @@ def cms_save_document(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
 
 @router.post("/cms/document/publish")
 def cms_publish(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
+    from core import SectionPlacement
+
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "cms.manage")
@@ -1898,6 +1900,18 @@ def cms_publish(session: Optional[str] = Header(None, alias="X-Ferix-Session"), 
         )).all():
             previous_draft.status = "published" if previous_draft is draft else "superseded"
         doc.status = "published"
+        # A section that is no longer on the page must not leave its placements behind:
+        # otherwise re-adding a section with the same id would silently bring products back
+        # that nobody assigned to it.
+        section_ids = {
+            str(section.get("id")) for section in (doc.data or {}).get("sections") or []
+            if isinstance(section, dict) and section.get("id") is not None
+        }
+        for placement in db.scalars(
+            select(SectionPlacement).where(SectionPlacement.document_id == doc.id)
+        ).all():
+            if placement.section_id not in section_ids:
+                db.delete(placement)
         doc.updated_at = now()
         doc.updated_by = staff.email
         version = len(db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)).all()) + 1

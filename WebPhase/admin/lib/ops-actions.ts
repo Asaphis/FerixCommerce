@@ -364,6 +364,34 @@ export async function saveHomepageAction(_previous: FormState, form: FormData): 
   return { message: "Homepage draft saved." };
 }
 
+/**
+ * Remove a section from the homepage.
+ *
+ * Hiding a section only switches it off; it stays in the document and in the CMS
+ * list. Removing it is the only thing that takes it out of the page, which is what
+ * keeps the CMS list and the live storefront describing the same page.
+ */
+export async function deleteHomepageSectionAction(form: FormData): Promise<void> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const documentId = str(form, "documentId", "doc_marketplace_home");
+  const sectionId = str(form, "sectionId");
+  if (!sectionId) fail("/cms/homepage", new Error("That section is missing."), "That section is missing.");
+  try {
+    const { document } = await api.getDocument(session, documentId);
+    const sections = (document.data.sections ?? []).filter((section) => section.id !== sectionId);
+    await api.saveDocument(session, {
+      id: documentId,
+      data: { sections },
+      note: "Section removed",
+    });
+  } catch (error) {
+    fail("/cms/homepage", error, "We could not remove that section.");
+  }
+  refresh("/cms/homepage");
+  redirect("/cms/homepage");
+}
+
 export async function publishHomepageAction(form: FormData): Promise<void> {
   const session = await readSession();
   if (!session) redirect("/login");

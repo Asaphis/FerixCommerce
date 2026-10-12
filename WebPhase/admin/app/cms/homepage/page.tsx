@@ -6,19 +6,40 @@ import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, Pill } from "@/components/ops/bits";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
-import { publishHomepageAction, restoreVersionAction, saveHomepageAction } from "@/lib/ops-actions";
+import { addCmsSectionAction } from "@/lib/actions";
+import { deleteHomepageSectionAction, publishHomepageAction, restoreVersionAction, saveHomepageAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
 
 const DOCUMENT_ID = "doc_marketplace_home";
-const TYPES = ["hero_banner", "promo_strip", "category_grid", "product_carousel", "featured_collection", "featured_stores", "editorial_story", "newsletter_signup", "rich_text"];
+
+/**
+ * The section kinds the storefront can actually draw.
+ *
+ * This is the homepage renderer's own list. A type outside it would be saved and listed
+ * here and then silently skipped on the live page, which is how this editor and the shop
+ * came to disagree about what the page contained.
+ */
+const SECTION_TYPES: { value: string; label: string }[] = [
+  { value: "hero_banner", label: "Hero banner — the full campaign, with slides" },
+  { value: "hero_slim", label: "Banner — one short band with a button" },
+  { value: "promo_strip", label: "Message strip — one line of text" },
+  { value: "category_grid", label: "Department tiles" },
+  { value: "brand_carousel", label: "Brand row" },
+  { value: "product_carousel", label: "Product row" },
+  { value: "promo_slots", label: "Promotion slots — adverts between content" },
+  { value: "featured_stores", label: "Stores" },
+  { value: "footer", label: "Footer" },
+];
+
 const SECTION_DESTINATIONS: Record<string, { href: string; label: string }> = {
   hero_banner: { href: "/cms/banners", label: "Manage hero banners" },
+  hero_slim: { href: "/cms/banners", label: "Manage banners" },
   promo_strip: { href: "/cms/banners", label: "Manage promotions" },
-  category_grid: { href: "/cms/categories", label: "Manage categories" },
+  category_grid: { href: "/cms/categories", label: "Manage departments" },
+  brand_carousel: { href: "/cms/brands", label: "Manage brands" },
   product_carousel: { href: "/catalog", label: "Manage products" },
-  featured_collection: { href: "/cms/collections", label: "Manage collections" },
+  promo_slots: { href: "/cms/adverts", label: "Manage adverts" },
   featured_stores: { href: "/merchants", label: "Manage stores" },
-  editorial_story: { href: "/cms/media", label: "Choose media" },
 };
 
 export default async function HomepageCmsPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
@@ -47,7 +68,18 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
           {sections.length ? <nav aria-label="Homepage sections" className="grid gap-1">{sections.map((section, index) => {
             const active = section.id === selected?.id;
             return <Link key={section.id} href={`/cms/homepage?section=${encodeURIComponent(section.id)}`} className={`flex min-h-[44px] items-center gap-2 rounded-[2px] border px-2.5 py-2 transition-colors ${active ? "border-signal/40 bg-[#fff0e9]" : "border-transparent hover:border-hairline hover:bg-white"}`}><GripVertical width={13} height={13} className="shrink-0 text-chalk-dim/60" /><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-[2px] text-[10px] font-bold ${active ? "bg-signal text-white" : "bg-panel-2 text-chalk-dim"}`}>{index + 1}</span><span className="min-w-0 flex-1"><span className={`block truncate text-[11px] font-semibold ${active ? "text-signal" : "text-chalk"}`}>{section.title || titleCase(section.type)}</span><span className="block truncate text-[9px] text-chalk-dim">{titleCase(section.type)}</span></span>{section.visible ? <Eye width={13} height={13} className="shrink-0 text-[#2d875a]" /> : <EyeOff width={13} height={13} className="shrink-0 text-chalk-dim" />}</Link>;
-          })}</nav> : <Empty title="No sections" body="Homepage sections will appear here once configured." />}
+          })}</nav> : <Empty title="No sections on this page" body="Add one below. Until something is published the homepage says it is empty rather than inventing a layout." />}
+          <div className="mt-3 border-t border-hairline pt-3">
+            <Eyebrow>Add a section</Eyebrow>
+            <CmsActionForm action={addCmsSectionAction} className="mt-2 grid gap-2">
+              <input type="hidden" name="id" value={DOCUMENT_ID} />
+              <select name="type" defaultValue="category_grid" aria-label="What kind of section" className={selectClass}>
+                {SECTION_TYPES.map((entry) => <option key={entry.value} value={entry.value}>{entry.label}</option>)}
+              </select>
+              <input name="name" aria-label="Section name" placeholder="Name it (optional)" className={inputClass} />
+              <SubmitButton pendingLabel="Adding">Add section</SubmitButton>
+            </CmsActionForm>
+          </div>
           <Link href="/" target="_blank" className="mt-3 flex min-h-9 items-center justify-center gap-2 border-t border-hairline pt-2 text-[10px] font-semibold text-signal">View live page <ExternalLink width={12} height={12} /></Link>
         </Panel>
 
@@ -65,7 +97,7 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
               {!['hero_banner', 'hero_slim'].includes(selected.type) ? <input type="hidden" name={`subtitle_${selected.id}`} value={selected.subtitle ?? ""} /> : null}
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field title="Section title"><input name={`title_${selected.id}`} defaultValue={selected.title ?? ""} className={inputClass} /></Field>
-                <Field title="Section type"><select name={`type_${selected.id}`} defaultValue={selected.type} className={selectClass}>{TYPES.map((type) => <option key={type} value={type}>{titleCase(type)}</option>)}</select></Field>
+                <Field title="Section type"><select name={`type_${selected.id}`} defaultValue={selected.type} className={selectClass}>{SECTION_TYPES.map((entry) => <option key={entry.value} value={entry.value}>{entry.label}</option>)}</select></Field>
                 {["hero_banner", "hero_slim"].includes(selected.type) ? <Field title="Description"><input name={`subtitle_${selected.id}`} defaultValue={selected.subtitle ?? ""} className={inputClass} /></Field> : null}
                 <Field title="Position"><input name={`position_${selected.id}`} type="number" min={1} defaultValue={selected.position || selectedIndex + 1} className={inputClass} /></Field>
                 <Field title="Action label"><input name={`ctaLabel_${selected.id}`} defaultValue={selected.ctaLabel ?? ""} className={inputClass} /></Field>
@@ -74,6 +106,11 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
               <label className="flex min-h-10 items-center gap-2 rounded-[2px] border border-hairline bg-white px-3 text-[11px] font-medium text-chalk"><input type="checkbox" name={`visible_${selected.id}`} defaultChecked={selected.visible} className="size-4 accent-signal" /> Show this section on the live homepage</label>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-3"><SubmitButton pendingLabel="Saving draft">Save draft</SubmitButton></div>
             </CmsActionForm>
+            <form action={deleteHomepageSectionAction} className="border-t border-hairline pt-3">
+              <input type="hidden" name="documentId" value={DOCUMENT_ID} />
+              <input type="hidden" name="sectionId" value={selected.id} />
+              <SubmitButton variant="outline" pendingLabel="Removing">Remove this section</SubmitButton>
+            </form>
           </Panel>
 
           <Panel className="p-3.5 sm:p-4">{destination ? <Link href={destination.href} className="flex min-h-11 items-center justify-between gap-3 rounded-[2px] border border-hairline bg-white px-3 text-[11px] font-semibold text-chalk transition-colors hover:border-signal"><span>{destination.label}</span><ArrowRight width={13} height={13} className="text-signal" /></Link> : <p className="text-[11px] text-chalk-dim">Content editing for this section type is coming soon.</p>}</Panel>

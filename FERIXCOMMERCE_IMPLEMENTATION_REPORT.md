@@ -224,3 +224,50 @@ The upload screenshot showed **“Product unavailable” after the form had alre
 **Validation:** 26 backend tests pass, including the upload → review → Explore Trending placement test; the PostgreSQL smoke passed (fresh seed/idempotence, legacy upgrade, and future-schema refusal); Admin, Seller and Shopper all pass `typecheck` and production `build`; npm audit reported zero vulnerabilities. npm still prints a non-blocking Recharts 2.x maintenance/deprecation warning.
 
 **Existing CMS data:** seed defaults are applied only to a truly blank database; saved CMS documents are not rewritten at startup. If an existing Explore page has no curated product section, an Admin must add and publish one in CMS before it can be selected on the product form. Existing Home and Explore sections remain separate and are never auto-merged.
+
+## Sections are now fully dynamic (final follow-up)
+
+The report was that every homepage section had been deleted, yet departments, stores and a
+promotional line still appeared on the storefront. Three separate defects produced that.
+
+**The storefront had a hard-coded fallback page.** `WebPhase/marketplace/app/page.tsx`
+carried a `BUILT_IN` array of five invented sections (hero, promo strip, department tiles,
+stores, footer) that rendered whenever the document had no visible sections. Switching every
+section off — the only thing the CMS allowed — therefore did not empty the page; it swapped
+the CMS content for a layout the CMS could not control or even list. That is exactly why the
+CMS list and the live page described different pages. The array is gone. A page now renders
+only its own published sections, and a page with none says "This page is empty right now"
+with a link to the catalogue instead of inventing content.
+
+**Hiding was being mistaken for deleting.** The homepage editor had no remove control at all —
+only a "Show this section" checkbox — so a section could be switched off but never taken out,
+and it stayed in the document and in the CMS list. Both CMS editors now have a **Remove this
+section** action (`deleteHomepageSectionAction`, `deleteCmsSectionAction`), and the homepage
+editor also gained the **Add a section** form that only the generic page editor had. Adding,
+removing, hiding and reordering now work the same way on the homepage as on any other page.
+
+**The editor offered section types the storefront cannot draw.** The homepage type list was
+`hero_banner, promo_strip, category_grid, product_carousel, featured_collection,
+featured_stores, editorial_story, newsletter_signup, rich_text` — which included four types the
+renderer skips silently and omitted `hero_slim`, `brand_carousel`, `promo_slots` and `footer`
+that it does draw. A section could therefore be saved, listed, published and then never appear.
+The list is now exactly the renderer's own set, each type labelled in plain words.
+
+**Removed sections no longer leave placements behind.** Publishing a page now deletes
+`SectionPlacement` rows whose section is no longer on it. Without this, re-adding a section with
+the same id would silently bring back products nobody had assigned to it — the database was
+holding content for sections that no longer existed.
+
+The footer band was also hard-coded to print "N products across M stores" and a "One cart, one
+checkout" promise. It now prints only what the CMS gives it, and nothing at all when the section
+has no message, so no unverified claim is drawn by the storefront on its own.
+
+**Verified:** the full suite passes — backend tests, the PostgreSQL migration smoke, and
+`typecheck` plus production `build` for Admin, Seller and Shopper. The backend suite includes a
+new contract test that approves a product into a section, removes that section, publishes, and
+proves both that the section leaves the public page and that re-adding the same id does not
+resurrect the product.
+
+**Existing data:** a section that is only switched off remains in the document until it is
+removed with the new control. Existing installations keep their saved CMS content; the
+storefront simply stops inventing anything around it.

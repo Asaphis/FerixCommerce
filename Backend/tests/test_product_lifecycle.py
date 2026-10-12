@@ -197,6 +197,58 @@ class ProductLifecycleTest(unittest.TestCase):
             row["id"] for row in public_page.json()["placements"].get(section_id, [])
         })
 
+    def test_a_removed_section_leaves_the_page_and_its_placements_behind(self):
+        options = self.client.get("/merchant/product/options", headers={"X-Ferix-Session": self.merchant}).json()
+        section = next(
+            row for row in options["sections"]
+            if row["documentType"] == "marketplace_home" and row["sectionType"] == "product_carousel"
+        )
+        document_id, section_id = section["value"].split("__", 1)
+
+        created = self.client.post("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
+            "title": f"Section removal {uuid.uuid4().hex[:8]}",
+            "category": options["categories"][0]["slug"],
+            "price": 15,
+            "stock": 2,
+            "store": False,
+            "marketplace": True,
+            "section_tags": [section["value"]],
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        product_id = created.json()["product"]["id"]
+        approved = self.client.post("/admin/review/decision", headers={"X-Ferix-Session": self.admin}, json={
+            "id": product_id, "decision": "approve",
+        })
+        self.assertEqual(approved.status_code, 200, approved.text)
+
+        before = self.client.get("/catalog/page", params={"id": document_id}).json()
+        self.assertIn(product_id, {row["id"] for row in before["placements"].get(section_id, [])})
+        stored = before["sections"]
+        removed_row = next(row for row in stored if row["id"] == section_id)
+
+        # Take the section off the page and publish: the storefront has nothing to draw there.
+        remaining = [row for row in stored if row["id"] != section_id]
+        saved = self.client.patch("/admin/cms/page", headers={"X-Ferix-Session": self.admin}, json={
+            "id": document_id, "sections": remaining,
+        })
+        self.assertEqual(saved.status_code, 200, saved.text)
+        published = self.client.post("/admin/cms/document/publish", headers={"X-Ferix-Session": self.admin}, json={
+            "id": document_id,
+        })
+        self.assertEqual(published.status_code, 200, published.text)
+        after = self.client.get("/catalog/page", params={"id": document_id}).json()
+        self.assertNotIn(section_id, {row["id"] for row in after["sections"]})
+        self.assertEqual(after["placements"].get(section_id, []), [])
+
+        # Putting a section with the same id back must not bring products nobody assigned to it.
+        readded = self.client.patch("/admin/cms/page", headers={"X-Ferix-Session": self.admin}, json={
+            "id": document_id, "sections": remaining + [removed_row],
+        })
+        self.assertEqual(readded.status_code, 200, readded.text)
+        self.client.post("/admin/cms/document/publish", headers={"X-Ferix-Session": self.admin}, json={"id": document_id})
+        final = self.client.get("/catalog/page", params={"id": document_id}).json()
+        self.assertEqual(final["placements"].get(section_id, []), [])
+
     def test_submission_stays_private_until_admin_approval(self):
         other_login = self.client.post("/merchant/login", json={"email": "owner@aurasound.ferixas.com", "password": "TestOnly-Password-123!"})
         self.assertEqual(other_login.status_code, 200, other_login.text)

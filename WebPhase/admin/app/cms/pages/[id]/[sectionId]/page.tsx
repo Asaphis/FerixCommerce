@@ -7,7 +7,7 @@ import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
-import { saveCmsSectionAction } from "@/lib/actions";
+import { deleteCmsSectionAction, saveCmsSectionAction } from "@/lib/actions";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 
 /** The fields each section type can be managed by, in the order they read. */
@@ -297,6 +297,7 @@ export default async function CmsSectionEditor({
                 <p className="mb-4 rounded-[10px] border border-hairline bg-panel-2 px-3.5 py-3 text-[12px] leading-relaxed text-chalk-dim">Media-only mode hides copy, buttons and shading. Choose text mode to edit the overlay content and placement.</p>
               ) : null}
               {fields.length ? (
+                <>
                 <CmsActionForm action={saveCmsSectionAction} className="grid gap-4">
                   <input type="hidden" name="id" value={id} />
                   <input type="hidden" name="sectionId" value={section.id} />
@@ -356,6 +357,12 @@ export default async function CmsSectionEditor({
                     <SubmitButton pendingLabel="Saving">Save draft</SubmitButton>
                   </div>
                 </CmsActionForm>
+                <form action={deleteCmsSectionAction} className="mt-4 border-t border-hairline pt-4">
+                  <input type="hidden" name="id" value={id} />
+                  <input type="hidden" name="sectionId" value={section.id} />
+                  <SubmitButton variant="outline" pendingLabel="Removing">Remove this section</SubmitButton>
+                </form>
+                </>
               ) : (
                 <Empty title="Nothing to edit on this section" body="This one is placed by the page rather than configured in it. Its content comes from its own library." />
               )}

@@ -270,6 +270,7 @@ export async function addCmsSectionAction(_prev: FormState, formData: FormData):
     return { error: error instanceof api.ApiError ? error.message : "That section could not be added." };
   }
   refresh(`/cms/pages/${id}`);
+  if (id === "doc_marketplace_home") refresh("/cms/homepage");
   return { message: "Added at the bottom of the draft. Open it to fill it in." };
 }
 
@@ -289,6 +290,7 @@ export async function removeCmsSectionAction(_prev: FormState, formData: FormDat
     return { error: error instanceof api.ApiError ? error.message : "That section could not be removed." };
   }
   refresh(`/cms/pages/${id}`);
+  if (id === "doc_marketplace_home") refresh("/cms/homepage");
   return { message: "Removed. Publish to take it off the storefront." };
 }
 
@@ -376,6 +378,30 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
   }
   refresh(`/cms/pages/${id}`);
   return { message: "Saved as a draft. Publish to put it on the storefront." };
+}
+
+/**
+ * Remove a section from a page.
+ *
+ * The page is saved with the section left out, which is the only thing that actually
+ * deletes it: switching a section off keeps it in the document and in the CMS list.
+ */
+export async function deleteCmsSectionAction(formData: FormData): Promise<void> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  const sectionId = String(formData.get("sectionId") ?? "").trim();
+  if (!id || !sectionId) redirect("/cms");
+  try {
+    const { page } = await api.getCmsPage(session, id);
+    const sections = page.sections.filter((section) => section.id !== sectionId);
+    await api.saveCmsPage(session, { id, sections });
+  } catch (error) {
+    const message = error instanceof api.ApiError ? error.message : "We could not remove that section.";
+    redirect(`/cms/pages/${id}?error=${encodeURIComponent(message)}`);
+  }
+  refresh(`/cms/pages/${id}`);
+  redirect(`/cms/pages/${id}`);
 }
 
 // ── Advertisements ─────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Boxes, ShoppingBag, Store as StoreIcon } from "lucide-react";
+import { ArrowRight, BadgeCheck, ShoppingBag, Store as StoreIcon } from "lucide-react";
 import type { Category, Product } from "@/lib/api";
 import { assetUrl, getHome, listAdverts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
@@ -18,8 +18,9 @@ import { SectionHead } from "@/components/ferix/marks";
  * draw its own eight bands and ignore the document entirely, so nothing edited
  * in the admin could ever reach the shop.
  *
- * If a page has no sections at all, the built-in order below is used, so a shop
- * with no content document still renders rather than coming up blank.
+ * Nothing here is hard-coded. If a section is switched off or removed it stops
+ * appearing, and a page with no sections says so rather than drawing an invented
+ * layout that the CMS cannot be seen to control.
  */
 
 type Section = {
@@ -88,15 +89,6 @@ function categoryFallback(products: Product[]): Category[] {
     image: row.image,
   }));
 }
-
-/** The order a page renders when its document carries no sections. */
-const BUILT_IN: Section[] = [
-  { id: "built_in_hero", type: "hero_banner", position: 1, visible: true },
-  { id: "built_in_strip", type: "promo_strip", position: 2, visible: true },
-  { id: "built_in_categories", type: "category_grid", position: 3, visible: true, title: "Shop by category" },
-  { id: "built_in_stores", type: "featured_stores", position: 4, visible: true },
-  { id: "built_in_footer", type: "footer", position: 5, visible: true },
-];
 
 /**
  * How many department tiles sit side by side, from the section.
@@ -198,7 +190,7 @@ export default async function HomePage() {
   const stored = (document.sections ?? [])
     .filter((section) => section && typeof section.type === "string" && section.visible !== false)
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-  const sections = stored.length ? stored : BUILT_IN;
+  const sections = stored;
 
   function block(section: Section, index: number) {
     const parsedLimit = Number(section.limit);
@@ -466,12 +458,11 @@ export default async function HomePage() {
 
       /* ── The foot of the page ───────────────────────────────────── */
       case "footer": {
+        const closing = String(section.message ?? section.title ?? "").trim();
+        if (!closing) return null;
         return (
-          <div key={section.id ?? index} className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 pb-3 pt-6 text-[11px] text-ink-soft sm:px-6">
-            <span>{home.stats.products.toLocaleString()} products across {home.stats.merchants} stores</span>
-            <span className="inline-flex items-center gap-1.5 font-semibold text-ember">
-              <Boxes width={13} height={13} /> One cart, one checkout
-            </span>
+          <div key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-3 pt-6 text-center text-[11px] text-ink-soft sm:px-6">
+            {closing}
           </div>
         );
       }
@@ -480,6 +471,21 @@ export default async function HomePage() {
       default:
         return null;
     }
+  }
+
+  if (!sections.length) {
+    return (
+      <div className="mx-auto flex max-w-[520px] flex-col items-center gap-2.5 px-4 py-24 text-center">
+        <h1 className="font-display text-[20px] font-semibold text-ink">This page is empty right now</h1>
+        <p className="text-[13px] leading-relaxed text-ink-soft">No section is published for this page yet.</p>
+        <Link
+          href="/browse"
+          className="mt-2 inline-flex min-h-10 items-center rounded-[3px] bg-ink px-5 text-[13px] font-semibold text-bone transition-colors hover:bg-ink/90"
+        >
+          Browse the catalogue
+        </Link>
+      </div>
+    );
   }
 
   return <div className="pb-10">{sections.map((section, index) => block(section, index))}</div>;
