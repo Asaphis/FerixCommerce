@@ -208,3 +208,19 @@ changes, edits and stock adjustments.
 a saved product between them, withdrawing and re-submitting the same record, the
 library still listing a withdrawn product, and the history entry the move produces.
 All three frontends typecheck and build.
+
+
+## Seller submission and page-specific product sections (follow-up)
+
+The upload screenshot showed **“Product unavailable” after the form had already redirected to the new record**. That screen did not establish that the POST failed; the previous action sent the seller straight to a separate detail lookup, and the fallback blamed the Seller session. The flow now returns to Products with an explicit accepted/pending-review message and stable product reference. If a read-back is missing, it warns the seller to check the library before retrying rather than silently inviting a duplicate.
+
+- **Upload path:** product images are size-checked before upload; image-upload and product-submission failures return different actionable messages. Product-folder uploads require product-management permission, not the unrelated store-design permission.
+- **End-to-end workflow:** the integration test uploads an image, creates a pending product, confirms seller library and detail visibility, confirms the Admin review queue, approves it, and verifies the resulting section placement is returned by the public page API.
+- **CMS/product boundary:** removed the “Which products” selection from the CMS section editor. CMS continues to control a section's title, visibility and supported presentation; the product form assigns a product to a named page/section. Assignment options are available before a product exists, grouped by page, and exclude the paginated Explore catalogue feed, hidden/archived sections, non-platform pages and automatically related-product modules.
+- **Home versus Explore:** the runtime fresh-install seed now has separate Home Trending and Explore Trending product sections. A submitted product can be assigned to the exact page/section; Admin approval creates the placement; the public `/catalog/page` response returns only currently eligible products for that page. Explore renders its assigned product sections rather than relying on a hard-coded “Trending” source.
+- **Department section:** removed the truncation that sliced departments before the swipe component received them. All visible departments now remain in the paged/swipe set; CMS rows-per-set changes the page size instead of deleting the rest. The visible page-count sentence is now screen-reader-only.
+- **Other connected section controls:** Explore's catalogue feed is kept distinct from curated carousels; Explore promotion frequency/placement controls now affect the listing; brand row count, layout and “See all” controls are consumed; product-detail section visibility and the related-products module's title/count/layout are read from its CMS document.
+
+**Validation:** 26 backend tests pass, including the upload → review → Explore Trending placement test; the PostgreSQL smoke passed (fresh seed/idempotence, legacy upgrade, and future-schema refusal); Admin, Seller and Shopper all pass `typecheck` and production `build`; npm audit reported zero vulnerabilities. npm still prints a non-blocking Recharts 2.x maintenance/deprecation warning.
+
+**Existing CMS data:** seed defaults are applied only to a truly blank database; saved CMS documents are not rewritten at startup. If an existing Explore page has no curated product section, an Admin must add and publish one in CMS before it can be selected on the product form. Existing Home and Explore sections remain separate and are never auto-merged.

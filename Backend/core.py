@@ -1068,6 +1068,35 @@ def is_public_store(merchant: Optional[dict]) -> bool:
 
 PUBLIC_SECTION_TYPES = {"product_grid", "product_carousel"}
 
+
+def is_assignable_product_section(document: Optional[ContentDocument], section: dict) -> bool:
+    """Whether a CMS product section is a curated placement destination.
+
+    The Explore page's paginated product_grid is the all-products feed, not a
+    curated slot. Its perPage setting distinguishes it from product grids that
+    hold manually assigned products. Related-product modules are computed from
+    product context and are not manual placement destinations either.
+    """
+    if not document or document.owner_type != "platform" or document.status == "archived":
+        return False
+    if not isinstance(section, dict):
+        return False
+    visible = section.get("visible", True)
+    if visible is False or (isinstance(visible, str) and visible.strip().lower() in {"false", "0", "no"}):
+        return False
+    if section.get("type") not in PUBLIC_SECTION_TYPES:
+        return False
+    if str(section.get("source") or "").lower() == "related":
+        return False
+    if (
+        document.document_type == "marketplace_explore"
+        and section.get("type") == "product_grid"
+        and section.get("perPage") is not None
+    ):
+        return False
+    return True
+
+
 def visible_published_sections(document: Optional[ContentDocument]) -> list[dict]:
     if not document or document.status != "published":
         return []
@@ -1662,19 +1691,19 @@ def seed(db: Session) -> None:
              "limit": 10, "showAsTile": True, "position": 3, "visible": True},
             {"id": "sec_brands", "type": "brand_carousel", "name": "Brand row",
              "title": "Shop by brand",
-             "limit": 8, "layout": "slider", "position": 4, "visible": True},
+             "layout": "slider", "position": 4, "visible": True},
             {"id": "sec_home_slots", "type": "promo_slots", "name": "Promotion slots",
-             "subtitle": "Advertisement", "adEvery": 2, "limit": 2, "placement": "home",
+             "subtitle": "Advertisement", "limit": 2,
              "position": 5, "visible": True},
             {"id": "sec_flash", "type": "product_carousel", "name": "Today's deals",
              "title": "Today's deals",
-             "source": "flash", "limit": 8, "position": 6, "visible": True},
+             "limit": 8, "position": 6, "visible": True},
             {"id": "sec_trending", "type": "product_carousel", "name": "Trending",
              "title": "Trending this week",
-             "source": "trending", "limit": 8, "position": 7, "visible": True},
+             "limit": 8, "position": 7, "visible": True},
             {"id": "sec_stores", "type": "featured_stores", "name": "Stores worth following",
              "title": "Stores worth following",
-             "limit": 3, "layout": "rows", "showFollow": True, "position": 8, "visible": True},
+             "limit": 3, "layout": "rows", "position": 8, "visible": True},
             {"id": "sec_footer", "type": "footer", "name": "Footer",
              "position": 9, "visible": True},
         ],
@@ -1687,13 +1716,16 @@ def seed(db: Session) -> None:
              "eyebrow": "This week on Ferixas", "title": "Audio, up to 30% off",
              "ctaLabel": "Shop the deals", "ctaHref": "/browse?onSale=1",
              "height": 150, "position": 1, "visible": True},
+            {"id": "sec_explore_trending", "type": "product_carousel", "name": "Trending",
+             "title": "Trending", "limit": 8, "layout": "groups", "across": 2,
+             "rowsPerSet": 2, "position": 2, "visible": True},
             {"id": "sec_explore_grid", "type": "product_grid", "name": "Product list",
-             "columns": 4, "perPage": 24, "adEvery": 6, "position": 2, "visible": True},
+             "columns": 4, "perPage": 24, "position": 3, "visible": True},
             {"id": "sec_explore_brands", "type": "brand_carousel", "name": "Brand row",
-             "title": "Shop by brand", "limit": 8, "position": 3, "visible": True},
+             "title": "Shop by brand", "layout": "slider", "position": 4, "visible": True},
             {"id": "sec_explore_slots", "type": "promo_slots", "name": "Promotion slots",
              "subtitle": "Advertisement", "adEvery": 6, "limit": 3, "placement": "explore",
-             "position": 4, "visible": True},
+             "position": 5, "visible": True},
         ],
     )
 

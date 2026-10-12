@@ -396,6 +396,7 @@ export type CatalogueSection = {
   secondaryHref?: string;
   mediaUrl?: string;
   kind?: string;
+  source?: string;
   mediaOnly?: boolean | string;
   showText?: boolean | string;
   align?: string;
@@ -425,6 +426,7 @@ export type CatalogueSection = {
 export type CataloguePage = {
   page: { id: string; title: string; documentType: string } | null;
   sections: CatalogueSection[];
+  placements?: Record<string, Product[]>;
 };
 
 export type Advert = {

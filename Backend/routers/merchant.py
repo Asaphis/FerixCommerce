@@ -180,6 +180,8 @@ def _catalog_products(db, merchant_id: str) -> list[dict]:
 
 
 def _product_options(db) -> dict:
+    from core import is_assignable_product_section
+
     categories = [c for c in all_categories(db) if c.get("visible", True)]
     brands = [b for b in rows_of(db, "brand") if b.get("visible", True)]
     # Collections remain readable for old records, but are no longer a separate
@@ -201,7 +203,7 @@ def _product_options(db) -> dict:
         page_status = "draft" if draft is not None else document.status
         for section in source.get("sections", []):
             section_type = str(section.get("type") or "")
-            if section_type in product_section_types and section.get("visible", True):
+            if section_type in product_section_types and is_assignable_product_section(document, section):
                 sections.append({
                     "value": f"{document.id}__{section.get('id')}",
                     "name": section.get("name") or section.get("title") or section.get("type"),
@@ -1459,7 +1461,11 @@ async def upload_media(
     """Local-disk upload fallback for MVP deployments without Cloudinary."""
     with SessionLocal() as db:
         staff = require_staff(db, session or x_session, "merchant")
-        require_permission(staff, "merchant.store.manage")
+        # Product creation is granted by catalog permission. Requiring store-design
+        # permission for its image upload made the Product form fail for staff roles
+        # that can manage listings but cannot edit the storefront.
+        required_permission = "merchant.products.manage" if folder.strip().lower() == "products" else "merchant.store.manage"
+        require_permission(staff, required_permission)
         if kind not in {"image", "video"}:
             raise HTTPException(422, "Upload kind must be image or video")
         content = await file.read(20 * 1024 * 1024 + 1)

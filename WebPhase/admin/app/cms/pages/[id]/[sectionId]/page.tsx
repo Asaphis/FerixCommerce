@@ -50,22 +50,17 @@ const FALLBACK: EditorField[] = [
 
 /** The choices each kind of section carries. */
 
-/** How a section arranges what it holds. Shared by everything that shows products. */
+/** How a product section arranges the products assigned from the product form. */
+const ACROSS_FIELD: EditorField = { key: "across", title: "Across on a phone", options: [
+    { value: "1", label: "One" }, { value: "2", label: "Two" },
+    { value: "3", label: "Three" }, { value: "4", label: "Four" },
+  ] };
 const ARRANGEMENT: EditorField[] = [
-  { key: "across", title: "Across on a phone", options: [
-    { value: "1", label: "One" },
-    { value: "2", label: "Two" },
-    { value: "3", label: "Three" },
-    { value: "4", label: "Four" },
-  ] },
+  ACROSS_FIELD,
   { key: "layout", title: "Arrangement", options: [
     { value: "grid", label: "Grid, wrapping down the page" },
     { value: "groups", label: "Sets of rows, swiped for the next set" },
     { value: "horizontal", label: "One row, running off the edge" },
-  ] },
-  { key: "swipe", title: "Swipe for more", options: [
-    { value: "true", label: "Yes — swiped" },
-    { value: "false", label: "No — everything at once" },
   ] },
   { key: "seeAll", title: "See all link", options: [
     { value: "true", label: "Show it" },
@@ -73,17 +68,22 @@ const ARRANGEMENT: EditorField[] = [
   ] },
 ];
 
-/** How far a shopper scrolls before the next section appears. */
-const INTERRUPT: EditorField[] = [
-  { key: "rowsPerSet", title: "Rows before a swipe", numeric: true },
-  { key: "interruptAfter", title: "Rows before the next section", numeric: true },
-];
 const CHOICES: Record<string, EditorField[]> = {
   product_carousel: [
     ...ARRANGEMENT,
+    { key: "rowsPerSet", title: "Rows per swipe", options: [
+      { value: "1", label: "One" }, { value: "2", label: "Two" },
+      { value: "3", label: "Three" }, { value: "4", label: "Four" },
+      { value: "5", label: "Five" }, { value: "6", label: "Six" },
+    ] },
   ],
   product_grid: [
     ...ARRANGEMENT,
+    { key: "rowsPerSet", title: "Rows per swipe", options: [
+      { value: "1", label: "One" }, { value: "2", label: "Two" },
+      { value: "3", label: "Three" }, { value: "4", label: "Four" },
+      { value: "5", label: "Five" }, { value: "6", label: "Six" },
+    ] },
   ],
   category_grid: [
     { key: "across", title: "Across on a phone", options: [
@@ -124,7 +124,6 @@ const CHOICES: Record<string, EditorField[]> = {
     { key: "layout", title: "How they sit", options: [
       { value: "slider", label: "A sliding row" },
       { value: "wrap", label: "Wrapped rows" },
-      { value: "groups", label: "Sets of rows, swiped for the next set" },
     ] },
     { key: "seeAll", title: "See all link", options: [
       { value: "true", label: "Show it — to the brand page" },
@@ -136,31 +135,16 @@ const CHOICES: Record<string, EditorField[]> = {
       { value: "rows", label: "One per row" },
       { value: "cards", label: "Cards in a grid" },
     ] },
-    { key: "showFollow", title: "Follow button", options: [
-      { value: "true", label: "Show it" },
-      { value: "false", label: "Hide it" },
-    ] },
-  ],
-  promo_slots: [
-    { key: "placement", title: "Which adverts", options: [
-      { value: "home", label: "Those placed on the homepage" },
-      { value: "explore", label: "Those placed on explore" },
-      { value: "both", label: "Both" },
-    ] },
   ],
 };
 
 /** The numbers each kind of section carries. */
 const COUNTS: Record<string, EditorField[]> = {
-  category_grid: [{ key: "limit", title: "How many departments (blank = all)", numeric: true }],
-  product_carousel: [{ key: "limit", title: "How many products", numeric: true }, ...INTERRUPT],
-  product_grid: [{ key: "limit", title: "How many products", numeric: true }, ...INTERRUPT],
-  brand_carousel: [{ key: "limit", title: "How many brands", numeric: true }, ...INTERRUPT],
+  product_carousel: [{ key: "limit", title: "How many products", numeric: true }],
+  product_grid: [{ key: "limit", title: "How many products", numeric: true }],
+  brand_carousel: [{ key: "limit", title: "How many brands", numeric: true }],
   featured_stores: [{ key: "limit", title: "How many stores", numeric: true }],
-  promo_slots: [
-    { key: "adEvery", title: "One advert every … products", numeric: true },
-    { key: "limit", title: "At most how many adverts", numeric: true },
-  ],
+  promo_slots: [{ key: "limit", title: "At most how many adverts", numeric: true }],
 };
 
 /** Where each kind of band gets its records, so the editor can point there. */
@@ -173,8 +157,12 @@ const DRAW_FROM: Record<string, { href: string; label: string }> = {
   promo_slots: { href: "/cms/adverts", label: "advertisements" },
 };
 
-function fieldsFor(section: CmsSection): EditorField[] {
+function fieldsFor(section: CmsSection, documentType = ""): EditorField[] {
   const key = String(section.type ?? "");
+  const isExploreCatalogFeed = documentType === "marketplace_explore"
+    && key === "product_grid"
+    && section.perPage !== undefined;
+  if (isExploreCatalogFeed) return [ACROSS_FIELD];
   const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true";
   const hasDirectMedia = Boolean(String(section.mediaUrl ?? "").trim());
   const text = key === "hero_banner"
@@ -186,9 +174,21 @@ function fieldsFor(section: CmsSection): EditorField[] {
       : TEXT_FIELDS[key] ?? (TITLED.includes(key) ? [...FALLBACK] : []);
   // Everything the section can carry: its words, then its choices, then its
   // counts. Each kind only ever sees fields it can act on.
+  const exploreAdvertSettings = key === "promo_slots" && documentType === "marketplace_explore"
+    ? [
+        { key: "placement", title: "Advert placement", options: [
+          { value: "explore", label: "Explore" }, { value: "home", label: "Home" },
+        ] },
+        { key: "adEvery", title: "Insert after every", options: [
+          { value: "4", label: "Four products" }, { value: "6", label: "Six products" },
+          { value: "8", label: "Eight products" }, { value: "12", label: "Twelve products" },
+        ] },
+      ] satisfies EditorField[]
+    : [];
   return [
     ...text,
     ...(CHOICES[key] ?? []),
+    ...exploreAdvertSettings,
     ...(COUNTS[key] ?? []),
   ];
 }
@@ -227,7 +227,7 @@ export default async function CmsSectionEditor({
   const section = page?.sections?.find((item) => item.id === sectionId);
   if (!loadError && (!page || !section)) notFound();
 
-  const fields = section ? fieldsFor(section) : [];
+  const fields = section ? fieldsFor(section, page?.documentType ?? "") : [];
   const isHeroSection = Boolean(section && ["hero_banner", "hero_slim"].includes(String(section.type)));
   const mediaOnly = section?.mediaOnly === true || String(section?.mediaOnly) === "true";
   const sectionMediaUrl = section ? assetUrl(String(section.mediaUrl ?? "")) : "";

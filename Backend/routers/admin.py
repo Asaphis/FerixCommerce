@@ -20,6 +20,7 @@ from core import (
     audit, brands as all_brands, collections as all_collections, categories as all_categories, find_merchant,
     find_product, iso, issue_staff_session, media_json, merchants as all_merchants,
     is_platform_product, is_seller_marketplace_product, is_seller_product, marketplace_product_available,
+    is_assignable_product_section,
     merchant_follower_count, merchant_review_summary, new_id, now, is_public_store,
     permissions_for, placeholder, product_owner_kind, products as all_products,
     find_category, put_row, drop_row, seller_catalog_products, seller_products,
@@ -1530,8 +1531,7 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
                 source = (draft.data if draft is not None else document.data) or {}
                 section = next((item for item in source.get("sections", [])
                                 if item.get("id") == section_id
-                                and item.get("type") in ("product_grid", "product_carousel")
-                                and item.get("visible", True)), None)
+                                and is_assignable_product_section(document, item)), None)
                 if not section:
                     continue
                 existing = db.scalar(select(SectionPlacement).where(
@@ -2583,7 +2583,7 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
             )
             source_data = (draft.data if draft is not None else document.data) or {}
             for section in source_data.get("sections", []):
-                if section.get("type") not in ("product_carousel", "product_grid"):
+                if not is_assignable_product_section(document, section):
                     continue
                 used = [p for p in placements if p["sectionId"] == section.get("id")]
                 available.append({
@@ -2617,7 +2617,7 @@ def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Se
         )
         source_data = (draft.data if draft is not None else document.data) or {}
         section = next((item for item in source_data.get("sections", []) if item.get("id") == payload.sectionId), None)
-        if not section or section.get("type") not in ("product_carousel", "product_grid"):
+        if not section or not is_assignable_product_section(document, section):
             raise HTTPException(400, "Products can only be assigned to CMS product sections")
         product = next((p for p in all_products(db)
                         if p.get("id") == payload.productId or p.get("slug") == payload.slug), None)

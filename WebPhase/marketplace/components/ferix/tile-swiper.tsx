@@ -112,8 +112,8 @@ export function TileSwiper({
             </button>
           ))}
         </div>
-        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-soft" aria-live="polite">
-          Page {active + 1} of {sets.length}
+        <p className="sr-only" aria-live="polite">
+          Department page {active + 1} of {sets.length}
         </p>
       </div>
     </div>

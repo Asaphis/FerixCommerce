@@ -9,6 +9,7 @@ import os
 import tempfile
 import unittest
 import uuid
+from unittest.mock import patch
 
 _DB = tempfile.NamedTemporaryFile(prefix="ferixas-lifecycle-test-", suffix=".db", delete=False)
 _DB.close()
@@ -124,6 +125,77 @@ class ProductLifecycleTest(unittest.TestCase):
             "id": self_id, "role": "content",
         })
         self.assertEqual(self_edit.status_code, 400, self_edit.text)
+
+    def test_uploaded_seller_product_reaches_library_review_and_assigned_section(self):
+        options = self.client.get("/merchant/product/options", headers={"X-Ferix-Session": self.merchant})
+        self.assertEqual(options.status_code, 200, options.text)
+        category = options.json()["categories"][0]["slug"]
+        self.assertTrue(options.json()["sections"], "seeded CMS must expose product sections to sellers")
+        self.assertNotIn(
+            "sec_explore_grid",
+            {row["value"].rsplit("__", 1)[-1] for row in options.json()["sections"]},
+            "the Explore all-products feed is not a curated placement target",
+        )
+        section = next(
+            row for row in options.json()["sections"]
+            if row["documentType"] == "marketplace_explore" and row["name"] == "Trending"
+        )
+        section_value = section["value"]
+
+        # The API checks the file signature and runs without relying on browser MIME hints.
+        valid_png = b"\x89PNG\r\n\x1a\n" + b"test-image-payload"
+        with patch.dict(os.environ, {"CLOUDINARY_URL": ""}):
+            uploaded = self.client.post(
+                "/merchant/media/upload",
+                params={"session": self.merchant},
+                data={"kind": "image", "folder": "products", "alt": "Flow test product"},
+                files={"file": ("flow-test.png", valid_png, "image/png")},
+            )
+        self.assertEqual(uploaded.status_code, 200, uploaded.text)
+        image_url = uploaded.json()["asset"]["url"]
+
+        created = self.client.post("/merchant/product", headers={"X-Ferix-Session": self.merchant}, json={
+            "title": f"Upload flow {uuid.uuid4().hex[:8]}",
+            "category": category,
+            "price": 25,
+            "stock": 3,
+            "store": False,
+            "marketplace": True,
+            "images": [image_url],
+            "section_tags": [section_value],
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        product = created.json()["product"]
+        self.assertEqual(product["status"], "pending_review")
+        self.assertEqual(product["images"], [image_url])
+
+        library = self.client.get("/merchant/products", headers={"X-Ferix-Session": self.merchant})
+        self.assertEqual(library.status_code, 200, library.text)
+        self.assertIn(product["id"], {row["id"] for row in library.json()["items"]})
+        detail = self.client.get("/merchant/product", headers={"X-Ferix-Session": self.merchant}, params={"id": product["id"]})
+        self.assertEqual(detail.status_code, 200, detail.text)
+
+        queue = self.client.get("/admin/review/queue", headers={"X-Ferix-Session": self.admin})
+        self.assertEqual(queue.status_code, 200, queue.text)
+        self.assertIn(product["id"], {row["id"] for row in queue.json()["items"]})
+        approved = self.client.post("/admin/review/decision", headers={"X-Ferix-Session": self.admin}, json={
+            "id": product["id"], "decision": "approve",
+        })
+        self.assertEqual(approved.status_code, 200, approved.text)
+        section_data = self.client.get(
+            "/admin/product/sections", headers={"X-Ferix-Session": self.admin}, params={"slug": product["slug"]},
+        )
+        self.assertEqual(section_data.status_code, 200, section_data.text)
+        self.assertIn(section_value, {
+            f"{row['documentId']}__{row['sectionId']}" for row in section_data.json()["placements"]
+        })
+        document_id, section_id = section_value.split("__", 1)
+        self.assertEqual(document_id, "doc_marketplace_explore")
+        public_page = self.client.get("/catalog/page", params={"id": document_id})
+        self.assertEqual(public_page.status_code, 200, public_page.text)
+        self.assertIn(product["id"], {
+            row["id"] for row in public_page.json()["placements"].get(section_id, [])
+        })
 
     def test_submission_stays_private_until_admin_approval(self):
         other_login = self.client.post("/merchant/login", json={"email": "owner@aurasound.ferixas.com", "password": "TestOnly-Password-123!"})

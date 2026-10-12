@@ -38,9 +38,9 @@ function productHref(params: { status?: string; sort?: string; search?: string; 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; status?: string; sort?: string; channel?: string; notice?: string }>;
+  searchParams: Promise<{ search?: string; status?: string; sort?: string; channel?: string; notice?: string; submitted?: string }>;
 }) {
-  const { search, status, sort, channel, notice } = await searchParams;
+  const { search, status, sort, channel, notice, submitted } = await searchParams;
   const { session } = await requireMerchant();
   const data = await listProducts(session, {
     search,
@@ -48,6 +48,7 @@ export default async function ProductsPage({
     sort: sort ?? "new",
     channel: channel ?? "all",
   });
+  const submittedProduct = submitted ? data.items.find((item) => item.id === submitted) : undefined;
 
   const filters = [
     { id: "all", label: "All", count: data.counts.all },
@@ -60,7 +61,17 @@ export default async function ProductsPage({
 
   return (
     <div className="grid gap-5">
-      {notice ? (
+      {submitted ? (
+        submittedProduct ? (
+          <p role="status" className="rounded-[3px] border border-lime/40 bg-lime/10 px-3.5 py-3 text-[12.5px] text-chalk">
+            <strong>{submittedProduct.title}</strong> was submitted for Admin review. It is below under Pending Review.
+          </p>
+        ) : (
+          <p role="alert" className="rounded-[3px] border border-sand/40 bg-sand/10 px-3.5 py-3 text-[12.5px] text-chalk">
+            The submission was accepted, but the product library did not return it. Refresh this page before retrying. Reference: {submitted}
+          </p>
+        )
+      ) : notice ? (
         <p className="rounded-[3px] border border-lime/40 bg-lime/10 px-3.5 py-3 text-[12.5px] text-chalk">{notice}</p>
       ) : null}
       <header className="shrinkable flex flex-wrap items-start justify-between gap-4">

@@ -2,13 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowRight, Check, Heart, MapPin, RotateCcw, Truck } from "lucide-react";
-import { getProduct, ApiError } from "@/lib/api";
+import { getCataloguePage, getProduct, ApiError } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { toggleWishlistAction } from "@/lib/actions";
 import { AddToCartButton, AddToCartForm } from "@/components/ferix/add-to-cart";
 import { ReviewForm } from "@/components/ferix/forms";
-import { ProductRail, RatingBars, ReviewList } from "@/components/ferix/cards";
+import { ProductGrid, RatingBars, ReviewList } from "@/components/ferix/cards";
 import { ProductGallery } from "@/components/ferix/product-gallery";
+import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { Eyebrow, Pill, Price, SectionHead, Stars, StockNote } from "@/components/ferix/marks";
 import { compact, dateShort, money } from "@/lib/format";
 
@@ -35,7 +36,22 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     throw error;
   }
   const { product, merchant, reviews, related, shipping, returns } = detail;
-  const saved = await savedIds();
+  const [saved, cmsPage] = await Promise.all([
+    savedIds(),
+    getCataloguePage("marketplace_product").catch(() => ({ page: null, sections: [], placements: {} })),
+  ]);
+  const sectionVisible = (type: string) => {
+    if (!cmsPage.page) return true;
+    return cmsPage.sections.some((section) => section.type === type && section.visible !== false);
+  };
+  const relatedSection = cmsPage.sections.find(
+    (section) => section.type === "product_carousel"
+      && (section.source === "related" || section.id === "sec_related")
+      && section.visible !== false,
+  );
+  const relatedLimit = Number(relatedSection?.limit) || 0;
+  const relatedProducts = relatedLimit > 0 ? related.slice(0, relatedLimit) : related;
+  const relatedAcross = Math.min(4, Math.max(1, Math.round(Number(relatedSection?.across) || 2)));
   const isSaved = saved.includes(product.id);
   const maxQuantity = Math.max(1, Math.min(product.availableQuantity ?? (product.stockStatus === "out_of_stock" ? 0 : 10), 10));
 
@@ -53,12 +69,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <span className="text-ink">{product.title}</span>
       </nav>
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-        <div>
-          <ProductGallery slug={product.slug} title={product.title} images={product.images} />
-        </div>
+      <div className={`mt-6 grid gap-10 ${sectionVisible("product_gallery") && sectionVisible("buy_box") ? "lg:grid-cols-[1.05fr_0.95fr]" : "lg:grid-cols-1"}`}>
+        {sectionVisible("product_gallery") ? (
+          <div>
+            <ProductGallery slug={product.slug} title={product.title} images={product.images} />
+          </div>
+        ) : null}
 
-        <div>
+        {sectionVisible("buy_box") ? <div>
           <div className="flex flex-wrap items-center gap-2">
             <Pill tone={merchant.verified ? "success" : "neutral"}>
               <Check width={10} height={10} /> {merchant.verified ? "Verified seller" : "Marketplace seller"}
@@ -207,7 +225,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             ))}
           </ul>
 
-          <div className="mt-6 grid gap-3 rounded-[3px] border border-line-warm bg-white p-4">
+          {sectionVisible("delivery_block") ? <div className="mt-6 grid gap-3 rounded-[3px] border border-line-warm bg-white p-4">
             {shipping.map((option) => (
               <div key={option.label} className="flex items-start gap-2.5">
                 <Truck width={15} height={15} className="mt-[2px] shrink-0 text-ember" />
@@ -225,11 +243,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               <MapPin width={15} height={15} className="mt-[2px] shrink-0 text-ember" />
               <span className="text-[13px] text-ink">Dispatched from {merchant.location}</span>
             </div>
-          </div>
-        </div>
+          </div> : null}
+        </div> : null}
       </div>
 
-      <section className="mt-14 grid gap-10 lg:grid-cols-[280px_1fr]">
+      {sectionVisible("reviews") ? <section className="mt-14 grid gap-10 lg:grid-cols-[280px_1fr]">
         <div>
           <Eyebrow>Ratings</Eyebrow>
           <div className="mt-3">
@@ -250,13 +268,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </div>
           </div>
         </div>
-      </section>
+      </section> : null}
 
-      {related.length ? (
+      {relatedSection && relatedProducts.length ? (
         <section className="mt-14">
           <SectionHead
-            title="Related products"
-            action={
+            title={relatedSection.title ?? "Related products"}
+            action={String(relatedSection.seeAll) !== "false" ? (
               <Link
                 href={`/store/${merchant.slug}`}
                 className="group inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
@@ -264,9 +282,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 Visit the store
                 <ArrowRight width={14} height={14} className="transition-transform group-hover:translate-x-0.5" />
               </Link>
-            }
+            ) : null}
           />
-          <ProductRail products={related} savedIds={saved} />
+          {String(relatedSection.layout ?? "horizontal") === "groups" ? (
+            <SetSwiper products={relatedProducts} savedIds={saved} across={relatedAcross} rowsPerSet={Number(relatedSection.rowsPerSet) || 2} />
+          ) : String(relatedSection.layout) === "grid" ? (
+            <ProductGrid products={relatedProducts} savedIds={saved} across={relatedAcross} />
+          ) : (
+            <HorizontalRail products={relatedProducts} savedIds={saved} across={relatedAcross} />
+          )}
         </section>
       ) : null}
 

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import { assetUrl, getCataloguePage, getHome, listAdverts, listProducts, type Advert } from "@/lib/api";
+import { assetUrl, getCataloguePage, getHome, listAdverts, listProducts, type Advert, type Product } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
 import { PromoBanner } from "@/components/ferix/banner";
 import { MediaHero } from "@/components/ferix/media-hero";
 import { AutoForm } from "@/components/ferix/add-to-cart";
-import { EmptyState, Eyebrow, LinkButton } from "@/components/ferix/marks";
+import { EmptyState, Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
+import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -109,7 +110,11 @@ export async function CatalogListing({
   // and for which placement, so where they appear is a CMS decision rather than
   // something baked into this file.
   const pageType = PAGE_TYPES[basePath] ?? "marketplace_explore";
-  const page = await getCataloguePage(pageType).catch(() => ({ page: null, sections: [] }));
+  const page = await getCataloguePage(pageType).catch(() => ({
+    page: null,
+    sections: [],
+    placements: {} as Record<string, Product[]>,
+  }));
   const slotSection = page.sections.find(
     (section) => section.type === "promo_slots" && section.visible !== false,
   );
@@ -126,7 +131,12 @@ export async function CatalogListing({
     (section) => (section.type === "hero_slim" || section.type === "hero_banner") && section.visible !== false,
   );
   const gridSection = page.sections.find(
-    (section) => (section.type === "product_grid" || section.type === "product_carousel") && section.visible !== false,
+    (section) => section.type === "product_grid" && section.perPage !== undefined && section.visible !== false,
+  );
+  const productSections = page.sections.filter(
+    (section) => section.visible !== false
+      && (section.type === "product_carousel"
+        || (section.type === "product_grid" && section.perPage === undefined)),
   );
   const heroMediaOnly = Boolean(
     hero &&
@@ -140,13 +150,29 @@ export async function CatalogListing({
   );
   const needsHomeData = Boolean(brandRow) || Boolean(hero?.type === "hero_banner" && !hero.mediaUrl);
   const homeData = needsHomeData ? await getHome().catch(() => null) : null;
-  const brands = brandRow
+  const allBrands = brandRow
     // The payload carries brands, but HomeFeed does not declare them and the
     // Brand type describes a store's theming rather than a brand record.
     ? ((homeData as unknown as {
         brands?: { slug: string; name: string; imageUrl?: string; logo?: string }[];
-      } | null)?.brands ?? []).slice(0, Math.max(1, Number(brandRow.limit) || 8))
+      } | null)?.brands ?? [])
     : [];
+  const brandLimit = Number(brandRow?.limit) || 0;
+  const brands = brandLimit > 0 ? allBrands.slice(0, brandLimit) : allBrands;
+  const brandAcross = Math.min(4, Math.max(1, Math.round(Number(brandRow?.across) || 2)));
+  const brandGridColumns: Record<number, string> = {
+    1: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
+    2: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5",
+    3: "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6",
+    4: "grid-cols-4 sm:grid-cols-6 lg:grid-cols-8",
+  };
+  const brandRailWidth: Record<number, string> = {
+    1: "w-[82%] sm:w-[40%] lg:w-[25%]",
+    2: "w-[46%] sm:w-[30%] lg:w-[20%]",
+    3: "w-[31%] sm:w-[23%] lg:w-[16%]",
+    4: "w-[23%] sm:w-[17%] lg:w-[12%]",
+  };
+  const brandIsGrid = ["wrap", "grid"].includes(String(brandRow?.layout));
   const activeStore = feed.facets.stores.find((item) => item.slug === filters.store);
   const activeCategory = feed.facets.categories.find((item) => item.slug === filters.category);
   // Filtering by department renames the page, so the heading always matches the list.
@@ -263,6 +289,36 @@ export async function CatalogListing({
         </AutoForm>
       </div>
 
+      {productSections.map((section) => {
+        const assigned = page.placements?.[section.id] ?? [];
+        if (!assigned.length) return null;
+        const limit = Number(section.limit) || 0;
+        const shown = limit > 0 ? assigned.slice(0, limit) : assigned;
+        const across = Math.min(4, Math.max(1, Math.round(Number(section.across) || 2)));
+        const seeAll = String(section.seeAll) !== "false";
+        const layout = String(section.layout ?? "grid");
+        return (
+          <section key={section.id} className="mt-5 border-b border-line-warm pb-5">
+            <SectionHead
+              title={section.title ?? "Featured products"}
+              action={seeAll ? (
+                <Link href="/browse" className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
+                  See all
+                </Link>
+              ) : null}
+              className="mb-3"
+            />
+            {layout === "groups" ? (
+              <SetSwiper products={shown} savedIds={saved} across={across} rowsPerSet={Number(section.rowsPerSet) || 2} />
+            ) : layout === "horizontal" ? (
+              <HorizontalRail products={shown} savedIds={saved} across={across} />
+            ) : (
+              <ProductGrid products={shown} savedIds={saved} across={across} />
+            )}
+          </section>
+        );
+      })}
+
       <div className="mt-4 grid gap-4 lg:mt-6 lg:grid-cols-[236px_1fr] lg:gap-8">
         <aside>
           {/* Mobile: one disclosure instead of a full screen of filters. */}
@@ -353,11 +409,13 @@ export async function CatalogListing({
                     {brandRow?.title ?? "Shop by brand"}
                   </h2>
                 </div>
-                <Link href="/browse" className="text-[12px] font-semibold text-ember hover:underline">
-                  All brands
-                </Link>
+                {String(brandRow?.seeAll) !== "false" ? (
+                  <Link href="/browse" className="text-[12px] font-semibold text-ember hover:underline">All brands</Link>
+                ) : null}
               </div>
-              <div className="no-scrollbar -mx-4 mt-3 flex gap-2.5 overflow-x-auto px-4 lg:mx-0 lg:flex-wrap lg:px-0">
+              <div className={brandIsGrid
+                ? `mt-3 grid gap-2.5 ${brandGridColumns[brandAcross]}`
+                : "no-scrollbar -mx-4 mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 lg:mx-0 lg:px-0"}>
                 {brands.map((brand) => {
                   const record = brand as unknown as { slug: string; name: string; imageUrl?: string; logo?: string };
                   const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
@@ -365,8 +423,7 @@ export async function CatalogListing({
                     <Link
                       key={record.slug}
                       href={`/brands/${record.slug}`}
-                      className="group flex shrink-0 flex-col items-center"
-                      style={{ width: "104px" }}
+                      className={`group flex flex-col items-center ${brandIsGrid ? "min-w-0" : `shrink-0 snap-start ${brandRailWidth[brandAcross]}`}`}
                     >
                       {/* The same badge the homepage draws: the mark in a circle, the name under
                           it. One brand should look like one brand wherever it appears. */}

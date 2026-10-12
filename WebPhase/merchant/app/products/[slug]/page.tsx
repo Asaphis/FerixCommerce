@@ -27,9 +27,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <ArrowLeft width={12} height={12} /> All products
           </Link>
           <Panel className="border-sand/40 bg-sand/5">
-            <PanelHead title="Product unavailable" />
-            <p className="text-[13px] text-chalk">The product could not be reopened with this Seller session.</p>
-            <p className="mt-2 font-mono text-[10px] text-chalk-dim">Slug: {slug}</p>
+            <PanelHead title="Product not found" />
+            <p className="text-[13px] text-chalk">This product was not returned by your catalogue. Refresh Products before trying again.</p>
+            <p className="mt-2 font-mono text-[10px] text-chalk-dim">Reference: {slug}</p>
             <Link href="/products" className="mt-4 inline-flex min-h-10 items-center rounded-[2px] bg-lime px-3 text-[12px] font-semibold text-void">Return to products</Link>
           </Panel>
         </div>

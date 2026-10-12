@@ -5,7 +5,7 @@ import { assetUrl, getHome, listAdverts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { PromoBanner } from "@/components/ferix/banner";
 import { MediaHero } from "@/components/ferix/media-hero";
-import { CategoryTile, ProductGrid, ProductRail, StoreCard } from "@/components/ferix/cards";
+import { CategoryTile, ProductGrid, StoreCard } from "@/components/ferix/cards";
 import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { TileSwiper } from "@/components/ferix/tile-swiper";
 import { SectionHead } from "@/components/ferix/marks";
@@ -36,18 +36,12 @@ type Section = {
   ctaHref?: string;
   secondaryLabel?: string;
   secondaryHref?: string;
-  source?: string;
   limit?: number;
-  // How a section arranges what it holds, and when it is interrupted. These arrive from the
-  // database as JSON, so a switch may be the word rather than a boolean - which is why every
-  // use reads them through Number() or String() rather than trusting the shape.
+  // Section settings arrive from the database as JSON, so switches may be strings.
   across?: number | string;
   layout?: string;
   rowsPerSet?: number | string;
-  interruptAfter?: number | string;
   seeAll?: boolean | string;
-  adEvery?: number | string;
-  placement?: string;
   columns?: number;
   perPage?: number;
   showAsTile?: boolean | string;
@@ -100,11 +94,8 @@ const BUILT_IN: Section[] = [
   { id: "built_in_hero", type: "hero_banner", position: 1, visible: true },
   { id: "built_in_strip", type: "promo_strip", position: 2, visible: true },
   { id: "built_in_categories", type: "category_grid", position: 3, visible: true, title: "Shop by category" },
-  { id: "built_in_flash", type: "product_carousel", position: 4, visible: true, source: "flash" },
-  { id: "built_in_trending", type: "product_carousel", position: 5, visible: true, source: "trending" },
-  { id: "built_in_arrivals", type: "product_carousel", position: 6, visible: true, source: "new" },
-  { id: "built_in_stores", type: "featured_stores", position: 7, visible: true },
-  { id: "built_in_footer", type: "footer", position: 8, visible: true },
+  { id: "built_in_stores", type: "featured_stores", position: 4, visible: true },
+  { id: "built_in_footer", type: "footer", position: 5, visible: true },
 ];
 
 /**
@@ -189,9 +180,6 @@ export default async function HomePage() {
   ]);
   const categories = (home.categories.length ? home.categories : categoryFallback(catalogue))
     .filter((category) => category.count > 0);
-  const trending = uniqueProducts(home.trending).slice(0, 8);
-  const arrivals = uniqueProducts(home.newArrivals).slice(0, 8);
-  const flash = uniqueProducts(home.flashSale?.products ?? []);
   // The payload carries brands - the backend has returned them since they were
   // seeded - but HomeFeed does not declare them, and the storefront type for
   // Brand describes a store's theming rather than a brand record.
@@ -211,20 +199,6 @@ export default async function HomePage() {
     .filter((section) => section && typeof section.type === "string" && section.visible !== false)
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const sections = stored.length ? stored : BUILT_IN;
-
-  // How wide a brand tile is, from the section that carries it. Two across on a phone
-  // becomes four on a desktop, so a large screen does not show two enormous tiles.
-  // Declared here, after the sections, because it reads them.
-  const brandSection = sections.find((item) => item.type === "brand_carousel") as { across?: number } | undefined;
-  const brandAcross = Math.min(4, Math.max(1, Math.round(Number(brandSection?.across) || 2)));
-  // A small mark: narrow enough that several fit across a phone, which is what makes the row
-  // feel like a row rather than a set of cards.
-  // Narrow: a badge is a name you can read at a glance, not a card. Capped as well, so a wide
-  // screen does not stretch four badges across the whole band.
-  const brandTileWidth = `min(110px, calc((100% - ${(brandAcross - 1) * 10}px) / ${brandAcross} - 20px))`;
-  const brandGrid = String((brandSection as { layout?: string } | undefined)?.layout) === "grid";
-  // A switch is stored as the word, so only the word false hides anything.
-  const brandSeeAll = String((brandSection as { seeAll?: string } | undefined)?.seeAll) !== "false";
 
   function block(section: Section, index: number) {
     const parsedLimit = Number(section.limit);
@@ -309,7 +283,9 @@ export default async function HomePage() {
 
       /* ── Departments ────────────────────────────────────────────── */
       case "category_grid": {
-        const shown = limit ? categories.slice(0, limit) : categories;
+        // Do not apply the legacy `limit` field here: slicing before TileSwiper
+        // hides the rest of the departments, so there is nothing left to swipe to.
+        const shown = categories;
         const arrangement = String((section as { layout?: string }).layout ?? "groups");
         // Departments default to sets of rows when the section does not say otherwise,
         // because that is the arrangement they are shaped for.
@@ -361,7 +337,17 @@ export default async function HomePage() {
       /* ── Brands ─────────────────────────────────────────────────── */
       case "brand_carousel": {
         if (!brands.length) return null;
-        const shown = limit ? brands.slice(0, limit) : brands.slice(0, 8);
+        const brandAcross = Math.min(3, Math.max(1, Math.round(Number(section.across) || 2)));
+        const brandTileWidth = `min(110px, calc((100% - ${(brandAcross - 1) * 10}px) / ${brandAcross} - 20px))`;
+        const brandLayout = String(section.layout ?? "slider");
+        const brandGrid = brandLayout === "wrap" || brandLayout === "grid";
+        const brandGridColumns = brandAcross === 1
+          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+          : brandAcross === 2
+            ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+            : "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6";
+        const shown = limit ? brands.slice(0, limit) : brands;
+        const brandSeeAll = String(section.seeAll) !== "false";
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
             <SectionHead
@@ -377,9 +363,8 @@ export default async function HomePage() {
             />
             <div
               className={brandGrid
-                ? "grid gap-3"
+                ? `grid gap-3 ${brandGridColumns}`
                 : "no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"}
-              style={brandGrid ? { gridTemplateColumns: `repeat(${brandAcross}, minmax(0, 1fr))` } : undefined}
             >
               {shown.map((brand) => {
                 // A brand's artwork has been called imageUrl and logo in different
@@ -401,35 +386,21 @@ export default async function HomePage() {
       /* ── A strip of products ────────────────────────────────────── */
       case "product_carousel":
       case "product_grid": {
-        const source = section.source ?? "trending";
-        if (source === "flash") {
-          if (!flash.length) return null;
-          return (
-            <section key={section.id ?? index} className="mt-6 border-y border-line-warm bg-white sm:mt-8">
-              <div className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 sm:py-7">
-                <SectionHead
-                  title={section.title ?? home.flashSale?.headline ?? home.flashSale?.name ?? "Today's deals"}
-                  className="mb-3"
-                />
-                <ProductRail products={limit ? flash.slice(0, limit) : flash} savedIds={saved} />
-              </div>
-            </section>
-          );
-        }
         // A product section shows exactly the products the catalogue assigned to it
-        // from the product form. The CMS sets how the row looks, never what is in it.
+        // from the product form. The CMS sets how it looks, never what is in it.
         const products = home.placements?.[section.id] ?? [];
         if (!products.length) return null;
         const shown = limit ? products.slice(0, limit) : products;
+        const seeAll = String(section.seeAll) !== "false";
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
               <SectionHead
               title={section.title ?? "Featured products"}
-              action={
+              action={seeAll ? (
                 <Link href="/browse?sort=best" className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
                   See all <ArrowRight width={14} height={14} />
                 </Link>
-              }
+              ) : null}
               className="mb-3 sm:mb-4"
             />
             {(section as { layout?: string }).layout === "groups" ? (
@@ -470,7 +441,7 @@ export default async function HomePage() {
       /* ── Stores worth following ─────────────────────────────────── */
       case "featured_stores": {
         if (!home.stores.length) return null;
-        const shown = limit ? home.stores.slice(0, limit) : home.stores.slice(0, 8);
+        const shown = limit ? home.stores.slice(0, limit) : home.stores;
         return (
           <section key={section.id ?? index} className="border-y border-line-warm bg-white">
             <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
@@ -483,7 +454,9 @@ export default async function HomePage() {
                 }
                 className="mb-3 sm:mb-4"
               />
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className={String(section.layout ?? "cards") === "rows"
+                ? "grid grid-cols-1 gap-3"
+                : "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
                 {shown.map((store) => <StoreCard key={store.id} store={store} />)}
               </div>
             </div>

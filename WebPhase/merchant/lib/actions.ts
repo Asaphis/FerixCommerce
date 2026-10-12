@@ -89,10 +89,13 @@ export async function createProductAction(_prev: FormState, formData: FormData):
   if (formData.get("marketplace_acknowledgement") !== "on") return { error: "Confirm that this listing is intended for the Ferixas Marketplace." };
   if (!Number.isFinite(price) || price <= 0) return { error: "Enter a price greater than zero." };
   const files = formData.getAll("mediaFiles").filter((value): value is File => value instanceof File && value.size > 0);
+  if (files.some((file) => file.size > 20 * 1024 * 1024)) return { error: "Each product image must be 20 MB or smaller." };
   if (!readImageUrls(formData).length && !files.length) return { error: "Add at least one product image." };
   const compareRaw = String(formData.get("compareAt") ?? "").trim();
+  let stage: "image upload" | "product submission" = "image upload";
   try {
     const images = await uploadProductImages(session, formData, readImageUrls(formData));
+    stage = "product submission";
     const created = await api.createProduct(session, {
       title,
       category,
@@ -120,12 +123,17 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       description: String(formData.get("description") ?? "").trim() || null,
     });
     refresh("/products");
-    // Redirect on the record id: the seller's own catalogue is keyed by id after
-    // a submission, so a slug is never the thing that decides the page opens.
-    redirect(`/products/${created.product.id}`);
+    // A successful submission lands in the seller's product library. Opening a
+    // separate detail request immediately after the POST used to turn an accepted
+    // submission into a confusing "product unavailable" dead end.
+    redirect(`/products?submitted=${encodeURIComponent(created.product.id)}`);
   } catch (error) {
     if (error instanceof api.ApiError) return { error: error.message };
-    throw error;
+    return {
+      error: stage === "image upload"
+        ? "We could not upload the product image. Check your connection and try again."
+        : "We could not confirm the submission. Check Products before retrying to avoid creating a duplicate.",
+    };
   }
 }
 

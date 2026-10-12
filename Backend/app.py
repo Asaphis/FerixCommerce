@@ -36,7 +36,8 @@ from core import (
     record_merchant_follow_activity, require_user, sale_status, seed, store_card,
     is_seller_product, marketplace_product_available, paid_marketplace_product_units,
     verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
-    merchant_follower_count, is_public_store, public_taxonomy, visible_published_sections, schema_ready,
+    merchant_follower_count, is_public_store, public_taxonomy, visible_published_sections,
+    is_assignable_product_section, schema_ready,
 )
 
 from routers import admin as admin_router
@@ -1287,13 +1288,36 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
         document = db.get(ContentDocument, id) if id else None
         if document is None and type:
             document = db.scalar(select(ContentDocument).where(ContentDocument.document_type == type))
-        if not document or document.status != "published":
-            return {"page": None, "sections": []}
+        if not document or document.owner_type != "platform" or document.status != "published":
+            return {"page": None, "sections": [], "placements": {}}
         sections = sorted((document.data or {}).get("sections") or [],
                           key=lambda section: section.get("position", 0))
+        items = [product for product in product_rows(db) if marketplace_product_available(db, product)]
+        public_by_id = {item["id"]: item for item in public_products(db, decorate(db, items))}
+        assignable = {
+            section.get("id") for section in sections
+            if is_assignable_product_section(document, section)
+        }
+        placements: dict[str, list[dict]] = {}
+        if assignable:
+            current_time = now()
+            rows = db.scalars(
+                select(SectionPlacement).where(SectionPlacement.document_id == document.id)
+            ).all()
+            for row in sorted(rows, key=lambda item: (item.section_id, item.position, item.created_at)):
+                if row.starts_at and row.starts_at > current_time:
+                    continue
+                if row.ends_at and row.ends_at < current_time:
+                    continue
+                if row.section_id not in assignable:
+                    continue
+                product = public_by_id.get(row.product_id)
+                if product:
+                    placements.setdefault(row.section_id, []).append(product)
         return {
             "page": {"id": document.id, "title": document.title, "documentType": document.document_type},
             "sections": sections,
+            "placements": placements,
         }
 
 # ── Public Seller Profile & Follow System ──────────────────────────────────
