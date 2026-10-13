@@ -80,26 +80,67 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
           <PanelHead
             title="Add a section"
           />
-          <CmsActionForm action={addCmsSectionAction} className="mt-4 flex flex-wrap items-end gap-3">
-            <input type="hidden" name="id" value={page.id} />
-            <Field title="What kind of section">
-              <select name="type" defaultValue="category_grid" className={selectClass}>
-                <option value="hero_banner">Hero banner — the full campaign, with slides</option>
-                <option value="hero_slim">Banner — one short band with a button</option>
-                <option value="promo_strip">Message strip — one line of text</option>
-                <option value="category_grid">Department tiles</option>
-                <option value="brand_carousel">Brand row</option>
-                <option value="product_carousel">Product row</option>
-                <option value="featured_stores">Stores</option>
-                <option value="promo_slots">Promotion slots — adverts between content</option>
-                <option value="footer">Footer</option>
-              </select>
-            </Field>
-            <Field title="Name it (optional)">
-              <input name="name" className={inputClass} placeholder="Autumn picks" />
-            </Field>
-            <SubmitButton pendingLabel="Adding">Add section</SubmitButton>
-          </CmsActionForm>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <CmsActionForm action={addCmsSectionAction} className="flex flex-col items-start gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4">
+              <input type="hidden" name="id" value={page.id} />
+              <input type="hidden" name="type" value="hero_banner" />
+              <span className="flex items-center gap-2">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal">
+                  <ImagePlus width={16} height={16} />
+                </span>
+                <span>
+                  <span className="block font-display text-[14px] font-semibold text-chalk">Campaign hero</span>
+                  <span className="block text-[12px] text-chalk-dim">Full-height hero with 2 buttons</span>
+                </span>
+              </span>
+              <Field title="Name it (optional)">
+                <input name="name" className={inputClass} placeholder="Autumn picks" />
+              </Field>
+              <SubmitButton pendingLabel="Adding" className="self-start">Add hero</SubmitButton>
+            </CmsActionForm>
+
+            <CmsActionForm action={addCmsSectionAction} className="flex flex-col items-start gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4">
+              <input type="hidden" name="id" value={page.id} />
+              <input type="hidden" name="type" value="hero_slim" />
+              <span className="flex items-center gap-2">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal">
+                  <ImagePlus width={16} height={16} />
+                </span>
+                <span>
+                  <span className="block font-display text-[14px] font-semibold text-chalk">Slim banner</span>
+                  <span className="block text-[12px] text-chalk-dim">Compact strip with 1 button</span>
+                </span>
+              </span>
+              <Field title="Name it (optional)">
+                <input name="name" className={inputClass} placeholder="Audio deals" />
+              </Field>
+              <SubmitButton pendingLabel="Adding" className="self-start">Add banner</SubmitButton>
+            </CmsActionForm>
+          </div>
+
+          <details className="mt-3 rounded-[12px] border border-hairline bg-panel-2">
+            <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+              Other sections
+            </summary>
+            <CmsActionForm action={addCmsSectionAction} className="grid gap-4 border-t border-hairline p-4">
+              <input type="hidden" name="id" value={page.id} />
+              <Field title="What kind of section">
+                <select name="type" defaultValue="category_grid" className={selectClass}>
+                  <option value="promo_strip">Message strip — one line of text</option>
+                  <option value="category_grid">Department tiles</option>
+                  <option value="brand_carousel">Brand row</option>
+                  <option value="product_carousel">Product row</option>
+                  <option value="featured_stores">Stores</option>
+                  <option value="promo_slots">Promotion slots — adverts between content</option>
+                  <option value="footer">Footer</option>
+                </select>
+              </Field>
+              <Field title="Name it (optional)">
+                <input name="name" className={inputClass} placeholder="Autumn picks" />
+              </Field>
+              <SubmitButton pendingLabel="Adding">Add section</SubmitButton>
+            </CmsActionForm>
+          </details>
         </Panel>
       ) : null}
 

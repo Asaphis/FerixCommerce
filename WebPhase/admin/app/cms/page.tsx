@@ -42,13 +42,21 @@ export default async function CmsPage() {
         eyebrow="Marketplace"
         title="Content"
         action={
-          <Link
-            href="/"
-            target="_blank"
-            className="inline-flex min-h-9 items-center gap-2 rounded-[10px] border border-hairline px-3 text-[12.5px] font-semibold text-chalk transition-colors hover:bg-panel-2"
-          >
-            Preview the storefront
-          </Link>
+          <>
+            <Link
+              href="/"
+              target="_blank"
+              className="inline-flex min-h-9 items-center gap-2 rounded-[10px] border border-hairline px-3 text-[12.5px] font-semibold text-chalk transition-colors hover:bg-panel-2"
+            >
+              Preview the storefront
+            </Link>
+            <Link
+              href="/cms/page/create"
+              className="ml-3 inline-flex min-h-9 items-center gap-2 rounded-[10px] border border-hairline px-3 text-[12.5px] font-semibold text-chalk transition-colors hover:bg-panel-2"
+            >
+              Add new page
+            </Link>
+          </>
         }
       />
 

@@ -148,7 +148,7 @@ export async function CatalogListing({
   const brandRow = page.sections.find(
     (section) => section.type === "brand_carousel" && section.visible !== false,
   );
-  const needsHomeData = Boolean(brandRow) || Boolean(hero && (hero.bannerId || (hero.type === "hero_banner" && !hero.mediaUrl)));
+  const needsHomeData = Boolean(brandRow) || (hero?.type === "hero_banner" && hero.bannerId && !hero.mediaUrl);
   const homeData = needsHomeData ? await getHome().catch(() => null) : null;
   const allBrands: CatalogueBrand[] = brandRow ? homeData?.brands ?? [] : [];
   const brandLimit = Number(brandRow?.limit) || 0;
@@ -217,9 +217,9 @@ export async function CatalogListing({
 
       {hero ? (
         <div className="mx-auto mt-4 max-w-[1440px]">
-          {hero.type === "hero_banner" && (!hero.mediaUrl || selectedHeroBanner) ? (
+          {hero.type === "hero_banner" && selectedHeroBanner ? (
             <PromoBanner
-              banners={selectedHeroBanner ? [selectedHeroBanner] : homeData?.banners ?? []}
+              banners={selectedHeroBanner ? [selectedHeroBanner] : []}
               mediaOnly={heroMediaOnly}
               heightClassName="h-[190px] sm:h-[250px] lg:h-[320px]"
               className="rounded-[3px] rounded-tr-[16px] shadow-[0_8px_22px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"

@@ -941,6 +941,10 @@ export const publishCmsPage = (session: string | null, id: string) =>
   call<{ page: CmsPage }>("POST", "admin/cms/page/publish", { session, body: { id } });
 
 
+export const createCmsPage = (session: string | null, data: { title: string; document_type: string }) =>
+  call<{ page: CmsPage }>("POST", "admin/cms/page", { session, body: data });
+
+
 export async function listCmsSections(session: string): Promise<{ sections: { id: string; name: string; slug: string; description: string; is_active: boolean; sort_order: number }[] }> {
   return call<{ sections: { id: string; name: string; slug: string; description: string; is_active: boolean; sort_order: number }[] }>("GET", "admin/cms/sections", { session });
 }

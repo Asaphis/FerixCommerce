@@ -193,6 +193,23 @@ export async function publishCmsPageAction(_prev: FormState, formData: FormData)
   return { message: "Published. The storefront now serves this version." };
 }
 
+/** Create a new page as a draft with an empty section list. */
+export async function createPageAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const title = String(formData.get("title") ?? "").trim();
+  const document_type = String(formData.get("document_type") ?? "").trim();
+  if (!title) return { error: "Page title is required." };
+  if (!document_type) return { error: "Page type is required." };
+  try {
+    await api.createCmsPage(session, { title, document_type });
+    revalidatePath("/cms");
+    return { message: "Page created as a draft. Open it to add sections." };
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "Failed to create page." };
+  }
+}
+
 /** Switch one section on or off, keeping everything else where it is. */
 export async function toggleCmsSectionAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();

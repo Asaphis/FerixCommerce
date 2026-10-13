@@ -1854,6 +1854,27 @@ def _ensure_document(db, document_id: str) -> ContentDocument:
     db.add(doc)
     db.flush()
     return doc
+def _ensure_platform_pages(db):
+    """Ensure the four core marketplace pages exist with empty sections."""
+    pages = [
+        ("doc_marketplace_home", "marketplace_home", "Homepage"),
+        ("doc_marketplace_explore", "marketplace_explore", "Explore & Search Results"),
+        ("doc_marketplace_product", "marketplace_product", "Product Page"),
+        ("doc_marketplace_store", "marketplace_store", "Storefront"),
+    ]
+    for doc_id, doc_type, title in pages:
+        if db.get(ContentDocument, doc_id) is None:
+            doc = ContentDocument(
+                id=doc_id,
+                owner_type="platform",
+                owner_id="platform",
+                document_type=doc_type,
+                title=title,
+                status="draft",
+                data={"sections": []},
+            )
+            db.add(doc)
+            db.flush()
 
 
 @router.get("/cms/documents")
@@ -1861,9 +1882,43 @@ def cms_documents(session: Optional[str] = Header(None, alias="X-Ferix-Session")
     with SessionLocal() as db:
         require_staff(db, session, "admin")
         docs = db.scalars(select(ContentDocument).where(ContentDocument.owner_type == "platform")).all()
+        _ensure_platform_pages(db)
         return {"documents": [_document_json(d) for d in docs]}
 
 
+                                                                                                                                                              
+                                                                                                                                                                      
+@router.post("/cms/page")
+def cms_create_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+                                                                                                                                                                     
+                                                                                                                                                                      
+        page_id = payload.get("id") or new_id("page")
+        existing = db.get(ContentDocument, page_id)
+        if existing:
+            raise HTTPException(409, "A page with this ID already exists")
+                                                                                                                                                                     
+                                                                                                                                                                      
+        document_type = payload.get("document_type") or page_id
+        title = payload.get("title") or page_id.replace("doc_", "").replace("_", " ").title()
+                                                                                                                                                                     
+                                                                                                                                                                      
+        doc = ContentDocument(
+            id=page_id,
+            owner_type="platform",
+            owner_id="platform",
+            document_type=document_type,
+            title=title,
+            status="draft",
+            data={"sections": []},
+        )
+        db.add(doc)
+        db.flush()
+        audit(db, "admin", staff.email, "cms.page.create", page_id, title)
+        db.commit()
+        return {"page": _document_json(doc)}
 @router.get("/cms/document")
 def cms_document(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str = Query(...)):
     with SessionLocal() as db:
@@ -2296,6 +2351,11 @@ class CmsPageIn(BaseModel):
     sections: Optional[list] = None
 
 
+class PageCreate(BaseModel):
+    title: str
+    document_type: str
+
+
 def _section_summary(section: dict, index: int) -> dict:
     return {
         "id": section.get("id"),
@@ -2332,10 +2392,64 @@ def cms_pages(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "cms.manage")
+        # Sync the platform's standard pages so the CMS never starts empty.
+        _ensure_platform_pages(db)
         rows = db.scalars(select(ContentDocument)).all()
         pages = [_page_summary(d) for d in rows]
         pages.sort(key=lambda p: (p["documentType"] != "marketplace_home", p["title"] or ""))
         return {"pages": pages}
+
+
+def _ensure_platform_pages(db):
+    """Ensure the four core marketplace pages exist with empty sections."""
+    pages = [
+        ("doc_marketplace_home", "marketplace_home", "Homepage"),
+        ("doc_marketplace_explore", "marketplace_explore", "Explore & Search Results"),
+        ("doc_marketplace_product", "marketplace_product", "Product Page"),
+        ("doc_marketplace_store", "marketplace_store", "Storefront"),
+    ]
+    for doc_id, doc_type, title in pages:
+        if db.get(ContentDocument, doc_id) is None:
+            doc = ContentDocument(
+                id=doc_id,
+                owner_type="platform",
+                owner_id="platform",
+                document_type=doc_type,
+                title=title,
+                status="draft",
+                data={"sections": []},
+            )
+            db.add(doc)
+            db.flush()
+
+
+@router.post("/cms/page")
+def cms_page_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: PageCreate = Body(...)):
+    """Create a new storefront page as a draft with an empty section list."""
+    from core import ContentDocument
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        doc_type = payload.document_type.strip()
+        if not re.fullmatch(r"marketplace_[a-z]+", doc_type):
+            raise HTTPException(422, "Page slug must be lowercase like marketplace_home or marketplace_deals")
+        document_id = doc_type
+        if db.get(ContentDocument, document_id):
+            raise HTTPException(409, "A page with that type already exists")
+        doc = ContentDocument(
+            id=document_id,
+            owner_type="platform",
+            owner_id="platform",
+            document_type=doc_type,
+            title=payload.title.strip()[:200],
+            status="draft",
+            data={"sections": []},
+        )
+        db.add(doc)
+        db.commit()
+        audit(db, "admin", staff.email, "cms.page.create", document_id, "draft")
+        return {"page": _page_summary(doc)}
 
 
 @router.get("/cms/page")

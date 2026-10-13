@@ -198,7 +198,7 @@ export default async function HomePage() {
         const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
         const slides = section.bannerId
           ? home.banners.filter((banner) => banner.id === section.bannerId)
-          : home.banners;
+          : [];
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] sm:px-5 sm:pt-5">
             {section.mediaUrl && !section.bannerId ? (
@@ -220,7 +220,7 @@ export default async function HomePage() {
                 heightClassName="h-[250px] sm:h-[340px] lg:h-[420px]"
                 className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
               />
-            ) : (
+            ) : section.mediaUrl ? null : (
               <PromoBanner
                 banners={slides}
                 mediaOnly={mediaOnly}
