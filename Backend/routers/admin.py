@@ -20,7 +20,7 @@ from core import (
     audit, brands as all_brands, collections as all_collections, categories as all_categories, find_merchant,
     find_product, iso, issue_staff_session, media_json, merchants as all_merchants,
     is_platform_product, is_seller_marketplace_product, is_seller_product, marketplace_product_available,
-    is_assignable_product_section,
+    is_assignable_product_section, CMS_PRODUCT_SOURCES,
     merchant_follower_count, merchant_review_summary, new_id, now, is_public_store,
     permissions_for, placeholder, product_owner_kind, products as all_products,
     find_category, put_row, drop_row, seller_catalog_products, seller_products,
@@ -2495,6 +2495,11 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
             cleaned = []
             for index, section in enumerate(payload.sections):
                 row = dict(section or {})
+                if row.get("type") in {"product_grid", "product_carousel"}:
+                    source = str(row.get("source") or "assigned").strip().lower()
+                    if source not in CMS_PRODUCT_SOURCES:
+                        raise HTTPException(422, "That product section source is not supported.")
+                    row["source"] = source
                 row["position"] = index + 1
                 row.setdefault("visible", True)
                 cleaned.append(row)

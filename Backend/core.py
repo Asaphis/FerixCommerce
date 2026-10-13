@@ -1021,6 +1021,13 @@ def is_public_store(merchant: Optional[dict]) -> bool:
 
 
 PUBLIC_SECTION_TYPES = {"product_grid", "product_carousel"}
+# Product sections can be curated by placements or resolved from a public
+# catalogue feed at render time. Keep this contract shared by CMS validation
+# and the storefront resolver.
+CMS_PRODUCT_SOURCES = {
+    "assigned", "trending", "newest_arrivals", "best_sellers", "featured",
+    "flash_sale", "category", "collection", "related",
+}
 
 
 def is_assignable_product_section(document: Optional[ContentDocument], section: dict) -> bool:

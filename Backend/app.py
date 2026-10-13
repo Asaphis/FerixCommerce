@@ -36,7 +36,7 @@ from core import (
     is_seller_product, marketplace_product_available, paid_marketplace_product_units,
     verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
     merchant_follower_count, is_public_store, public_taxonomy, visible_published_sections,
-    is_assignable_product_section, schema_ready,
+    is_assignable_product_section, schema_ready, CMS_PRODUCT_SOURCES,
 )
 
 from routers import admin as admin_router
@@ -509,6 +509,45 @@ def product(slug: str):
         }
 
 
+def resolve_cms_product_source(section: dict, decorated: list[dict], public_by_id: dict[str, dict],
+                               paid_units: dict[str, int], flash_ids: Optional[set[str]] = None) -> list[dict]:
+    """Resolve an automatic product section from the public product pool.
+
+    ``assigned`` remains placement-driven. Automatic sources are read-only
+    views over approved, publicly sellable products and never create placement
+    rows or bypass the public eligibility gate.
+    """
+    source = str(section.get("source") or "assigned").strip().lower()
+    if source == "assigned" or source not in CMS_PRODUCT_SOURCES:
+        return []
+    rows = list(decorated)
+    if source in {"trending", "best_sellers"}:
+        rows.sort(key=lambda product: -paid_units.get(product.get("id", ""), 0))
+    elif source == "newest_arrivals":
+        rows.sort(key=lambda product: str(product.get("createdAt") or ""), reverse=True)
+    elif source == "featured":
+        rows.sort(key=lambda product: (
+            not bool(product.get("featured")),
+            -((public_by_id.get(product.get("id", ""), {}).get("rating") or 0) * 100
+              + (public_by_id.get(product.get("id", ""), {}).get("reviewCount") or 0)),
+        ))
+    elif source == "category":
+        wanted = str(section.get("categorySlug") or section.get("category") or "").strip()
+        rows = [product for product in rows if wanted and product.get("category") == wanted]
+    elif source == "collection":
+        wanted = str(section.get("collectionSlug") or section.get("collection") or "").strip()
+        rows = [product for product in rows if wanted and wanted in (product.get("collections") or [])]
+    elif source == "flash_sale":
+        ids = flash_ids or set()
+        rows = [product for product in rows if product.get("id") in ids]
+    elif source == "related":
+        return []
+    limit = int(section.get("limit") or 0)
+    if limit > 0:
+        rows = rows[:min(limit, 60)]
+    return [public_by_id[product["id"]] for product in rows if product.get("id") in public_by_id]
+
+
 @app.get("/catalog/home")
 def home():
     """The marketplace homepage. Everything here is CMS-managed."""
@@ -528,6 +567,12 @@ def home():
             [b for b in brand_rows(db) if b.get("visible", True)],
             key=lambda b: (int(b.get("position", 0)), str(b.get("name", "")).lower()),
         )
+        sale = next((s for s in db.scalars(select(FlashSale)).all() if sale_status(s) == "live"), None)
+        flash_ids = {
+            item.product_id for item in db.scalars(
+                select(FlashSaleItem).where(FlashSaleItem.sale_id == sale.id)
+            ).all()
+        } if sale else set()
 
         doc = db.get(ContentDocument, "doc_marketplace_home")
         content = {"sections": visible_published_sections(doc)}
@@ -555,9 +600,13 @@ def home():
                 if not product:
                     continue
                 placement_products.setdefault(row.section_id, []).append(public_by_id[product["id"]])
+            for section in visible_sections.values():
+                if str(section.get("source") or "assigned").lower() != "assigned":
+                    placement_products[section["id"]] = resolve_cms_product_source(
+                        section, decorated, public_by_id, paid_units, flash_ids,
+                    )
 
         live_banners = [b for b in banner_rows(db) if b.get("active", True)]
-        sale = next((s for s in db.scalars(select(FlashSale)).all() if sale_status(s) == "live"), None)
         flash_items = []
         if sale:
             ids = [i.product_id for i in db.scalars(select(FlashSaleItem).where(FlashSaleItem.sale_id == sale.id)).all()]
@@ -1289,7 +1338,15 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
         sections = sorted((document.data or {}).get("sections") or [],
                           key=lambda section: section.get("position", 0))
         items = [product for product in product_rows(db) if marketplace_product_available(db, product)]
-        public_by_id = {item["id"]: item for item in public_products(db, decorate(db, items))}
+        decorated = decorate(db, items)
+        public_by_id = {item["id"]: item for item in public_products(db, decorated)}
+        paid_units = paid_marketplace_product_units(db, days=30)
+        sale = next((s for s in db.scalars(select(FlashSale)).all() if sale_status(s) == "live"), None)
+        flash_ids = {
+            item.product_id for item in db.scalars(
+                select(FlashSaleItem).where(FlashSaleItem.sale_id == sale.id)
+            ).all()
+        } if sale else set()
         assignable = {
             section.get("id") for section in sections
             if is_assignable_product_section(document, section)
@@ -1310,6 +1367,11 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
                 product = public_by_id.get(row.product_id)
                 if product:
                     placements.setdefault(row.section_id, []).append(product)
+        for section in sections:
+            if section.get("id") in assignable and str(section.get("source") or "assigned").lower() != "assigned":
+                placements[section["id"]] = resolve_cms_product_source(
+                    section, decorated, public_by_id, paid_units, flash_ids,
+                )
         return {
             "page": {"id": document.id, "title": document.title, "documentType": document.document_type},
             "sections": sections,

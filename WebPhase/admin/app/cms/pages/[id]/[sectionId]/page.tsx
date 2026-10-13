@@ -70,6 +70,14 @@ const ARRANGEMENT: EditorField[] = [
 
 const CHOICES: Record<string, EditorField[]> = {
   product_carousel: [
+    { key: "source", title: "Products come from", options: [
+      { value: "assigned", label: "Products assigned by Admin/Seller" },
+      { value: "trending", label: "Trending products" },
+      { value: "newest_arrivals", label: "Newest arrivals" },
+      { value: "best_sellers", label: "Best sellers" },
+      { value: "featured", label: "Featured products" },
+      { value: "flash_sale", label: "Live flash sale" },
+    ] },
     ...ARRANGEMENT,
     { key: "rowsPerSet", title: "Rows per swipe", options: [
       { value: "1", label: "One" }, { value: "2", label: "Two" },
@@ -78,6 +86,14 @@ const CHOICES: Record<string, EditorField[]> = {
     ] },
   ],
   product_grid: [
+    { key: "source", title: "Products come from", options: [
+      { value: "assigned", label: "Products assigned by Admin/Seller" },
+      { value: "trending", label: "Trending products" },
+      { value: "newest_arrivals", label: "Newest arrivals" },
+      { value: "best_sellers", label: "Best sellers" },
+      { value: "featured", label: "Featured products" },
+      { value: "flash_sale", label: "Live flash sale" },
+    ] },
     ...ARRANGEMENT,
     { key: "rowsPerSet", title: "Rows per swipe", options: [
       { value: "1", label: "One" }, { value: "2", label: "Two" },

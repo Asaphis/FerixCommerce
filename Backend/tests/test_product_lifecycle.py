@@ -919,6 +919,34 @@ class ProductLifecycleTest(unittest.TestCase):
                     db.delete(doc)
                 db.commit()
 
+    def test_cms_product_section_resolves_automatic_source(self):
+        document_id = "cms-automatic-source-contract"
+        with SessionLocal() as db:
+            db.add(ContentDocument(
+                id=document_id, owner_type="platform", owner_id="platform",
+                document_type="test_automatic_source", title="Automatic source", status="published",
+                data={"sections": [{
+                    "id": "automatic-products", "type": "product_carousel",
+                    "name": "Newest arrivals", "title": "Newest arrivals",
+                    "source": "newest_arrivals", "limit": 2, "visible": True, "position": 1,
+                }]},
+            ))
+            db.commit()
+        try:
+            response = self.client.get("/catalog/page", params={"type": "test_automatic_source"})
+            self.assertEqual(response.status_code, 200, response.text)
+            body = response.json()
+            self.assertEqual(body["sections"][0]["source"], "newest_arrivals")
+            self.assertLessEqual(len(body["placements"]["automatic-products"]), 2)
+            self.assertTrue(body["placements"]["automatic-products"])
+        finally:
+            with SessionLocal() as db:
+                db.query(ContentVersion).filter_by(document_id=document_id).delete()
+                doc = db.get(ContentDocument, document_id)
+                if doc:
+                    db.delete(doc)
+                db.commit()
+
 
 if __name__ == "__main__":
     unittest.main()
