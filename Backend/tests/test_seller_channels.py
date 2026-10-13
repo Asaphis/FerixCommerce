@@ -22,6 +22,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from app import app  # noqa: E402
 from test_support import reset_test_database  # noqa: E402
+from fixtures import create_test_records  # noqa: E402
 
 
 class SellerChannelTest(unittest.TestCase):
@@ -29,6 +30,7 @@ class SellerChannelTest(unittest.TestCase):
         reset_test_database()
         self.client = TestClient(app)
         self.client.__enter__()
+        create_test_records()
         login = self.client.post("/merchant/login", json={
             "email": "owner@abc-electronics.ferixas.com",
             "password": "TestOnly-Password-123!",

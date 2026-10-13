@@ -28,12 +28,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from core import (
     Address, Cart, Catalog, ContentDocument, FlashSale, FlashSaleItem, FREE_SHIPPING_OVER, SectionPlacement,
     Order, Review, SESSION_DAYS, SessionLocal, SessionToken, TAX_RATE, User, Wishlist,
-    backfill_catalogue_media,
     cart_for as _cart_for, cart_payload, categories as category_rows, brands as brand_rows,
     collections as collection_rows, decorate, find_merchant, find_product, get_user,
     hash_password, iso, line_key, merchants as merchant_rows, now, product_rows,
     public_product_fields, public_products, public_review_data, public_user, put_row,
-    record_merchant_follow_activity, require_user, sale_status, seed, store_card,
+    record_merchant_follow_activity, require_user, sale_status, store_card,
     is_seller_product, marketplace_product_available, paid_marketplace_product_units,
     verify_password, Base, engine, banners as banner_rows, MEDIA_ROOT, UPLOAD_ROOT, sync_pending_media,
     merchant_follower_count, is_public_store, public_taxonomy, visible_published_sections,
@@ -185,24 +184,21 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Prepare the database before the first request is served.
+    """Prepare the schema before the first request is served.
 
     This is the modern equivalent of the startup event below, and it is the one
     FastAPI guarantees to run. The event handler is kept as well because running
-    both is harmless - create_all, migrate and the seed are each idempotent - but
-    on a fresh deployment the tables, the migrations and the seed must happen, and
-    relying on a deprecated hook is how they ended up being run by hand.
+    both is harmless - create_all and migrate are each idempotent.
+
+    Schema only. This service never writes starter content: a fresh database
+    comes up empty and is populated through the admin console, the seller
+    workspace or a shopper's own actions.
     """
     Base.metadata.create_all(engine)
     from core import migrate
 
     migrate()
-    with SessionLocal() as db:
-        # Only seed a database that has nothing in it. Restarting a live platform
-        # must never write the starter content over real data.
-        if not db.scalar(select(Catalog.key).limit(1)):
-            seed(db)
-    print("[ferixas] startup: tables ready, migrations applied, content in place")
+    print("[ferixas] startup: tables ready, migrations applied")
     yield
 
 
@@ -264,9 +260,8 @@ def startup():
 
     migrate()
     with SessionLocal() as db:
-        seed(db)
-        backfill_catalogue_media(db)
-        db.commit()
+        # Upload synchronisation is an existing-media storage operation, not
+        # catalogue bootstrap. Never create or rewrite catalogue/CMS rows here.
         sync_pending_media(db)
 
 

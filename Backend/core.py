@@ -42,8 +42,7 @@ TAX_RATE = 0.075
 SESSION_DAYS = 7             # the absolute life of a session, never extended
 SESSION_IDLE_MINUTES = 60     # untouched for this long and the session is dead
 ROOT = Path(__file__).resolve().parent
-SEED_PATH = ROOT / "seed.json"
-# Privileged credentials are never sourced from code or seed fixtures.
+# Privileged credentials are never sourced from source-controlled data fixtures.
 # Test environments may provide an explicit password through the process environment.
 TEST_STAFF_PASSWORD = os.getenv("FERIXAS_TEST_STAFF_PASSWORD", "").strip()
 BOOTSTRAP_SECRET = os.getenv("FERIXAS_BOOTSTRAP_SECRET", "").strip()
@@ -655,61 +654,6 @@ def placeholder(seed: str) -> str:
     return f"/media/placeholder.svg?seed={urllib.parse.quote(seed)}"
 
 
-def backfill_catalogue_media(db: Session) -> int:
-    """Point catalogue rows at the bundled photographs.
-
-    A database seeded before the imagery shipped still holds third-party
-    placeholder URLs. This rewrites only those rows, and only where a bundled
-    photograph exists, so a CMS upload or a seller's own image is never
-    overwritten. Idempotent: a second run changes nothing.
-    """
-    folders = {
-        "category": ("categories", ("image", "imageUrl")),
-        "collection": ("collections", ("image",)),
-        "merchant": ("merchants", ("logo", "cover")),
-        "banner": ("banners", ("image", "imageUrl", "mediaUrl")),
-    }
-    changed = 0
-    for kind, (folder, fields) in folders.items():
-        for row in rows_of(db, kind):
-            slug = row.get("slug") or row.get("id") or ""
-            bundled = catalogue_image(folder, slug)
-            if not bundled:
-                continue
-            patch = {
-                f: bundled
-                for f in fields
-                if not row.get(f)
-                or "picsum.photos" in str(row.get(f))
-                or str(row.get(f)).startswith("/banners/")
-            }
-            legacy_banner_media = kind == "banner" and any(
-                str(row.get(f) or "").startswith("/banners/") for f in fields
-            )
-            legacy_banner_video = kind == "banner" and str(row.get("videoUrl") or "").startswith("/banners/")
-            if legacy_banner_media or legacy_banner_video:
-                if row.get("kind") == "video" and (
-                    legacy_banner_media or str(row.get("mediaUrl") or "").startswith("/media/banners/")
-                ):
-                    patch["kind"] = "image"
-                if legacy_banner_video:
-                    patch["videoUrl"] = None
-            if patch:
-                put_row(db, kind, slug, {**row, **patch})
-                changed += 1
-
-    for row in rows_of(db, "product"):
-        slug = row.get("slug") or ""
-        bundled = catalogue_images("products", slug)
-        if not bundled:
-            continue
-        current = row.get("images") or []
-        if not current or any("picsum.photos" in str(url) for url in current):
-            put_row(db, "product", slug, {**row, "images": bundled})
-            changed += 1
-    return changed
-
-
 def audit(db: Session, actor_type: str, actor_id: str, action: str, target: str = "", detail: str = "") -> None:
     db.add(AuditLog(id=new_id("aud"), actor_type=actor_type, actor_id=actor_id,
                     action=action, target=target, detail=detail))
@@ -1171,7 +1115,7 @@ def rejected_products(db: Session, merchant_id: Optional[str] = None) -> list[di
 
 
 def merchant_follower_count(db: Session, merchant_id: str) -> int:
-    """Count actual account relationships, not demo counters copied from seed data."""
+    """Count actual account relationships, not legacy demo counters."""
     return sum(
         1 for settings in db.scalars(select(User.settings)).all()
         if isinstance(settings, dict) and merchant_id in (settings.get("followed_sellers") or [])
@@ -1179,7 +1123,7 @@ def merchant_follower_count(db: Session, merchant_id: str) -> int:
 
 
 def merchant_review_summary(db: Session, merchant_id: str) -> dict:
-    """Aggregate persisted reviews for this seller's own products; ignore seed counters."""
+    """Aggregate persisted reviews for this seller's own products; ignore legacy counters."""
     product_ids = [p["id"] for p in seller_products(db, merchant_id) if marketplace_product_available(db, p)]
     if not product_ids:
         return {"rating": None, "reviewCount": 0, "ratingBreakdown": {}}
@@ -1202,7 +1146,7 @@ def merchant_review_summary(db: Session, merchant_id: str) -> dict:
 
 
 def paid_marketplace_product_units(db: Session, days: Optional[int] = None) -> dict[str, int]:
-    """Count paid, non-cancelled marketplace units; never trust seeded sold counters."""
+    """Count paid, non-cancelled marketplace units; never trust legacy sold counters."""
     cutoff = now() - timedelta(days=days) if days is not None else None
     counts: dict[str, int] = {}
     paid_states = {"paid", "captured", "succeeded", "settled"}
@@ -1501,291 +1445,6 @@ def public_review_data(review: Review) -> dict:
     }
 
 
-# ── Seeding ────────────────────────────────────────────────────────────────
-
-def _catalogue_rows() -> dict:
-    return json.loads(SEED_PATH.read_text())
-
-
-def seed(db: Session) -> None:
-    """Populate only a truly blank database; existing CMS/accounts are never reset."""
-    # Catalogue-only checks were unsafe: an existing installation with a CMS page or an
-    # account but an empty catalogue could be reseeded and have curated content replaced.
-    # A fresh database has all of these tables but no rows, so any persisted application
-    # state means starter data must not be written over it.
-    if any((
-        db.scalar(select(Catalog.key).limit(1)),
-        db.scalar(select(ContentDocument.id).limit(1)),
-        db.scalar(select(User.id).limit(1)),
-        db.scalar(select(StaffUser.id).limit(1)),
-        db.scalar(select(MerchantProfileRequest.id).limit(1)),
-    )):
-        return
-
-    data = _catalogue_rows()
-
-    for row in data.get("categories", []):
-        put_row(db, "category", row["slug"], {
-            **row,
-            "id": row.get("id", row["slug"]),
-            "image": row.get("image") or catalogue_image("categories", row["slug"]) or placeholder(f"cat-{row['slug']}"),
-            "imageUrl": row.get("imageUrl") or catalogue_image("categories", row["slug"]) or placeholder(f"cat-{row['slug']}"),
-            "showInNav": row.get("showInNav", True),
-            "showAsTile": row.get("showAsTile", True),
-            "showAsText": row.get("showAsText", False),
-            "position": row.get("position", 0),
-            "visible": row.get("visible", True),
-        })
-    for row in data.get("collections", []):
-        put_row(db, "collection", row["slug"], {
-            **row,
-            "id": row.get("id", row["slug"]),
-            "image": row.get("image") or catalogue_image("collections", row["slug"]) or placeholder(f"col-{row['slug']}"),
-            "visible": row.get("visible", True),
-            "position": row.get("position", 0),
-        })
-    for row in data.get("merchants", []):
-        put_row(db, "merchant", row["slug"], {
-            **row,
-            "logo": row.get("logo") or catalogue_image("merchants", row["slug"]) or placeholder(f"logo-{row['slug']}"),
-            "cover": row.get("cover") or catalogue_image("merchants", row["slug"]) or placeholder(f"cover-{row['slug']}"),
-            "marketplaceEnabled": row.get("marketplaceEnabled", True),
-        })
-    for row in data.get("products", []):
-        merchant = next((m for m in data.get("merchants", []) if m["id"] == row["merchantId"]), None)
-        seo = row.get("seo") or {}
-        put_row(db, "product", row["slug"], {
-            **row,
-            "status": "approved",
-            "channels": {"store": False, "marketplace": True},
-            "demoListing": True,
-            "demoNotice": "Demo catalogue listing — not a real sale or social-proof record.",
-            "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0, "sold30d": 0,
-            "merchantSlug": merchant["slug"] if merchant else row["merchantId"],
-            "merchantName": merchant["name"] if merchant else row["merchantId"],
-            "images": row.get("images") or catalogue_images("products", row["slug"]) or [placeholder(f"{row['slug']}-{i}") for i in (1, 2, 3)],
-            "collections": row.get("collections", []),
-            "variants": row.get("variants", []),
-            "bullets": row.get("bullets", []),
-            "tags": row.get("tags", []),
-            "seoTitle": row.get("seoTitle") or seo.get("title") or row["title"],
-            "seoDescription": row.get("seoDescription") or seo.get("description") or row.get("description", "")[:155],
-            "updatedAt": row.get("createdAt", iso(now())),
-            "demoListing": True,
-            "demoNotice": "Demo catalogue listing — not a real sale or social-proof record.",
-            "sold30d": 0,
-            "reviewCount": 0,
-        })
-    for index, row in enumerate(data.get("banners", [])):
-        banner_id = row.get("id", f"banner-{index + 1}")
-        # The seed ships SVG stand-ins under /banners/ that are not served; the
-        # bundled photograph replaces them.
-        bundled = catalogue_image("banners", banner_id)
-        existing = str(row.get("image") or row.get("mediaUrl") or "")
-        legacy_poster = any(str(row.get(field) or "").startswith("/banners/") for field in ("image", "imageUrl", "mediaUrl"))
-        if bundled and (not existing or legacy_poster):
-            existing = bundled
-        put_row(db, "banner", banner_id, {
-            **row,
-            "id": banner_id,
-            "kind": "image" if legacy_poster else (row.get("kind") or "image"),
-            "image": existing or placeholder(f"banner-{index + 1}"),
-            "imageUrl": existing or placeholder(f"banner-{index + 1}"),
-            "mediaUrl": existing or placeholder(f"banner-{index + 1}"),
-            "videoUrl": None if legacy_poster else (row.get("videoUrl") or (row.get("mediaUrl") if row.get("kind") == "video" else None)),
-            "position": row.get("order", index + 1),
-            "active": row.get("active", True),
-            "status": "published",
-        })
-
-    # ── Brands ───────────────────────────────────────────────────────────
-    # The storefront's brand row and the CMS both read these, and nothing was
-    # creating them, so /catalog/home returned an empty list. Seeded from the
-    # merchants so a fresh install has a real brand row to edit.
-    for brand_index, merchant in enumerate(merchants(db), start=1):
-        put_row(db, "brand", merchant["slug"], {
-            "id": merchant["slug"],
-            "name": merchant["name"],
-            "slug": merchant["slug"],
-            "description": merchant.get("tagline") or f"{merchant['name']} on Ferixas.",
-            "image": merchant.get("logo") or "",
-            "imageUrl": merchant.get("logo") or "",
-            "featured": brand_index <= 4,
-            "visible": True,
-            "position": brand_index,
-        })
-
-    # ── Advertisements ───────────────────────────────────────────────────
-    # A promotion slot in a product list needs something to put in it. Each one
-    # carries its own run of dates, so an out-of-date campaign stops on its own
-    # rather than waiting for someone to remember to switch it off.
-    advert_until = now() + timedelta(days=90)
-    for advert_position, advert in enumerate((
-        {
-            "id": "adv_autumn", "name": "Autumn edit",
-            "headline": "Autumn edit: quiet pieces, bold colours",
-            "body": "Hand-picked from three stores.",
-            "mediaUrl": catalogue_image("banners", "bnr_launch") or "",
-            "kind": "image", "href": "/browse?onSale=1",
-            "placement": "explore", "sponsor": "",
-        },
-        {
-            "id": "adv_audio_range", "name": "New audio range",
-            "headline": "See the new audio range",
-            "body": "", "mediaUrl": "", "kind": "video",
-            "href": "/browse?category=audio",
-            "placement": "explore", "sponsor": "AuraSound Audio",
-        },
-        {
-            "id": "adv_delivery", "name": "Delivery promise",
-            "headline": "Free delivery over $120",
-            "body": "Across every store, one checkout.",
-            "mediaUrl": "", "kind": "image", "href": "/browse",
-            "placement": "home", "sponsor": "",
-        },
-    ), start=1):
-        put_row(db, "advert", advert["id"], {
-            **advert,
-            "position": advert_position,
-            "active": True,
-            "startsAt": now().isoformat(),
-            "endsAt": advert_until.isoformat(),
-        })
-
-    # ── Storefront pages ─────────────────────────────────────────────────
-    # One document per page. The CMS lists these, opens one, and edits the
-    # sections inside it; the storefront renders those sections in this order,
-    # dropping any that is switched off. Section fields are the ones the editor
-    # exposes: media, copy, buttons, position and visibility.
-    def storefront_page(doc_id: str, doc_type: str, title: str, sections: list) -> None:
-        document = ContentDocument(
-            id=doc_id, owner_type="platform", owner_id="platform",
-            document_type=doc_type, title=title, status="published",
-            data={"sections": sections},
-        )
-        db.add(document)
-        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=1,
-                              status="published", data=document.data,
-                              note="Initial content", created_by="seed"))
-
-    storefront_page(
-        "doc_marketplace_home", "marketplace_home", "Homepage",
-        [
-            {
-                "id": "sec_hero", "type": "hero_banner", "name": "Hero banner",
-                "eyebrow": "Autumn on Ferixas",
-                "title": "Seven merchants. One cart. One checkout.",
-                "subtitle": "Audio, tailoring, home, gaming and pantry goods, bought once and shipped by each seller.",
-                "ctaLabel": "Shop the marketplace", "ctaHref": "/browse",
-                "secondaryLabel": "Meet the stores", "secondaryHref": "/stores",
-                "bannerIds": ["bnr_launch", "bnr_delivery", "bnr_official"],
-                "align": "left", "vertical": "middle", "tone": "dark", "scrim": 55,
-                "showText": True, "showButtons": True, "duration": 7000, "width": 44,
-                "position": 1, "visible": True,
-            },
-            {"id": "sec_promo", "type": "promo_strip", "name": "Promo strip",
-             "message": "Free delivery over $120 · 30-day returns",
-             "position": 2, "visible": True},
-            {"id": "sec_categories", "type": "category_grid", "name": "Department tiles",
-             "title": "Shop by department",
-             "limit": 10, "showAsTile": True, "position": 3, "visible": True},
-            {"id": "sec_brands", "type": "brand_carousel", "name": "Brand row",
-             "title": "Shop by brand",
-             "layout": "slider", "position": 4, "visible": True},
-            {"id": "sec_home_slots", "type": "promo_slots", "name": "Promotion slots",
-             "subtitle": "Advertisement", "limit": 2,
-             "position": 5, "visible": True},
-            {"id": "sec_flash", "type": "product_carousel", "name": "Today's deals",
-             "title": "Today's deals",
-             "limit": 8, "position": 6, "visible": True},
-            {"id": "sec_trending", "type": "product_carousel", "name": "Trending",
-             "title": "Trending this week",
-             "limit": 8, "position": 7, "visible": True},
-            {"id": "sec_stores", "type": "featured_stores", "name": "Stores worth following",
-             "title": "Stores worth following",
-             "limit": 3, "layout": "rows", "position": 8, "visible": True},
-            {"id": "sec_footer", "type": "footer", "name": "Footer",
-             "position": 9, "visible": True},
-        ],
-    )
-
-    storefront_page(
-        "doc_marketplace_explore", "marketplace_explore", "Explore",
-        [
-            {"id": "sec_explore_hero", "type": "hero_slim", "name": "Explore banner",
-             "eyebrow": "This week on Ferixas", "title": "Audio, up to 30% off",
-             "ctaLabel": "Shop the deals", "ctaHref": "/browse?onSale=1",
-             "height": 150, "position": 1, "visible": True},
-            {"id": "sec_explore_trending", "type": "product_carousel", "name": "Trending",
-             "title": "Trending", "limit": 8, "layout": "groups", "across": 2,
-             "rowsPerSet": 2, "position": 2, "visible": True},
-            {"id": "sec_explore_grid", "type": "product_grid", "name": "Product list",
-             "columns": 4, "perPage": 24, "position": 3, "visible": True},
-            {"id": "sec_explore_brands", "type": "brand_carousel", "name": "Brand row",
-             "title": "Shop by brand", "layout": "slider", "position": 4, "visible": True},
-            {"id": "sec_explore_slots", "type": "promo_slots", "name": "Promotion slots",
-             "subtitle": "Advertisement", "adEvery": 6, "limit": 3, "placement": "explore",
-             "position": 5, "visible": True},
-        ],
-    )
-
-    storefront_page(
-        "doc_marketplace_product", "marketplace_product", "Product page",
-        [
-            {"id": "sec_gallery", "type": "product_gallery", "name": "Gallery",
-             "position": 1, "visible": True},
-            {"id": "sec_buybox", "type": "buy_box", "name": "Buy box",
-             "position": 2, "visible": True},
-            {"id": "sec_delivery", "type": "delivery_block", "name": "Delivery and returns",
-             "position": 3, "visible": True},
-            {"id": "sec_reviews", "type": "reviews", "name": "Reviews", "verifiedOnly": True,
-             "position": 4, "visible": True},
-            {"id": "sec_related", "type": "product_carousel", "name": "More like this",
-             "source": "related", "limit": 8, "position": 5, "visible": True},
-        ],
-    )
-
-
-    # A launch flash sale so the promotion engine has real data to resolve.
-    sale = FlashSale(
-        id="sale_launch", name="Launch Week Drop", headline="Up to 20% off for a limited window",
-        banner_url=placeholder("flash-launch"), status="scheduled",
-        starts_at=now(), ends_at=now() + timedelta(days=14),
-    )
-    db.add(sale)
-    for index, product in enumerate(data.get("products", [])[:6]):
-        db.add(FlashSaleItem(
-            id=new_id("fsi"), sale_id=sale.id, product_id=product["id"],
-            merchant_id=product["merchantId"],
-            sale_price=round(product["price"] * 0.8, 2), quantity_limit=25, sold_quantity=0,
-        ))
-
-    db.commit()
-    _seed_staff(db)
-
-
-def _seed_staff(db: Session) -> None:
-    """Create staff only from an explicit test credential; production uses bootstrap."""
-    if db.scalar(select(StaffUser.id).limit(1)):
-        return
-    if ENVIRONMENT in PRODUCTION_ENVIRONMENTS:
-        if not BOOTSTRAP_SECRET:
-            raise RuntimeError("FERIXAS_BOOTSTRAP_SECRET is required before privileged bootstrap")
-        return
-    if not TEST_STAFF_PASSWORD:
-        return
-    for merchant in merchants(db):
-        email = f"owner@{merchant['slug']}.ferixas.com"
-        db.add(StaffUser(id=new_id("stf"), subject_type="merchant", subject_id=merchant["id"],
-                         name=f"{merchant['name']} owner", email=email,
-                         password_hash=hash_password(TEST_STAFF_PASSWORD), role="merchant",
-                         permissions=permissions_for("merchant")))
-    db.add(StaffUser(id=new_id("stf"), subject_type="admin", subject_id="platform",
-                     name="Test Platform Owner", email="admin@ferixas.test",
-                     password_hash=hash_password(TEST_STAFF_PASSWORD), role="owner",
-                     permissions=permissions_for("owner")))
-    db.commit()
-
 def migrate() -> None:
     """Apply idempotent schema changes and fail closed on every required error."""
     from sqlalchemy import text
@@ -1828,8 +1487,7 @@ def schema_ready() -> bool:
     except Exception:
         return False
 
-def ensure_seed() -> None:
+def ensure_schema() -> None:
+    """Prepare the schema only. Application content is never written here."""
     Base.metadata.create_all(engine)
     migrate()
-    with SessionLocal() as db:
-        seed(db)

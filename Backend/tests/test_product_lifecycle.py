@@ -22,6 +22,7 @@ from app import app  # noqa: E402
 from core import (ContentDocument, ContentVersion, MerchantProfileRequest, Order, SessionLocal,
                   Review, SessionToken, User, drop_row, find_merchant, hash_password, put_row)  # noqa: E402
 from test_support import reset_test_database  # noqa: E402
+from fixtures import create_test_records  # noqa: E402
 
 
 class ProductLifecycleTest(unittest.TestCase):
@@ -29,6 +30,7 @@ class ProductLifecycleTest(unittest.TestCase):
         reset_test_database()
         self.client = TestClient(app)
         self.client.__enter__()
+        create_test_records()
         admin = self.client.post("/admin/login", json={"email": "admin@ferixas.test", "password": "TestOnly-Password-123!"})
         self.assertEqual(admin.status_code, 200, admin.text)
         self.admin = admin.json()["token"]
@@ -130,7 +132,7 @@ class ProductLifecycleTest(unittest.TestCase):
         options = self.client.get("/merchant/product/options", headers={"X-Ferix-Session": self.merchant})
         self.assertEqual(options.status_code, 200, options.text)
         category = options.json()["categories"][0]["slug"]
-        self.assertTrue(options.json()["sections"], "seeded CMS must expose product sections to sellers")
+        self.assertTrue(options.json()["sections"], "test fixture CMS must expose product sections to sellers")
         self.assertNotIn(
             "sec_explore_grid",
             {row["value"].rsplit("__", 1)[-1] for row in options.json()["sections"]},

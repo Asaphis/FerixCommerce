@@ -400,7 +400,7 @@ def _order_row(db, row: Order) -> dict:
 
 
 def _order_product_units(orders: list[dict], days: Optional[int] = None, merchant_id: Optional[str] = None) -> dict[str, int]:
-    """Aggregate real non-cancelled order quantities; catalogue seed metadata is not sales."""
+    """Aggregate real non-cancelled order quantities; legacy demo metadata is not sales."""
     counts: dict[str, int] = {}
     for order in orders:
         if order.get("channel") != "marketplace":

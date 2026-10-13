@@ -223,7 +223,7 @@ def _merchant_orders(db, merchant_id: str) -> list[Order]:
 
 
 def _merchant_product_units(db, merchant_id: str, days: Optional[int] = None) -> dict[str, int]:
-    """Count units from persisted, non-cancelled order lines, never seed sales metadata."""
+    """Count units from persisted, non-cancelled order lines, never legacy demo sales metadata."""
     today = now().date()
     counts: dict[str, int] = {}
     for row in _merchant_orders(db, merchant_id):

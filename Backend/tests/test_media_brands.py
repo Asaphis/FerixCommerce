@@ -20,8 +20,8 @@ PNG_1X1 = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lE
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app import app  # noqa: E402
-from core import SessionLocal, backfill_catalogue_media, put_row, rows_of  # noqa: E402
 from test_support import reset_test_database  # noqa: E402
+from fixtures import create_test_records  # noqa: E402
 
 
 class MediaAndBrandContractTest(unittest.TestCase):
@@ -29,6 +29,7 @@ class MediaAndBrandContractTest(unittest.TestCase):
         reset_test_database()
         self.client = TestClient(app)
         self.client.__enter__()
+        create_test_records()
         login = self.client.post("/admin/login", json={"email": "admin@ferixas.test", "password": "TestOnly-Password-123!"})
         self.assertEqual(login.status_code, 200, login.text)
         self.admin = login.json()["token"]
@@ -38,45 +39,6 @@ class MediaAndBrandContractTest(unittest.TestCase):
 
     def tearDown(self):
         self.client.__exit__(None, None, None)
-
-    def test_legacy_banner_media_url_is_repaired(self):
-        db = SessionLocal()
-        try:
-            audio = next(row for row in rows_of(db, "banner") if row.get("id") == "bnr_audio")
-            put_row(db, "banner", "bnr_audio", {
-                **audio,
-                "kind": "video",
-                "image": "/banners/audio.svg",
-                "imageUrl": "/banners/audio.svg",
-                "mediaUrl": "/banners/audio.svg",
-                "videoUrl": "/banners/audio.svg",
-            })
-            self.assertEqual(backfill_catalogue_media(db), 1)
-            db.commit()
-        finally:
-            db.close()
-
-        response = self.client.get("/admin/cms/banners", headers={"X-Ferix-Session": self.admin})
-        self.assertEqual(response.status_code, 200, response.text)
-        audio = next(row for row in response.json()["banners"] if row.get("id") == "bnr_audio")
-        self.assertEqual(audio["mediaUrl"], "/media/banners/bnr_audio.jpg")
-        self.assertEqual(audio["kind"], "image")
-        self.assertIsNone(audio["videoUrl"])
-        self.assertEqual(self.client.get(audio["mediaUrl"]).status_code, 200)
-
-        db = SessionLocal()
-        try:
-            audio = next(row for row in rows_of(db, "banner") if row.get("id") == "bnr_audio")
-            put_row(db, "banner", "bnr_audio", {**audio, "kind": "video", "videoUrl": "/banners/audio.svg"})
-            self.assertEqual(backfill_catalogue_media(db), 1)
-            db.commit()
-        finally:
-            db.close()
-        response = self.client.get("/admin/cms/banners", headers={"X-Ferix-Session": self.admin})
-        self.assertEqual(response.status_code, 200, response.text)
-        audio = next(row for row in response.json()["banners"] if row.get("id") == "bnr_audio")
-        self.assertEqual(audio["kind"], "image")
-        self.assertIsNone(audio["videoUrl"])
 
     def test_brand_crud_and_public_visibility(self):
         headers = {"X-Ferix-Session": self.admin}

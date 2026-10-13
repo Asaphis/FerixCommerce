@@ -14,7 +14,7 @@ cp .env.example .env
 uvicorn app:app --reload --port 8000
 ```
 
-The API applies idempotent schema migrations and seed content during startup. It seeds a completely blank database only; it must not overwrite existing catalogue, CMS or account data.
+On startup, the API creates missing tables and applies idempotent schema migrations only (`core.migrate()`). It never inserts demo catalogue, CMS, merchant, staff, banner, advert or promotion content. A new database stays empty until data is created through the authenticated admin or merchant interfaces, or through shopper account actions. Test-only catalogue fixtures live under `tests/`, are guarded to disposable SQLite databases, and are never imported by the running application.
 
 ## Tests
 
@@ -26,7 +26,7 @@ Tests create temporary SQLite fixtures with `FERIXAS_ENV=test`; a guarded helper
 
 ## PostgreSQL migration smoke
 
-Use a **disposable local** PostgreSQL database named `ferixas_test_*`; never point this test at staging or production. It creates uniquely named `ferixas_test_*` schemas, checks a fresh seed and repeat-seed idempotence, upgrades a legacy schema, rejects a future schema version, and drops only the schemas it created.
+Use a **disposable local** PostgreSQL database named `ferixas_test_*`; never point this test at staging or production. It creates uniquely named `ferixas_test_*` schemas, verifies a fresh schema stays free of catalogue rows, upgrades a legacy schema, rejects a future schema version, and drops only the schemas it created.
 
 ```bash
 export FERIXAS_TEST_POSTGRES_URL='postgresql+psycopg://USER:PASSWORD@127.0.0.1:5432/ferixas_test_local'

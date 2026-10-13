@@ -15,8 +15,9 @@ os.environ.pop("FERIXAS_STUDIO_ENABLED", None)
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app import app  # noqa: E402
-from core import Order, SessionLocal, find_merchant, find_product, hash_password, put_row, User  # noqa: E402
+from core import Catalog, ContentDocument, Order, SessionLocal, find_merchant, find_product, hash_password, put_row, User  # noqa: E402
 from test_support import reset_test_database  # noqa: E402
+from fixtures import create_test_records  # noqa: E402
 
 
 class BackendSecurityCorrectionsTest(unittest.TestCase):
@@ -24,6 +25,12 @@ class BackendSecurityCorrectionsTest(unittest.TestCase):
         reset_test_database()
         self.client = TestClient(app)
         self.client.__enter__()
+        # Startup may create tables and migrate schema, but it must never seed
+        # catalogue or CMS content into a blank database.
+        with SessionLocal() as db:
+            self.assertIsNone(db.query(Catalog).first())
+            self.assertIsNone(db.query(ContentDocument).first())
+        create_test_records()
         admin = self.client.post("/admin/login", json={"email": "admin@ferixas.test", "password": os.environ["FERIXAS_TEST_STAFF_PASSWORD"]})
         self.assertEqual(admin.status_code, 200, admin.text)
         self.admin = admin.json()["token"]

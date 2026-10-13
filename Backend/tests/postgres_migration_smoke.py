@@ -1,4 +1,4 @@
-"""Disposable PostgreSQL smoke: fresh seed, legacy migration, and future-version refusal.
+"""Disposable PostgreSQL smoke: fresh schema, legacy migration, and future-version refusal.
 
 Run only against a local disposable database whose name starts ``ferixas_test_``:
     FERIXAS_TEST_POSTGRES_URL=postgresql+psycopg://.../ferixas_test_ci \
@@ -38,20 +38,15 @@ def main() -> int:
     psycopg_url = url.set(drivername="postgresql").render_as_string(hide_password=False)
     cases = {
         "fresh": r'''
-from core import SessionLocal, ensure_seed, products, schema_ready
-ensure_seed()
+from core import SessionLocal, ensure_schema, products, schema_ready
+ensure_schema()
 with SessionLocal() as db:
-    first = products(db)
-    assert first, "fresh database was not seeded"
-    assert all(p.get("status") == "approved" for p in first), "seed listing is not approved"
-    assert all((p.get("channels") or {}).get("marketplace") is True for p in first), "seed listing is not marketplace-enabled"
-    assert all(p.get("demoListing") is True and p.get("reviewCount") == 0 and p.get("sold30d") == 0 for p in first), "demo proof was not neutralized"
-    first_count = len(first)
-ensure_seed()
+    assert products(db) == [], "a fresh database must not receive catalogue content automatically"
+ensure_schema()
 with SessionLocal() as db:
-    assert len(products(db)) == first_count, "repeated seeding changed the catalogue"
+    assert products(db) == [], "repeated startup wrote catalogue content into the database"
 assert schema_ready(), "fresh schema is not ready"
-print("fresh seed + idempotence: passed")
+print("fresh schema + no automatic content insertion: passed")
 ''',
         "legacy": r'''
 from sqlalchemy import inspect, text

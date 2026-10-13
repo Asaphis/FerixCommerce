@@ -20,7 +20,7 @@ from core import (
     ROLE_PERMISSIONS,
     SessionLocal,
     StaffUser,
-    ensure_seed,
+    ensure_schema,
     hash_password,
     new_id,
     permissions_for,
@@ -51,7 +51,7 @@ def main() -> int:
 
     # Creates the tables and runs the migrations first, so this works on a
     # database that has never been started.
-    ensure_seed()
+    ensure_schema()
 
     with SessionLocal() as db:
         owner_count = len(db.scalars(
