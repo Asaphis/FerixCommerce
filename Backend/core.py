@@ -972,18 +972,28 @@ def find_collection(db: Session, value: str) -> Optional[dict]:
 # ── Product filtering helpers ──────────────────────────────────────────────
 
 def product_owner_kind(product: dict) -> str:
-    """Classify a catalogue row without guessing when its ownership markers conflict."""
+    """Classify a catalogue row by the intent its write path recorded.
+
+    origin and owner_type are set explicitly by the endpoint that created the
+    row; they say what the writer meant. merchantId is only an identifier and
+    on this platform the same id can belong to a seller row and to the
+    platform itself, so it is used only when neither marker is present.
+    """
     merchant_id = str(product.get("merchantId") or "").strip().lower()
     origin = str(product.get("origin") or "").strip().lower()
     owner_type = str(product.get("owner_type") or "").strip().lower()
-    official_ids = {"ferixas-official", "platform", "official"}
-    platform_marked = merchant_id in official_ids or origin in {"platform", "official"} or owner_type in {"platform", "official"}
-    seller_marked = origin in {"seller", "merchant"} or owner_type in {"seller", "merchant"} or bool(merchant_id and merchant_id not in official_ids)
-    if platform_marked and seller_marked:
-        return "conflict"
-    if platform_marked:
+
+    # Explicit markers win: they are what the writing endpoint decided.
+    if origin == "seller" or owner_type == "seller" or origin == "merchant" or owner_type == "merchant":
+        return "seller"
+    if origin == "platform" or owner_type == "platform" or origin == "official" or owner_type == "official":
         return "platform"
-    if seller_marked and merchant_id and merchant_id not in official_ids:
+
+    # No explicit marker: fall back to the merchant id.
+    official_ids = {"ferixas-official", "platform", "official"}
+    if merchant_id in official_ids:
+        return "platform"
+    if merchant_id:
         return "seller"
     return "unknown"
 
