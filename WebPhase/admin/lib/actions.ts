@@ -361,10 +361,25 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
 
     const isMediaOnly = next.mediaOnly === true || String(next.mediaOnly) === "true";
     const savedMediaUrl = String(next.mediaUrl ?? "").trim();
-    if (isMediaOnly && current.type === "hero_slim" && !savedMediaUrl) {
-      return { error: "Choose an image or video before setting this Explore banner to media-only." };
+    const selectedBannerId = String(next.bannerId ?? "").trim();
+    if (selectedBannerId) {
+      const { banners } = await api.listBanners(session);
+      const selectedBanner = banners.find((banner) => banner.id === selectedBannerId);
+      if (!selectedBanner || !selectedBanner.active) {
+        return { error: "Choose an active campaign from the banner library, or clear the selection." };
+      }
     }
-    if (isMediaOnly && current.type === "hero_banner" && !savedMediaUrl) {
+    if (isMediaOnly && !savedMediaUrl && selectedBannerId) {
+      const { banners } = await api.listBanners(session);
+      const selectedBanner = banners.find((banner) => banner.id === selectedBannerId && banner.active);
+      if (!selectedBanner || !(selectedBanner.mediaUrl || selectedBanner.image || selectedBanner.videoUrl)) {
+        return { error: "The selected campaign needs an active image or video before using media-only mode." };
+      }
+    }
+    if (isMediaOnly && !savedMediaUrl && !selectedBannerId && current.type === "hero_slim") {
+      return { error: "Choose an image, video, or saved campaign before setting this compact banner to media-only." };
+    }
+    if (isMediaOnly && !savedMediaUrl && !selectedBannerId && current.type === "hero_banner") {
       const { banners } = await api.listBanners(session);
       if (!banners.some((banner) => banner.active && (banner.mediaUrl || banner.image || banner.videoUrl))) {
         return { error: "Add an active banner image or video, or upload direct media, before using media-only mode." };

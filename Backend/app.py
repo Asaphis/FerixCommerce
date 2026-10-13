@@ -372,6 +372,7 @@ def brand_of(product: dict) -> str:
     return str(
         product.get("brandSlug")
         or product.get("brandId")
+        or product.get("brand")
         or product.get("merchantSlug")
         or product.get("merchantId")
         or ""

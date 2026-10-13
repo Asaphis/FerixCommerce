@@ -16,7 +16,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
 
   // The API being unreachable must not 404 the page: the slug is a serviceable heading.
   const home = await getHome().catch(() => null);
-  const brands = (home as unknown as { brands?: { slug: string; name: string }[] } | null)?.brands ?? [];
+  const brands = home?.brands ?? [];
   const brand = brands.find((item) => item.slug === slug);
   const name = brand?.name ?? slug;
 

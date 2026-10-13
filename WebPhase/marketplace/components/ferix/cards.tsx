@@ -136,7 +136,7 @@ export function CategoryTile({
   if (size === "large") {
     return (
       <Link
-        href={`/browse?category=${category.slug}`}
+        href={`/category/${category.slug}`}
         className="group flex flex-col overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40"
       >
         <span className="block aspect-[4/3] w-full overflow-hidden">
@@ -162,7 +162,7 @@ export function CategoryTile({
 
   return (
     <Link
-      href={`/browse?category=${category.slug}`}
+      href={`/category/${category.slug}`}
       className="group relative flex min-h-[72px] items-center gap-2.5 overflow-hidden rounded-[2px] rounded-tr-[9px] border border-line-warm bg-white p-2.5 transition-all duration-300 hover:-translate-y-0.5 hover:border-ink/25 sm:block sm:p-4"
     >
       <Plate

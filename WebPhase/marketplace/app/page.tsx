@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, ShoppingBag, Store as StoreIcon } from "lucide-react";
-import type { Category, Product } from "@/lib/api";
+import type { CatalogueBrand, Category, Product } from "@/lib/api";
 import { assetUrl, getHome, listAdverts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { PromoBanner } from "@/components/ferix/banner";
@@ -51,6 +51,7 @@ type Section = {
   collection?: string;
   href?: string;
   mediaUrl?: string;
+  bannerId?: string;
   kind?: string;
   mediaOnly?: boolean | string;
   align?: string;
@@ -122,10 +123,10 @@ function BrandTile({
   record,
   width,
 }: {
-  record: { slug: string; name: string; imageUrl?: string; logo?: string };
+  record: CatalogueBrand;
   width?: string;
 }) {
-  const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
+  const artwork = assetUrl(record.imageUrl);
   return (
     <Link
       href={`/brands/${record.slug}`}
@@ -170,13 +171,8 @@ export default async function HomePage() {
     ...home.official,
     ...home.under100,
   ]);
-  const categories = (home.categories.length ? home.categories : categoryFallback(catalogue))
-    .filter((category) => category.count > 0);
-  // The payload carries brands - the backend has returned them since they were
-  // seeded - but HomeFeed does not declare them, and the storefront type for
-  // Brand describes a store's theming rather than a brand record.
-  type BrandRecord = { slug: string; name: string; imageUrl?: string; logo?: string };
-  const brands = ((home as unknown as { brands?: BrandRecord[] }).brands ?? []);
+  const categories = home.categories.length ? home.categories : categoryFallback(catalogue);
+  const brands = home.brands;
 
   // Adverts placed on the homepage. Only fetched when a slots section asks for
   // them, so a homepage without one costs nothing.
@@ -200,9 +196,12 @@ export default async function HomePage() {
       /* ── The campaign ───────────────────────────────────────────── */
       case "hero_banner": {
         const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
+        const slides = section.bannerId
+          ? home.banners.filter((banner) => banner.id === section.bannerId)
+          : home.banners;
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] sm:px-5 sm:pt-5">
-            {section.mediaUrl ? (
+            {section.mediaUrl && !section.bannerId ? (
               <MediaHero
                 mediaUrl={section.mediaUrl}
                 kind={section.kind}
@@ -223,7 +222,7 @@ export default async function HomePage() {
               />
             ) : (
               <PromoBanner
-                banners={home.banners}
+                banners={slides}
                 mediaOnly={mediaOnly}
                 heightClassName="h-[300px] sm:h-[380px] lg:h-[440px]"
                 className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
@@ -240,23 +239,29 @@ export default async function HomePage() {
 
       /* ── A short band above the list ────────────────────────────── */
       case "hero_slim": {
+        const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
+        const reusableBanner = section.bannerId ? home.banners.find((banner) => banner.id === section.bannerId) : undefined;
+        const useSectionMedia = Boolean(section.mediaUrl) && !reusableBanner;
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pt-4 sm:px-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-[14px] bg-gradient-to-r from-[#b8542a] via-[#e0703a] to-[#f3a877] px-5 py-6">
-              <div className="min-w-0">
-                {section.eyebrow ? (
-                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/85">{section.eyebrow}</span>
-                ) : null}
-                <p className="mt-1.5 font-display text-[20px] font-bold leading-tight text-white sm:text-[24px]">
-                  {section.title ?? "This week on Ferixas"}
-                </p>
-              </div>
-              {section.ctaLabel ? (
-                <Link href={section.ctaHref ?? "/browse"} className="shrink-0 rounded-[10px] bg-white px-4 py-2.5 text-[12.5px] font-bold text-[#c2441a]">
-                  {section.ctaLabel}
-                </Link>
-              ) : null}
-            </div>
+            <MediaHero
+              mediaUrl={useSectionMedia ? section.mediaUrl : reusableBanner?.mediaUrl}
+              kind={useSectionMedia ? section.kind : reusableBanner?.kind}
+              mediaOnly={mediaOnly || reusableBanner?.showText === false}
+              eyebrow={useSectionMedia ? section.eyebrow : reusableBanner?.eyebrow ?? section.eyebrow}
+              title={useSectionMedia ? section.title : reusableBanner?.headline ?? section.title ?? "This week on Ferixas"}
+              description={useSectionMedia ? section.subtitle : reusableBanner?.body ?? section.subtitle}
+              ctaLabel={useSectionMedia ? section.ctaLabel : reusableBanner?.ctaLabel ?? section.ctaLabel}
+              ctaHref={useSectionMedia ? section.ctaHref : reusableBanner?.ctaHref ?? section.ctaHref}
+              secondaryLabel={useSectionMedia ? section.secondaryLabel : reusableBanner?.secondaryLabel ?? section.secondaryLabel}
+              secondaryHref={useSectionMedia ? section.secondaryHref : reusableBanner?.secondaryHref ?? section.secondaryHref}
+              align={useSectionMedia ? section.align : reusableBanner?.overlay?.align ?? section.align}
+              vertical={useSectionMedia ? section.vertical : reusableBanner?.overlay?.vertical ?? section.vertical}
+              tone={useSectionMedia ? section.tone : reusableBanner?.overlay?.tone ?? section.tone}
+              scrim={useSectionMedia ? section.scrim : reusableBanner?.overlay?.scrim ?? section.scrim}
+              heightClassName="h-[150px] sm:h-[180px] lg:h-[210px]"
+              className="rounded-[3px] rounded-tr-[14px]"
+            />
           </section>
         );
       }
@@ -277,7 +282,8 @@ export default async function HomePage() {
       case "category_grid": {
         // Do not apply the legacy `limit` field here: slicing before TileSwiper
         // hides the rest of the departments, so there is nothing left to swipe to.
-        const shown = categories;
+        const shown = categories.filter((category) => category.showAsTile !== false && String(category.showAsTile) !== "false");
+        const textCategories = categories.filter((category) => category.showAsText === true || String(category.showAsText) === "true");
         const arrangement = String((section as { layout?: string }).layout ?? "groups");
         // Departments default to sets of rows when the section does not say otherwise,
         // because that is the arrangement they are shaped for.
@@ -289,7 +295,7 @@ export default async function HomePage() {
               title={section.title ?? "Shop by department"}
               action={
                 seeAllDepartments ? (
-                  <Link href="/browse" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
+                  <Link href="/departments" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
                     See all <ArrowRight width={14} height={14} />
                   </Link>
                 ) : null
@@ -322,6 +328,15 @@ export default async function HomePage() {
                 </div>
               )
             ) : null}
+            {textCategories.length ? (
+              <nav aria-label="More departments" className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+                {textCategories.map((category) => (
+                  <Link key={category.slug} href={`/category/${category.slug}`} className="text-[12px] font-medium text-ink-soft underline decoration-line-warm underline-offset-4 transition-colors hover:text-ember">
+                    {category.name}
+                  </Link>
+                ))}
+              </nav>
+            ) : null}
           </section>
         );
       }
@@ -346,7 +361,7 @@ export default async function HomePage() {
               title={section.title ?? "Shop by brand"}
               action={
                 brandSeeAll ? (
-                  <Link href="/browse" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
+                  <Link href="/brands" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
                     All brands <ArrowRight width={14} height={14} />
                   </Link>
                 ) : null
@@ -358,18 +373,7 @@ export default async function HomePage() {
                 ? `grid gap-3 ${brandGridColumns}`
                 : "no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"}
             >
-              {shown.map((brand) => {
-                // A brand's artwork has been called imageUrl and logo in different
-                // places, so read whichever the record carries rather than pinning
-                // the page to one spelling.
-                // The Brand type here describes a store's theming, not a brand record, so the cast
-                // goes through unknown rather than pretending the shapes overlap.
-                const record = brand;
-                const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
-                return (
-                  <BrandTile key={record.slug} record={record} width={brandTileWidth} />
-                );
-              })}
+              {shown.map((brand) => <BrandTile key={brand.slug} record={brand} width={brandTileWidth} />)}
             </div>
           </section>
         );

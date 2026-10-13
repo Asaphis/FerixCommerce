@@ -95,6 +95,42 @@ class MediaAndBrandContractTest(unittest.TestCase):
                                           files={"file": ("denied.png", PNG_1X1, "image/png")},
                                           data={"kind": "image"}).status_code, 401)
 
+    def test_assigned_brand_reaches_the_shopper_filter(self):
+        """A product saved with a managed brand must be found by that brand's filter."""
+        headers = {"X-Ferix-Session": self.admin}
+        brand = self.client.post("/admin/cms/brand", headers=headers, json={
+            "name": "Contract Brand", "slug": "contract-brand", "visible": True,
+        }).json()["brand"]
+        created = self.client.post("/admin/catalog/product", headers=headers, json={
+            "title": "Branded contract product", "slug": "branded-contract-product",
+            "merchantId": "ferixas-official", "category": "home", "price": 12, "stock": 3,
+            "brand": brand["slug"], "status": "approved",
+        })
+        self.assertEqual(created.status_code, 200, created.text)
+        listed = self.client.get("/catalog/products", params={"brand": brand["slug"]})
+        self.assertEqual(listed.status_code, 200, listed.text)
+        slugs = [item["slug"] for item in listed.json()["items"]]
+        self.assertIn("branded-contract-product", slugs)
+
+    def test_taxonomy_in_use_cannot_be_deleted(self):
+        """Removing a brand or department must not orphan the products that use it."""
+        headers = {"X-Ferix-Session": self.admin}
+        brand = self.client.post("/admin/cms/brand", headers=headers, json={
+            "name": "In Use Brand", "slug": "in-use-brand", "visible": True,
+        }).json()["brand"]
+        self.client.post("/admin/catalog/product", headers=headers, json={
+            "title": "In use brand product", "slug": "in-use-brand-product",
+            "merchantId": "ferixas-official", "category": "in-use-department", "price": 20, "stock": 1,
+            "brand": brand["slug"], "status": "approved",
+        })
+        self.client.post("/admin/catalog/category", headers=headers, json={
+            "name": "In Use Department", "slug": "in-use-department",
+        })
+        blocked_brand = self.client.request("DELETE", "/admin/cms/brand", headers=headers, json={"id": brand["id"]})
+        self.assertEqual(blocked_brand.status_code, 409, blocked_brand.text)
+        blocked_category = self.client.request("DELETE", "/admin/catalog/category", headers=headers, json={"slug": "in-use-department"})
+        self.assertEqual(blocked_category.status_code, 409, blocked_category.text)
+
 
 if __name__ == "__main__":
     unittest.main()

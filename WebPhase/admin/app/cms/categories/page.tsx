@@ -88,7 +88,7 @@ export default async function CategoriesPage() {
           </div>
           <MediaUploadField
             key="new-department-image"
-            urlName="imageUrl"
+            urlName="image"
             fileName="imageFile"
             urlLabel="Department image URL"
             fileLabel="Upload department image"

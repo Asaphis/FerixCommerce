@@ -73,6 +73,9 @@ export type Product = {
   merchantId: string;
   merchantName: string;
   merchantSlug: string;
+  brand?: string;
+  brandSlug?: string;
+  brandName?: string;
   category: string;
   collections: string[];
   description: string;
@@ -92,7 +95,14 @@ export type Product = {
   createdAt: string;
 };
 
-export type Category = { slug: string; name: string; glyph: string; blurb: string; count: number; image?: string | null };
+export type Category = {
+  slug: string; name: string; glyph: string; blurb: string; count: number; image?: string | null;
+  showInNav?: boolean; showAsTile?: boolean; showAsText?: boolean; visible?: boolean; position?: number;
+};
+export type CatalogueBrand = {
+  id: string; slug: string; name: string; description?: string; imageUrl?: string | null;
+  featured?: boolean; visible?: boolean; position?: number;
+};
 export type Collection = { slug: string; name: string; blurb: string; count: number; image?: string | null; products?: Product[] };
 
 export type BannerOverlay = {
@@ -141,6 +151,7 @@ export type HomeFeed = {
     products: Product[];
   } | null;
   categories: Category[];
+  brands: CatalogueBrand[];
   collections: Collection[];
   featured: Product[];
   trending: Product[];
@@ -395,6 +406,8 @@ export type CatalogueSection = {
   secondaryLabel?: string;
   secondaryHref?: string;
   mediaUrl?: string;
+  /** A saved campaign in the banner library this section reuses, when one is chosen. */
+  bannerId?: string;
   kind?: string;
   source?: string;
   mediaOnly?: boolean | string;
@@ -453,9 +466,10 @@ export const listProducts = (params: Params) => call<ProductList>("GET", "catalo
 export const getProduct = (slug: string) => call<ProductDetail>("GET", "catalog/product", { params: { slug } });
 
 export const getCategories = async () => {
-  const result = await call<{ categories: Category[] }>("GET", "catalog/categories");
-  return { ...result, categories: result.categories.filter((category) => category.count > 0) };
+  return call<{ categories: Category[] }>("GET", "catalog/categories");
 };
+
+export const getBrands = () => call<{ brands: CatalogueBrand[] }>("GET", "catalog/brands");
 
 export const getCategory = (slug: string, sort = "relevance") =>
   call<{ category: Category } & ProductList>("GET", "catalog/category", { params: { slug, sort } });

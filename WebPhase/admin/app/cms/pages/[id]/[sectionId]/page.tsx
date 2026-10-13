@@ -233,34 +233,37 @@ export default async function CmsSectionEditor({
   const sectionMediaUrl = section ? assetUrl(String(section.mediaUrl ?? "")) : "";
 
   let mediaAssets: MediaAsset[] = [];
+  let reusableBanners: Banner[] = [];
   if (isHeroSection) {
     try {
       mediaAssets = (await listMedia(session)).assets.map((asset) => ({ ...asset, url: assetUrl(asset.url) }));
     } catch {
       // Upload and URL fields still work if the media library cannot be reached.
     }
-  }
-
-  // A hero with no direct media renders the shared banner carousel, so the preview
-  // shows that carousel's first active slide instead of an unrelated mock.
-  let bannerPreview: Banner | null = null;
-  if (section?.type === "hero_banner" && !sectionMediaUrl) {
     try {
-      bannerPreview = (await listBanners(session)).banners.find((banner) => banner.active) ?? null;
+      reusableBanners = (await listBanners(session)).banners;
     } catch {
-      // The rest of the section editor stays usable when the banner list is unavailable.
+      // The section can still use direct media if the banner library is unavailable.
     }
   }
-  const previewMediaUrl = sectionMediaUrl || (bannerPreview ? assetUrl(bannerPreview.mediaUrl || bannerPreview.image || bannerPreview.videoUrl) : "");
+
+  const selectedBannerId = String(section?.bannerId ?? "");
+  const bannerPreview = selectedBannerId
+    ? reusableBanners.find((banner) => banner.id === selectedBannerId) ?? null
+    : section?.type === "hero_banner" && !sectionMediaUrl
+      ? reusableBanners.find((banner) => banner.active) ?? null
+      : null;
+  const useSectionMedia = Boolean(sectionMediaUrl) && !bannerPreview;
+  const previewMediaUrl = useSectionMedia ? sectionMediaUrl : (bannerPreview ? assetUrl(bannerPreview.mediaUrl || bannerPreview.image || bannerPreview.videoUrl) : "");
   const previewVideo = String(section?.kind ?? bannerPreview?.kind) === "video" || /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(previewMediaUrl);
   const previewMediaOnly = mediaOnly || bannerPreview?.showText === false;
-  const previewEyebrow = sectionMediaUrl ? section?.eyebrow : bannerPreview?.eyebrow ?? section?.eyebrow;
-  const previewTitle = sectionMediaUrl ? section?.title : bannerPreview?.headline ?? section?.title ?? section?.name;
-  const previewDescription = sectionMediaUrl ? section?.subtitle : bannerPreview?.body ?? section?.subtitle;
-  const previewCtaLabel = sectionMediaUrl ? section?.ctaLabel : bannerPreview?.ctaLabel ?? section?.ctaLabel;
-  const previewCtaHref = sectionMediaUrl ? section?.ctaHref : bannerPreview?.ctaHref ?? section?.ctaHref;
-  const previewSecondaryLabel = sectionMediaUrl ? section?.secondaryLabel : bannerPreview?.secondaryLabel;
-  const previewSecondaryHref = sectionMediaUrl ? section?.secondaryHref : bannerPreview?.secondaryHref;
+  const previewEyebrow = useSectionMedia ? section?.eyebrow : bannerPreview?.eyebrow ?? section?.eyebrow;
+  const previewTitle = useSectionMedia ? section?.title : bannerPreview?.headline ?? section?.title ?? section?.name;
+  const previewDescription = useSectionMedia ? section?.subtitle : bannerPreview?.body ?? section?.subtitle;
+  const previewCtaLabel = useSectionMedia ? section?.ctaLabel : bannerPreview?.ctaLabel ?? section?.ctaLabel;
+  const previewCtaHref = useSectionMedia ? section?.ctaHref : bannerPreview?.ctaHref ?? section?.ctaHref;
+  const previewSecondaryLabel = useSectionMedia ? section?.secondaryLabel : bannerPreview?.secondaryLabel ?? section?.secondaryLabel;
+  const previewSecondaryHref = useSectionMedia ? section?.secondaryHref : bannerPreview?.secondaryHref ?? section?.secondaryHref;
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -301,6 +304,21 @@ export default async function CmsSectionEditor({
                 <CmsActionForm action={saveCmsSectionAction} className="grid gap-4">
                   <input type="hidden" name="id" value={id} />
                   <input type="hidden" name="sectionId" value={section.id} />
+                  {isHeroSection ? (
+                    <Field title="Reuse a saved campaign">
+                      <select name="field_bannerId" defaultValue={selectedBannerId} className={selectClass}>
+                        <option value="">{section.type === "hero_banner" ? "Use all active campaigns as a carousel" : "Use this section’s own media and copy"}</option>
+                        {reusableBanners.map((banner) => (
+                          <option key={banner.id} value={banner.id} disabled={!banner.active}>
+                            {(banner.headline || banner.eyebrow || banner.id).slice(0, 80)}{banner.active ? "" : " (inactive)"}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-[11px] leading-relaxed text-chalk-dim">
+                        Choose an existing campaign to reuse its saved artwork, copy and buttons here. Edit the shared campaign in the Banner library; its updates will appear on every page using it.
+                      </span>
+                    </Field>
+                  ) : null}
                   {fields.map((field) =>
                     field.options ? (
                       <Field key={field.key} title={field.title}>

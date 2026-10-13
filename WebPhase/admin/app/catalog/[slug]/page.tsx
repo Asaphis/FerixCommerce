@@ -89,7 +89,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
             <Field title="Brand">
               <select name="brand" defaultValue={product.brand ?? product.brandName ?? ""} className={selectClass}>
                 <option value="">No brand</option>
-                {brands.filter((brand) => brand.visible).map((brand) => <option key={brand.id} value={brand.slug}>{brand.name}</option>)}
+                {brands.filter((brand) => brand.visible || [product.brand, product.brandName].includes(brand.slug) || [product.brand, product.brandName].includes(brand.id)).map((brand) => <option key={brand.id} value={brand.slug}>{brand.name}{brand.visible ? "" : " (hidden)"}</option>)}
               </select>
             </Field>
             <Field title="SKU">

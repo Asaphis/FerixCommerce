@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import { assetUrl, getCataloguePage, getHome, listAdverts, listProducts, type Advert, type Product } from "@/lib/api";
+import { assetUrl, getCataloguePage, getHome, listAdverts, listProducts, type Advert, type CatalogueBrand, type Product } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
 import { PromoBanner } from "@/components/ferix/banner";
@@ -148,15 +148,9 @@ export async function CatalogListing({
   const brandRow = page.sections.find(
     (section) => section.type === "brand_carousel" && section.visible !== false,
   );
-  const needsHomeData = Boolean(brandRow) || Boolean(hero?.type === "hero_banner" && !hero.mediaUrl);
+  const needsHomeData = Boolean(brandRow) || Boolean(hero && (hero.bannerId || (hero.type === "hero_banner" && !hero.mediaUrl)));
   const homeData = needsHomeData ? await getHome().catch(() => null) : null;
-  const allBrands = brandRow
-    // The payload carries brands, but HomeFeed does not declare them and the
-    // Brand type describes a store's theming rather than a brand record.
-    ? ((homeData as unknown as {
-        brands?: { slug: string; name: string; imageUrl?: string; logo?: string }[];
-      } | null)?.brands ?? [])
-    : [];
+  const allBrands: CatalogueBrand[] = brandRow ? homeData?.brands ?? [] : [];
   const brandLimit = Number(brandRow?.limit) || 0;
   const brands = brandLimit > 0 ? allBrands.slice(0, brandLimit) : allBrands;
   const brandAcross = Math.min(4, Math.max(1, Math.round(Number(brandRow?.across) || 2)));
@@ -173,6 +167,9 @@ export async function CatalogListing({
     4: "w-[23%] sm:w-[17%] lg:w-[12%]",
   };
   const brandIsGrid = ["wrap", "grid"].includes(String(brandRow?.layout));
+  const selectedHeroBanner = hero?.bannerId
+    ? homeData?.banners.find((banner) => banner.id === hero.bannerId)
+    : undefined;
   const activeStore = feed.facets.stores.find((item) => item.slug === filters.store);
   const activeCategory = feed.facets.categories.find((item) => item.slug === filters.category);
   // Filtering by department renames the page, so the heading always matches the list.
@@ -220,29 +217,29 @@ export async function CatalogListing({
 
       {hero ? (
         <div className="mx-auto mt-4 max-w-[1440px]">
-          {hero.type === "hero_banner" && !hero.mediaUrl ? (
+          {hero.type === "hero_banner" && (!hero.mediaUrl || selectedHeroBanner) ? (
             <PromoBanner
-              banners={homeData?.banners ?? []}
+              banners={selectedHeroBanner ? [selectedHeroBanner] : homeData?.banners ?? []}
               mediaOnly={heroMediaOnly}
               heightClassName="h-[190px] sm:h-[250px] lg:h-[320px]"
               className="rounded-[3px] rounded-tr-[16px] shadow-[0_8px_22px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
             />
           ) : (
             <MediaHero
-              mediaUrl={hero.mediaUrl}
-              kind={hero.kind}
-              mediaOnly={heroMediaOnly}
-              eyebrow={hero.eyebrow}
-              title={hero.title ?? "This week on Ferixas"}
-              description={hero.subtitle}
-              ctaLabel={hero.ctaLabel}
-              ctaHref={hero.ctaHref ?? basePath}
-              secondaryLabel={hero.secondaryLabel}
-              secondaryHref={hero.secondaryHref}
-              align={hero.align}
-              vertical={hero.vertical}
-              tone={hero.tone}
-              scrim={hero.scrim}
+              mediaUrl={selectedHeroBanner?.mediaUrl ?? hero.mediaUrl}
+              kind={selectedHeroBanner?.kind ?? hero.kind}
+              mediaOnly={heroMediaOnly || selectedHeroBanner?.showText === false}
+              eyebrow={selectedHeroBanner?.eyebrow ?? hero.eyebrow}
+              title={selectedHeroBanner?.headline ?? hero.title ?? "This week on Ferixas"}
+              description={selectedHeroBanner?.body ?? hero.subtitle}
+              ctaLabel={selectedHeroBanner?.ctaLabel ?? hero.ctaLabel}
+              ctaHref={selectedHeroBanner?.ctaHref ?? hero.ctaHref ?? basePath}
+              secondaryLabel={selectedHeroBanner?.secondaryLabel ?? hero.secondaryLabel}
+              secondaryHref={selectedHeroBanner?.secondaryHref ?? hero.secondaryHref}
+              align={selectedHeroBanner?.overlay?.align ?? hero.align}
+              vertical={selectedHeroBanner?.overlay?.vertical ?? hero.vertical}
+              tone={selectedHeroBanner?.overlay?.tone ?? hero.tone}
+              scrim={selectedHeroBanner?.overlay?.scrim ?? hero.scrim}
               heightClassName="h-[190px] sm:h-[250px] lg:h-[320px]"
               className="rounded-[3px] rounded-tr-[16px] shadow-[0_8px_22px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
             />
@@ -410,15 +407,14 @@ export async function CatalogListing({
                   </h2>
                 </div>
                 {String(brandRow?.seeAll) !== "false" ? (
-                  <Link href="/browse" className="text-[12px] font-semibold text-ember hover:underline">All brands</Link>
+                  <Link href="/brands" className="text-[12px] font-semibold text-ember hover:underline">All brands</Link>
                 ) : null}
               </div>
               <div className={brandIsGrid
                 ? `mt-3 grid gap-2.5 ${brandGridColumns[brandAcross]}`
                 : "no-scrollbar -mx-4 mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 lg:mx-0 lg:px-0"}>
-                {brands.map((brand) => {
-                  const record = brand as unknown as { slug: string; name: string; imageUrl?: string; logo?: string };
-                  const artwork = assetUrl(record.imageUrl ?? record.logo ?? null);
+                {brands.map((record) => {
+                  const artwork = assetUrl(record.imageUrl);
                   return (
                     <Link
                       key={record.slug}

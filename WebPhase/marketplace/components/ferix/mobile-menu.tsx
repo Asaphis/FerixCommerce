@@ -170,14 +170,14 @@ export function FerixMobileMenu({ categories, user }: { categories: Category[]; 
               <ul className="mt-2.5 space-y-0.5">
                 <li>
                   <Link
-                    href="/browse"
+                    href="/departments"
                     className="flex items-center justify-between gap-3 rounded-[2px] px-2 py-2.5 text-[13.5px] font-medium text-ink transition-colors hover:bg-bone-soft"
                   >
                     All departments
                     <ChevronRight width={15} height={15} className="text-ink-soft" />
                   </Link>
                 </li>
-                {categories.map((category) => (
+                {categories.filter((category) => category.showInNav !== false).map((category) => (
                   <li key={category.slug}>
                     <Link
                       href={`/category/${category.slug}`}

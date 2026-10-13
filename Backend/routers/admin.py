@@ -310,6 +310,7 @@ def _brand_fields(data: dict, existing: Optional[dict] = None) -> dict:
     if not isinstance(position, int) or position < 0 or position > 100000:
         raise HTTPException(422, "Brand position must be between 0 and 100000")
     return {
+        **current,
         "id": str(data.get("id", current.get("id", ""))),
         "name": name, "slug": slug, "description": description,
         "imageUrl": image_url, "featured": bool(data.get("featured", current.get("featured", False))),
@@ -1274,11 +1275,12 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "description": payload.get("description") or "",
             "bullets": payload.get("bullets") or [], "tags": payload.get("tags") or [],
             "brand": brand.get("slug", brand.get("id", "")) if brand else "",
+            "brandSlug": brand.get("slug", "") if brand else "",
+            "brandId": brand.get("id", "") if brand else "",
             "brandName": brand.get("name", "") if brand else "",
             "collections": payload.get("collections") or [],
-            "images": payload.get("images") or [placeholder(f"{slug}-{i}") for i in (1, 2, 3)],
+            "images": payload.get("images") or [],
             "plates": [], "price": price, "compareAt": compare_at, "discount": None,
-            "cost": round(price * 0.6, 2),
             "sku": payload.get("sku") or f"FX-{new_id('', 5).upper()}",
             "stock": stock, "lowStockAt": low_stock_at,
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
@@ -1325,6 +1327,8 @@ def catalog_update(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             if brand_key and not brand:
                 raise HTTPException(400, "Choose a brand from the managed brand list")
             updated["brand"] = brand.get("slug", brand.get("id", "")) if brand else ""
+            updated["brandSlug"] = brand.get("slug", "") if brand else ""
+            updated["brandId"] = brand.get("id", "") if brand else ""
             updated["brandName"] = brand.get("name", "") if brand else ""
         if payload.price is not None:
             if payload.price < 0:
@@ -1601,8 +1605,8 @@ def catalog_category(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
             "name": payload.name or existing.get("name", slug.title()),
             "blurb": payload.blurb if payload.blurb is not None else existing.get("blurb", ""),
             "glyph": payload.glyph or existing.get("glyph", "Tag"),
-            "image": payload.image if payload.image is not None else existing.get("image") or placeholder(f"cat-{slug}"),
-            "imageUrl": payload.image if payload.image is not None else existing.get("imageUrl") or placeholder(f"cat-{slug}"),
+            "image": payload.image if payload.image is not None else existing.get("image", ""),
+            "imageUrl": payload.image if payload.image is not None else existing.get("imageUrl", existing.get("image", "")),
             "showInNav": payload.showInNav if payload.showInNav is not None else existing.get("showInNav", True),
             "showAsTile": payload.showAsTile if payload.showAsTile is not None else existing.get("showAsTile", True),
             "showAsText": payload.showAsText if payload.showAsText is not None else existing.get("showAsText", False),
@@ -1621,6 +1625,8 @@ def catalog_category_delete(session: Optional[str] = Header(None, alias="X-Ferix
         staff = require_staff(db, session, "admin")
         require_permission(staff, "catalog.manage")
         slug = str(payload.get("slug") or "")
+        if any(str(product.get("category") or "") == slug for product in all_products(db)):
+            raise HTTPException(409, "This department is assigned to products. Reassign those products or hide the department instead of deleting it.")
         if not drop_row(db, "category", slug):
             raise HTTPException(404, "Category not found")
         audit(db, "admin", staff.email, "category.delete", slug, "")
@@ -1652,7 +1658,7 @@ def catalog_collection(session: Optional[str] = Header(None, alias="X-Ferix-Sess
             **existing, "id": existing.get("id", slug), "slug": slug,
             "name": payload.name or existing.get("name", slug.title()),
             "blurb": payload.blurb if payload.blurb is not None else existing.get("blurb", ""),
-            "image": payload.image if payload.image is not None else existing.get("image") or placeholder(f"col-{slug}"),
+            "image": payload.image if payload.image is not None else existing.get("image", ""),
             "visible": payload.visible if payload.visible is not None else existing.get("visible", True),
             "position": payload.position if payload.position is not None else existing.get("position", 0),
         }
@@ -1692,7 +1698,7 @@ def cms_banner(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
         require_permission(staff, "cms.manage")
         banner_id = payload.id or new_id("bnr")
         existing = next((b for b in rows_of(db, "banner") if b.get("id") == banner_id), {})
-        media = payload.mediaUrl or payload.image or payload.videoUrl or existing.get("mediaUrl") or placeholder(banner_id)
+        media = payload.mediaUrl or payload.image or payload.videoUrl or existing.get("mediaUrl") or ""
         row = {
             **existing, "id": banner_id,
             "kind": payload.kind or existing.get("kind", "image"),
@@ -1768,6 +1774,17 @@ def cms_brand_update(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         row = _brand_fields({**existing, **values, "id": existing["id"]}, existing)
         _assert_unique_brand_slug(db, row["slug"], row["id"])
         if row["slug"] != existing.get("slug"):
+            old_slug = str(existing.get("slug") or "")
+            old_id = str(existing.get("id") or "")
+            for product in all_products(db):
+                refs = {str(product.get(field) or "") for field in ("brand", "brandSlug", "brandId")}
+                if old_slug in refs or old_id in refs:
+                    product["brand"] = row["slug"]
+                    product["brandSlug"] = row["slug"]
+                    product["brandName"] = row["name"]
+                    product_slug = str(product.get("slug") or "")
+                    if product_slug:
+                        put_row(db, "product", product_slug, product)
             drop_row(db, "brand", existing["slug"])
         put_row(db, "brand", row["slug"], row)
         audit(db, "admin", staff.email, "brand.update", row["id"], row["name"])
@@ -1783,6 +1800,14 @@ def cms_brand_delete(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         existing = _brand_by_id(db, str(payload.get("id") or ""))
         if not existing:
             raise HTTPException(404, "Brand not found")
+        old_slug = str(existing.get("slug") or "")
+        old_id = str(existing.get("id") or "")
+        if any(
+            old_slug in {str(product.get(field) or "") for field in ("brand", "brandSlug", "brandId")}
+            or old_id in {str(product.get(field) or "") for field in ("brand", "brandSlug", "brandId")}
+            for product in all_products(db)
+        ):
+            raise HTTPException(409, "This brand is assigned to products. Reassign those products or hide the brand instead of deleting it.")
         drop_row(db, "brand", existing["slug"])
         audit(db, "admin", staff.email, "brand.delete", existing["id"], existing["name"])
         db.commit()
@@ -2056,7 +2081,7 @@ def create_promotion(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         sale = FlashSale(
             id=payload.id or new_id("sale"), name=payload.name,
             headline=payload.headline or "",
-            banner_url=payload.bannerUrl or placeholder(f"sale-{new_id('', 6)}"),
+            banner_url=payload.bannerUrl or "",
             starts_at=parse(payload.startsAt, now()),
             ends_at=parse(payload.endsAt, now() + timedelta(days=7)),
             status=payload.status or "draft", owner_type="platform", owner_id="platform",

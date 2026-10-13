@@ -62,7 +62,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           Home
         </Link>
         <span>/</span>
-        <Link href={`/browse?category=${product.category}`} className="capitalize transition-colors hover:text-ember">
+        <Link href={`/category/${product.category}`} className="capitalize transition-colors hover:text-ember">
           {product.category}
         </Link>
         <span>/</span>

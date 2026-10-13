@@ -230,12 +230,13 @@ export async function saveCategoryAction(_previous: FormState, form: FormData): 
   if (!name) return { error: "Enter a department name." };
   try {
     const imageFileUrl = await uploadedMediaUrl(session, form, "imageFile", "image", name, "categories");
+    const libraryUrl = str(form, "mediaLibraryUrl");
     await api.saveCategory(session, {
       slug: str(form, "slug") || undefined,
       name,
       blurb: str(form, "blurb"),
       glyph: str(form, "glyph", "Tag"),
-      image: imageFileUrl || str(form, "image") || undefined,
+      image: imageFileUrl || libraryUrl || str(form, "image") || str(form, "imageUrl") || undefined,
       showInNav: bool(form, "showInNav"),
       showAsTile: bool(form, "showAsTile"),
       showAsText: bool(form, "showAsText"),

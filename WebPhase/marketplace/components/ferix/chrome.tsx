@@ -77,8 +77,8 @@ export function FerixHeader({
 
       <nav aria-label="Departments" className="hidden border-t border-line-warm bg-[#f8fafc] lg:block">
         <div className="mx-auto flex max-w-[1320px] items-center gap-1 overflow-x-auto px-6 py-2">
-          <Link href="/browse" className="shrink-0 rounded-[2px] rounded-tr-[8px] bg-ember px-3 py-2 text-[11px] font-bold text-white">All departments</Link>
-          {categories.slice(0, 8).map((category) => (
+          <Link href="/departments" className="shrink-0 rounded-[2px] rounded-tr-[8px] bg-ember px-3 py-2 text-[11px] font-bold text-white">All departments</Link>
+          {categories.filter((category) => category.showInNav !== false).slice(0, 8).map((category) => (
             <Link key={category.slug} href={`/category/${category.slug}`} className="shrink-0 rounded-[2px] px-3 py-2 text-[11px] font-semibold text-ink-soft transition-colors hover:bg-white hover:text-ember">{category.name}</Link>
           ))}
           <Link href="/collections" className="ml-auto shrink-0 px-3 py-2 text-[11px] font-semibold text-ink-soft transition-colors hover:text-ember">Collections</Link>
