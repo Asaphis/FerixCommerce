@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowDown, ArrowLeft, ArrowUp, Pencil, Trash2 } from "lucide-react";
+import {ArrowDown, ArrowLeft, ArrowUp, Pencil, Trash2, ImagePlus } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
 import { getCmsPage } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
