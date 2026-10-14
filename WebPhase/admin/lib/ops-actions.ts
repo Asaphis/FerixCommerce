@@ -100,13 +100,17 @@ async function syncProductSections(session: string, form: FormData, slug: string
     // its own window; a plain row wants nothing. Anything the placement does not
     // own as a column travels in its config.
     const config: Record<string, string | number> = {};
+    let placementPrice = "";
+    let placementCompareAt = "";
     let startsAt = "";
     let endsAt = "";
     let position = "";
     for (const field of section.productConfigSchema ?? []) {
       const raw = str(form, `config__${slot}__${field.key}`);
       if (!raw) continue;
-      if (field.key === "startsAt") startsAt = raw;
+      if (field.key === "price") placementPrice = raw;
+      else if (field.key === "compareAt") placementCompareAt = raw;
+      else if (field.key === "startsAt") startsAt = raw;
       else if (field.key === "endsAt") endsAt = raw;
       else if (field.key === "position") position = raw;
       else config[field.key] = field.kind === "number" ? Number(raw) : raw;
@@ -116,7 +120,8 @@ async function syncProductSections(session: string, form: FormData, slug: string
       sectionId: section.sectionId,
       sectionType: section.sectionType,
       title,
-      ...(price ? { price: Number(price) } : {}),
+      ...(placementPrice || price ? { price: Number(placementPrice || price) } : {}),
+      ...(placementCompareAt ? { compareAt: Number(placementCompareAt) } : {}),
       ...(quantity ? { quantity: Number(quantity) } : {}),
       ...(position ? { position: Number(position) } : {}),
       ...(startsAt ? { startsAt } : {}),

@@ -427,7 +427,7 @@ export type SectionOption = {
   endsAt?: string | null;
 };
 export const getProductSections = (session: string | null, slug: string) =>
-  call<{ placements: { id: string; documentId: string; sectionId: string; price: number }[]; available: SectionOption[] }>(
+  call<{ placements: { id: string; documentId: string; sectionId: string; sectionType?: string; price: number; compareAt?: number; quantity?: number; position?: number; startsAt?: string | null; endsAt?: string | null; config?: Record<string, unknown> }[]; available: SectionOption[] }>(
     "GET", "admin/product/sections", { session, params: { slug } });
 
 export const placeProductInSection = (session: string | null, body: Record<string, unknown>) =>

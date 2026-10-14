@@ -60,6 +60,30 @@ function readVariants(formData: FormData): { name: string; values: string[] }[] 
     .filter((variant): variant is { name: string; values: string[] } => variant !== null);
 }
 
+function readSectionTerms(formData: FormData): Record<string, Record<string, string | number>> {
+  const selected = new Set(formData.getAll("section_tags").map(String));
+  const terms: Record<string, Record<string, string | number>> = {};
+  const numericFields = new Set(["price", "compareAt", "quantity", "position"]);
+  for (const [name, value] of formData.entries()) {
+    if (!name.startsWith("section_term__") || value instanceof File) continue;
+    const rest = name.slice("section_term__".length);
+    const separator = rest.lastIndexOf("__");
+    if (separator <= 0) continue;
+    const sectionValue = rest.slice(0, separator);
+    const field = rest.slice(separator + 2);
+    const raw = String(value).trim();
+    if (!selected.has(sectionValue) || !field || !raw) continue;
+    const entry = terms[sectionValue] ??= {};
+    if (numericFields.has(field)) {
+      const numeric = Number(raw);
+      if (Number.isFinite(numeric)) entry[field] = numeric;
+    } else {
+      entry[field] = raw;
+    }
+  }
+  return terms;
+}
+
 // ── Session ────────────────────────────────────────────────────────────
 
 export async function signInAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -114,6 +138,7 @@ export async function createProductAction(_prev: FormState, formData: FormData):
       category,
       brandId: String(formData.get("brandId") ?? "") || null,
       section_tags: formData.getAll("section_tags").map(String),
+      section_terms: readSectionTerms(formData),
       sku: String(formData.get("sku") ?? "").trim(),
       lowStockAt: Number(formData.get("lowStockAt") ?? 8),
       bullets: String(formData.get("bullets") ?? "").split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
@@ -177,6 +202,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
       category,
       brandId: String(formData.get("brandId") ?? ""),
       section_tags: formData.getAll("section_tags").map(String),
+      section_terms: readSectionTerms(formData),
       sku: String(formData.get("sku") ?? "").trim(),
       lowStockAt: Number(formData.get("lowStockAt") ?? 8),
       bullets: String(formData.get("bullets") ?? "").split(/\r?\n/).map((value) => value.trim()).filter(Boolean),

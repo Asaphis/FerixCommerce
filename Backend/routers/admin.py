@@ -1535,6 +1535,7 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
             updated["placementRequests"] = requested_sections
             updated["approvedSectionTags"] = []
             from core import ContentDocument, SectionPlacement
+            from cms_sections import moment_of
             # A seller can remove or change requested sections on resubmission.
             # Replace the old approved placement set so the public resolver never
             # keeps a stale section membership after the next approval.
@@ -1566,11 +1567,27 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
                     SectionPlacement.section_id == section_id,
                 ))
                 if not existing:
+                    term_sets = updated.get("placementTerms") if isinstance(updated.get("placementTerms"), dict) else {}
+                    terms = term_sets.get(request, {}) if isinstance(term_sets.get(request, {}), dict) else {}
+                    base_price = float(target.get("price") or 0)
+                    base_compare_at = float(target.get("compareAt") or 0)
+                    base_quantity = int(target.get("stock") or 0)
+                    placement_price = float(terms["price"]) if terms.get("price") is not None else base_price
+                    placement_compare_at = float(terms["compareAt"]) if terms.get("compareAt") is not None else base_compare_at
+                    placement_quantity = int(terms["quantity"]) if terms.get("quantity") is not None else base_quantity
+                    placement_position = int(terms.get("position") or 1)
+                    placement_config = {
+                        key: value for key, value in terms.items()
+                        if key not in {"price", "compareAt", "quantity", "position", "startsAt", "endsAt"}
+                    }
                     db.add(SectionPlacement(
                         id=new_id("plc"), product_id=target["id"], product_slug=target["slug"],
                         document_id=document_id, section_id=section_id, section_type=section.get("type", ""),
-                        price=float(target.get("price") or 0), compare_at=float(target.get("compareAt") or 0),
-                        quantity=int(target.get("stock") or 0), position=1,
+                        price=placement_price, compare_at=placement_compare_at,
+                        quantity=placement_quantity, position=placement_position,
+                        starts_at=moment_of(terms.get("startsAt")),
+                        ends_at=moment_of(terms.get("endsAt")),
+                        config=placement_config,
                     ))
                 updated["approvedSectionTags"].append(request)
             updated["placementStatus"] = "approved" if updated["approvedSectionTags"] else "none"
@@ -2872,7 +2889,10 @@ def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Se
         # A placement with no price of its own inherits the product's price, so a
         # section only holds a different price when someone deliberately set one.
         row.price = float(payload.price if payload.price is not None else product.get("price") or 0.0)
-        row.compare_at = float(payload.compareAt or row.compare_at or 0.0)
+        if payload.compareAt is not None:
+            row.compare_at = float(payload.compareAt)
+        elif existing is None:
+            row.compare_at = float(product.get("compareAt") or 0.0)
         row.quantity = int(payload.quantity if payload.quantity is not None else product.get("stock") or 0)
         row.position = int(payload.position or row.position or 1)
         if payload.startsAt:
@@ -2947,7 +2967,7 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
                 id=new_id("plc"), product_id=product["id"], product_slug=product["slug"],
                 document_id=document_id, section_id=section_id, section_type=section.get("type", ""),
                 price=float(item.get("price") if item.get("price") is not None else product.get("price") or 0),
-                compare_at=float(item.get("compareAt") or product.get("compareAt") or 0),
+                compare_at=float(item.get("compareAt") if item.get("compareAt") is not None else product.get("compareAt") or 0),
                 quantity=int(item.get("quantity") if item.get("quantity") is not None else product.get("stock") or 0),
                 position=int(item.get("position") or 1),
                 # A placement carries its own window and its own campaign fields.

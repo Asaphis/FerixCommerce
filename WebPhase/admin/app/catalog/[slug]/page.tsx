@@ -197,7 +197,19 @@ export default async function ProductEditorPage({ params, searchParams }: { para
                           </span>
                         </span>
                       </label>
-                      <PlacementTerms section={section} slot={slot} />
+                      {(() => {
+                        const current = placements.find((row) => row.documentId === section.documentId && row.sectionId === section.sectionId);
+                        const values = {
+                          ...(current?.config ?? {}),
+                          price: current?.price,
+                          compareAt: current?.compareAt,
+                          quantity: current?.quantity,
+                          position: current?.position,
+                          startsAt: current?.startsAt,
+                          endsAt: current?.endsAt,
+                        };
+                        return <PlacementTerms section={section} slot={slot} values={values} />;
+                      })()}
                     </div>
                   );
                 })}</div></fieldset>)}

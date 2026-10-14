@@ -76,6 +76,7 @@ export type Product = {
   channels: Channels;
   tags: string[];
   section_tags?: string[];
+  placementTerms?: Record<string, Record<string, string | number>>;
   createdAt: string;
   updatedAt?: string;
   submittedAt?: string;
@@ -490,6 +491,7 @@ export const createProduct = (
     marketplace: boolean;
     brandId?: string | null;
     section_tags?: string[];
+    section_terms?: Record<string, Record<string, string | number>>;
     shipping_amount?: number;
     estimated_delivery_days?: number;
     package_weight?: number;

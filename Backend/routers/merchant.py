@@ -6,6 +6,7 @@ frontend works against the real database without a single UI change.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import math
 import os
 import re
 from urllib.parse import urlparse
@@ -74,6 +75,7 @@ class ProductIn(BaseModel):
     package_dimensions: Optional[str] = None
     shipping_origin: Optional[str] = None
     section_tags: Optional[list[str]] = None
+    section_terms: Optional[dict[str, dict]] = None
     brandId: Optional[str] = None
 
 
@@ -224,6 +226,55 @@ def _product_options(db) -> dict:
                     "status": page_status,
                 })
     return {"categories": categories, "brands": brands, "collections": collections, "sections": sections}
+
+
+def _validated_section_terms(section_tags: list[str], raw_terms, options: dict) -> dict[str, dict]:
+    """Keep only schema-approved placement fields for the seller's selected sections."""
+    from cms_sections import moment_of
+
+    by_value = {str(section.get("value") or ""): section for section in options.get("sections", [])}
+    supplied = raw_terms if isinstance(raw_terms, dict) else {}
+    clean_by_section: dict[str, dict] = {}
+    for value in dict.fromkeys(section_tags):
+        section = by_value.get(value)
+        if not section:
+            raise HTTPException(400, "Choose only active product sections from the Ferix CMS.")
+        schema = {
+            str(field.get("key")): field
+            for field in section.get("productConfigSchema", [])
+            if isinstance(field, dict) and field.get("key")
+        }
+        raw_fields = supplied.get(value, {})
+        raw_fields = raw_fields if isinstance(raw_fields, dict) else {}
+        clean: dict = {}
+        for key, raw in raw_fields.items():
+            field = schema.get(str(key))
+            if not field:
+                raise HTTPException(400, "A product section received an unsupported placement field.")
+            if raw is None or not str(raw).strip():
+                continue
+            kind = str(field.get("kind") or "text")
+            if kind == "number":
+                try:
+                    number = float(raw)
+                except (TypeError, ValueError):
+                    raise HTTPException(422, f"Enter a valid number for {field.get('label') or key}.")
+                if not math.isfinite(number) or number < 0:
+                    raise HTTPException(422, f"Enter a valid non-negative number for {field.get('label') or key}.")
+                clean[str(key)] = int(number) if str(key) in {"position", "quantity"} and number.is_integer() else number
+            elif kind == "datetime":
+                moment = moment_of(raw)
+                if moment is None:
+                    raise HTTPException(422, f"Enter a valid date and time for {field.get('label') or key}.")
+                clean[str(key)] = moment.isoformat()
+            else:
+                clean[str(key)] = str(raw).strip()
+        for key, field in schema.items():
+            if field.get("required") and key not in clean:
+                raise HTTPException(422, f"{field.get('label') or key} is required for {section.get('name') or 'this section'}.")
+        if clean:
+            clean_by_section[value] = clean
+    return clean_by_section
 
 
 def _merchant_orders(db, merchant_id: str) -> list[Order]:
@@ -732,6 +783,7 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         section_tags = list(dict.fromkeys(payload.section_tags or []))
         if any(section not in allowed_sections for section in section_tags):
             raise HTTPException(400, "Choose only active product sections from the Ferixas CMS.")
+        section_terms = _validated_section_terms(section_tags, payload.section_terms, options)
         # Seller-facing policy: the slug is generated once from the first title and
         # remains stable on edits. Do not accept a caller-supplied create slug.
         slug = _slugify(payload.title)
@@ -771,6 +823,7 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "shipping_origin": payload.shipping_origin,
             "section_tags": section_tags,
             "placementRequests": section_tags,
+            "placementTerms": section_terms,
             "placementStatus": "pending_review" if section_tags else "none",
             "submittedAt": iso(now()), "submittedBy": staff.email,
         }
@@ -817,6 +870,13 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         if payload.section_tags is not None:
             updated["placementRequests"] = list(dict.fromkeys(payload.section_tags))
             updated["placementStatus"] = "pending_review" if payload.section_tags else "none"
+        if payload.section_tags is not None or payload.section_terms is not None:
+            requested_sections = list(dict.fromkeys(
+                payload.section_tags if payload.section_tags is not None
+                else updated.get("placementRequests") or updated.get("section_tags") or []
+            ))
+            term_values = payload.section_terms if payload.section_terms is not None else target.get("placementTerms")
+            updated["placementTerms"] = _validated_section_terms(requested_sections, term_values, options)
         if payload.price is not None:
             updated["price"] = float(payload.price)
         if payload.stock is not None:

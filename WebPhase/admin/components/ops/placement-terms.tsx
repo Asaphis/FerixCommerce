@@ -4,7 +4,7 @@ import type { SectionOption } from "@/lib/api";
 /**
  * The terms a section asks of one product.
  *
- * A section says what it needs: a Flash Sale wants a flash price and the window
+ * A section says what it needs: a campaign may want an offer price and a window
  * that product shows for, a plain row wants nothing at all. The fields come from
  * the section's own schema, so ticking a campaign reveals the campaign's terms
  * and ticking an ordinary row reveals nothing.
@@ -12,7 +12,11 @@ import type { SectionOption } from "@/lib/api";
  * Position is left out on purpose: the order inside a section is managed where
  * the section is, not while a product is being edited.
  */
-export function PlacementTerms({ section, slot }: { section: SectionOption; slot: string }) {
+export function PlacementTerms({ section, slot, values = {} }: {
+  section: SectionOption;
+  slot: string;
+  values?: Record<string, unknown>;
+}) {
   const fields = (section.productConfigSchema ?? []).filter((field) => field.key !== "position");
   if (!fields.length) return null;
   return (
@@ -25,9 +29,13 @@ export function PlacementTerms({ section, slot }: { section: SectionOption; slot
           </span>
           <input
             name={`config__${slot}__${field.key}`}
-            type={field.kind === "number" ? "number" : "text"}
+            type={field.kind === "number" ? "number" : field.kind === "datetime" ? "datetime-local" : field.kind === "color" ? "color" : "text"}
             step={field.kind === "number" ? "0.01" : undefined}
             min={field.kind === "number" ? 0 : undefined}
+            required={Boolean(field.required)}
+            defaultValue={field.kind === "datetime"
+              ? String(values[field.key] ?? "").replace(/Z$/, "").slice(0, 16)
+              : values[field.key] == null ? "" : String(values[field.key])}
             placeholder={field.placeholder ?? ""}
             className={inputClass}
           />

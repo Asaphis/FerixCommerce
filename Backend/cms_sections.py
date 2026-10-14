@@ -15,11 +15,11 @@ editor confusing:
 * **source**        - the data provider for a product section: a catalogue
                       feed such as ``trending``, or ``assigned`` for a curated
                       list held in SectionPlacement rows.
-* **presentation**  - how the block is dressed: a plain row, or the Flash Sale
-                      campaign treatment with its own colours and countdown.
+* **presentation**  - how the block is dressed: a plain row, or a timed campaign
+                      treatment with its own colours and countdown.
 
-Trending, new arrivals, best sellers, featured and on-sale are therefore *not*
-section types. They are automatic sources inside a product row or product grid.
+Trending, new arrivals, best sellers and on-sale are automatic data sources inside
+a product row or product grid. Featured product membership is manual.
 """
 from __future__ import annotations
 
@@ -37,9 +37,8 @@ PRESENTATIONS = ("standard", "flash_sale", "sale", "new_arrivals", "featured")
 #: Sections whose membership is a list of products.
 PRODUCT_SECTION_TYPES = ("product_carousel", "product_grid")
 
-#: Automatic catalogue feeds. ``flash_sale`` is retained only so sections saved
-#: before this contract existed keep rendering; it is never offered again. The
-#: live Flash Sale campaign is a manual section with presentation ``flash_sale``.
+#: Automatic catalogue feeds. Named campaigns/curations such as Featured and
+#: Flash Sale are manual section configurations, not automatic data sources.
 AUTOMATIC_SOURCES: dict[str, dict] = {
     "trending": {
         "label": "Trending",
@@ -63,11 +62,6 @@ AUTOMATIC_SOURCES: dict[str, dict] = {
             {"key": "windowDays", "label": "Sales window", "kind": "number", "default": 30},
             {"key": "minimumSales", "label": "Minimum units sold", "kind": "number", "default": 1},
         ],
-    },
-    "featured": {
-        "label": "Featured products",
-        "hint": "Products an Admin has flagged as featured.",
-        "config": [],
     },
     "on_sale": {
         "label": "On sale",
@@ -95,8 +89,9 @@ AUTOMATIC_SOURCES: dict[str, dict] = {
     },
 }
 
-#: Sources kept readable but no longer offered anywhere.
-LEGACY_SOURCES = ("flash_sale",)
+#: Old source spellings kept readable, but no longer offered as automatic feeds.
+#: ``featured`` maps to manual assignment; it is not a flag-based product feed.
+LEGACY_SOURCES = ("flash_sale", "featured")
 
 #: ``assigned`` is a source too: the curated list lives in SectionPlacement.
 ASSIGNED_SOURCE = "assigned"
@@ -114,8 +109,8 @@ PRODUCT_CONFIG_PRESETS: dict[str, list[dict]] = {
         {"key": "endsAt", "label": "Shows until", "kind": "datetime"},
     ],
     "flash_sale": [
-        {"key": "price", "label": "Flash-sale price", "kind": "number", "required": True},
-        {"key": "compareAt", "label": "Original price", "kind": "number"},
+        {"key": "price", "label": "Section offer price", "kind": "number", "required": True},
+        {"key": "compareAt", "label": "Original / compare-at price", "kind": "number"},
         {"key": "label", "label": "Discount label", "kind": "text", "placeholder": "50% OFF"},
         {"key": "startsAt", "label": "Product shows from", "kind": "datetime"},
         {"key": "endsAt", "label": "Product shows until", "kind": "datetime"},
@@ -160,80 +155,65 @@ FLASH_SALE_DEFAULTS: dict = {
     "showViewAll": True,
 }
 
-#: The add-section palette, grouped by what the operator is trying to do. Each
-#: entry is a button; ``asksSource`` means the button opens the small
-#: manual-or-automatic setup before the section is created.
+#: The add-section palette is grouped by section family. Product has one
+#: configurable entry which asks for its manual/automatic source; the other
+#: families retain their manager- or library-backed data sources.
 PALETTE: list[dict] = [
     {
-        "id": "campaign",
-        "label": "Hero and banners",
-        "hint": "The campaign at the top of a page.",
+        "id": "hero",
+        "label": "Hero section",
+        "hint": "Create a hero/banner block and select shared media or a saved banner.",
         "entries": [
             {"id": "hero_banner", "label": "Hero banner", "type": "hero_banner",
              "hint": "Full hero with two buttons or a banner carousel."},
             {"id": "hero_slim", "label": "Slim banner", "type": "hero_slim",
              "hint": "Compact band with one button."},
-            {"id": "promo_strip", "label": "Message strip", "type": "promo_strip",
-             "hint": "One line of reassurance."},
         ],
     },
     {
-        "id": "products",
-        "label": "Products",
-        "hint": "Pick the products yourself, or let the catalogue fill it.",
+        "id": "product",
+        "label": "Product section",
+        "hint": "Create a named product section, then choose manual assignment or an automatic product source.",
         "entries": [
-            {"id": "product_row", "label": "Product row", "type": "product_carousel",
-             "hint": "A row or carousel you fill from the product form.",
+            {"id": "product_section", "label": "Configure product section", "type": "product_carousel",
+             "hint": "Name and configure a product section. Its products can be assigned or feed-driven.",
              "asksSource": True, "defaultSource": ASSIGNED_SOURCE},
-            {"id": "product_grid", "label": "Product grid", "type": "product_grid",
-             "hint": "A grid you fill from the product form.",
-             "asksSource": True, "defaultSource": ASSIGNED_SOURCE},
-            {"id": "flash_sale", "label": "Flash sale", "type": "product_carousel",
-             "hint": "A timed campaign with its own colours, countdown and per-product prices.",
-             "selectionMode": SELECTION_MANUAL, "source": ASSIGNED_SOURCE,
-             "presentation": "flash_sale", "preset": "flash_sale"},
         ],
     },
     {
-        "id": "automatic_products",
-        "label": "Product rows that pick their own products",
-        "hint": "These never appear in the product form. The catalogue decides.",
-        "entries": [
-            {"id": "trending", "label": "Trending", "type": "product_carousel",
-             "selectionMode": SELECTION_AUTOMATIC, "source": "trending",
-             "presentation": "standard", "preset": "trending"},
-            {"id": "new_arrivals", "label": "New arrivals", "type": "product_carousel",
-             "selectionMode": SELECTION_AUTOMATIC, "source": "newest_arrivals",
-             "presentation": "new_arrivals", "preset": "new_arrivals"},
-            {"id": "best_sellers", "label": "Best sellers", "type": "product_carousel",
-             "selectionMode": SELECTION_AUTOMATIC, "source": "best_sellers",
-             "presentation": "standard", "preset": "best_sellers"},
-            {"id": "featured", "label": "Featured products", "type": "product_carousel",
-             "selectionMode": SELECTION_AUTOMATIC, "source": "featured",
-             "presentation": "featured", "preset": "featured"},
-            {"id": "on_sale", "label": "On sale", "type": "product_carousel",
-             "selectionMode": SELECTION_AUTOMATIC, "source": "on_sale",
-             "presentation": "sale", "preset": "on_sale"},
-        ],
-    },
-    {
-        "id": "catalogue",
-        "label": "Live catalogue",
-        "hint": "Filled from the department, brand and seller managers.",
+        "id": "category",
+        "label": "Category section",
+        "hint": "Displays shared categories from the Category manager; configure only its presentation.",
         "entries": [
             {"id": "category_grid", "label": "Department tiles", "type": "category_grid",
              "hint": "Every visible department, from the department manager."},
+        ],
+    },
+    {
+        "id": "brand",
+        "label": "Brand section",
+        "hint": "Displays shared brands from the Brand manager; configure only its presentation.",
+        "entries": [
             {"id": "brand_carousel", "label": "Brand row", "type": "brand_carousel",
              "hint": "Visible brands, from the brand manager."},
+        ],
+    },
+    {
+        "id": "store",
+        "label": "Store section",
+        "hint": "Displays active seller/store records; configure only its presentation.",
+        "entries": [
             {"id": "featured_stores", "label": "Stores", "type": "featured_stores",
              "hint": "Active sellers worth following."},
         ],
     },
     {
-        "id": "display",
-        "label": "Promotions and display",
-        "hint": "Adverts and page furniture.",
+        "id": "other",
+        "label": "Other sections",
+        "hint": "Advert and page-furniture sections use their existing sources.",
         "entries": [
+            {"id": "promo_strip", "label": "Message strip", "type": "promo_strip",
+             "hint": "One line of reassurance."},
             {"id": "promo_slots", "label": "Advert slots", "type": "promo_slots",
              "hint": "Placed adverts, from the advert manager."},
             {"id": "footer", "label": "Footer", "type": "footer",
@@ -326,6 +306,8 @@ def selection_mode_of(section: dict) -> str:
     if not is_product_section(row):
         return SELECTION_NONE
     source = str(row.get("source") or ASSIGNED_SOURCE).strip().lower()
+    if source in {"featured", "flash_sale"}:
+        return SELECTION_MANUAL
     return SELECTION_MANUAL if source == ASSIGNED_SOURCE else SELECTION_AUTOMATIC
 
 
@@ -334,6 +316,8 @@ def source_of(section: dict) -> str:
     if not is_product_section(row):
         return ""
     source = str(row.get("source") or ASSIGNED_SOURCE).strip().lower()
+    if source in {"featured", "flash_sale"}:
+        return ASSIGNED_SOURCE
     return source if source in ALL_SOURCES else ASSIGNED_SOURCE
 
 
@@ -366,6 +350,8 @@ def normalize_section(section: dict) -> dict:
     row = dict(section or {})
     if is_product_section(row):
         source = str(row.get("source") or ASSIGNED_SOURCE).strip().lower()
+        if source in {"featured", "flash_sale"}:
+            source = ASSIGNED_SOURCE
         if source not in ALL_SOURCES:
             source = ASSIGNED_SOURCE
         row["source"] = source
@@ -420,9 +406,12 @@ def apply_placement_overrides(product: dict, row) -> dict:
     price = float(getattr(row, "price", 0) or 0)
     compare_at = float(getattr(row, "compare_at", 0) or 0)
     base_price = float(data.get("price") or 0)
-    if price > 0 and abs(price - base_price) > 1e-9:
-        data["price"] = price
-        data["sectionPrice"] = price
+    base_compare_at = float(data.get("compareAt") or 0)
+    price_changed = price > 0 and abs(price - base_price) > 1e-9
+    compare_at_changed = abs(compare_at - base_compare_at) > 1e-9
+    if price_changed or compare_at_changed:
+        data["price"] = price if price > 0 else base_price
+        data["sectionPrice"] = data["price"]
         data["compareAt"] = compare_at if compare_at > price else None
     config = getattr(row, "config", None) or {}
     label = str(config.get("label") or "").strip()

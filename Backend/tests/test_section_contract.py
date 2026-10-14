@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+from types import SimpleNamespace
 
 _DB = tempfile.NamedTemporaryFile(prefix="ferixas-section-contract-", suffix=".db", delete=False)
 _DB.close()
@@ -24,10 +25,10 @@ os.environ["FERIXAS_TEST_STAFF_PASSWORD"] = "TestOnly-Password-123!"
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app import app  # noqa: E402
-from core import ContentDocument, is_assignable_product_section  # noqa: E402
+from core import ContentDocument, SectionPlacement, SessionLocal, is_assignable_product_section  # noqa: E402
 from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FLASH_SALE_DEFAULTS, LEGACY_SOURCES,
                           PALETTE, PRESENTATIONS, SELECTION_AUTOMATIC, SELECTION_MANUAL,
-                          is_manual_product_section, normalize_section, section_is_live,
+                          apply_placement_overrides, is_manual_product_section, normalize_section, section_is_live,
                           selection_mode_of, source_of, validate_section)  # noqa: E402
 from test_support import reset_test_database  # noqa: E402
 from fixtures import create_test_records  # noqa: E402
@@ -67,12 +68,47 @@ class SectionContractTest(unittest.TestCase):
             self.assertTrue(entry.get("label"), entry)
             self.assertTrue(entry.get("id"), entry)
 
-    def test_a_flash_sale_is_offered_as_a_manual_campaign(self):
-        entries = [entry for group in PALETTE for entry in group["entries"]]
-        flash = next(entry for entry in entries if entry.get("presentation") == "flash_sale")
-        self.assertEqual(flash["selectionMode"], SELECTION_MANUAL)
-        self.assertEqual(flash["source"], "assigned")
-        self.assertIn(flash["type"], {"product_carousel", "product_grid"})
+    def test_palette_is_family_based_and_product_is_configured_not_preset(self):
+        groups = {group["id"]: group for group in PALETTE}
+        self.assertIn("hero", groups)
+        self.assertIn("category", groups)
+        self.assertIn("brand", groups)
+        self.assertEqual({entry["type"] for entry in groups["hero"]["entries"]}, {"hero_banner", "hero_slim"})
+        self.assertEqual(groups["category"]["entries"][0]["type"], "category_grid")
+        self.assertEqual(groups["brand"]["entries"][0]["type"], "brand_carousel")
+        product_entries = groups["product"]["entries"]
+        self.assertEqual(len(product_entries), 1)
+        self.assertTrue(product_entries[0]["asksSource"])
+        self.assertEqual(product_entries[0]["id"], "product_section")
+        self.assertFalse(any(entry.get("presentation") == "flash_sale" for entry in product_entries))
+        self.assertFalse(any(group["id"] == "automatic_products" for group in PALETTE))
+
+    def test_legacy_featured_and_flash_sale_sources_become_manual_sections(self):
+        for legacy_source in ("featured", "flash_sale"):
+            legacy = {"id": f"sec_{legacy_source}", "type": "product_carousel", "source": legacy_source}
+            self.assertTrue(is_manual_product_section(legacy), legacy_source)
+            self.assertEqual(source_of(legacy), "assigned", legacy_source)
+            self.assertEqual(normalize_section(legacy)["source"], "assigned", legacy_source)
+        self.assertNotIn("featured", AUTOMATIC_SOURCES)
+
+    def test_product_card_uses_section_offer_price_and_compare_at(self):
+        base = {"id": "prd_test", "price": 120, "compareAt": 130, "availableQuantity": 8}
+        row = SimpleNamespace(price=75, compare_at=120, quantity=3, section_id="sec_offer", config={})
+        card = apply_placement_overrides(base, row)
+        self.assertEqual(card["price"], 75)
+        self.assertEqual(card["sectionPrice"], 75)
+        self.assertEqual(card["compareAt"], 120)
+        self.assertEqual(card["sectionQuantity"], 3)
+
+        compare_only = SimpleNamespace(price=120, compare_at=150, quantity=0, section_id="sec_offer", config={})
+        card = apply_placement_overrides(base, compare_only)
+        self.assertEqual(card["price"], 120)
+        self.assertEqual(card["sectionPrice"], 120)
+        self.assertEqual(card["compareAt"], 150)
+
+        cleared = SimpleNamespace(price=120, compare_at=0, quantity=0, section_id="sec_offer", config={})
+        card = apply_placement_overrides(base, cleared)
+        self.assertIsNone(card["compareAt"])
 
     def test_automatic_sources_are_never_manual_placement_destinations(self):
         document = ContentDocument(id="doc_probe", title="Probe", document_type="marketplace_home",
@@ -95,11 +131,60 @@ class SectionContractTest(unittest.TestCase):
 
     def test_normalising_a_flash_sale_writes_the_campaign_defaults(self):
         normalised = normalize_section({"id": "sec_flash", "type": "product_carousel",
-                                        "name": "Flash sale", "presentation": "flash_sale"})
+                                        "name": "Weekend offer", "presentation": "flash_sale"})
         self.assertEqual(normalised["selectionMode"], SELECTION_MANUAL)
         self.assertEqual(normalised["source"], "assigned")
         for key, value in FLASH_SALE_DEFAULTS.items():
             self.assertEqual(normalised.get(key), value, key)
+
+    def test_custom_manual_section_terms_survive_seller_review_and_approval(self):
+        page = self.client.get("/admin/cms/page", headers={"X-Ferix-Session": self.admin},
+                               params={"id": "doc_marketplace_home"}).json()["page"]
+        sections = list(page["sections"])
+        sections.append({
+            "id": "sec_custom_offer", "type": "product_carousel", "name": "Weekend offer",
+            "source": "assigned", "selectionMode": "manual", "presentation": "flash_sale",
+            "position": len(sections) + 1, "visible": True,
+        })
+        saved = self.client.patch("/admin/cms/page", headers={"X-Ferix-Session": self.admin},
+                                  json={"id": "doc_marketplace_home", "sections": sections})
+        self.assertEqual(saved.status_code, 200, saved.text)
+
+        merchant_login = self.client.post("/merchant/login", json={
+            "email": "owner@aurasound.ferixas.com", "password": "TestOnly-Password-123!",
+        })
+        self.assertEqual(merchant_login.status_code, 200, merchant_login.text)
+        merchant = merchant_login.json()["token"]
+        options = self.client.get("/merchant/product/options", headers={"X-Ferix-Session": merchant})
+        self.assertEqual(options.status_code, 200, options.text)
+        section_value = "doc_marketplace_home__sec_custom_offer"
+        product = self.client.post("/merchant/product", headers={"X-Ferix-Session": merchant}, json={
+            "title": "Custom section terms test item",
+            "category": options.json()["categories"][0]["slug"],
+            "price": 120, "compareAt": 130, "stock": 9, "marketplace": True,
+            "section_tags": [section_value],
+            "section_terms": {section_value: {
+                "price": 75, "compareAt": 120, "label": "Weekend price",
+                "startsAt": "2026-10-15T10:00", "endsAt": "2026-10-20T18:00",
+            }},
+        })
+        self.assertEqual(product.status_code, 200, product.text)
+        submitted = product.json()["product"]
+        self.assertEqual(submitted["placementTerms"][section_value]["price"], 75)
+
+        approved = self.client.post("/admin/review/decision", headers={"X-Ferix-Session": self.admin}, json={
+            "id": submitted["id"], "decision": "approve",
+        })
+        self.assertEqual(approved.status_code, 200, approved.text)
+        with SessionLocal() as db:
+            placement = db.query(SectionPlacement).filter_by(
+                product_id=submitted["id"], document_id="doc_marketplace_home", section_id="sec_custom_offer",
+            ).one()
+            self.assertEqual(placement.price, 75)
+            self.assertEqual(placement.compare_at, 120)
+            self.assertEqual(placement.config.get("label"), "Weekend price")
+            self.assertIsNotNone(placement.starts_at)
+            self.assertIsNotNone(placement.ends_at)
 
     def test_a_broken_section_is_rejected_before_it_is_stored(self):
         with self.assertRaises(ValueError):

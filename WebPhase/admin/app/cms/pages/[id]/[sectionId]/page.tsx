@@ -162,10 +162,10 @@ const DRAW_FROM: Record<string, { href: string; label: string }> = {
 };
 
 /**
- * The campaign a Flash Sale carries.
+ * The settings carried by the timed-campaign visual treatment.
  *
  * A timed campaign is not just a row of products: it has its own words, its own
- * window, a countdown and a colour scheme. The per-product settings — the flash
+ * window, a countdown and a colour scheme. The per-product settings — the offer
  * price, the discount label, each product's own window — belong to the
  * placement and are filled in from the product form, not here.
  */
@@ -224,9 +224,13 @@ function productContractFields(section: CmsSection, sectionTypes: CmsSectionType
   }
   const fields: EditorField[] = [
     { key: "source", title: "Products come from", options },
+    { key: "type", title: "Product display layout", options: [
+      { value: "product_carousel", label: "Product row / carousel" },
+      { value: "product_grid", label: "Product grid" },
+    ] },
     { key: "presentation", title: "How it is dressed", options: [
       { value: "standard", label: "A standard product row" },
-      { value: "flash_sale", label: "A Flash sale campaign — countdown, colours, per-product prices" },
+      { value: "flash_sale", label: "Timed campaign band — custom section name, countdown, colours, per-product prices" },
       { value: "sale", label: "Sale styling" },
       { value: "new_arrivals", label: "New arrivals styling" },
       { value: "featured", label: "Featured styling" },
@@ -397,6 +401,9 @@ export default async function CmsSectionEditor({
                 <CmsActionForm action={saveCmsSectionAction} className="grid gap-4">
                   <input type="hidden" name="id" value={id} />
                   <input type="hidden" name="sectionId" value={section.id} />
+                  <Field title="Section name">
+                    <input name="field_name" defaultValue={String(section.name ?? "")} required className={inputClass} placeholder="Give this section any name" />
+                  </Field>
                   {isHeroSection ? (
                     <Field title="Reuse a saved campaign">
                       <select name="field_bannerId" defaultValue={selectedBannerId} className={selectClass}>

@@ -62,6 +62,9 @@ export function ProductForm({
   );
   const [images, setImages] = useState<string[]>(product?.images ?? []);
   const [files, setFiles] = useState<File[]>([]);
+  const [selectedSections, setSelectedSections] = useState<Set<string>>(
+    () => new Set(product?.section_tags ?? []),
+  );
   const previews = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
   useEffect(() => () => previews.forEach((url) => URL.revokeObjectURL(url)), [previews]);
   const sectionGroups = sections.reduce<Record<string, typeof sections>>((groups, section) => {
@@ -239,7 +242,54 @@ export function ProductForm({
                 <fieldset key={page} className="grid gap-2">
                   <legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {pageSections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="ml-1 text-[10.5px] text-chalk-dim">· assigned products</span>{section.presentation === "flash_sale" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· flash sale terms</span> : null}{section.status === "draft" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· draft</span> : null}</span></label>)}
+                    {pageSections.map((section) => {
+                      const selected = selectedSections.has(section.value);
+                      const terms = product?.placementTerms?.[section.value] ?? {};
+                      const fields = (section.productConfigSchema ?? []).filter((field) => field.key !== "position");
+                      const checkboxId = `section-${section.value}`;
+                      return (
+                        <div key={section.value} className="rounded-[8px] border border-hairline p-3">
+                          <label htmlFor={checkboxId} className="flex cursor-pointer items-start gap-2.5 text-[12px] text-chalk">
+                            <input
+                              id={checkboxId}
+                              type="checkbox"
+                              name="section_tags"
+                              value={section.value}
+                              checked={selected}
+                              onChange={(event) => setSelectedSections((current) => {
+                                const next = new Set(current);
+                                if (event.target.checked) next.add(section.value);
+                                else next.delete(section.value);
+                                return next;
+                              })}
+                              className="mt-0.5 accent-[#e4572e]"
+                            />
+                            <span>{section.name}<span className="ml-1 text-[10.5px] text-chalk-dim">· manual products</span>{section.status === "draft" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· draft</span> : null}</span>
+                          </label>
+                          {fields.length ? (
+                            <div className={`${selected ? "grid" : "hidden"} mt-3 gap-2 border-t border-hairline pt-3 sm:grid-cols-2`}>
+                              {fields.map((field) => (
+                                <label key={field.key} className="grid gap-1">
+                                  <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-chalk-dim">{field.label}{field.required ? <span className="text-[#e4572e"> *</span> : null}</span>
+                                  <input
+                                    name={`section_term__${section.value}__${field.key}`}
+                                    type={field.kind === "number" ? "number" : field.kind === "datetime" ? "datetime-local" : field.kind === "color" ? "color" : "text"}
+                                    step={field.kind === "number" ? "0.01" : undefined}
+                                    min={field.kind === "number" ? 0 : undefined}
+                                    required={selected && Boolean(field.required)}
+                                    disabled={!selected}
+                                    defaultValue={field.kind === "datetime"
+                                      ? String(terms[field.key] ?? "").replace(/Z$/, "").slice(0, 16)
+                                      : terms[field.key] == null ? "" : String(terms[field.key])}
+                                    className={inputClass}
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                 </fieldset>
               ))}

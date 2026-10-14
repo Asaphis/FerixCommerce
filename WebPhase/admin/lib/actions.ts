@@ -307,6 +307,25 @@ export async function addCmsSectionAction(_prev: FormState, formData: FormData):
   const type = String(formData.get("type") ?? "").trim();
   const label = String(formData.get("name") ?? "").trim();
   if (!id || !type) return { error: "Choose what kind of section to add." };
+  const isProductSection = type === "product_carousel" || type === "product_grid";
+  const mode = String(formData.get("selectionMode") ?? "").trim().toLowerCase();
+  let source = String(formData.get("source") ?? "").trim().toLowerCase();
+  if (isProductSection) {
+    if (!label) return { error: "Give this product section its own name." };
+    if (mode === "manual") source = "assigned";
+    else if (mode !== "automatic" || !source || source === "assigned") {
+      return { error: "Choose manual assignment or an automatic product source." };
+    }
+  }
+  const sourceConfig: Record<string, string | number> = {};
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("sourceConfig__")) continue;
+    const field = key.slice("sourceConfig__".length);
+    const raw = String(value).trim();
+    if (!field || !raw) continue;
+    const numeric = Number(raw);
+    sourceConfig[field] = Number.isFinite(numeric) && /^-?\d+(?:\.\d+)?$/.test(raw) ? numeric : raw;
+  }
   try {
     const { page } = await api.getCmsPage(session, id);
     const sections = [...page.sections];
@@ -316,14 +335,11 @@ export async function addCmsSectionAction(_prev: FormState, formData: FormData):
       name: label || type.replace(/_/g, " "),
       position: sections.length + 1,
       visible: true,
-      // The palette decides how a section's products are chosen before it adds
-      // anything: a product row can be filled by hand or by a catalogue feed,
-      // and an automatic feed must never be mistaken for a manual one.
-      ...(formData.get("source") ? { source: String(formData.get("source")) } : {}),
-      ...(formData.get("selectionMode") ? { selectionMode: String(formData.get("selectionMode")) } : {}),
+      ...(isProductSection ? { source, selectionMode: mode === "manual" ? "manual" : "automatic" } : {}),
       ...(formData.get("presentation") ? { presentation: String(formData.get("presentation")) } : {}),
-      ...(formData.get("limit") ? { limit: Number(formData.get("limit")) || 8 } : {}),
+      ...(formData.get("limit") ? { limit: Math.min(60, Math.max(1, Number(formData.get("limit")) || 8)) } : {}),
       ...(formData.get("layout") ? { layout: String(formData.get("layout")) } : {}),
+      ...(Object.keys(sourceConfig).length ? sourceConfig : {}),
     } as api.CmsSection);
     await api.saveCmsPage(session, { id, sections });
   } catch (error) {
