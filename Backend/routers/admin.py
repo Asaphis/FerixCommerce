@@ -2429,6 +2429,8 @@ def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
         require_permission(staff, "cms.manage")
+        from cms_sections import (CARD_DISPLAY_FIELDS, REQUIREMENT_LIBRARY, REQUIREMENT_SETS,
+                                  SECTION_FIELDS, section_fields)
         return {
             "palette": PALETTE,
             "selectionModes": list(SELECTION_MODES),
@@ -2444,6 +2446,12 @@ def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
             "flashSaleDefaults": FLASH_SALE_DEFAULTS,
             "productConfigPresets": PRODUCT_CONFIG_PRESETS,
             "allSources": list(ALL_SOURCES),
+            # The editor renders sections from these, so a field added here
+            # appears in the console with the right control and no frontend change.
+            "sectionFields": {name: section_fields({"type": name}) for name in SECTION_FIELDS},
+            "requirementLibrary": REQUIREMENT_LIBRARY,
+            "requirementSets": {name: list(keys) for name, keys in REQUIREMENT_SETS.items()},
+            "cardDisplay": list(CARD_DISPLAY_FIELDS),
         }
 
 
