@@ -38,8 +38,9 @@ from core import (
     merchant_follower_count, is_public_store, public_taxonomy, visible_published_sections,
     is_assignable_product_section, schema_ready, CMS_PRODUCT_SOURCES,
 )
-from cms_sections import (apply_placement_overrides, is_manual_product_section, is_product_section,
-                          moment_of, placement_is_live, section_is_live, selection_mode_of, source_of)
+from cms_sections import (apply_placement_overrides, feed_rule, is_manual_product_section,
+                          is_product_section, moment_of, placement_is_live, section_is_live,
+                          selection_mode_of, selector_of, source_of)
 
 from routers import admin as admin_router
 from routers import merchant as merchant_router
@@ -519,26 +520,33 @@ def _is_on_sale(product: dict) -> bool:
 
 
 def _paid_units_by_window(db, sections, fallback: dict[str, int]) -> dict[int, dict[str, int]]:
-    """Paid-unit counts for every sales window a page's sections ask for.
+    """Paid-unit counts for every window a page's feeds ask for.
 
-    A section that says "sold in the last 7 days" must not be ranked with the
-    platform's 30-day figure, so each window a page actually uses is counted.
+    Window 0 means every paid sale ever, which is what best sellers counts. Any
+    other window is counted on its own, so a section that says "the last 7 days"
+    is never ranked with the platform's 30-day figure.
     """
-    windows = {30}
+    windows = {0, 30}
     for section in sections or []:
         if not isinstance(section, dict):
             continue
         try:
-            requested = int(section.get("windowDays") or 0)
+            windows.add(int(feed_rule(section).get("window") or 0))
         except (TypeError, ValueError):
             continue
-        if requested > 0:
-            windows.add(requested)
     counts: dict[int, dict[str, int]] = {30: fallback}
     for window in sorted(windows):
-        if window not in counts:
-            counts[window] = paid_marketplace_product_units(db, days=window)
+        if window in counts:
+            continue
+        counts[window] = paid_marketplace_product_units(db, days=window or None)
     return counts
+
+
+def _units_for(window: int, paid_units: dict[str, int], units_by_window: dict[int, dict[str, int]]) -> dict[str, int]:
+    """The paid-unit counts for one feed's window."""
+    if not window:
+        return (units_by_window or {}).get(0, paid_units)
+    return (units_by_window or {}).get(window, paid_units)
 
 
 def resolve_cms_product_source(section: dict, decorated: list[dict], public_by_id: dict[str, dict],
@@ -546,61 +554,58 @@ def resolve_cms_product_source(section: dict, decorated: list[dict], public_by_i
                                units_by_window: Optional[dict[int, dict[str, int]]] = None) -> list[dict]:
     """Resolve an automatic product section from the public product pool.
 
-    ``assigned`` remains placement-driven. Automatic sources are read-only
-    views over approved, publicly sellable products and never create placement
-    rows or bypass the public eligibility gate.
+    ``assigned`` remains placement-driven. Automatic feeds are read-only views
+    over approved, publicly sellable products, and each ranks by the rule the
+    contract declares for it - so Trending (units per day over a short window)
+    and Best sellers (total paid units, all time) cannot be the same list behind
+    two names. ``flash_ids`` is accepted for callers that still pass a live
+    promotion; no feed reads it now.
     """
     source = source_of(section)
     if not source or source == "assigned" or source not in CMS_PRODUCT_SOURCES:
         return []
-    window = int(section.get("windowDays") or 30)
-    units = (units_by_window or {}).get(window, paid_units)
+    rule = feed_rule(section)
+    primary = str(rule.get("primary") or "units").strip().lower()
+    window = int(rule.get("window") or 0)
+    minimum = int(rule.get("minimum") or 0)
     rows = list(decorated)
-    if source in {"trending", "best_sellers"}:
-        minimum = int(section.get("minimumSales") or 0)
-        if minimum > 0:
-            rows = [product for product in rows
-                    if units.get(product.get("id", ""), 0) >= minimum]
+
+    if minimum > 0 and primary in {"units", "velocity"}:
+        units = _units_for(window, paid_units, units_by_window)
+        rows = [product for product in rows if units.get(product.get("id", ""), 0) >= minimum]
+
+    if primary in {"units", "velocity"}:
+        units = _units_for(window, paid_units, units_by_window)
+        rows = sorted(rows, key=lambda product: str(product.get("createdAt") or ""), reverse=True)
         rows.sort(key=lambda product: -units.get(product.get("id", ""), 0))
-    elif source == "newest_arrivals":
+    elif primary == "created_desc":
         if window > 0:
             cutoff = now() - timedelta(days=window)
             rows = [product for product in rows
                     if (moment_of(product.get("createdAt")) or cutoff) >= cutoff]
-        rows.sort(key=lambda product: str(product.get("createdAt") or ""), reverse=True)
-    elif source == "featured":
-        rows.sort(key=lambda product: (
-            not bool(product.get("featured")),
-            -((public_by_id.get(product.get("id", ""), {}).get("rating") or 0) * 100
-              + (public_by_id.get(product.get("id", ""), {}).get("reviewCount") or 0)),
-        ))
-    elif source == "on_sale":
-        # Automatic, and never attached by hand: whatever carries a discount
-        # right now is what shows.
+        rows = sorted(rows, key=lambda product: str(product.get("createdAt") or ""), reverse=True)
+    elif primary == "discount_pct":
         rows = [product for product in rows if _is_on_sale(product)]
         rows.sort(key=lambda product: -(
             (float(product.get("compareAt") or 0) - float(product.get("price") or 0))
             / max(float(product.get("compareAt") or 1), 1)
         ))
-    elif source == "category":
-        wanted = str(section.get("categorySlug") or section.get("category") or "").strip()
-        rows = [product for product in rows if wanted and product.get("category") == wanted]
-    elif source == "collection":
-        wanted = str(section.get("collectionSlug") or section.get("collection") or "").strip()
-        rows = [product for product in rows if wanted and wanted in (product.get("collections") or [])]
-    elif source == "flash_sale":
-        # Legacy automatic spelling, kept only so a section saved before the
-        # contract existed still renders. New campaigns are manual sections
-        # with presentation ``flash_sale``.
-        ids = flash_ids or set()
-        rows = [product for product in rows if product.get("id") in ids]
-    elif source == "related":
+    elif primary == "related":
         return []
+    else:
+        rows = sorted(rows, key=lambda product: str(product.get("createdAt") or ""), reverse=True)
+
+    wanted = selector_of(section)
+    if wanted:
+        if source == "category":
+            rows = [product for product in rows if product.get("category") == wanted]
+        else:
+            rows = [product for product in rows if wanted in (product.get("collections") or [])]
+
     limit = int(section.get("limit") or 0)
     if limit > 0:
         rows = rows[:min(limit, 60)]
     return [public_by_id[product["id"]] for product in rows if product.get("id") in public_by_id]
-
 
 @app.get("/catalog/home")
 def home():

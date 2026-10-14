@@ -27,9 +27,12 @@ from fastapi.testclient import TestClient  # noqa: E402
 from app import app  # noqa: E402
 from core import ContentDocument, SectionPlacement, SessionLocal, is_assignable_product_section  # noqa: E402
 from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FLASH_SALE_DEFAULTS, LEGACY_SOURCES,
-                          PALETTE, PRESENTATIONS, SELECTION_AUTOMATIC, SELECTION_MANUAL,
-                          apply_placement_overrides, is_manual_product_section, normalize_section, section_is_live,
-                          selection_mode_of, source_of, validate_section)  # noqa: E402
+                          PALETTE, PRESENTATIONS, REQUIREMENT_LIBRARY, REQUIREMENT_SETS,
+                          SELECTION_AUTOMATIC, SELECTION_MANUAL, SECTION_FIELDS,
+                          apply_placement_overrides, card_display_defaults, feed_rule, is_manual_product_section,
+                          normalize_section, palette_for, placement_is_live, product_config_schema,
+                          requirement_fields, section_fields, section_is_live, section_requirements,
+                          selection_mode_of, selector_of, source_of, validate_section)  # noqa: E402
 from test_support import reset_test_database  # noqa: E402
 from fixtures import create_test_records  # noqa: E402
 
@@ -252,3 +255,159 @@ class SectionContractTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SectionDeclarationTest(unittest.TestCase):
+    """What a section asks of a product, and how each feed ranks."""
+
+    def plain(self, **extra):
+        row = {"id": "sec_plain", "type": "product_carousel", "source": "assigned"}
+        row.update(extra)
+        return row
+
+    def campaign(self, **extra):
+        row = self.plain(presentation="flash_sale")
+        row.update(extra)
+        return row
+
+    def feed(self, source, **extra):
+        row = {"id": f"sec_{source}", "type": "product_carousel", "source": source}
+        row.update(extra)
+        return row
+
+    # ── the declaration ───────────────────────────────────────────────────
+    def test_a_plain_row_asks_for_nothing_but_its_own_order(self):
+        self.assertEqual(section_requirements(self.plain()), list(REQUIREMENT_SETS["simple"]))
+
+    def test_a_campaign_dressing_asks_for_a_price_and_a_label(self):
+        asked = section_requirements(self.campaign())
+        for key in ("price", "compareAt", "label", "startsAt", "endsAt"):
+            self.assertIn(key, asked)
+
+    def test_the_dressing_only_ever_adds_to_what_a_section_asks(self):
+        # The fault this replaces: a section created as a plain row could never
+        # ask for a price afterwards, because its field list was frozen.
+        before, after = self.plain(), self.plain(presentation="flash_sale")
+        self.assertLess(set(section_requirements(before)), set(section_requirements(after)))
+
+    def test_a_plain_row_can_be_given_a_price_deliberately(self):
+        row = normalize_section(self.plain(productRequirements=["price", "label"],
+                                           requirementsPreset="custom"))
+        keys = [item["key"] for item in row["productConfigSchema"]]
+        self.assertIn("price", keys)
+        self.assertIn("label", keys)
+
+    def test_a_sections_own_list_is_honoured_exactly(self):
+        row = normalize_section(self.plain(productRequirements=["quantity"], requirementsPreset="custom"))
+        self.assertEqual(row["productRequirements"], ["quantity"])
+        self.assertEqual([item["key"] for item in row["productConfigSchema"]], ["quantity"])
+
+    def test_saving_a_section_never_freezes_the_field_list(self):
+        first = normalize_section(self.plain())
+        second = normalize_section(dict(first))
+        self.assertEqual(section_requirements(first), section_requirements(second))
+        third = normalize_section(dict(second, presentation="flash_sale", requirementsPreset="campaign"))
+        self.assertIn("price", section_requirements(third))
+
+    def test_an_older_section_keeps_what_it_already_asked_for(self):
+        legacy = self.plain(presentation="flash_sale",
+                            productConfigSchema=[{"key": "price"}, {"key": "label"}, {"key": "badgeColor"}])
+        for key in ("price", "label", "badgeColor"):
+            self.assertIn(key, section_requirements(legacy))
+
+    def test_the_product_form_reads_the_sections_own_list(self):
+        row = normalize_section(self.plain(productRequirements=["price"], requirementsPreset="custom"))
+        self.assertEqual([item["key"] for item in product_config_schema(row)], ["price"])
+
+    def test_an_unknown_requirement_is_refused(self):
+        with self.assertRaises(ValueError):
+            validate_section({"id": "s", "type": "product_carousel", "source": "assigned",
+                              "productRequirements": ["free_tv"]})
+
+    def test_a_section_cannot_end_before_it_starts(self):
+        with self.assertRaises(ValueError):
+            validate_section({"id": "s", "type": "hero_banner",
+                              "startsAt": "2026-11-30T10:00", "endsAt": "2026-11-01T10:00"})
+        validate_section({"id": "s", "type": "hero_banner",
+                          "startsAt": "2026-11-01T10:00", "endsAt": "2026-11-30T10:00"})
+
+    def test_every_field_a_section_shows_is_typed(self):
+        for section_type, fields in SECTION_FIELDS.items():
+            for item in fields:
+                self.assertIn(item["kind"], {"text", "number", "datetime", "color", "choice", "toggle"},
+                              f"{section_type}.{item['key']}")
+                self.assertTrue(item.get("label"), f"{section_type}.{item['key']}")
+        self.assertTrue([i for i in section_fields(self.campaign()) if i["kind"] == "color"],
+                        "a campaign must offer colour pickers, not hex text boxes")
+        self.assertTrue([i for i in section_fields({"type": "hero_banner"}) if i["kind"] == "datetime"],
+                        "every family can carry the section clock")
+
+    def test_a_card_has_display_switches_of_its_own(self):
+        shown = card_display_defaults(self.campaign())
+        for key in ("showSectionPrice", "showCompareAt", "showLabel", "showCountdown"):
+            self.assertIn(key, shown)
+
+    # ── the feeds ─────────────────────────────────────────────────────────
+    def test_every_feed_declares_a_ranking_rule(self):
+        for source, entry in AUTOMATIC_SOURCES.items():
+            self.assertIn("rank", entry, source)
+            self.assertTrue(entry["rank"].get("primary"), source)
+
+    def test_trending_and_best_sellers_rank_differently(self):
+        trending, best = feed_rule(self.feed("trending")), feed_rule(self.feed("best_sellers"))
+        self.assertNotEqual(trending, best)
+        self.assertEqual(trending["window"], 7)
+        self.assertEqual(best["window"], 0)
+
+    def test_an_operator_can_overrule_a_feeds_own_window(self):
+        rule = feed_rule(self.feed("trending", windowDays=14, minimumSales=3))
+        self.assertEqual((rule["window"], rule["minimum"]), (14, 3))
+
+    def test_the_two_sales_feeds_return_different_orders(self):
+        from app import resolve_cms_product_source
+        products = [{"id": "a", "price": 10, "compareAt": 0, "category": "home", "collections": [],
+                     "createdAt": "2026-10-13T09:00:00+00:00"},
+                    {"id": "b", "price": 10, "compareAt": 0, "category": "home", "collections": [],
+                     "createdAt": "2026-10-01T09:00:00+00:00"}]
+        public = {item["id"]: dict(item) for item in products}
+        units_by_window = {0: {"a": 10, "b": 100}, 7: {"a": 30, "b": 1}}
+        trending = resolve_cms_product_source(self.feed("trending"), products, public, units_by_window[7], None, units_by_window)
+        best = resolve_cms_product_source(self.feed("best_sellers"), products, public, units_by_window[0], None, units_by_window)
+        self.assertEqual([i["id"] for i in trending], ["a", "b"])
+        self.assertEqual([i["id"] for i in best], ["b", "a"])
+
+    def test_a_department_feed_reads_the_record_it_names(self):
+        section = self.feed("category", categorySlug="home")
+        self.assertEqual(selector_of(section), "home")
+        from app import resolve_cms_product_source
+        products = [{"id": "a", "price": 5, "compareAt": 0, "category": "home", "collections": [],
+                     "createdAt": "2026-10-01T09:00:00+00:00"},
+                    {"id": "b", "price": 5, "compareAt": 0, "category": "garden", "collections": [],
+                     "createdAt": "2026-10-02T09:00:00+00:00"}]
+        public = {item["id"]: dict(item) for item in products}
+        self.assertEqual([i["id"] for i in resolve_cms_product_source(section, products, public, {}, None, {})], ["a"])
+        self.assertEqual(resolve_cms_product_source(self.feed("category", categorySlug="autmn-decor"),
+                                                   products, public, {}, None, {}), [])
+
+    def test_related_is_not_offered_as_a_feed_to_attach_to(self):
+        from app import resolve_cms_product_source
+        self.assertEqual(resolve_cms_product_source(self.feed("related"), [], {}, {}, None, {}), [])
+
+    # ── placement state ───────────────────────────────────────────────────
+    def test_a_product_switched_off_in_a_section_is_not_live(self):
+        self.assertTrue(placement_is_live(SimpleNamespace(active=True, starts_at=None, ends_at=None)))
+        self.assertFalse(placement_is_live(SimpleNamespace(active=False, starts_at=None, ends_at=None)))
+
+    def test_a_placement_with_no_state_recorded_still_reads_as_live(self):
+        self.assertTrue(placement_is_live(SimpleNamespace(starts_at=None, ends_at=None)))
+
+    # ── the palette follows the page ──────────────────────────────────────
+    def test_product_page_blocks_are_only_offered_on_the_product_page(self):
+        self.assertNotIn("product_template", [g["id"] for g in palette_for("marketplace_home")])
+        self.assertIn("product_template", [g["id"] for g in palette_for("marketplace_product")])
+
+    def test_every_requirement_has_a_home_in_the_library(self):
+        for preset, keys in REQUIREMENT_SETS.items():
+            for key in keys:
+                self.assertIn(key, REQUIREMENT_LIBRARY, preset)
+        self.assertEqual([item["key"] for item in requirement_fields(["price", "nope"])], ["price"])
