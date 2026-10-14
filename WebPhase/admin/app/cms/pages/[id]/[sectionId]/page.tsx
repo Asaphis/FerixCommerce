@@ -16,6 +16,10 @@ type Choice = { value: string; label: string };
 type EditorField = {
   key: string;
   title: string;
+  /** The contract's kind: text, number, datetime, color, choice, toggle. */
+  kind?: string;
+  /** One line of explanation under the control. */
+  help?: string;
   /** A paragraph rather than a line. */
   long?: boolean;
   /** A number field. */
@@ -244,6 +248,20 @@ function productContractFields(section: CmsSection, sectionTypes: CmsSectionType
 
 function fieldsFor(section: CmsSection, documentType = "", sectionTypes: CmsSectionTypes = FALLBACK_SECTION_TYPES): EditorField[] {
   const key = String(section.type ?? "");
+  // The contract owns the field list, so a field added in the backend appears here
+  // with the right control and no frontend change.
+  const served = sectionTypes.sectionFields?.[key];
+  if (Array.isArray(served) && served.length) {
+    return served.map((item) => ({
+      key: String(item.key),
+      title: String(item.label ?? item.key),
+      kind: typeof item.kind === "string" ? item.kind : "text",
+      help: typeof item.hint === "string" ? item.hint : undefined,
+      long: item.long === true,
+      numeric: item.kind === "number",
+      options: Array.isArray(item.options) ? (item.options as Choice[]) : undefined,
+    }));
+  }
   const isExploreCatalogFeed = documentType === "marketplace_explore"
     && key === "product_grid"
     && section.perPage !== undefined;
@@ -295,6 +313,16 @@ function initialOption(field: EditorField, section: CmsSection) {
     hero_slim: { mediaOnly: "false" },
   };
   return defaults[String(section.type ?? "")]?.[field.key] ?? "";
+}
+
+/** Where the section's own clock stands, read the same way the shop reads it. */
+function windowPill(section: CmsSection): { tone: "mint" | "amber" | "rose"; label: string } {
+  const now = Date.now();
+  const starts = section.startsAt ? Date.parse(String(section.startsAt)) : NaN;
+  const ends = section.endsAt ? Date.parse(String(section.endsAt)) : NaN;
+  if (!Number.isNaN(ends) && now > ends) return { tone: "rose", label: "Closed" };
+  if (!Number.isNaN(starts) && now < starts) return { tone: "amber", label: "Scheduled" };
+  return { tone: "mint", label: "Live" };
 }
 
 export default async function CmsSectionEditor({
@@ -374,6 +402,7 @@ export default async function CmsSectionEditor({
         action={
           section ? (
             <>
+              <Pill tone={windowPill(section).tone}>{windowPill(section).label}</Pill>
               <Pill tone={section.visible ? "mint" : "neutral"}>{section.visible ? "On the storefront" : "Hidden"}</Pill>
               <Pill tone="neutral">Position {section.position}</Pill>
             </>
@@ -450,6 +479,7 @@ export default async function CmsSectionEditor({
                           defaultValue={String(section[field.key] ?? "")}
                           className={inputClass}
                         />
+                        {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
                       </Field>
                     ),
                   )}
@@ -485,6 +515,32 @@ export default async function CmsSectionEditor({
                 <Empty title="Nothing to edit on this section" body="This one is placed by the page rather than configured in it. Its content comes from its own library." />
               )}
             </Panel>
+
+            {["product_carousel", "product_grid"].includes(String(section.type)) ? (
+              <Panel>
+                <PanelHead title="What this section asks of each product" hint="The product form collects these for every product placed here. The section never stores a price." />
+                <CmsActionForm action={saveCmsSectionAction} className="grid gap-3">
+                  <input type="hidden" name="id" value={id} />
+                  <input type="hidden" name="sectionId" value={section.id} />
+                  <input type="hidden" name="requirementsCustom" value="on" />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {Object.entries(sectionTypes.requirementLibrary ?? {}).map(([key, spec]) => {
+                      const asked = new Set(((section.productConfigSchema as { key: string }[] | undefined) ?? []).map((f) => f.key));
+                      return (
+                        <label key={key} className="flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-hairline bg-panel-2 p-3">
+                          <input type="checkbox" name="requirement" value={key} defaultChecked={asked.has(key)} className="mt-0.5 accent-[#e4572e]" />
+                          <span className="text-[12.5px] text-chalk">
+                            {String(spec.label ?? key)}
+                            {typeof spec.hint === "string" ? <span className="mt-0.5 block text-[11px] leading-relaxed text-chalk-dim">{spec.hint}</span> : null}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-wrap gap-2"><SubmitButton pendingLabel="Saving">Save what it asks for</SubmitButton></div>
+                </CmsActionForm>
+              </Panel>
+            ) : null}
 
             {String(section.type) === "hero_banner" ? (
               <Panel>
@@ -593,6 +649,22 @@ export default async function CmsSectionEditor({
                         {Number(section.rowsPerSet) ? `, ${Number(section.rowsPerSet)} rows per page` : ""}.
                       </p>
                       <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-chalk-dim">{String(section.layout ?? "groups")} · {String(section.seeAll) === "false" ? "no See all link" : "See all link on"}</p>
+                    </div>
+                  </div>
+                ) : ["product_carousel", "product_grid"].includes(String(section.type)) ? (
+                  <div className="p-4" style={{ background: String(section.backgroundColor ?? "#ffffff"), color: String(section.textColor ?? "#12263a") }}>
+                    <span className="font-mono text-[9.5px] uppercase tracking-[0.16em]" style={{ color: String(section.accentColor ?? "#e4572e") }}>{String(section.eyebrow ?? "Eyebrow")}</span>
+                    <p className="mt-1 font-display text-[18px] font-semibold">{String(section.name ?? section.title ?? "This section")}</p>
+                    {section.subtitle ? <p className="mt-1 text-[12px]">{String(section.subtitle)}</p> : null}
+                    {String(section.presentation ?? "") === "flash_sale" ? (
+                      <span className="mt-3 inline-flex rounded-[8px] px-2.5 py-1 font-mono text-[11px]" style={{ background: String(section.timerBackgroundColor ?? "#12263a"), color: String(section.timerTextColor ?? "#ffffff") }}>
+                        {String(section.countdownLabel ?? "Ends in")} · counts down to the section end
+                      </span>
+                    ) : null}
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {[0, 1, 2].map((slot) => (
+                        <div key={slot} className="rounded-[8px] border border-hairline bg-white/80 p-2 text-center text-[10.5px] text-chalk-dim">Product</div>
+                      ))}
                     </div>
                   </div>
                 ) : (
