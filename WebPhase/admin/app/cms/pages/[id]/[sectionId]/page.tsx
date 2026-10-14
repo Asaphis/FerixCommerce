@@ -470,6 +470,23 @@ export default async function CmsSectionEditor({
                           className={`${inputClass} min-h-[92px] py-2`}
                         />
                       </Field>
+                    ) : field.kind === "color" ? (
+                      <Field key={field.key} title={field.title}>
+                        <div className="flex items-center gap-2.5">
+                          <input name={`field_${field.key}`} type="color"
+                            defaultValue={String(section[field.key] ?? "#ffffff")}
+                            className="h-11 w-16 shrink-0 cursor-pointer rounded-[10px] border border-hairline bg-panel-2 p-1" />
+                          <span className="font-mono text-[11px] text-chalk-dim">{String(section[field.key] ?? "#ffffff")}</span>
+                        </div>
+                        {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
+                      </Field>
+                    ) : field.kind === "datetime" ? (
+                      <Field key={field.key} title={field.title}>
+                        <input name={`field_${field.key}`} type="datetime-local"
+                          defaultValue={String(section[field.key] ?? "").replace(/Z$/, "").slice(0, 16)}
+                          className={inputClass} />
+                        {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
+                      </Field>
                     ) : (
                       <Field key={field.key} title={field.title}>
                         <input
