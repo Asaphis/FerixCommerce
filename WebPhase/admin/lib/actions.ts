@@ -409,6 +409,13 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
       }
     }
 
+    // What the section asks of a product. Ticking a requirement makes the list
+    // the operator's own; the recommended set is applied by its own action.
+    if (formData.has("requirementsCustom")) {
+      next.productRequirements = formData.getAll("requirement").map(String);
+      next.requirementsPreset = "custom";
+    }
+
     // A product section keeps its own copy. A Flash Sale carries an eyebrow and
     // a description of its own, and clearing them here threw that work away the
     // moment anyone saved the section.
