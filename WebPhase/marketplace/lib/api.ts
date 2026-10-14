@@ -440,6 +440,7 @@ export type CataloguePage = {
   page: { id: string; title: string; documentType: string } | null;
   sections: CatalogueSection[];
   placements?: Record<string, Product[]>;
+  content?: Record<string, unknown>;
 };
 
 export type Advert = {
@@ -456,6 +457,12 @@ export type Advert = {
 
 export const getCataloguePage = (type: string) =>
   call<CataloguePage>("GET", "catalog/page", { params: { type } });
+
+/** Content fields for an information page (About, Contact, FAQ, ...). */
+export const getPageContent = async (type: string): Promise<{ content: Record<string, unknown> }> => {
+  const result = await call<CataloguePage>("GET", "catalog/page", { params: { type } });
+  return { content: (result.content ?? {}) as Record<string, unknown> };
+};
 
 /** Advertisements running right now for one placement. */
 export const listAdverts = (placement: string) =>

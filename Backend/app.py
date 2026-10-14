@@ -1337,6 +1337,7 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
             return {"page": None, "sections": [], "placements": {}}
         sections = sorted((document.data or {}).get("sections") or [],
                           key=lambda section: section.get("position", 0))
+        content = (document.data or {}).get("content") or {}
         items = [product for product in product_rows(db) if marketplace_product_available(db, product)]
         decorated = decorate(db, items)
         public_by_id = {item["id"]: item for item in public_products(db, decorated)}
@@ -1379,6 +1380,7 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
             "page": {"id": document.id, "title": document.title, "documentType": document.document_type},
             "sections": sections,
             "placements": placements,
+            "content": content,
         }
 
 # ── Public Seller Profile & Follow System ──────────────────────────────────

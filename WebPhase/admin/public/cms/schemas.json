@@ -1,0 +1,463 @@
+{
+  "marketplace_about": [
+    {
+      "kind": "text",
+      "key": "heading",
+      "label": "Heading"
+    },
+    {
+      "kind": "textarea",
+      "key": "intro",
+      "label": "Intro"
+    },
+    {
+      "kind": "text",
+      "key": "howItWorksHeading",
+      "label": "How it works heading"
+    },
+    {
+      "kind": "objectlist",
+      "key": "steps",
+      "label": "Steps",
+      "itemFields": [
+        {
+          "key": "step",
+          "label": "Number",
+          "kind": "text"
+        },
+        {
+          "key": "title",
+          "label": "Title",
+          "kind": "text"
+        },
+        {
+          "key": "body",
+          "label": "Body",
+          "kind": "textarea"
+        }
+      ]
+    },
+    {
+      "kind": "objectlist",
+      "key": "actions",
+      "label": "Buttons",
+      "itemFields": [
+        {
+          "key": "label",
+          "label": "Label",
+          "kind": "text"
+        },
+        {
+          "key": "href",
+          "label": "Link",
+          "kind": "text"
+        },
+        {
+          "key": "variant",
+          "label": "Style",
+          "kind": "text"
+        }
+      ]
+    }
+  ],
+  "marketplace_contact": [
+    {
+      "kind": "text",
+      "key": "heading",
+      "label": "Heading"
+    },
+    {
+      "kind": "textarea",
+      "key": "intro",
+      "label": "Intro"
+    },
+    {
+      "kind": "text",
+      "key": "sendHeading",
+      "label": "Send-message heading"
+    },
+    {
+      "kind": "objectlist",
+      "key": "responseTimes",
+      "label": "Response times",
+      "itemFields": [
+        {
+          "key": "text",
+          "label": "Line",
+          "kind": "text"
+        }
+      ]
+    },
+    {
+      "kind": "objectlist",
+      "key": "directAddresses",
+      "label": "Direct addresses",
+      "itemFields": [
+        {
+          "key": "text",
+          "label": "Address",
+          "kind": "text"
+        }
+      ]
+    },
+    {
+      "kind": "textarea",
+      "key": "hours",
+      "label": "Opening hours"
+    },
+    {
+      "kind": "text",
+      "key": "routeHeading",
+      "label": "Which desk answers what"
+    },
+    {
+      "kind": "text",
+      "key": "routeFooter",
+      "label": "Route footer text"
+    },
+    {
+      "kind": "objectlist",
+      "key": "desks",
+      "label": "Contact desks",
+      "itemFields": [
+        {
+          "key": "label",
+          "label": "Label",
+          "kind": "text"
+        },
+        {
+          "key": "desk",
+          "label": "Answered by",
+          "kind": "text"
+        },
+        {
+          "key": "body",
+          "label": "Body",
+          "kind": "textarea"
+        }
+      ]
+    }
+  ],
+  "marketplace_help": [
+    {
+      "kind": "text",
+      "key": "heading",
+      "label": "Heading"
+    },
+    {
+      "kind": "text",
+      "key": "contactHeading",
+      "label": "Contact block heading"
+    },
+    {
+      "kind": "textarea",
+      "key": "contactBody",
+      "label": "Contact block body"
+    }
+  ],
+  "marketplace_returns": [
+    {
+      "kind": "text",
+      "key": "heading",
+      "label": "Heading"
+    },
+    {
+      "kind": "textarea",
+      "key": "intro",
+      "label": "Intro"
+    },
+    {
+      "kind": "text",
+      "key": "howHeading",
+      "label": "How a return works"
+    },
+    {
+      "kind": "objectlist",
+      "key": "steps",
+      "label": "Return steps",
+      "itemFields": [
+        {
+          "key": "step",
+          "label": "Number",
+          "kind": "text"
+        },
+        {
+          "key": "title",
+          "label": "Title",
+          "kind": "text"
+        },
+        {
+          "key": "body",
+          "label": "Body",
+          "kind": "textarea"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "key": "reminder",
+      "label": "Reminder line"
+    },
+    {
+      "kind": "text",
+      "key": "eligibilityHeading",
+      "label": "Eligibility heading"
+    },
+    {
+      "kind": "objectlist",
+      "key": "eligible",
+      "label": "Accepted items",
+      "itemFields": [
+        {
+          "key": "text",
+          "label": "Line",
+          "kind": "text"
+        }
+      ]
+    },
+    {
+      "kind": "objectlist",
+      "key": "notEligible",
+      "label": "Not accepted items",
+      "itemFields": [
+        {
+          "key": "text",
+          "label": "Line",
+          "kind": "text"
+        }
+      ]
+    },
+    {
+      "kind": "textarea",
+      "key": "exclusionNote",
+      "label": "Exclusion note"
+    },
+    {
+      "kind": "text",
+      "key": "refundHeading",
+      "label": "Refund heading"
+    },
+    {
+      "kind": "objectlist",
+      "key": "refundPoints",
+      "label": "Refund points",
+      "itemFields": [
+        {
+          "key": "title",
+          "label": "Title",
+          "kind": "text"
+        },
+        {
+          "key": "body",
+          "label": "Body",
+          "kind": "textarea"
+        }
+      ]
+    }
+  ],
+  "marketplace_shipping": [
+    {
+      "kind": "text",
+      "key": "heading",
+      "label": "Heading"
+    },
+    {
+      "kind": "textarea",
+      "key": "intro",
+      "label": "Intro"
+    },
+    {
+      "kind": "text",
+      "key": "optionsHeading",
+      "label": "Options heading"
+    },
+    {
+      "kind": "objectlist",
+      "key": "options",
+      "label": "Delivery options",
+      "itemFields": [
+        {
+          "key": "title",
+          "label": "Title",
+          "kind": "text"
+        },
+        {
+          "key": "eta",
+          "label": "ETA",
+          "kind": "text"
+        },
+        {
+          "key": "price",
+          "label": "Price",
+          "kind": "text"
+        },
+        {
+          "key": "body",
+          "label": "Body",
+          "kind": "textarea"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "key": "note",
+      "label": "Note line"
+    },
+    {
+      "kind": "text",
+      "key": "multiHeading",
+      "label": "Multi-parcel heading"
+    },
+    {
+      "kind": "objectlist",
+      "key": "multiParagraphs",
+      "label": "Multi paragraphs",
+      "itemFields": [
+        {
+          "key": "text",
+          "label": "Paragraph",
+          "kind": "textarea"
+        }
+      ]
+    },
+    {
+      "kind": "text",
+      "key": "helpHeading",
+      "label": "Problem heading"
+    },
+    {
+      "kind": "objectlist",
+      "key": "helpCards",
+      "label": "Problem cards",
+      "itemFields": [
+        {
+          "key": "title",
+          "label": "Title",
+          "kind": "text"
+        },
+        {
+          "key": "body",
+          "label": "Body",
+          "kind": "textarea"
+        }
+      ]
+    }
+  ],
+  "marketplace_privacy": [
+    {
+      "kind": "text",
+      "key": "heading",
+      "label": "Heading"
+    },
+    {
+      "kind": "text",
+      "key": "lastUpdated",
+      "label": "Last updated line"
+    },
+    {
+      "kind": "textarea",
+      "key": "intro",
+      "label": "Intro"
+    },
+    {
+      "kind": "text",
+      "key": "dataRequestLabel",
+      "label": "Data request label"
+    },
+    {
+      "kind": "textarea",
+      "key": "dataRequestBody",
+      "label": "Data request body"
+    },
+    {
+      "kind": "objectlist",
+      "key": "clauses",
+      "label": "Clauses",
+      "itemFields": [
+        {
+          "key": "id",
+          "label": "ID",
+          "kind": "text"
+        },
+        {
+          "key": "title",
+          "label": "Title",
+          "kind": "text"
+        }
+      ]
+    }
+  ],
+  "marketplace_terms": [
+    {
+      "kind": "text",
+      "key": "heading",
+      "label": "Heading"
+    },
+    {
+      "kind": "text",
+      "key": "lastUpdated",
+      "label": "Last updated line"
+    },
+    {
+      "kind": "textarea",
+      "key": "intro",
+      "label": "Intro"
+    },
+    {
+      "kind": "text",
+      "key": "contactLabel",
+      "label": "Contact label"
+    },
+    {
+      "kind": "textarea",
+      "key": "contactBody",
+      "label": "Contact body"
+    },
+    {
+      "kind": "objectlist",
+      "key": "clauses",
+      "label": "Clauses",
+      "itemFields": [
+        {
+          "key": "id",
+          "label": "ID",
+          "kind": "text"
+        },
+        {
+          "key": "title",
+          "label": "Title",
+          "kind": "text"
+        }
+      ]
+    }
+  ],
+  "marketplace_faq": [
+    {
+      "kind": "text",
+      "key": "heading",
+      "label": "Heading"
+    },
+    {
+      "kind": "text",
+      "key": "ctaHeading",
+      "label": "Question not here heading"
+    },
+    {
+      "kind": "objectlist",
+      "key": "groups",
+      "label": "FAQ groups",
+      "itemFields": [
+        {
+          "key": "id",
+          "label": "ID (slug)",
+          "kind": "text"
+        },
+        {
+          "key": "title",
+          "label": "Title",
+          "kind": "text"
+        }
+      ]
+    }
+  ]
+}

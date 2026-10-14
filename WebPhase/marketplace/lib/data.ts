@@ -65,7 +65,24 @@ export async function savedIds(): Promise<string[]> {
 
 export async function cartState(): Promise<api.Cart> {
   const creds = await readCredentials();
-  return api.getCart(creds);
+  try {
+    return await api.getCart(creds);
+  } catch {
+    // A guest without a session or cartId has no cart yet — the cart page
+    // shows an empty state rather than crashing on a 401.
+    return {
+      cartId: null,
+      count: 0,
+      merchants: [],
+      lines: [],
+      subtotal: 0,
+      shipping: 0,
+      tax: 0,
+      total: 0,
+      distinctItems: 0,
+      freeShippingOver: 0,
+    } as unknown as Awaited<ReturnType<typeof api.getCart>>;
+  }
 }
 
 /** Turns a thrown API error into something a page can show. */

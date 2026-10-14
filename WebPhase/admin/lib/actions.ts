@@ -175,6 +175,41 @@ export async function saveCmsPageAction(_prev: FormState, formData: FormData): P
   refresh("/cms");
   return { message: "Draft saved. The storefront is unchanged until you publish." };
 }
+export async function savePageContentAction(_prev: FormState, formData: FormData): Promise<FormState> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return { error: "Which page?" };
+  const content: Record<string, unknown> = {};
+  for (const [name, value] of formData.entries()) {
+    if (name === "id" || name === "schema") continue;
+    if (name.includes(".") || name.endsWith("__count")) continue;
+    if (typeof value === "string") content[name] = value;
+  }
+  for (const [name, value] of formData.entries()) {
+    if (!name.endsWith("__count")) continue;
+    const listKey = name.replace(/__count$/, "");
+    const count = Number(value) || 0;
+    const items: Record<string, unknown>[] = [];
+    for (let i = 0; i < count; i++) {
+      const item: Record<string, unknown> = {};
+      const prefix = `${listKey}.${i}.`;
+      for (const [k, v] of formData.entries()) {
+        if (k.startsWith(prefix) && typeof v === "string") item[k.slice(prefix.length)] = v;
+      }
+      items.push(item);
+    }
+    content[listKey] = items;
+  }
+  try {
+    await api.saveCmsPageContent(session, { id, content });
+  } catch (error) {
+    return { error: error instanceof api.ApiError ? error.message : "We could not save this page." };
+  }
+  refresh(`/cms/pages/${id}`);
+  refresh("/cms");
+  return { message: "Content saved." };
+}
 
 /** Publish the draft. This is the moment the storefront changes. */
 export async function publishCmsPageAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -281,6 +316,11 @@ export async function addCmsSectionAction(_prev: FormState, formData: FormData):
       name: label || type.replace(/_/g, " "),
       position: sections.length + 1,
       visible: true,
+      // Optional fields a category card may send: the source of a product
+      // feed, how many to show, and the layout it arranges them in.
+      ...(formData.get("source") ? { source: String(formData.get("source")) } : {}),
+      ...(formData.get("limit") ? { limit: Number(formData.get("limit")) || 8 } : {}),
+      ...(formData.get("layout") ? { layout: String(formData.get("layout")) } : {}),
     } as api.CmsSection);
     await api.saveCmsPage(session, { id, sections });
   } catch (error) {

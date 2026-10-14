@@ -1855,26 +1855,48 @@ def _ensure_document(db, document_id: str) -> ContentDocument:
     db.flush()
     return doc
 def _ensure_platform_pages(db):
-    """Ensure the four core marketplace pages exist with empty sections."""
+    """Sync the marketplace page registry.
+
+    Every shopper-facing page the platform has is registered here exactly once.
+    ``managed`` pages carry editable sections (built in the CMS); ``information``
+    pages carry editable text fields, added as their editors ship. Pages are not
+    created through the CMS - a page exists because the frontend codes it.
+    """
     pages = [
-        ("doc_marketplace_home", "marketplace_home", "Homepage"),
-        ("doc_marketplace_explore", "marketplace_explore", "Explore & Search Results"),
-        ("doc_marketplace_product", "marketplace_product", "Product Page"),
-        ("doc_marketplace_store", "marketplace_store", "Storefront"),
+        # Managed - built section by section in the CMS.
+        ("doc_marketplace_home",      "marketplace_home",      "Homepage",          "managed"),
+        ("doc_marketplace_explore",   "marketplace_explore",   "Explore & Search",  "managed"),
+        ("doc_marketplace_product",   "marketplace_product",   "Product page",      "managed"),
+        ("doc_marketplace_store",     "marketplace_store",     "Storefront",        "managed"),
+        # Information - fixed layout, editable fields.
+        ("doc_marketplace_about",     "marketplace_about",     "About",             "information"),
+        ("doc_marketplace_contact",   "marketplace_contact",   "Contact",           "information"),
+        ("doc_marketplace_faq",       "marketplace_faq",       "FAQ",               "information"),
+        ("doc_marketplace_help",      "marketplace_help",      "Help",              "information"),
+        ("doc_marketplace_returns",   "marketplace_returns",   "Returns policy",    "information"),
+        ("doc_marketplace_shipping",  "marketplace_shipping",  "Shipping policy",   "information"),
+        ("doc_marketplace_privacy",   "marketplace_privacy",   "Privacy policy",    "information"),
+        ("doc_marketplace_terms",     "marketplace_terms",     "Terms",             "information"),
     ]
-    for doc_id, doc_type, title in pages:
-        if db.get(ContentDocument, doc_id) is None:
-            doc = ContentDocument(
+    for doc_id, doc_type, title, kind in pages:
+        existing = db.get(ContentDocument, doc_id)
+        if existing is None:
+            db.add(ContentDocument(
                 id=doc_id,
                 owner_type="platform",
                 owner_id="platform",
                 document_type=doc_type,
                 title=title,
                 status="draft",
-                data={"sections": []},
-            )
-            db.add(doc)
+                data={"sections": [], "kind": kind},
+            ))
             db.flush()
+        else:
+            # Backfill the label on documents created before the label existed.
+            data = dict(existing.data or {})
+            if data.get("kind") != kind:
+                data["kind"] = kind
+                existing.data = data
 
 
 @router.get("/cms/documents")
@@ -1888,37 +1910,6 @@ def cms_documents(session: Optional[str] = Header(None, alias="X-Ferix-Session")
 
                                                                                                                                                               
                                                                                                                                                                       
-@router.post("/cms/page")
-def cms_create_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
-    with SessionLocal() as db:
-        staff = require_staff(db, session, "admin")
-        require_permission(staff, "cms.manage")
-                                                                                                                                                                     
-                                                                                                                                                                      
-        page_id = payload.get("id") or new_id("page")
-        existing = db.get(ContentDocument, page_id)
-        if existing:
-            raise HTTPException(409, "A page with this ID already exists")
-                                                                                                                                                                     
-                                                                                                                                                                      
-        document_type = payload.get("document_type") or page_id
-        title = payload.get("title") or page_id.replace("doc_", "").replace("_", " ").title()
-                                                                                                                                                                     
-                                                                                                                                                                      
-        doc = ContentDocument(
-            id=page_id,
-            owner_type="platform",
-            owner_id="platform",
-            document_type=document_type,
-            title=title,
-            status="draft",
-            data={"sections": []},
-        )
-        db.add(doc)
-        db.flush()
-        audit(db, "admin", staff.email, "cms.page.create", page_id, title)
-        db.commit()
-        return {"page": _document_json(doc)}
 @router.get("/cms/document")
 def cms_document(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str = Query(...)):
     with SessionLocal() as db:
@@ -2373,14 +2364,25 @@ def _ordered_sections(document) -> list:
 
 def _page_summary(document) -> dict:
     sections = _ordered_sections(document)
+    # The kind tells the CMS list whether a page is built from sections
+    # (managed) or edited as text fields (information). Legacy documents
+    # with no kind default to managed, which is what they were.
+    data = document.data or {}
+    kind = str(data.get("kind") or "managed").lower()
+    if kind not in ("managed", "information"):
+        kind = "managed"
     return {
         "id": document.id,
         "title": document.title,
         "documentType": document.document_type,
+        "kind": kind,
         "status": document.status,
         "sectionCount": len(sections),
         "visibleCount": sum(1 for s in sections if s.get("visible", True)),
         "sections": [_section_summary(s, i) for i, s in enumerate(sections)],
+        # The whole document data is returned so an information page's
+        # content fields reach the editor. Sections-only pages ignore it.
+        "data": data,
     }
 
 
@@ -2401,26 +2403,48 @@ def cms_pages(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 
 
 def _ensure_platform_pages(db):
-    """Ensure the four core marketplace pages exist with empty sections."""
+    """Sync the marketplace page registry.
+
+    Every shopper-facing page the platform has is registered here exactly once.
+    ``managed`` pages carry editable sections (built in the CMS); ``information``
+    pages carry editable text fields, added as their editors ship. Pages are not
+    created through the CMS - a page exists because the frontend codes it.
+    """
     pages = [
-        ("doc_marketplace_home", "marketplace_home", "Homepage"),
-        ("doc_marketplace_explore", "marketplace_explore", "Explore & Search Results"),
-        ("doc_marketplace_product", "marketplace_product", "Product Page"),
-        ("doc_marketplace_store", "marketplace_store", "Storefront"),
+        # Managed - built section by section in the CMS.
+        ("doc_marketplace_home",      "marketplace_home",      "Homepage",          "managed"),
+        ("doc_marketplace_explore",   "marketplace_explore",   "Explore & Search",  "managed"),
+        ("doc_marketplace_product",   "marketplace_product",   "Product page",      "managed"),
+        ("doc_marketplace_store",     "marketplace_store",     "Storefront",        "managed"),
+        # Information - fixed layout, editable fields.
+        ("doc_marketplace_about",     "marketplace_about",     "About",             "information"),
+        ("doc_marketplace_contact",   "marketplace_contact",   "Contact",           "information"),
+        ("doc_marketplace_faq",       "marketplace_faq",       "FAQ",               "information"),
+        ("doc_marketplace_help",      "marketplace_help",      "Help",              "information"),
+        ("doc_marketplace_returns",   "marketplace_returns",   "Returns policy",    "information"),
+        ("doc_marketplace_shipping",  "marketplace_shipping",  "Shipping policy",   "information"),
+        ("doc_marketplace_privacy",   "marketplace_privacy",   "Privacy policy",    "information"),
+        ("doc_marketplace_terms",     "marketplace_terms",     "Terms",             "information"),
     ]
-    for doc_id, doc_type, title in pages:
-        if db.get(ContentDocument, doc_id) is None:
-            doc = ContentDocument(
+    for doc_id, doc_type, title, kind in pages:
+        existing = db.get(ContentDocument, doc_id)
+        if existing is None:
+            db.add(ContentDocument(
                 id=doc_id,
                 owner_type="platform",
                 owner_id="platform",
                 document_type=doc_type,
                 title=title,
                 status="draft",
-                data={"sections": []},
-            )
-            db.add(doc)
+                data={"sections": [], "kind": kind},
+            ))
             db.flush()
+        else:
+            # Backfill the label on documents created before the label existed.
+            data = dict(existing.data or {})
+            if data.get("kind") != kind:
+                data["kind"] = kind
+                existing.data = data
 
 
 @router.post("/cms/page")
@@ -3013,3 +3037,33 @@ def order_action(action: str, session: Optional[str] = Header(None, alias="X-Fer
         return {"order": {"id": order.id, "payment": data.get("payment"),
                           "fulfillment": data.get("fulfillment"), "timeline": timeline},
                 "message": message}
+
+
+@router.patch("/cms/page/content")
+def cms_page_content_patch(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
+    """Save the content fields of an information page.
+
+    Information pages carry editable text - headings, intros, lists of
+    clauses, cards and links - under data.content. Managed pages carry
+    sections instead and are edited by PATCH /cms/page. This endpoint only
+    writes data.content, so it can never touch a page's sections.
+    """
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        page_id = str(payload.get("id") or "").strip()
+        content = payload.get("content")
+        if not page_id:
+            raise HTTPException(400, "Which page?")
+        if not isinstance(content, dict):
+            raise HTTPException(400, "content must be an object")
+        doc = db.get(ContentDocument, page_id)
+        if not doc or doc.owner_type != "platform":
+            raise HTTPException(404, "That page does not exist")
+        data = dict(doc.data or {})
+        data["content"] = content
+        doc.data = data
+        db.flush()
+        audit(db, "admin", staff.email, "cms.page.content", page_id, "content fields")
+        db.commit()
+        return {"ok": True, "id": page_id, "content": content}

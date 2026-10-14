@@ -4,6 +4,7 @@ import {ArrowDown, ArrowLeft, ArrowUp, Pencil, Trash2, ImagePlus } from "lucide-
 import { requireAdmin, explain } from "@/lib/data";
 import { getCmsPage } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
+import { InfoPageFields } from "@/components/ops/info-page-fields";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
@@ -44,6 +45,9 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
     loadError = explain(error);
   }
   if (!loadError && !page) notFound();
+  if (page && (page as { kind?: string }).kind === "information") {
+    return <InfoPageFields page={page as never} />;
+  }
 
   return (
     <div className="grid min-w-0 gap-5">
@@ -118,29 +122,97 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
             </CmsActionForm>
           </div>
 
-          <details className="mt-3 rounded-[12px] border border-hairline bg-panel-2">
-            <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
-              Other sections
-            </summary>
-            <CmsActionForm action={addCmsSectionAction} className="grid gap-4 border-t border-hairline p-4">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <CmsActionForm action={addCmsSectionAction} className="flex flex-col items-start gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4">
               <input type="hidden" name="id" value={page.id} />
-              <Field title="What kind of section">
-                <select name="type" defaultValue="category_grid" className={selectClass}>
-                  <option value="promo_strip">Message strip — one line of text</option>
-                  <option value="category_grid">Department tiles</option>
-                  <option value="brand_carousel">Brand row</option>
-                  <option value="product_carousel">Product row</option>
-                  <option value="featured_stores">Stores</option>
-                  <option value="promo_slots">Promotion slots — adverts between content</option>
-                  <option value="footer">Footer</option>
+              <input type="hidden" name="type" value="product_carousel" />
+              <span className="flex items-center gap-2">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal"><ImagePlus width={16} height={16} /></span>
+                <span>
+                  <span className="block font-display text-[14px] font-semibold text-chalk">Products</span>
+                  <span className="block text-[12px] text-chalk-dim">Row or grid of products</span>
+                </span>
+              </span>
+              <Field title="Section name"><input name="name" required className={inputClass} placeholder="Trending" /></Field>
+              <Field title="How it picks its products">
+                <select name="source" defaultValue="assigned" className={selectClass}>
+                  <option value="assigned">Manual — I pick the products</option>
+                  <option value="trending">Trending — most sold in 30 days</option>
+                  <option value="newest_arrivals">New arrivals — newest first</option>
+                  <option value="best_sellers">Best sellers — highest 30-day sales</option>
+                  <option value="featured">Featured — flagged by admin</option>
+                  <option value="flash_sale">On sale — current Flash Sale</option>
                 </select>
               </Field>
-              <Field title="Name it (optional)">
-                <input name="name" className={inputClass} placeholder="Autumn picks" />
-              </Field>
-              <SubmitButton pendingLabel="Adding">Add section</SubmitButton>
+              <div className="grid grid-cols-2 gap-3 self-stretch">
+                <Field title="How many"><input name="limit" type="number" min="1" max="24" defaultValue="8" className={inputClass} /></Field>
+                <Field title="Layout">
+                  <select name="layout" defaultValue="row" className={selectClass}>
+                    <option value="row">Row — horizontal carousel</option>
+                    <option value="grid">Grid — paginated</option>
+                  </select>
+                </Field>
+              </div>
+              <SubmitButton pendingLabel="Adding" className="self-start">Add product section</SubmitButton>
             </CmsActionForm>
-          </details>
+            <div className="grid gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4">
+              <span className="flex items-center gap-2">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal"><ImagePlus width={16} height={16} /></span>
+                <span>
+                  <span className="block font-display text-[14px] font-semibold text-chalk">Catalogue</span>
+                  <span className="block text-[12px] text-chalk-dim">Departments, brands or stores</span>
+                </span>
+              </span>
+              <CmsActionForm action={addCmsSectionAction} className="grid gap-3">
+                <input type="hidden" name="id" value={page.id} />
+                <input type="hidden" name="type" value="category_grid" />
+                <Field title="Name"><input name="name" required className={inputClass} placeholder="Shop by department" /></Field>
+                <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add department tiles</SubmitButton>
+              </CmsActionForm>
+              <CmsActionForm action={addCmsSectionAction} className="grid gap-3">
+                <input type="hidden" name="id" value={page.id} />
+                <input type="hidden" name="type" value="brand_carousel" />
+                <Field title="Name"><input name="name" required className={inputClass} placeholder="Shop by brand" /></Field>
+                <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add brand row</SubmitButton>
+              </CmsActionForm>
+              <CmsActionForm action={addCmsSectionAction} className="grid gap-3">
+                <input type="hidden" name="id" value={page.id} />
+                <input type="hidden" name="type" value="featured_stores" />
+                <Field title="Name"><input name="name" required className={inputClass} placeholder="Stores worth following" /></Field>
+                <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add stores</SubmitButton>
+              </CmsActionForm>
+            </div>
+            <div className="grid gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4 sm:col-span-2">
+              <span className="flex items-center gap-2">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal"><ImagePlus width={16} height={16} /></span>
+                <span>
+                  <span className="block font-display text-[14px] font-semibold text-chalk">Display</span>
+                  <span className="block text-[12px] text-chalk-dim">Message strip, promotion slots or footer</span>
+                </span>
+              </span>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <CmsActionForm action={addCmsSectionAction} className="grid gap-3 rounded-[10px] border border-hairline p-3">
+                  <input type="hidden" name="id" value={page.id} />
+                  <input type="hidden" name="type" value="promo_strip" />
+                  <Field title="Name"><input name="name" required className={inputClass} placeholder="Free delivery" /></Field>
+                  <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add message strip</SubmitButton>
+                </CmsActionForm>
+                <CmsActionForm action={addCmsSectionAction} className="grid gap-3 rounded-[10px] border border-hairline p-3">
+                  <input type="hidden" name="id" value={page.id} />
+                  <input type="hidden" name="type" value="promo_slots" />
+                  <Field title="Name"><input name="name" required className={inputClass} placeholder="Promotion slots" /></Field>
+                  <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add promotion slots</SubmitButton>
+                </CmsActionForm>
+                <CmsActionForm action={addCmsSectionAction} className="grid gap-3 rounded-[10px] border border-hairline p-3">
+                  <input type="hidden" name="id" value={page.id} />
+                  <input type="hidden" name="type" value="footer" />
+                  <Field title="Name"><input name="name" required className={inputClass} placeholder="Footer" /></Field>
+                  <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add footer</SubmitButton>
+                </CmsActionForm>
+              </div>
+            </div>
+          </div>
+
         </Panel>
       ) : null}
 

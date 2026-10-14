@@ -926,6 +926,8 @@ export type CmsPage = {
   visibleCount: number;
   sections: CmsSection[];
   publishedSections?: CmsSection[];
+  kind?: "managed" | "information";
+  data?: { content?: Record<string, unknown>; sections?: unknown[]; kind?: string };
 };
 
 export const listCmsPages = (session: string | null) =>
@@ -936,6 +938,10 @@ export const getCmsPage = (session: string | null, id: string) =>
 
 export const saveCmsPage = (session: string | null, body: { id: string; title?: string; sections?: CmsSection[] }) =>
   call<{ page: CmsPage }>("PATCH", "admin/cms/page", { session, body });
+
+/** Save content fields for an information page. The section endpoint is separate. */
+export const saveCmsPageContent = (session: string | null, body: { id: string; content: Record<string, unknown> }) =>
+  call<{ ok: true; id: string }>("PATCH", "admin/cms/page/content", { session, body });
 
 export const publishCmsPage = (session: string | null, id: string) =>
   call<{ page: CmsPage }>("POST", "admin/cms/page/publish", { session, body: { id } });

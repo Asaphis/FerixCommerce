@@ -7,6 +7,19 @@ import { clearSession, readSession, writeSession } from "@/lib/session";
 
 export type FormState = { error?: string; message?: string };
 
+// Next.js redirect() throws a special error carrying a NEXT_REDIRECT digest.
+// Catch blocks must re-throw it untouched, or a successful redirect gets
+// reported to the user as a failed submission.
+function isNextRedirect(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: unknown }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
+}
+
 function refresh(path = "/") {
   revalidatePath(path);
   revalidatePath("/", "layout");
@@ -128,6 +141,9 @@ export async function createProductAction(_prev: FormState, formData: FormData):
     // submission into a confusing "product unavailable" dead end.
     redirect(`/products?submitted=${encodeURIComponent(created.product.id)}`);
   } catch (error) {
+    // redirect() throws internally — never swallow it or the user sees a
+    // failure message for a submission that actually succeeded.
+    if (isNextRedirect(error)) throw error;
     if (error instanceof api.ApiError) return { error: error.message };
     return {
       error: stage === "image upload"
