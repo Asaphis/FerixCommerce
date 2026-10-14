@@ -53,7 +53,7 @@ TEST_STAFF_PASSWORD = os.getenv("FERIXAS_TEST_STAFF_PASSWORD", "").strip()
 BOOTSTRAP_SECRET = os.getenv("FERIXAS_BOOTSTRAP_SECRET", "").strip()
 ENVIRONMENT = os.getenv("FERIXAS_ENV", os.getenv("ENVIRONMENT", "development")).strip().lower()
 PRODUCTION_ENVIRONMENTS = {"production", "prod"}
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 PLACEHOLDER = "https://picsum.photos/seed/{seed}/900/900"
 UPLOAD_ROOT = ROOT / "uploads" if "ROOT" in globals() else Path(__file__).resolve().parent / "uploads"
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
@@ -484,6 +484,9 @@ class SectionPlacement(Base):
     starts_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     ends_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     config: Mapped[dict] = mapped_column(JSON, default=dict)
+    #: Switched off by a person without losing the assignment: the one-click way
+    #: back for a product whose own window has run out in this section.
+    active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 class FlashSale(Base):
@@ -1488,9 +1491,14 @@ def migrate() -> None:
           "package_weight": "FLOAT", "package_dimensions": "VARCHAR(100)", "shipping_origin": "VARCHAR(200)",
           "follower_count": "INTEGER DEFAULT 0", "total_reviews": "INTEGER DEFAULT 0",
           "average_rating": "FLOAT DEFAULT 0.0", "success_rate": "FLOAT DEFAULT 0.0", "delivery_rate": "FLOAT DEFAULT 0.0"},
+        # A placement can be switched off without being deleted.
+        "section_placements": {"active": "BOOLEAN DEFAULT TRUE"},
     }
     with engine.begin() as connection:
         for table, columns in required.items():
+            # A table that create_all has not made yet is skipped, not fatal.
+            if table not in inspect(connection).get_table_names():
+                continue
             existing = {col["name"] for col in inspect(connection).get_columns(table)}
             for name, sql_type in columns.items():
                 if name not in existing:
@@ -1503,7 +1511,9 @@ def migrate() -> None:
         elif int(version) < SCHEMA_VERSION:
             connection.execute(text("UPDATE schema_versions SET version = :version, applied_at = CURRENT_TIMESTAMP WHERE id = 'current'"), {"version": SCHEMA_VERSION})
     verify = inspect(engine)
-    if not all(name in {c["name"] for c in verify.get_columns(table)} for table, columns in required.items() for name in columns):
+    present = set(verify.get_table_names())
+    if not all(name in {c["name"] for c in verify.get_columns(table)}
+               for table, columns in required.items() if table in present for name in columns):
         raise RuntimeError("Required schema columns are missing after migration")
 
 def schema_ready() -> bool:
