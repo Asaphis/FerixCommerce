@@ -93,8 +93,24 @@ async function syncProductSections(session: string, form: FormData, slug: string
     return form.get(key) === "on";
   }).map((section) => {
     const key = `section__${section.documentId}__${section.sectionId}`;
+    const slot = `${section.documentId}__${section.sectionId}`;
     const price = str(form, `price${key}`);
     const quantity = str(form, `qty${key}`);
+    // A section says what it asks a product for. A Flash Sale wants a price and
+    // its own window; a plain row wants nothing. Anything the placement does not
+    // own as a column travels in its config.
+    const config: Record<string, string | number> = {};
+    let startsAt = "";
+    let endsAt = "";
+    let position = "";
+    for (const field of section.productConfigSchema ?? []) {
+      const raw = str(form, `config__${slot}__${field.key}`);
+      if (!raw) continue;
+      if (field.key === "startsAt") startsAt = raw;
+      else if (field.key === "endsAt") endsAt = raw;
+      else if (field.key === "position") position = raw;
+      else config[field.key] = field.kind === "number" ? Number(raw) : raw;
+    }
     return {
       documentId: section.documentId,
       sectionId: section.sectionId,
@@ -102,6 +118,10 @@ async function syncProductSections(session: string, form: FormData, slug: string
       title,
       ...(price ? { price: Number(price) } : {}),
       ...(quantity ? { quantity: Number(quantity) } : {}),
+      ...(position ? { position: Number(position) } : {}),
+      ...(startsAt ? { startsAt } : {}),
+      ...(endsAt ? { endsAt } : {}),
+      ...(Object.keys(config).length ? { config } : {}),
     };
   });
   await api.replaceProductSections(session, { slug, sections });

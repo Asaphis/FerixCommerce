@@ -181,6 +181,7 @@ def _catalog_products(db, merchant_id: str) -> list[dict]:
 
 def _product_options(db) -> dict:
     from core import is_assignable_product_section
+    from cms_sections import presentation_of, product_config_schema
 
     categories = [c for c in all_categories(db) if c.get("visible", True)]
     brands = [b for b in rows_of(db, "brand") if b.get("visible", True)]
@@ -211,6 +212,15 @@ def _product_options(db) -> dict:
                     "documentType": document.document_type,
                     "sectionType": section_type,
                     "source": "assigned",
+                    # Everything listed here is a section a person fills by hand.
+                    # The schema tells the form which extra fields this particular
+                    # section asks for: a Flash Sale wants a price and its own
+                    # window, a plain product row wants nothing.
+                    "selectionMode": "manual",
+                    "presentation": presentation_of(section),
+                    "productConfigSchema": product_config_schema(section),
+                    "startsAt": section.get("startsAt"),
+                    "endsAt": section.get("endsAt"),
                     "status": page_status,
                 })
     return {"categories": categories, "brands": brands, "collections": collections, "sections": sections}

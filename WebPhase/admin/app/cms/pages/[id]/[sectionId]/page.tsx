@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
-import { assetUrl, getCmsPage, listBanners, listMedia, type Banner, type CmsSection, type MediaAsset } from "@/lib/api";
+import { assetUrl, getCmsPage, listBanners, listCmsSectionTypes, listMedia, type Banner, type CmsSection, type CmsSectionTypes, type MediaAsset } from "@/lib/api";
+import { FALLBACK_SECTION_TYPES } from "@/components/ops/section-palette";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
@@ -70,14 +71,9 @@ const ARRANGEMENT: EditorField[] = [
 
 const CHOICES: Record<string, EditorField[]> = {
   product_carousel: [
-    { key: "source", title: "Products come from", options: [
-      { value: "assigned", label: "Products assigned by Admin/Seller" },
-      { value: "trending", label: "Trending products" },
-      { value: "newest_arrivals", label: "Newest arrivals" },
-      { value: "best_sellers", label: "Best sellers" },
-      { value: "featured", label: "Featured products" },
-      { value: "flash_sale", label: "Live flash sale" },
-    ] },
+    // The source is not here: it is a product section's most important decision
+    // and is rendered by `productContractFields` from the backend contract, so
+    // the list can never disagree with what the storefront can resolve.
     ...ARRANGEMENT,
     { key: "rowsPerSet", title: "Rows per swipe", options: [
       { value: "1", label: "One" }, { value: "2", label: "Two" },
@@ -86,14 +82,6 @@ const CHOICES: Record<string, EditorField[]> = {
     ] },
   ],
   product_grid: [
-    { key: "source", title: "Products come from", options: [
-      { value: "assigned", label: "Products assigned by Admin/Seller" },
-      { value: "trending", label: "Trending products" },
-      { value: "newest_arrivals", label: "Newest arrivals" },
-      { value: "best_sellers", label: "Best sellers" },
-      { value: "featured", label: "Featured products" },
-      { value: "flash_sale", label: "Live flash sale" },
-    ] },
     ...ARRANGEMENT,
     { key: "rowsPerSet", title: "Rows per swipe", options: [
       { value: "1", label: "One" }, { value: "2", label: "Two" },
@@ -173,12 +161,91 @@ const DRAW_FROM: Record<string, { href: string; label: string }> = {
   promo_slots: { href: "/cms/adverts", label: "advertisements" },
 };
 
-function fieldsFor(section: CmsSection, documentType = ""): EditorField[] {
+/**
+ * The campaign a Flash Sale carries.
+ *
+ * A timed campaign is not just a row of products: it has its own words, its own
+ * window, a countdown and a colour scheme. The per-product settings — the flash
+ * price, the discount label, each product's own window — belong to the
+ * placement and are filled in from the product form, not here.
+ */
+const FLASH_SALE_FIELDS: EditorField[] = [
+  { key: "eyebrow", title: "Eyebrow" },
+  { key: "subtitle", title: "Description", long: true },
+  { key: "ctaLabel", title: "Button label" },
+  { key: "ctaHref", title: "Button link" },
+  { key: "startsAt", title: "Campaign starts (YYYY-MM-DDTHH:MM)" },
+  { key: "endsAt", title: "Campaign ends (YYYY-MM-DDTHH:MM)" },
+  { key: "countdownLabel", title: "Countdown label" },
+  { key: "showCountdown", title: "Countdown", options: [
+    { value: "true", label: "Show it" },
+    { value: "false", label: "Hide it" },
+  ] },
+  { key: "showDiscountBadges", title: "Discount badges", options: [
+    { value: "true", label: "Show them" },
+    { value: "false", label: "Hide them" },
+  ] },
+  { key: "showViewAll", title: "View-all button", options: [
+    { value: "true", label: "Show it" },
+    { value: "false", label: "Hide it" },
+  ] },
+  { key: "layout", title: "Arrangement", options: [
+    { value: "carousel", label: "One row, running off the edge" },
+    { value: "grid", label: "A grid" },
+  ] },
+  ACROSS_FIELD,
+  { key: "backgroundColor", title: "Background colour" },
+  { key: "accentColor", title: "Accent colour" },
+  { key: "textColor", title: "Text colour" },
+  { key: "timerBackgroundColor", title: "Timer background" },
+  { key: "timerTextColor", title: "Timer text colour" },
+];
+
+/**
+ * How a product section's products are chosen.
+ *
+ * ``source`` is the whole answer: ``assigned`` means a person fills the section
+ * from the product form; every other value is a catalogue feed the backend
+ * computes. A source's own settings — a sales window, a minimum number sold —
+ * are rendered only for the source actually selected, so the form never asks
+ * about a rule that is not in use.
+ */
+function productContractFields(section: CmsSection, sectionTypes: CmsSectionTypes): EditorField[] {
+  const source = String(section.source ?? "assigned").toLowerCase();
+  const automatic = sectionTypes.automaticSources.filter((item) => item.value !== "related");
+  const options: Choice[] = [
+    { value: "assigned", label: "Manual — filled from the product form" },
+    ...automatic.map((item) => ({ value: item.value, label: `${item.label} — ${item.hint}` })),
+  ];
+  // A section saved before the contract existed keeps its old source readable,
+  // so changing it is a decision rather than a surprise.
+  if (sectionTypes.legacySources.includes(source)) {
+    options.push({ value: source, label: `${source} — kept from before, no longer offered` });
+  }
+  const fields: EditorField[] = [
+    { key: "source", title: "Products come from", options },
+    { key: "presentation", title: "How it is dressed", options: [
+      { value: "standard", label: "A standard product row" },
+      { value: "flash_sale", label: "A Flash sale campaign — countdown, colours, per-product prices" },
+      { value: "sale", label: "Sale styling" },
+      { value: "new_arrivals", label: "New arrivals styling" },
+      { value: "featured", label: "Featured styling" },
+    ] },
+  ];
+  for (const setting of automatic.find((item) => item.value === source)?.config ?? []) {
+    fields.push({ key: setting.key, title: setting.label, numeric: setting.kind === "number" });
+  }
+  return fields;
+}
+
+function fieldsFor(section: CmsSection, documentType = "", sectionTypes: CmsSectionTypes = FALLBACK_SECTION_TYPES): EditorField[] {
   const key = String(section.type ?? "");
   const isExploreCatalogFeed = documentType === "marketplace_explore"
     && key === "product_grid"
     && section.perPage !== undefined;
   if (isExploreCatalogFeed) return [ACROSS_FIELD];
+  const isProductSection = key === "product_carousel" || key === "product_grid";
+  const isFlashSale = isProductSection && String(section.presentation ?? "") === "flash_sale";
   const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true";
   const hasDirectMedia = Boolean(String(section.mediaUrl ?? "").trim());
   const text = key === "hero_banner"
@@ -203,7 +270,8 @@ function fieldsFor(section: CmsSection, documentType = ""): EditorField[] {
     : [];
   return [
     ...text,
-    ...(CHOICES[key] ?? []),
+    ...(isProductSection ? productContractFields(section, sectionTypes) : []),
+    ...(isFlashSale ? FLASH_SALE_FIELDS : (CHOICES[key] ?? [])),
     ...exploreAdvertSettings,
     ...(COUNTS[key] ?? []),
   ];
@@ -243,7 +311,16 @@ export default async function CmsSectionEditor({
   const section = page?.sections?.find((item) => item.id === sectionId);
   if (!loadError && (!page || !section)) notFound();
 
-  const fields = section ? fieldsFor(section, page?.documentType ?? "") : [];
+  // The source list and its settings come from the backend contract. If it
+  // cannot be read the editor still opens from the mirrored copy.
+  let sectionTypes: CmsSectionTypes = FALLBACK_SECTION_TYPES;
+  try {
+    sectionTypes = await listCmsSectionTypes(session);
+  } catch {
+    sectionTypes = FALLBACK_SECTION_TYPES;
+  }
+
+  const fields = section ? fieldsFor(section, page?.documentType ?? "", sectionTypes) : [];
   const isHeroSection = Boolean(section && ["hero_banner", "hero_slim"].includes(String(section.type)));
   const mediaOnly = section?.mediaOnly === true || String(section?.mediaOnly) === "true";
   const sectionMediaUrl = section ? assetUrl(String(section.mediaUrl ?? "")) : "";

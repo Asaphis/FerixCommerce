@@ -3,6 +3,7 @@ import { ArrowLeft, Upload } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { listCatalog, listMedia, listBrands, getProductSections, type SectionOption } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
+import { PlacementTerms } from "@/components/ops/placement-terms";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
 import { Eyebrow, Panel, PanelHead } from "@/components/ops/bits";
@@ -155,6 +156,7 @@ export default async function NewProductPage({ searchParams }: { searchParams: P
                           </span>
                         </span>
                       </label>
+                      <PlacementTerms section={section} slot={slot} />
                     </div>
                   );
                 })}</div></fieldset>)}

@@ -24,6 +24,11 @@ from fastapi import HTTPException
 from sqlalchemy import DateTime, ForeignKey, JSON, String, Text, create_engine, inspect, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
+# The section contract. Everything that decides what a CMS section is, how its
+# products are chosen and when it is live reads this one module.
+from cms_sections import (ALL_SOURCES, PRODUCT_SECTION_TYPES, is_manual_product_section,
+                          section_is_live)
+
 # ── Configuration ──────────────────────────────────────────────────────────
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
@@ -1020,14 +1025,11 @@ def is_public_store(merchant: Optional[dict]) -> bool:
                 and merchant.get("marketplaceEnabled", True) is True)
 
 
-PUBLIC_SECTION_TYPES = {"product_grid", "product_carousel"}
-# Product sections can be curated by placements or resolved from a public
-# catalogue feed at render time. Keep this contract shared by CMS validation
-# and the storefront resolver.
-CMS_PRODUCT_SOURCES = {
-    "assigned", "trending", "newest_arrivals", "best_sellers", "featured",
-    "flash_sale", "category", "collection", "related",
-}
+PUBLIC_SECTION_TYPES = set(PRODUCT_SECTION_TYPES)
+# The section contract lives in ``cms_sections`` so the CMS editor, the
+# storefront resolver and the product-upload forms cannot drift apart. The set
+# name is kept because several routers and tests import it.
+CMS_PRODUCT_SOURCES = set(ALL_SOURCES)
 
 
 def is_assignable_product_section(document: Optional[ContentDocument], section: dict) -> bool:
@@ -1048,11 +1050,11 @@ def is_assignable_product_section(document: Optional[ContentDocument], section: 
         return False
     if section.get("type") not in PUBLIC_SECTION_TYPES:
         return False
-    # Missing source is retained as the legacy equivalent of ``assigned``.
-    # Once a source is present, only the explicit assigned mode may receive
-    # SectionPlacement rows or appear in a product-upload form.
-    source = str(section.get("source") or "assigned").strip().lower()
-    if source != "assigned":
+    # Only a manually curated section accepts placements or appears in a
+    # product-upload form. A section with no source is the legacy spelling of
+    # ``assigned``, so older documents keep behaving as the curated sections
+    # they were; every automatic feed computes its own membership.
+    if not is_manual_product_section(section):
         return False
     if (
         document.document_type == "marketplace_explore"
@@ -1064,10 +1066,12 @@ def is_assignable_product_section(document: Optional[ContentDocument], section: 
 
 
 def visible_published_sections(document: Optional[ContentDocument]) -> list[dict]:
+    """Published sections that are switched on and inside their own window."""
     if not document or document.status != "published":
         return []
     sections = (document.data or {}).get("sections") or []
-    return sorted([s for s in sections if isinstance(s, dict) and s.get("visible", True)],
+    return sorted([s for s in sections
+                   if isinstance(s, dict) and s.get("visible", True) and section_is_live(s)],
                   key=lambda s: s.get("position", 0))
 
 

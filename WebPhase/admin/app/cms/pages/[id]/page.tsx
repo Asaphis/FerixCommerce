@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {ArrowDown, ArrowLeft, ArrowUp, Pencil, Trash2, ImagePlus } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
-import { getCmsPage } from "@/lib/api";
+import { getCmsPage, listCmsSectionTypes, type CmsSection, type CmsSectionTypes } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { InfoPageFields } from "@/components/ops/info-page-fields";
+import { FALLBACK_SECTION_TYPES, SectionPalette } from "@/components/ops/section-palette";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
-import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
-import { Field, SubmitButton } from "@/components/ops/controls";
-import { addCmsSectionAction, moveCmsSectionAction, publishCmsPageAction, removeCmsSectionAction, toggleCmsSectionAction } from "@/lib/actions";
+import { PageHeader } from "@/components/ops/table";
+import { SubmitButton } from "@/components/ops/controls";
+import { moveCmsSectionAction, publishCmsPageAction, removeCmsSectionAction, toggleCmsSectionAction } from "@/lib/actions";
 
 /** Section types in plain words. A type with no entry falls back to its own name. */
 const SECTION_LABELS: Record<string, string> = {
@@ -19,7 +20,7 @@ const SECTION_LABELS: Record<string, string> = {
   category_grid: "Department tiles",
   brand_carousel: "Brand row",
   product_carousel: "Product row",
-  product_grid: "Product list",
+  product_grid: "Product grid",
   featured_stores: "Stores",
   featured_collection: "Collection",
   footer: "Footer",
@@ -31,6 +32,27 @@ const SECTION_LABELS: Record<string, string> = {
 
 function sectionLabel(section: { type?: string; name?: string }) {
   return SECTION_LABELS[String(section.type)] ?? section.name ?? "Section";
+}
+
+/**
+ * One line saying what this section is and where its content comes from.
+ *
+ * The distinction that used to be invisible: a manual section is filled from the
+ * product form, an automatic one is filled by the catalogue, and neither is the
+ * same thing as the section's own kind.
+ */
+function sectionMeta(section: CmsSection, sectionTypes: CmsSectionTypes): string {
+  const parts: string[] = [sectionLabel(section)];
+  const mode = String(section.selectionMode ?? "");
+  if (mode === "manual") {
+    parts.push("Manual — filled from the product form");
+  } else if (mode === "automatic") {
+    const source = String(section.source ?? "");
+    const known = sectionTypes.automaticSources.find((item) => item.value === source);
+    parts.push(`Automatic · ${known?.label ?? source}`);
+  }
+  if (String(section.presentation ?? "") === "flash_sale") parts.push("Flash sale campaign");
+  return parts.join(" · ");
 }
 
 export default async function CmsPageSections({ params }: { params: Promise<{ id: string }> }) {
@@ -47,6 +69,16 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
   if (!loadError && !page) notFound();
   if (page && (page as { kind?: string }).kind === "information") {
     return <InfoPageFields page={page as never} />;
+  }
+
+  // The palette is the backend's contract. If it cannot be read the CMS still
+  // works from the mirrored copy rather than showing an empty menu.
+  let sectionTypes: CmsSectionTypes = FALLBACK_SECTION_TYPES;
+  let paletteStale = false;
+  try {
+    sectionTypes = await listCmsSectionTypes(session);
+  } catch {
+    paletteStale = true;
   }
 
   return (
@@ -83,143 +115,24 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
         <Panel>
           <PanelHead
             title="Add a section"
+            hint="Pick what the section is. Product sections then ask who chooses the products."
           />
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <CmsActionForm action={addCmsSectionAction} className="flex flex-col items-start gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4">
-              <input type="hidden" name="id" value={page.id} />
-              <input type="hidden" name="type" value="hero_banner" />
-              <span className="flex items-center gap-2">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal">
-                  <ImagePlus width={16} height={16} />
-                </span>
-                <span>
-                  <span className="block font-display text-[14px] font-semibold text-chalk">Campaign hero</span>
-                  <span className="block text-[12px] text-chalk-dim">Full-height hero with 2 buttons</span>
-                </span>
-              </span>
-              <Field title="Name it (optional)">
-                <input name="name" className={inputClass} placeholder="Autumn picks" />
-              </Field>
-              <SubmitButton pendingLabel="Adding" className="self-start">Add hero</SubmitButton>
-            </CmsActionForm>
-
-            <CmsActionForm action={addCmsSectionAction} className="flex flex-col items-start gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4">
-              <input type="hidden" name="id" value={page.id} />
-              <input type="hidden" name="type" value="hero_slim" />
-              <span className="flex items-center gap-2">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal">
-                  <ImagePlus width={16} height={16} />
-                </span>
-                <span>
-                  <span className="block font-display text-[14px] font-semibold text-chalk">Slim banner</span>
-                  <span className="block text-[12px] text-chalk-dim">Compact strip with 1 button</span>
-                </span>
-              </span>
-              <Field title="Name it (optional)">
-                <input name="name" className={inputClass} placeholder="Audio deals" />
-              </Field>
-              <SubmitButton pendingLabel="Adding" className="self-start">Add banner</SubmitButton>
-            </CmsActionForm>
+          {paletteStale ? (
+            <p className="mb-4 rounded-[10px] border border-hairline bg-panel-2 px-3.5 py-3 text-[12px] leading-relaxed text-chalk-dim">
+              The section menu could not be refreshed, so the built-in list is shown. Saving still works and the
+              storefront resolves it the same way.
+            </p>
+          ) : null}
+          <div className="mt-4">
+            <SectionPalette pageId={page.id} sectionTypes={sectionTypes} />
           </div>
-
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <CmsActionForm action={addCmsSectionAction} className="flex flex-col items-start gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4">
-              <input type="hidden" name="id" value={page.id} />
-              <input type="hidden" name="type" value="product_carousel" />
-              <span className="flex items-center gap-2">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal"><ImagePlus width={16} height={16} /></span>
-                <span>
-                  <span className="block font-display text-[14px] font-semibold text-chalk">Products</span>
-                  <span className="block text-[12px] text-chalk-dim">Row or grid of products</span>
-                </span>
-              </span>
-              <Field title="Section name"><input name="name" required className={inputClass} placeholder="Trending" /></Field>
-              <Field title="How it picks its products">
-                <select name="source" defaultValue="assigned" className={selectClass}>
-                  <option value="assigned">Manual — I pick the products</option>
-                  <option value="trending">Trending — most sold in 30 days</option>
-                  <option value="newest_arrivals">New arrivals — newest first</option>
-                  <option value="best_sellers">Best sellers — highest 30-day sales</option>
-                  <option value="featured">Featured — flagged by admin</option>
-                  <option value="flash_sale">On sale — current Flash Sale</option>
-                </select>
-              </Field>
-              <div className="grid grid-cols-2 gap-3 self-stretch">
-                <Field title="How many"><input name="limit" type="number" min="1" max="24" defaultValue="8" className={inputClass} /></Field>
-                <Field title="Layout">
-                  <select name="layout" defaultValue="row" className={selectClass}>
-                    <option value="row">Row — horizontal carousel</option>
-                    <option value="grid">Grid — paginated</option>
-                  </select>
-                </Field>
-              </div>
-              <SubmitButton pendingLabel="Adding" className="self-start">Add product section</SubmitButton>
-            </CmsActionForm>
-            <div className="grid gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4">
-              <span className="flex items-center gap-2">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal"><ImagePlus width={16} height={16} /></span>
-                <span>
-                  <span className="block font-display text-[14px] font-semibold text-chalk">Catalogue</span>
-                  <span className="block text-[12px] text-chalk-dim">Departments, brands or stores</span>
-                </span>
-              </span>
-              <CmsActionForm action={addCmsSectionAction} className="grid gap-3">
-                <input type="hidden" name="id" value={page.id} />
-                <input type="hidden" name="type" value="category_grid" />
-                <Field title="Name"><input name="name" required className={inputClass} placeholder="Shop by department" /></Field>
-                <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add department tiles</SubmitButton>
-              </CmsActionForm>
-              <CmsActionForm action={addCmsSectionAction} className="grid gap-3">
-                <input type="hidden" name="id" value={page.id} />
-                <input type="hidden" name="type" value="brand_carousel" />
-                <Field title="Name"><input name="name" required className={inputClass} placeholder="Shop by brand" /></Field>
-                <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add brand row</SubmitButton>
-              </CmsActionForm>
-              <CmsActionForm action={addCmsSectionAction} className="grid gap-3">
-                <input type="hidden" name="id" value={page.id} />
-                <input type="hidden" name="type" value="featured_stores" />
-                <Field title="Name"><input name="name" required className={inputClass} placeholder="Stores worth following" /></Field>
-                <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add stores</SubmitButton>
-              </CmsActionForm>
-            </div>
-            <div className="grid gap-3 rounded-[12px] border border-hairline bg-panel-2 p-4 sm:col-span-2">
-              <span className="flex items-center gap-2">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] bg-panel text-signal"><ImagePlus width={16} height={16} /></span>
-                <span>
-                  <span className="block font-display text-[14px] font-semibold text-chalk">Display</span>
-                  <span className="block text-[12px] text-chalk-dim">Message strip, promotion slots or footer</span>
-                </span>
-              </span>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <CmsActionForm action={addCmsSectionAction} className="grid gap-3 rounded-[10px] border border-hairline p-3">
-                  <input type="hidden" name="id" value={page.id} />
-                  <input type="hidden" name="type" value="promo_strip" />
-                  <Field title="Name"><input name="name" required className={inputClass} placeholder="Free delivery" /></Field>
-                  <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add message strip</SubmitButton>
-                </CmsActionForm>
-                <CmsActionForm action={addCmsSectionAction} className="grid gap-3 rounded-[10px] border border-hairline p-3">
-                  <input type="hidden" name="id" value={page.id} />
-                  <input type="hidden" name="type" value="promo_slots" />
-                  <Field title="Name"><input name="name" required className={inputClass} placeholder="Promotion slots" /></Field>
-                  <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add promotion slots</SubmitButton>
-                </CmsActionForm>
-                <CmsActionForm action={addCmsSectionAction} className="grid gap-3 rounded-[10px] border border-hairline p-3">
-                  <input type="hidden" name="id" value={page.id} />
-                  <input type="hidden" name="type" value="footer" />
-                  <Field title="Name"><input name="name" required className={inputClass} placeholder="Footer" /></Field>
-                  <SubmitButton pendingLabel="Adding" variant="outline" className="self-start">Add footer</SubmitButton>
-                </CmsActionForm>
-              </div>
-            </div>
-          </div>
-
         </Panel>
       ) : null}
 
       {page?.sections?.length ? (
         <Panel flush>
           <div className="p-4 pb-3 sm:p-5 sm:pb-3">
-            <PanelHead title="Sections" />
+            <PanelHead title="Sections" hint="In the order they appear on the page." />
           </div>
           <ul className="grid gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
             {page.sections.map((section, index) => (
@@ -228,7 +141,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13.5px] font-semibold text-chalk">{section.name || section.type}</span>
                   <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                    {sectionLabel(section)} · {section.visible ? "on the storefront" : "hidden"}
+                    {sectionMeta(section, sectionTypes)} · {section.visible ? "on the storefront" : "hidden"}
                   </span>
                 </span>
 

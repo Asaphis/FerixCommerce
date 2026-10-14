@@ -5,6 +5,7 @@ import {
 import { MediaHero } from "@/components/ferix/media-hero";
 import { PromoBanner } from "@/components/ferix/banner";
 import { CategoryTile, ProductGrid, StoreCard } from "@/components/ferix/cards";
+import { FlashSaleBand } from "@/components/ferix/flash-sale";
 import { SectionHead } from "@/components/ferix/marks";
 import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { TileSwiper } from "@/components/ferix/tile-swiper";
@@ -379,26 +380,53 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
       /* ── A strip of products ────────────────────────────────────── */
       case "product_carousel":
       case "product_grid": {
-        // A product section is driven by its own source: assigned (manual)
-        // reads the placements map for this section; every other source
-        // reads the matching rail the catalogue returned.
+        // The backend resolves every source - a manual section from its
+        // placements, an automatic feed from the catalogue - into this
+        // section's own list. The named rails below remain a fallback for the
+        // older sources that predate the section contract.
         const source = String((section as { source?: string }).source || "assigned").toLowerCase();
-        let products: Product[] = [];
-        if (source === "assigned") {
-          products = (section.id ? home.placements?.[section.id] : undefined) ?? [];
-        } else if (source === "trending") {
+        const presentation = String((section as { presentation?: string }).presentation || "standard").toLowerCase();
+        let products: Product[] = (section.id ? home.placements?.[section.id] : undefined) ?? [];
+        if (!products.length && source === "trending") {
           products = home.trending ?? [];
-        } else if (source === "newest_arrivals") {
+        } else if (!products.length && source === "newest_arrivals") {
           products = home.newArrivals ?? [];
-        } else if (source === "featured") {
+        } else if (!products.length && source === "featured") {
           products = home.featured ?? [];
-        } else if (source === "under_100" || source === "under100") {
+        } else if (!products.length && (source === "under_100" || source === "under100")) {
           products = home.under100 ?? [];
-        } else if (source === "official") {
+        } else if (!products.length && source === "official") {
           products = home.official ?? [];
         }
         if (!products.length) return null;
         const shown = limit ? products.slice(0, limit) : products;
+
+        // A timed campaign is its own band: its own words, its own countdown and
+        // its own colours, all set in the CMS.
+        if (presentation === "flash_sale") {
+          const sectionHref = String(section.ctaHref ?? "").trim();
+          return (
+            <FlashSaleBand
+              key={section.id ?? index}
+              title={section.title ?? section.name ?? "Flash sale"}
+              eyebrow={section.eyebrow}
+              subtitle={section.subtitle}
+              endsAt={String(section.endsAt ?? "") || undefined}
+              countdownLabel={section.countdownLabel as string | undefined}
+              showCountdown={String(section.showCountdown ?? "true") !== "false"}
+              showDiscountBadges={String(section.showDiscountBadges ?? "true") !== "false"}
+              showViewAll={String(section.showViewAll ?? "true") !== "false"}
+              href={sectionHref || "/browse?sort=discount"}
+              backgroundColor={section.backgroundColor as string | undefined}
+              accentColor={section.accentColor as string | undefined}
+              textColor={section.textColor as string | undefined}
+              timerBackgroundColor={section.timerBackgroundColor as string | undefined}
+              timerTextColor={section.timerTextColor as string | undefined}
+              products={shown}
+              savedIds={saved}
+            />
+          );
+        }
         const seeAll = String(section.seeAll) !== "false";
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">

@@ -38,6 +38,8 @@ from core import (
     merchant_follower_count, is_public_store, public_taxonomy, visible_published_sections,
     is_assignable_product_section, schema_ready, CMS_PRODUCT_SOURCES,
 )
+from cms_sections import (apply_placement_overrides, is_manual_product_section, is_product_section,
+                          moment_of, placement_is_live, section_is_live, selection_mode_of, source_of)
 
 from routers import admin as admin_router
 from routers import merchant as merchant_router
@@ -509,27 +511,76 @@ def product(slug: str):
         }
 
 
+def _is_on_sale(product: dict) -> bool:
+    """A product carrying a live discount, priced from its own record."""
+    price = float(product.get("price") or 0)
+    compare_at = float(product.get("compareAt") or 0)
+    return compare_at > price > 0
+
+
+def _paid_units_by_window(db, sections, fallback: dict[str, int]) -> dict[int, dict[str, int]]:
+    """Paid-unit counts for every sales window a page's sections ask for.
+
+    A section that says "sold in the last 7 days" must not be ranked with the
+    platform's 30-day figure, so each window a page actually uses is counted.
+    """
+    windows = {30}
+    for section in sections or []:
+        if not isinstance(section, dict):
+            continue
+        try:
+            requested = int(section.get("windowDays") or 0)
+        except (TypeError, ValueError):
+            continue
+        if requested > 0:
+            windows.add(requested)
+    counts: dict[int, dict[str, int]] = {30: fallback}
+    for window in sorted(windows):
+        if window not in counts:
+            counts[window] = paid_marketplace_product_units(db, days=window)
+    return counts
+
+
 def resolve_cms_product_source(section: dict, decorated: list[dict], public_by_id: dict[str, dict],
-                               paid_units: dict[str, int], flash_ids: Optional[set[str]] = None) -> list[dict]:
+                               paid_units: dict[str, int], flash_ids: Optional[set[str]] = None,
+                               units_by_window: Optional[dict[int, dict[str, int]]] = None) -> list[dict]:
     """Resolve an automatic product section from the public product pool.
 
     ``assigned`` remains placement-driven. Automatic sources are read-only
     views over approved, publicly sellable products and never create placement
     rows or bypass the public eligibility gate.
     """
-    source = str(section.get("source") or "assigned").strip().lower()
-    if source == "assigned" or source not in CMS_PRODUCT_SOURCES:
+    source = source_of(section)
+    if not source or source == "assigned" or source not in CMS_PRODUCT_SOURCES:
         return []
+    window = int(section.get("windowDays") or 30)
+    units = (units_by_window or {}).get(window, paid_units)
     rows = list(decorated)
     if source in {"trending", "best_sellers"}:
-        rows.sort(key=lambda product: -paid_units.get(product.get("id", ""), 0))
+        minimum = int(section.get("minimumSales") or 0)
+        if minimum > 0:
+            rows = [product for product in rows
+                    if units.get(product.get("id", ""), 0) >= minimum]
+        rows.sort(key=lambda product: -units.get(product.get("id", ""), 0))
     elif source == "newest_arrivals":
+        if window > 0:
+            cutoff = now() - timedelta(days=window)
+            rows = [product for product in rows
+                    if (moment_of(product.get("createdAt")) or cutoff) >= cutoff]
         rows.sort(key=lambda product: str(product.get("createdAt") or ""), reverse=True)
     elif source == "featured":
         rows.sort(key=lambda product: (
             not bool(product.get("featured")),
             -((public_by_id.get(product.get("id", ""), {}).get("rating") or 0) * 100
               + (public_by_id.get(product.get("id", ""), {}).get("reviewCount") or 0)),
+        ))
+    elif source == "on_sale":
+        # Automatic, and never attached by hand: whatever carries a discount
+        # right now is what shows.
+        rows = [product for product in rows if _is_on_sale(product)]
+        rows.sort(key=lambda product: -(
+            (float(product.get("compareAt") or 0) - float(product.get("price") or 0))
+            / max(float(product.get("compareAt") or 1), 1)
         ))
     elif source == "category":
         wanted = str(section.get("categorySlug") or section.get("category") or "").strip()
@@ -538,6 +589,9 @@ def resolve_cms_product_source(section: dict, decorated: list[dict], public_by_i
         wanted = str(section.get("collectionSlug") or section.get("collection") or "").strip()
         rows = [product for product in rows if wanted and wanted in (product.get("collections") or [])]
     elif source == "flash_sale":
+        # Legacy automatic spelling, kept only so a section saved before the
+        # contract existed still renders. New campaigns are manual sections
+        # with presentation ``flash_sale``.
         ids = flash_ids or set()
         rows = [product for product in rows if product.get("id") in ids]
     elif source == "related":
@@ -575,7 +629,9 @@ def home():
         } if sale else set()
 
         doc = db.get(ContentDocument, "doc_marketplace_home")
-        content = {"sections": visible_published_sections(doc)}
+        published_sections = visible_published_sections(doc)
+        content = {"sections": published_sections}
+        units_by_window = _paid_units_by_window(db, published_sections, paid_units)
 
         # CMS owns the published section structure. SectionPlacement owns the
         # approved membership of curated/product sections. Seller requests never
@@ -584,26 +640,27 @@ def home():
         if doc and doc.status == "published":
             product_by_id = {p.get("id"): p for p in items}
             current_time = now()
-            visible_sections = {s.get("id"): s for s in visible_published_sections(doc)
-                               if s.get("type") in {"product_grid", "product_carousel"}}
+            visible_sections = {s.get("id"): s for s in published_sections if is_product_section(s)}
             placement_rows = db.scalars(
                 select(SectionPlacement).where(SectionPlacement.document_id == doc.id)
             ).all()
             for row in sorted(placement_rows, key=lambda item: (item.section_id, item.position, item.created_at)):
-                if row.starts_at and row.starts_at > current_time:
-                    continue
-                if row.ends_at and row.ends_at < current_time:
+                # The product's own window inside the section: when it runs out
+                # the product drops out silently and the section carries on.
+                if not placement_is_live(row, current_time):
                     continue
                 if row.section_id not in visible_sections:
                     continue
                 product = product_by_id.get(row.product_id)
                 if not product:
                     continue
-                placement_products.setdefault(row.section_id, []).append(public_by_id[product["id"]])
+                placement_products.setdefault(row.section_id, []).append(
+                    apply_placement_overrides(public_by_id[product["id"]], row)
+                )
             for section in visible_sections.values():
-                if str(section.get("source") or "assigned").lower() != "assigned":
+                if selection_mode_of(section) == "automatic":
                     placement_products[section["id"]] = resolve_cms_product_source(
-                        section, decorated, public_by_id, paid_units, flash_ids,
+                        section, decorated, public_by_id, paid_units, flash_ids, units_by_window,
                     )
 
         live_banners = [b for b in banner_rows(db) if b.get("active", True)]
@@ -1335,13 +1392,19 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
             document = db.scalar(select(ContentDocument).where(ContentDocument.document_type == type))
         if not document or document.owner_type != "platform" or document.status != "published":
             return {"page": None, "sections": [], "placements": {}}
-        sections = sorted((document.data or {}).get("sections") or [],
-                          key=lambda section: section.get("position", 0))
+        stored = sorted((document.data or {}).get("sections") or [],
+                        key=lambda section: section.get("position", 0))
+        # A section outside its own window is not on the shop at all. That is how
+        # a Flash Sale closes as a whole when its end time passes, while each
+        # product's own window only drops that product out.
+        sections = [section for section in stored
+                    if isinstance(section, dict) and section_is_live(section)]
         content = (document.data or {}).get("content") or {}
         items = [product for product in product_rows(db) if marketplace_product_available(db, product)]
         decorated = decorate(db, items)
         public_by_id = {item["id"]: item for item in public_products(db, decorated)}
         paid_units = paid_marketplace_product_units(db, days=30)
+        units_by_window = _paid_units_by_window(db, sections, paid_units)
         sale = next((s for s in db.scalars(select(FlashSale)).all() if sale_status(s) == "live"), None)
         flash_ids = {
             item.product_id for item in db.scalars(
@@ -1359,22 +1422,22 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
                 select(SectionPlacement).where(SectionPlacement.document_id == document.id)
             ).all()
             for row in sorted(rows, key=lambda item: (item.section_id, item.position, item.created_at)):
-                if row.starts_at and row.starts_at > current_time:
-                    continue
-                if row.ends_at and row.ends_at < current_time:
+                if not placement_is_live(row, current_time):
                     continue
                 if row.section_id not in assignable:
                     continue
                 product = public_by_id.get(row.product_id)
                 if product:
-                    placements.setdefault(row.section_id, []).append(product)
+                    placements.setdefault(row.section_id, []).append(
+                        apply_placement_overrides(product, row)
+                    )
         for section in sections:
             # Automatic sections are resolved from the catalogue feed and must
             # remain renderable even though they are deliberately excluded from
             # the manual SectionPlacement destination set above.
-            if str(section.get("source") or "assigned").strip().lower() != "assigned":
+            if selection_mode_of(section) == "automatic":
                 placements[section["id"]] = resolve_cms_product_source(
-                    section, decorated, public_by_id, paid_units, flash_ids,
+                    section, decorated, public_by_id, paid_units, flash_ids, units_by_window,
                 )
         return {
             "page": {"id": document.id, "title": document.title, "documentType": document.document_type},

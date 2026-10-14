@@ -28,6 +28,13 @@ from core import (
     sync_pending_media, upload_media_blob, validate_media_upload, verify_password, hash_password, BOOTSTRAP_SECRET,
 )
 
+# The section contract. The CMS writes sections through it, so a section saved
+# here means the same thing to the storefront and to the product forms.
+from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FLASH_SALE_DEFAULTS, LEGACY_SOURCES,
+                          PALETTE, PRESENTATIONS, PRODUCT_CONFIG_PRESETS, SELECTION_MODES,
+                          normalize_section, presentation_of, product_config_schema,
+                          validate_section)
+
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
@@ -289,6 +296,22 @@ def _days_between(a: str) -> int:
         return (now().date() - date.fromisoformat(_date(a))).days
     except Exception:
         return 999
+
+
+def parse(value, fallback=None):
+    """A stored timestamp as an aware datetime, or the fallback.
+
+    This used to be declared inside one promotion handler, which left the
+    placement endpoints calling a name that did not exist at their scope.
+    """
+    from datetime import datetime as _datetime, timezone as _timezone
+    if not value:
+        return fallback
+    try:
+        parsed = _datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return fallback
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=_timezone.utc)
 
 
 def _brand_fields(data: dict, existing: Optional[dict] = None) -> dict:
@@ -2116,14 +2139,6 @@ def create_promotion(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
         require_permission(staff, "promotions.manage")
         if not payload.name:
             raise HTTPException(400, "A promotion needs a name")
-        from datetime import datetime as _dt
-        def parse(value, fallback):
-            if not value:
-                return fallback
-            try:
-                return _dt.fromisoformat(str(value).replace("Z", "+00:00"))
-            except Exception:
-                return fallback
         sale = FlashSale(
             id=payload.id or new_id("sale"), name=payload.name,
             headline=payload.headline or "",
@@ -2386,6 +2401,35 @@ def _page_summary(document) -> dict:
     }
 
 
+@router.get("/cms/section-types")
+def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """The add-section palette, and what each kind of section can be set up with.
+
+    The CMS's own menu is served by the backend, so the buttons an operator sees,
+    the sources they can choose and the fields the product form opens all come
+    from the same contract the storefront resolves.
+    """
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        return {
+            "palette": PALETTE,
+            "selectionModes": list(SELECTION_MODES),
+            "presentations": list(PRESENTATIONS),
+            "automaticSources": [
+                {"value": key, "label": value["label"], "hint": value["hint"],
+                 "config": value["config"]}
+                for key, value in AUTOMATIC_SOURCES.items()
+            ],
+            # Readable, never offered. Kept visible so an operator can see why an
+            # older section behaves the way it does.
+            "legacySources": list(LEGACY_SOURCES),
+            "flashSaleDefaults": FLASH_SALE_DEFAULTS,
+            "productConfigPresets": PRODUCT_CONFIG_PRESETS,
+            "allSources": list(ALL_SOURCES),
+        }
+
+
 @router.get("/cms/pages")
 def cms_pages(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     """Every storefront page, with the sections inside it."""
@@ -2518,12 +2562,14 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
         if payload.sections is not None:
             cleaned = []
             for index, section in enumerate(payload.sections):
-                row = dict(section or {})
-                if row.get("type") in {"product_grid", "product_carousel"}:
-                    source = str(row.get("source") or "assigned").strip().lower()
-                    if source not in CMS_PRODUCT_SOURCES:
-                        raise HTTPException(422, "That product section source is not supported.")
-                    row["source"] = source
+                try:
+                    validate_section(section or {})
+                except ValueError as error:
+                    raise HTTPException(422, str(error))
+                # The contract is written onto every saved section, so the
+                # storefront and the product forms read one shape rather than
+                # guessing what an operator meant.
+                row = normalize_section(section or {})
                 row["position"] = index + 1
                 row.setdefault("visible", True)
                 cleaned.append(row)
@@ -2775,6 +2821,13 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                     "sectionName": section.get("name") or section.get("type"),
                     "sectionType": section.get("type"),
                     "source": str(section.get("source") or "assigned").strip().lower(),
+                    # Everything in this list is filled by hand. The presentation
+                    # and its schema say which extra fields the section asks for.
+                    "selectionMode": "manual",
+                    "presentation": presentation_of(section),
+                    "productConfigSchema": product_config_schema(section),
+                    "startsAt": section.get("startsAt"),
+                    "endsAt": section.get("endsAt"),
                     "status": "draft" if draft is not None else "published",
                     "placements": len(used),
                 })
@@ -2897,6 +2950,12 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
                 compare_at=float(item.get("compareAt") or product.get("compareAt") or 0),
                 quantity=int(item.get("quantity") if item.get("quantity") is not None else product.get("stock") or 0),
                 position=int(item.get("position") or 1),
+                # A placement carries its own window and its own campaign fields.
+                # That is what lets one product sit in a Flash Sale on different
+                # terms from the same product in a plain row.
+                starts_at=parse(item.get("startsAt"), None),
+                ends_at=parse(item.get("endsAt"), None),
+                config=item.get("config") if isinstance(item.get("config"), dict) else {},
             ))
         audit(db, "admin", staff.email, "product.sections.replace", product["slug"], str(len(requested)))
         db.commit()

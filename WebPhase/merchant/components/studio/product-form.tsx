@@ -21,6 +21,28 @@ import { Panel, PanelHead, Pill } from "@/components/studio/bits";
 import { createProductAction, saveProductAction, type FormState } from "@/lib/actions";
 import { money } from "@/lib/format";
 
+/**
+ * A section a seller may ask to be placed in.
+ *
+ * Every one of these is a manual section: an automatic feed such as Trending is
+ * never in this list, because nobody attaches a product to it. A Flash Sale is
+ * in the list and carries its own terms, which Ferixas sets on approval.
+ */
+type SectionOption = {
+  value: string;
+  name: string;
+  documentTitle: string;
+  documentType?: string;
+  sectionType?: string;
+  source?: string;
+  status?: string;
+  selectionMode?: string;
+  presentation?: string;
+  productConfigSchema?: { key: string; label: string; kind: string; required?: boolean }[];
+  startsAt?: string | null;
+  endsAt?: string | null;
+};
+
 export function ProductForm({
   product,
   categories,
@@ -31,7 +53,7 @@ export function ProductForm({
   product?: Product;
   categories: string[];
   brands?: { id: string; slug: string; name: string }[];
-  sections?: { value: string; name: string; documentTitle: string; documentType?: string; sectionType?: string; source?: string; status?: string }[];
+  sections?: SectionOption[];
   storeName?: string;
 }) {
   const [state, action] = useActionState<FormState, FormData>(
@@ -208,19 +230,23 @@ export function ProductForm({
           <Panel>
             <PanelHead title="Product sections" />
             <div className="grid gap-4">
-              <p className="text-[11px] leading-relaxed text-chalk-dim">These are curated sections where Admin may place approved products. Automatic sections such as Trending and Newest arrivals choose products themselves.</p>
+              <p className="text-[11px] leading-relaxed text-chalk-dim">
+                These are the sections a person fills, so ticking one asks Ferixas to consider this product for it.
+                Automatic rows such as Trending, New arrivals, Best sellers and On sale are not listed: they pick
+                their own products from the catalogue and nothing can be attached to them.
+              </p>
               {Object.entries(sectionGroups).map(([page, pageSections]) => (
                 <fieldset key={page} className="grid gap-2">
                   <legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {pageSections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="ml-1 text-[10.5px] text-chalk-dim">· assigned products</span>{section.status === "draft" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· draft</span> : null}</span></label>)}
+                    {pageSections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="ml-1 text-[10.5px] text-chalk-dim">· assigned products</span>{section.presentation === "flash_sale" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· flash sale terms</span> : null}{section.status === "draft" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· draft</span> : null}</span></label>)}
                   </div>
                 </fieldset>
               ))}
               {!sections.length ? (
                 <p className="text-[12px] text-chalk-dim">
-                  No product section exists yet. Ferixas adds the product sections in the CMS; this product is still
-                  submitted for review without one.
+                  No manual product section exists yet. Ferixas adds them in the CMS; this product is still submitted
+                  for review without one.
                 </p>
               ) : null}
             </div>

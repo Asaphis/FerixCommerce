@@ -316,9 +316,12 @@ export async function addCmsSectionAction(_prev: FormState, formData: FormData):
       name: label || type.replace(/_/g, " "),
       position: sections.length + 1,
       visible: true,
-      // Optional fields a category card may send: the source of a product
-      // feed, how many to show, and the layout it arranges them in.
+      // The palette decides how a section's products are chosen before it adds
+      // anything: a product row can be filled by hand or by a catalogue feed,
+      // and an automatic feed must never be mistaken for a manual one.
       ...(formData.get("source") ? { source: String(formData.get("source")) } : {}),
+      ...(formData.get("selectionMode") ? { selectionMode: String(formData.get("selectionMode")) } : {}),
+      ...(formData.get("presentation") ? { presentation: String(formData.get("presentation")) } : {}),
       ...(formData.get("limit") ? { limit: Number(formData.get("limit")) || 8 } : {}),
       ...(formData.get("layout") ? { layout: String(formData.get("layout")) } : {}),
     } as api.CmsSection);
@@ -363,8 +366,12 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
     const current = page.sections.find((section) => section.id === sectionId);
     if (!current) return { error: "That section is no longer on this page." };
 
-    const numericFields = new Set(["across", "rowsPerSet", "interruptAfter", "limit", "adEvery", "height", "duration", "width", "scrim", "columns", "perPage"]);
-    const booleanFields = new Set(["mediaOnly", "seeAll", "swipe", "showAsTile", "showAsText", "showFollow", "showText", "showButtons", "verifiedOnly"]);
+    const numericFields = new Set(["across", "rowsPerSet", "interruptAfter", "limit", "adEvery", "height", "duration", "width", "scrim", "columns", "perPage",
+      // How an automatic feed decides its products.
+      "windowDays", "minimumSales"]);
+    const booleanFields = new Set(["mediaOnly", "seeAll", "swipe", "showAsTile", "showAsText", "showFollow", "showText", "showButtons", "verifiedOnly",
+      // How a campaign presents itself.
+      "showCountdown", "showDiscountBadges", "showViewAll"]);
     const next: Record<string, unknown> = { ...current };
     for (const [field, value] of formData.entries()) {
       if (!field.startsWith("field_") || value instanceof File) continue;
@@ -386,7 +393,10 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
       }
     }
 
-    if (["category_grid", "brand_carousel", "product_carousel", "featured_stores", "product_grid"].includes(String(current.type))) {
+    // A product section keeps its own copy. A Flash Sale carries an eyebrow and
+    // a description of its own, and clearing them here threw that work away the
+    // moment anyone saved the section.
+    if (["category_grid", "brand_carousel", "featured_stores"].includes(String(current.type))) {
       delete next.subtitle;
       delete next.eyebrow;
     }

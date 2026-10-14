@@ -452,7 +452,26 @@ export type ProductOptions = {
   categories: { id?: string; slug: string; name: string }[];
   brands: { id: string; slug: string; name: string }[];
   collections?: { id?: string; slug: string; name: string }[];
-  sections: { value: string; name: string; documentTitle: string; documentType?: string; sectionType?: string; source?: string; status?: string }[];
+  /**
+   * Every section listed here is filled by hand. An automatic feed such as
+   * Trending never appears, because nobody attaches a product to it.
+   * ``productConfigSchema`` says what this particular section asks a product
+   * for: a Flash Sale wants a price and its own window, a plain row wants none.
+   */
+  sections: {
+    value: string;
+    name: string;
+    documentTitle: string;
+    documentType?: string;
+    sectionType?: string;
+    source?: string;
+    status?: string;
+    selectionMode?: string;
+    presentation?: string;
+    productConfigSchema?: { key: string; label: string; kind: string; required?: boolean; placeholder?: string }[];
+    startsAt?: string | null;
+    endsAt?: string | null;
+  }[];
 };
 
 export const getProductOptions = (session: string | null) =>

@@ -418,6 +418,13 @@ export const deleteMerchant = (session: string | null, id: string) =>
 export type SectionOption = {
   documentId: string; documentTitle: string; sectionId: string;
   sectionName?: string; sectionType?: string; source?: string; placements?: number;
+  /** Everything here is filled by hand: an automatic feed is never listed. */
+  selectionMode?: string;
+  presentation?: string;
+  /** What this section asks one product for, e.g. a Flash Sale price. */
+  productConfigSchema?: CmsSectionSetting[];
+  startsAt?: string | null;
+  endsAt?: string | null;
 };
 export const getProductSections = (session: string | null, slug: string) =>
   call<{ placements: { id: string; documentId: string; sectionId: string; price: number }[]; available: SectionOption[] }>(
@@ -959,3 +966,62 @@ export async function listCmsSections(session: string): Promise<{ sections: { id
 export async function createCmsSection(session: string, data: { name: string; slug?: string; description?: string; is_active: boolean; sort_order: number }): Promise<{ section: { id: string; name: string; slug: string } }> {
   return call<{ section: { id: string; name: string; slug: string } }>("POST", "admin/cms/sections", { session, body: data });
 }
+
+// ── CMS: the section contract ──────────────────────────────────────────────
+// The backend owns this contract, so the buttons the CMS shows, the sources an
+// operator can choose and the fields a product form opens all come from one
+// place rather than from lists copied into this file.
+
+/** One setting a section's data source carries, e.g. a sales window. */
+export type CmsSectionSetting = {
+  key: string;
+  label: string;
+  kind: "text" | "number" | "datetime" | "color";
+  required?: boolean;
+  default?: unknown;
+  placeholder?: string;
+};
+
+/** One button in the add-section palette. */
+export type CmsPaletteEntry = {
+  id: string;
+  label: string;
+  type: string;
+  hint?: string;
+  /** This button opens the manual-or-automatic choice before it adds anything. */
+  asksSource?: boolean;
+  defaultSource?: string;
+  selectionMode?: "automatic" | "manual" | "none";
+  source?: string;
+  presentation?: string;
+  preset?: string;
+};
+
+export type CmsPaletteGroup = {
+  id: string;
+  label: string;
+  hint?: string;
+  entries: CmsPaletteEntry[];
+};
+
+export type CmsAutomaticSource = {
+  value: string;
+  label: string;
+  hint: string;
+  config: CmsSectionSetting[];
+};
+
+export type CmsSectionTypes = {
+  palette: CmsPaletteGroup[];
+  selectionModes: string[];
+  presentations: string[];
+  automaticSources: CmsAutomaticSource[];
+  /** Readable but no longer offered: sections saved before the contract existed. */
+  legacySources: string[];
+  flashSaleDefaults: Record<string, unknown>;
+  productConfigPresets: Record<string, CmsSectionSetting[]>;
+  allSources: string[];
+};
+
+export const listCmsSectionTypes = (session: string | null) =>
+  call<CmsSectionTypes>("GET", "admin/cms/section-types", { session });
