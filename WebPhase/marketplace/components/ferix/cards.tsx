@@ -19,6 +19,12 @@ export function ProductCard({
   className?: string;
   showAdd?: boolean;
 }) {
+  // A section may give this product its own label, its own badge colour and a
+  // remaining count. The server writes them onto the product for that section
+  // only, so the same product reads differently in two places - or not at all.
+  const sectionLabel = (product as { sectionLabel?: string }).sectionLabel;
+  const sectionBadgeColor = (product as { sectionBadgeColor?: string }).sectionBadgeColor;
+  const sectionRemaining = Number((product as { sectionRemaining?: number }).sectionRemaining) || 0;
   const href = `/product/${product.slug}`;
   return (
     <article
@@ -36,9 +42,22 @@ export function ProductCard({
             className="aspect-[1/1] w-full rounded-none sm:aspect-[4/3]"
         />
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
+          {sectionLabel ? (
+            <span
+              className="inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-white"
+              style={{ background: sectionBadgeColor || "#e4572e" }}
+            >
+              {sectionLabel}
+            </span>
+          ) : null}
           {product.discount ? <Pill tone="ember">−{product.discount}%</Pill> : null}
           {product.stockStatus === "limited" ? <Pill tone="warn">Limited availability</Pill> : null}
           {product.stockStatus === "out_of_stock" ? <Pill tone="danger">Sold out</Pill> : null}
+          {sectionRemaining > 0 && product.stockStatus !== "out_of_stock" ? (
+            <span className="inline-flex items-center rounded-[3px] bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
+              Only {sectionRemaining} left
+            </span>
+          ) : null}
         </span>
       </Link>
 
