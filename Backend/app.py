@@ -1368,7 +1368,10 @@ def catalogue_page(id: Optional[str] = None, type: Optional[str] = None):
                 if product:
                     placements.setdefault(row.section_id, []).append(product)
         for section in sections:
-            if section.get("id") in assignable and str(section.get("source") or "assigned").lower() != "assigned":
+            # Automatic sections are resolved from the catalogue feed and must
+            # remain renderable even though they are deliberately excluded from
+            # the manual SectionPlacement destination set above.
+            if str(section.get("source") or "assigned").strip().lower() != "assigned":
                 placements[section["id"]] = resolve_cms_product_source(
                     section, decorated, public_by_id, paid_units, flash_ids,
                 )

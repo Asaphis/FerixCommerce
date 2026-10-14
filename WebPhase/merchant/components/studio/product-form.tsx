@@ -208,11 +208,12 @@ export function ProductForm({
           <Panel>
             <PanelHead title="Product sections" />
             <div className="grid gap-4">
+              <p className="text-[11px] leading-relaxed text-chalk-dim">These are curated sections where Admin may place approved products. Automatic sections such as Trending and Newest arrivals choose products themselves.</p>
               {Object.entries(sectionGroups).map(([page, pageSections]) => (
                 <fieldset key={page} className="grid gap-2">
                   <legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {pageSections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}{section.status === "draft" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· draft</span> : null}</span></label>)}
+                    {pageSections.map((section) => <label key={section.value} className="flex items-start gap-2.5 rounded-[6px] border border-hairline p-3 text-[12px] text-chalk"><input type="checkbox" name="section_tags" value={section.value} defaultChecked={product?.section_tags?.includes(section.value)} className="mt-0.5 accent-[#e4572e]" /><span>{section.name}<span className="ml-1 text-[10.5px] text-chalk-dim">· assigned products</span>{section.status === "draft" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· draft</span> : null}</span></label>)}
                   </div>
                 </fieldset>
               ))}

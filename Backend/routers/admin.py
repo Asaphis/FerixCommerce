@@ -1511,7 +1511,6 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
             ))
             updated["placementRequests"] = requested_sections
             updated["approvedSectionTags"] = []
-            updated["placementStatus"] = "approved" if requested_sections else "none"
             from core import ContentDocument, SectionPlacement
             # A seller can remove or change requested sections on resubmission.
             # Replace the old approved placement set so the public resolver never
@@ -1551,6 +1550,7 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
                         quantity=int(target.get("stock") or 0), position=1,
                     ))
                 updated["approvedSectionTags"].append(request)
+            updated["placementStatus"] = "approved" if updated["approvedSectionTags"] else "none"
         elif decision == "changes":
             from core import SectionPlacement
             for old_placement in db.scalars(select(SectionPlacement).where(SectionPlacement.product_id == target["id"])).all():
@@ -2750,7 +2750,7 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                     "sectionId": section.get("id"),
                     "sectionName": section.get("name") or section.get("type"),
                     "sectionType": section.get("type"),
-                    "source": section.get("source"),
+                    "source": str(section.get("source") or "assigned").strip().lower(),
                     "status": "draft" if draft is not None else "published",
                     "placements": len(used),
                 })
@@ -2858,8 +2858,7 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
             source = (draft.data if draft is not None else document.data) or {}
             section = next((value for value in source.get("sections", [])
                             if value.get("id") == section_id
-                            and value.get("type") in ("product_grid", "product_carousel")
-                            and value.get("visible", True)), None)
+                            and is_assignable_product_section(document, value)), None)
             if not section:
                 raise HTTPException(400, "Choose only active product sections")
             seen.add(key)

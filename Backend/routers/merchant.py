@@ -210,6 +210,7 @@ def _product_options(db) -> dict:
                     "documentTitle": document.title,
                     "documentType": document.document_type,
                     "sectionType": section_type,
+                    "source": "assigned",
                     "status": page_status,
                 })
     return {"categories": categories, "brands": brands, "collections": collections, "sections": sections}

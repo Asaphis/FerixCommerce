@@ -1035,8 +1035,9 @@ def is_assignable_product_section(document: Optional[ContentDocument], section: 
 
     The Explore page's paginated product_grid is the all-products feed, not a
     curated slot. Its perPage setting distinguishes it from product grids that
-    hold manually assigned products. Related-product modules are computed from
-    product context and are not manual placement destinations either.
+    hold manually assigned products. Related-product modules and every other
+    automatic source are computed from catalogue data and are not manual
+    placement destinations either.
     """
     if not document or document.owner_type != "platform" or document.status == "archived":
         return False
@@ -1047,7 +1048,11 @@ def is_assignable_product_section(document: Optional[ContentDocument], section: 
         return False
     if section.get("type") not in PUBLIC_SECTION_TYPES:
         return False
-    if str(section.get("source") or "").lower() == "related":
+    # Missing source is retained as the legacy equivalent of ``assigned``.
+    # Once a source is present, only the explicit assigned mode may receive
+    # SectionPlacement rows or appear in a product-upload form.
+    source = str(section.get("source") or "assigned").strip().lower()
+    if source != "assigned":
         return False
     if (
         document.document_type == "marketplace_explore"

@@ -939,6 +939,27 @@ class ProductLifecycleTest(unittest.TestCase):
             self.assertEqual(body["sections"][0]["source"], "newest_arrivals")
             self.assertLessEqual(len(body["placements"]["automatic-products"]), 2)
             self.assertTrue(body["placements"]["automatic-products"])
+            seller_options = self.client.get(
+                "/merchant/product/options", headers={"X-Ferix-Session": self.merchant}
+            )
+            self.assertEqual(seller_options.status_code, 200, seller_options.text)
+            self.assertNotIn(
+                "automatic-products",
+                {row["value"].rsplit("__", 1)[-1] for row in seller_options.json()["sections"]},
+            )
+            admin_options = self.client.get(
+                "/admin/product/sections", headers={"X-Ferix-Session": self.admin}
+            )
+            self.assertEqual(admin_options.status_code, 200, admin_options.text)
+            self.assertNotIn("automatic-products", {row["sectionId"] for row in admin_options.json()["available"]})
+            product = self.client.get(
+                "/admin/catalog/products", headers={"X-Ferix-Session": self.admin}
+            ).json()["products"][0]
+            rejected = self.client.post("/admin/product/section", headers={"X-Ferix-Session": self.admin}, json={
+                "productId": product["id"], "slug": product["slug"],
+                "documentId": document_id, "sectionId": "automatic-products",
+            })
+            self.assertEqual(rejected.status_code, 400, rejected.text)
         finally:
             with SessionLocal() as db:
                 db.query(ContentVersion).filter_by(document_id=document_id).delete()

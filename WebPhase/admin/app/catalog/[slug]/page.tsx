@@ -169,6 +169,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
             <Field title="Shipping origin"><input name="shipping_origin" defaultValue={product.shipping_origin ?? ""} className={inputClass} placeholder="Lagos, NG" /></Field>
           </div>
           <Field title="Product sections">
+            <p className="-mt-2 text-[11px] leading-relaxed text-chalk-dim">Only assigned product sections appear here. Automatic sections such as Trending or Newest arrivals choose products from their configured feed.</p>
             {sections.length ? (
               <div className="grid gap-4">
                 {Object.entries(sectionGroups).map(([page, pageSections]) => <fieldset key={page} className="grid gap-2"><legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend><div className="grid gap-2 sm:grid-cols-2">{pageSections.map((section) => {
@@ -191,7 +192,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
                         <span className="min-w-0">
                           <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName || "Unnamed section"}</span>
                           <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                            {section.documentTitle || "Unknown page"} · {section.sectionType || "unknown type"}{section.placements ? ` · ${section.placements} already` : ""}
+                            {section.documentTitle || "Unknown page"} · Assigned products · {section.sectionType || "unknown type"}{section.placements ? ` · ${section.placements} already` : ""}
                           </span>
                         </span>
                       </label>
