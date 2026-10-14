@@ -976,7 +976,9 @@ export async function createCmsSection(session: string, data: { name: string; sl
 export type CmsSectionSetting = {
   key: string;
   label: string;
-  kind: "text" | "number" | "datetime" | "color";
+  kind: "text" | "number" | "datetime" | "color" | "choice" | "toggle";
+  /** Anything else the contract carries for this setting. */
+  [key: string]: unknown;
   required?: boolean;
   default?: unknown;
   placeholder?: string;
@@ -1021,6 +1023,12 @@ export type CmsSectionTypes = {
   flashSaleDefaults: Record<string, unknown>;
   productConfigPresets: Record<string, CmsSectionSetting[]>;
   allSources: string[];
+  /** The editor's fields per section type, served by the contract. */
+  sectionFields?: Record<string, CmsSectionSetting[]>;
+  /** Everything a section may ask of a product. */
+  requirementLibrary?: Record<string, CmsSectionSetting>;
+  requirementSets?: Record<string, string[]>;
+  cardDisplay?: CmsSectionSetting[];
 };
 
 export const listCmsSectionTypes = (session: string | null) =>
