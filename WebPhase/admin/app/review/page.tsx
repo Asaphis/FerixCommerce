@@ -36,7 +36,7 @@ function TabLink({ tab, active, merchantId, count }: { tab: ReviewTab; active: b
     <Link href={href} aria-current={active ? "page" : undefined}
       className={`inline-flex min-h-10 items-center gap-2 rounded-[2px] border px-3 py-2 text-[11.5px] transition-colors ${active ? "border-signal/40 bg-signal/10 text-signal" : "border-hairline text-chalk-dim hover:text-chalk"}`}>
       {tab === "profiles" ? "Seller profiles" : tab === "products" ? "Product listings" : "All submissions"}
-      {count == null ? null : <span className="font-mono text-[10px]">{count}</span>}
+      {count == null ? null : <span className="font-mono text-[10.5px]">{count}</span>}
     </Link>
   );
 }
@@ -81,7 +81,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     <div className="grid min-w-0 gap-5">
       <PageHeader
         back={
-          <Link href={merchantId ? `/merchants/${encodeURIComponent(merchantId)}` : "/catalog"} className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk">
+          <Link href={merchantId ? `/merchants/${encodeURIComponent(merchantId)}` : "/catalog"} className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk">
             <ArrowLeft width={13} height={13} /> {merchantId ? "Seller record" : "Catalogue"}
           </Link>
         }
@@ -129,7 +129,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
                   ) : null}
                   <div className="min-w-0 rounded-[10px] border border-hairline bg-panel-2 p-3 text-[12px]">
                     <p className="whitespace-pre-wrap leading-relaxed text-chalk">{item.description || "No product description supplied."}</p>
-                    {item.bullets?.length ? <div className="mt-3"><p className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-chalk-dim">Highlights</p><ul className="mt-1 grid gap-1 text-chalk">{item.bullets.map((bullet, index) => <li key={`${bullet}-${index}`}>• {bullet}</li>)}</ul></div> : null}
+                    {item.bullets?.length ? <div className="mt-3"><p className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-chalk-dim">Highlights</p><ul className="mt-1 grid gap-1 text-chalk">{item.bullets.map((bullet, index) => <li key={`${bullet}-${index}`}>• {bullet}</li>)}</ul></div> : null}
                     {item.variants?.length ? <p className="mt-3 text-chalk"><span className="text-chalk-dim">Options:</span> {item.variants.map((variant) => `${variant.name}: ${variant.values.join(", ")}`).join(" · ")}</p> : null}
                     {item.tags?.length ? <p className="mt-2 text-chalk"><span className="text-chalk-dim">Tags:</span> {item.tags.join(", ")}</p> : null}
                     {item.collections?.length ? <p className="mt-2 text-chalk"><span className="text-chalk-dim">Collections:</span> {item.collections.join(", ")}</p> : null}
@@ -174,7 +174,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         <section className="grid gap-4" aria-labelledby="profile-queue-heading">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="profile-queue-heading" className="font-display text-[17px] font-semibold text-chalk">Seller profile changes</h2>
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">Public profile proposals only</span>
+            <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-chalk-dim">Public profile proposals only</span>
           </div>
           {profilesResult.status === "rejected" ? (
             <Panel><PanelHead title="Profile review could not load" /><p className="text-[12px] leading-relaxed text-rose">{apiError(profilesResult.reason)}</p></Panel>
