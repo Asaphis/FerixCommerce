@@ -93,7 +93,7 @@ export default async function ProductsPage({
               key={filter.id}
               href={productHref({ status: filter.id, sort, search, channel })}
               className={cn(
-                "min-h-11 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "min-h-11 rounded-[2px] border px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.14em] transition-colors",
                 (status ?? "all") === filter.id
                   ? "border-lime/40 bg-lime/10 text-lime"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -116,7 +116,7 @@ export default async function ProductsPage({
             />
           </label>
           <label className="flex items-center gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">Sort</span>
+            <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">Sort</span>
             <select
               name="sort"
               defaultValue={sort ?? "new"}
@@ -133,13 +133,13 @@ export default async function ProductsPage({
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">Sold on</span>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">Sold on</span>
         {DESTINATIONS.map((option) => (
           <Link
             key={option.id}
             href={productHref({ status, sort, search, channel: option.id })}
             className={cn(
-              "min-h-9 rounded-[2px] border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+              "min-h-11 rounded-[2px] border px-2.5 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] transition-colors",
               (channel ?? "all") === option.id
                 ? "border-lime/40 bg-lime/10 text-lime"
                 : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -169,7 +169,7 @@ export default async function ProductsPage({
                       >
                         {product.title}
                       </Link>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+                      <p className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">
                         {titleCase(product.category)}
                       </p>
                     </div>
@@ -210,7 +210,7 @@ export default async function ProductsPage({
                         <input type="hidden" name="store" value={product.channels.store ? "off" : "on"} />
                         <button
                           type="submit"
-                          className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                          className="cursor-pointer font-mono text-[10.5px] uppercase tracking-[0.14em] text-lime hover:underline"
                         >
                           {product.channels.store ? "Remove from my website" : "Use on my website"}
                         </button>
@@ -220,7 +220,7 @@ export default async function ProductsPage({
                         <input type="hidden" name="marketplace" value="on" />
                         <button
                           type="submit"
-                          className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                          className="cursor-pointer font-mono text-[10.5px] uppercase tracking-[0.14em] text-lime hover:underline"
                         >
                           Submit to Ferixas
                         </button>
@@ -250,7 +250,7 @@ export default async function ProductsPage({
                 <TdEnd>
                   <Link
                     href={`/products/${product.id}`}
-                    className="inline-flex min-h-[44px] items-center font-mono text-[10px] uppercase tracking-[0.14em] text-lime hover:underline"
+                    className="inline-flex min-h-[44px] items-center font-mono text-[10.5px] uppercase tracking-[0.14em] text-lime hover:underline"
                   >
                     Edit
                   </Link>
