@@ -136,11 +136,11 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
           </div>
           <ul className="grid gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
             {page.sections.map((section, index) => (
-              <li key={section.id} className="flex flex-wrap items-center gap-3 rounded-[12px] border border-hairline bg-panel px-3.5 py-3">
+              <li key={section.id} className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-hairline bg-panel px-3.5 py-3.5">
                 <span className="w-5 shrink-0 text-center font-mono text-[11px] text-chalk-dim">{index + 1}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px] font-semibold text-chalk">{section.name || section.type}</span>
-                  <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
+                  <span className="block text-[13.5px] font-semibold leading-snug text-chalk" title={section.name || section.type}>{section.name || section.type}</span>
+                  <span className="mt-1 block font-mono text-[11.5px] uppercase tracking-[0.1em] text-chalk-dim">
                     {sectionMeta(section, sectionTypes)} · {section.visible ? "on the storefront" : "hidden"}
                   </span>
                 </span>
@@ -149,7 +149,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="direction" value="up" />
-                  <SubmitButton variant="outline" pendingLabel="…" ariaLabel={`Move ${section.name || section.type} up`} className="px-2 py-1.5">
+                  <SubmitButton variant="outline" pendingLabel="…" ariaLabel={`Move ${section.name || section.type} up`} className="min-h-11 min-w-11 px-2.5">
                     <ArrowUp width={13} height={13} />
                   </SubmitButton>
                 </CmsActionForm>
@@ -157,7 +157,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="direction" value="down" />
-                  <SubmitButton variant="outline" pendingLabel="…" ariaLabel={`Move ${section.name || section.type} down`} className="px-2 py-1.5">
+                  <SubmitButton variant="outline" pendingLabel="…" ariaLabel={`Move ${section.name || section.type} down`} className="min-h-11 min-w-11 px-2.5">
                     <ArrowDown width={13} height={13} />
                   </SubmitButton>
                 </CmsActionForm>
@@ -166,7 +166,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="direction" value="top" />
-                  <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
+                  <SubmitButton variant="outline" pendingLabel="…" className="min-h-11 px-3 py-2 text-[11.5px]">
                     Top
                   </SubmitButton>
                 </CmsActionForm>
@@ -174,7 +174,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="direction" value="bottom" />
-                  <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">
+                  <SubmitButton variant="outline" pendingLabel="…" className="min-h-11 px-3 py-2 text-[11.5px]">
                     Bottom
                   </SubmitButton>
                 </CmsActionForm>
@@ -182,7 +182,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
                   <input type="hidden" name="visible" value={section.visible ? "" : "on"} />
-                  <SubmitButton variant="outline" pendingLabel="…" className="px-3 py-1.5">
+                  <SubmitButton variant="outline" pendingLabel="…" className="min-h-11 px-3.5 py-2">
                     {section.visible ? "Hide" : "Show"}
                   </SubmitButton>
                 </CmsActionForm>
@@ -190,14 +190,14 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
                 <CmsActionForm action={removeCmsSectionAction} className="flex items-center gap-1">
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="sectionId" value={section.id} />
-                  <SubmitButton variant="danger" pendingLabel="…" ariaLabel={`Delete ${section.name || section.type}`} className="px-2.5 py-1.5">
+                  <SubmitButton variant="danger" pendingLabel="…" ariaLabel={`Delete ${section.name || section.type}`} className="min-h-11 min-w-11 px-2.5">
                     <Trash2 width={13} height={13} />
                   </SubmitButton>
                 </CmsActionForm>
 
                 <Link
                   href={`/cms/pages/${page.id}/${section.id}`}
-                  className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-[10px] border border-signal bg-signal px-2.5 text-[11.5px] font-semibold text-white transition-colors hover:bg-[#e4572e]"
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-[10px] border border-signal bg-signal px-4 text-[12.5px] font-semibold text-white transition-colors hover:bg-[#e4572e]"
                 >
                   <Pencil width={12} height={12} /> Edit
                 </Link>
