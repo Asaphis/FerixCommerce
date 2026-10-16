@@ -140,7 +140,7 @@ export function ProductForm({
           </Panel>
 
           <Panel>
-            <PanelHead title="Product images" action={<span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">First image is the lead</span>} />
+            <PanelHead title="Product images" action={<span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">First image is the lead</span>} />
             <div className="grid gap-3">
               <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-hairline bg-panel-2 p-4 text-center transition-colors hover:border-ember">
                 <span className="grid h-11 w-11 place-items-center rounded-[12px] border border-hairline bg-panel text-ember"><ImagePlus width={20} height={20} /></span>
@@ -153,14 +153,14 @@ export function ProductForm({
                   {images.map((url, index) => (
                     <div key={url} className="group relative overflow-hidden rounded-[12px] border border-hairline bg-panel-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}<img src={apiImageUrl(url) ?? url} alt={`Product image ${index + 1}`} className="aspect-square w-full object-cover" />
-                      {index === 0 ? <span className="absolute left-1.5 top-1.5 rounded-full bg-ember px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-white">Lead</span> : null}
+                      {index === 0 ? <span className="absolute left-1.5 top-1.5 rounded-full bg-ember px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-white">Lead</span> : null}
                       <button type="button" aria-label={`Remove product image ${index + 1}`} onClick={() => setImages((current) => current.filter((_, item) => item !== index))} className="absolute right-1.5 top-1.5 grid h-8 w-8 place-items-center rounded-full bg-[#17232b]/80 text-white opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"><X width={14} height={14} /></button>
                     </div>
                   ))}
                   {previews.map((url, index) => (
                     <div key={url} className="relative overflow-hidden rounded-[12px] border border-ember/40 bg-panel-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}<img src={url} alt={`New product image ${index + 1}`} className="aspect-square w-full object-cover" />
-                      <span className="absolute inset-x-1 bottom-1 rounded-[8px] bg-[#17232b]/75 px-1 py-0.5 text-center font-mono text-[9px] uppercase tracking-wide text-white">Uploads on save</span>
+                      <span className="absolute inset-x-1 bottom-1 rounded-[8px] bg-[#17232b]/75 px-1 py-0.5 text-center font-mono text-[10px] uppercase tracking-wide text-white">Uploads on save</span>
                     </div>
                   ))}
                 </div>
@@ -240,7 +240,7 @@ export function ProductForm({
               </p>
               {Object.entries(sectionGroups).map(([page, pageSections]) => (
                 <fieldset key={page} className="grid gap-2">
-                  <legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend>
+                  <legend className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {pageSections.map((section) => {
                       const selected = selectedSections.has(section.value);
@@ -264,13 +264,13 @@ export function ProductForm({
                               })}
                               className="mt-0.5 accent-[#e4572e]"
                             />
-                            <span>{section.name}<span className="ml-1 text-[10.5px] text-chalk-dim">· manual products</span>{section.status === "draft" ? <span className="ml-1 text-[10.5px] text-chalk-dim">· draft</span> : null}</span>
+                            <span>{section.name}<span className="ml-1 text-[11px] text-chalk-dim">· manual products</span>{section.status === "draft" ? <span className="ml-1 text-[11px] text-chalk-dim">· draft</span> : null}</span>
                           </label>
                           {fields.length ? (
                             <div className={`${selected ? "grid" : "hidden"} mt-3 gap-2 border-t border-hairline pt-3 sm:grid-cols-2`}>
                               {fields.map((field) => (
                                 <label key={field.key} className="grid gap-1">
-                                  <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-chalk-dim">{field.label}{field.required ? <span className="text-[#e4572e"> *</span> : null}</span>
+                                  <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-chalk-dim">{field.label}{field.required ? <span className="text-[#e4572e"> *</span> : null}</span>
                                   <input
                                     name={`section_term__${section.value}__${field.key}`}
                                     type={field.kind === "number" ? "number" : field.kind === "datetime" ? "datetime-local" : field.kind === "color" ? "color" : "text"}
@@ -323,21 +323,21 @@ export function ProductForm({
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src={lead} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="grid h-full place-items-center font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">No image yet</span>
+                  <span className="grid h-full place-items-center font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">No image yet</span>
                 )}
               </div>
               <div className="grid gap-2 p-3.5">
                 <span className="font-display text-[14.5px] font-bold leading-snug text-chalk">{draft.title.trim() || "Product title"}</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">{draft.category}</span>
-                  {storeName ? <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">· {storeName}</span> : null}
+                  <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">{draft.category}</span>
+                  {storeName ? <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">· {storeName}</span> : null}
                 </div>
                 <div className="flex items-baseline gap-2">
                   <span className="font-display text-[20px] font-bold tabular-nums text-chalk">{money(price)}</span>
                   {discount ? (
                     <>
                       <span className="text-[12.5px] text-chalk-dim line-through">{money(was)}</span>
-                      <span className="rounded-full bg-ember px-2 py-0.5 text-[10px] font-bold text-white">-{discount}%</span>
+                      <span className="rounded-full bg-ember px-2 py-0.5 text-[10.5px] font-bold text-white">-{discount}%</span>
                     </>
                   ) : null}
                 </div>
