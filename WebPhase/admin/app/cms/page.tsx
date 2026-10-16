@@ -46,7 +46,7 @@ export default async function CmsPage() {
             <Link
               href="/"
               target="_blank"
-              className="inline-flex min-h-9 items-center gap-2 rounded-[10px] border border-hairline px-3 text-[12.5px] font-semibold text-chalk transition-colors hover:bg-panel-2"
+              className="inline-flex min-h-11 items-center gap-2 rounded-[10px] border border-hairline px-3 text-[12.5px] font-semibold text-chalk transition-colors hover:bg-panel-2"
             >
               Preview the storefront
             </Link>
@@ -85,7 +85,7 @@ export default async function CmsPage() {
                     <span className="block truncate font-display text-[14px] font-semibold text-chalk group-hover:text-signal">
                       {page.title}
                     </span>
-                    <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.1em] text-chalk-dim">
+                    <span className="mt-0.5 block truncate font-mono text-[10.5px] uppercase tracking-[0.1em] text-chalk-dim">
                       <span className="hidden md:inline">
                         {PAGE_LOCATION[page.documentType] ?? page.title} ·{" "}
                       </span>
