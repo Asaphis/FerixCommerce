@@ -96,7 +96,7 @@ function OneClickEntry({ pageId, entry }: { pageId: string; entry: CmsPaletteEnt
       {entry.source ? <input type="hidden" name="source" value={entry.source} /> : null}
       {entry.presentation ? <input type="hidden" name="presentation" value={entry.presentation} /> : null}
       <span title={entry.hint ?? ""}>
-        <SubmitButton variant="outline" pendingLabel="Adding" className="px-3 py-1.5 text-[12px]">
+        <SubmitButton variant="outline" pendingLabel="Adding" className="min-h-11 px-3.5 py-2 text-[12.5px]">
           {entry.label}
         </SubmitButton>
       </span>
@@ -112,7 +112,7 @@ export function SectionPalette({ pageId, sectionTypes }: {
     <div className="grid gap-5">
       {sectionTypes.palette.map((group) => (
         <details key={group.id} className="rounded-[12px] border border-hairline bg-panel">
-          <summary className="flex cursor-pointer list-none items-center gap-2 px-3.5 py-3 font-display text-[13px] font-semibold text-chalk">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-3.5 py-3 font-display text-[13.5px] font-semibold text-chalk">
             <Plus width={14} height={14} className="text-signal" />
             {group.label}
           </summary>
