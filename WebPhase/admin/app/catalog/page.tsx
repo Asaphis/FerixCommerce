@@ -52,10 +52,10 @@ export default async function CatalogPage({
       </header>
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-hairline bg-panel-2 px-4 py-3">
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">Ferixas Official catalogue</span>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">Ferixas Official catalogue</span>
         <div className="flex flex-wrap gap-2">
-          <Link href="/review" className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Product review</Link>
-          <Link href="/review?tab=profiles" className="inline-flex min-h-9 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Review seller profiles</Link>
+          <Link href="/review" className="inline-flex min-h-11 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Product review</Link>
+          <Link href="/review?tab=profiles" className="inline-flex min-h-11 shrink-0 items-center rounded-[9px] border border-hairline px-3 text-[11.5px] font-semibold text-chalk transition-colors hover:bg-panel">Review seller profiles</Link>
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export default async function CatalogPage({
               <thead>
                 <tr className="hidden border-b border-hairline md:table-row">
                   {["Product", "Owner", "Price", "Stock", "Channels", "Status", ""].map((head) => (
-                    <th key={head} className="px-4 py-3 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim">
+                    <th key={head} className="px-4 py-3 font-mono text-[10.5px] uppercase tracking-[0.14em] text-chalk-dim">
                       {head}
                     </th>
                   ))}
@@ -126,7 +126,7 @@ export default async function CatalogPage({
                           >
                             {product.title}
                           </Link>
-                          <p className="mt-0.5 font-mono text-[10px] text-chalk-dim">
+                          <p className="mt-0.5 font-mono text-[10.5px] text-chalk-dim">
                             {product.sku || "no sku"} · {titleCase(product.category)}
                           </p>
                         </div>
