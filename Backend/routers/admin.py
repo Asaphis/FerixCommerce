@@ -2598,8 +2598,8 @@ def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Feri
     routes continue to read only published data. Products are projected through
     the shopper-safe serializer before placement terms are applied.
     """
-    from core import SectionPlacement, decorate, public_product_fields
-    from cms_sections import apply_placement_overrides, placement_is_live, section_is_live
+    from core import SectionPlacement, decorate, public_product_fields, public_products, approved_products, categories, collections, brands, merchants, store_card, is_public_store
+    from cms_sections import apply_placement_overrides, placement_is_live, section_is_live, selection_mode_of, source_of
 
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
@@ -2620,8 +2620,10 @@ def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Feri
         rows = db.scalars(select(SectionPlacement).where(
             SectionPlacement.document_id == id, SectionPlacement.section_id == section_id
         ).order_by(SectionPlacement.position, SectionPlacement.created_at)).all()
-        published_ids = {str(row.get("id") or "") for row in ((document.data or {}).get("sections") or [])
-                         if isinstance(row, dict)}
+        published_sections = [row for row in ((document.data or {}).get("sections") or []) if isinstance(row, dict)]
+        published_by_id = {str(row.get("id") or ""): row for row in published_sections}
+        published_section = published_by_id.get(section_id)
+        published_ids = set(published_by_id)
         current = now()
         preview_products = []
         for row in rows:
@@ -2706,7 +2708,16 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
                 if section_type not in known_types:
                     raise HTTPException(422, f"'{section_type or '(empty)'}' is not a section type this storefront can render.")
                 family = family_of(section_type)
-                if family and page_kind not in FAMILY_PAGE_KINDS.get(family, ()):
+                # Product detail is intentionally a template page, not a generic
+                # landing page. Keep its pre-existing related-products rail as a
+                # backward-compatible exception; new product sections must use
+                # the four product-template blocks rendered by that route.
+                legacy_related_products = (
+                    page_kind == "marketplace_product"
+                    and section_type == "product_carousel"
+                    and str(section.get("source") or "").strip().lower() == "related"
+                )
+                if family and page_kind not in FAMILY_PAGE_KINDS.get(family, ()) and not legacy_related_products:
                     raise HTTPException(422, f"'{section_type}' cannot be used on a {page_kind} page.")
                 try:
                     validate_section(section or {})
@@ -2880,6 +2891,12 @@ def cms_advert_save(session: Optional[str] = Header(None, alias="X-Ferix-Session
         require_permission(staff, "cms.manage")
 
         advert_id = payload.id or new_id("adv")
+        href = str(payload.href or "").strip()
+        if href and (href.startswith(("//", "\\")) or any(ord(ch) < 32 for ch in href)
+                     or (":" in href.split("/", 1)[0] and not __import__("re").match(r"^https://[^/\s]+(?:/|$)", href, __import__("re").I))):
+            raise HTTPException(422, "Advertisement link must be a same-site path or HTTPS URL.")
+        if href and not href.startswith("/") and not href.lower().startswith("https://"):
+            raise HTTPException(422, "Advertisement link must be a same-site path or HTTPS URL.")
         existing = next((row for row in rows_of(db, "advert") if row.get("id") == advert_id), {})
         sent = {key: value for key, value in payload.model_dump().items() if value is not None}
         body = {**existing, **sent, "id": advert_id}
@@ -2924,6 +2941,7 @@ class PlacementIn(BaseModel):
     startsAt: Optional[str] = None
     endsAt: Optional[str] = None
     config: Optional[dict] = None
+    active: Optional[bool] = None
 
 
 class PlacementRefIn(BaseModel):
@@ -2944,7 +2962,7 @@ def _placement_json(row) -> dict:
         "quantity": row.quantity, "position": row.position,
         "startsAt": iso(row.starts_at) if row.starts_at else None,
         "endsAt": iso(row.ends_at) if row.ends_at else None,
-        "config": row.config or {},
+        "config": row.config or {}, "active": bool(getattr(row, "active", True)),
     }
 
 
@@ -3034,6 +3052,16 @@ def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Se
             document_id=payload.documentId, section_id=payload.sectionId,
         )
         row.section_type = payload.sectionType or row.section_type or ""
+        if payload.price is not None and (float(payload.price) < 0 or float(payload.price) > 1_000_000_000):
+            raise HTTPException(422, "Placement price must be between 0 and 1,000,000,000.")
+        if payload.compareAt is not None and (float(payload.compareAt) < 0 or float(payload.compareAt) > 1_000_000_000):
+            raise HTTPException(422, "Compare-at price must be between 0 and 1,000,000,000.")
+        if payload.quantity is not None and payload.quantity < 0:
+            raise HTTPException(422, "Placement quantity cannot be negative.")
+        if payload.quantity is not None and int(product.get("stock") or 0) > 0 and payload.quantity > int(product["stock"]):
+            raise HTTPException(422, "Placement quantity cannot exceed product stock.")
+        if payload.startsAt and payload.endsAt and parse(payload.endsAt, None) <= parse(payload.startsAt, None):
+            raise HTTPException(422, "A placement cannot end before it starts.")
         # A placement with no price of its own inherits the product's price, so a
         # section only holds a different price when someone deliberately set one.
         row.price = float(payload.price if payload.price is not None else product.get("price") or 0.0)
@@ -3043,12 +3071,15 @@ def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Se
             row.compare_at = float(product.get("compareAt") or 0.0)
         row.quantity = int(payload.quantity if payload.quantity is not None else product.get("stock") or 0)
         row.position = int(payload.position or row.position or 1)
-        if payload.startsAt:
+        fields = payload.model_fields_set
+        if "startsAt" in fields:
             row.starts_at = parse(payload.startsAt, None)
-        if payload.endsAt:
+        if "endsAt" in fields:
             row.ends_at = parse(payload.endsAt, None)
-        if payload.config:
-            row.config = payload.config
+        if "config" in fields:
+            row.config = payload.config or {}
+        if payload.active is not None:
+            row.active = payload.active
         if existing is None:
             db.add(row)
         audit(db, "admin", staff.email, "product.section", product["slug"],
@@ -3108,9 +3139,11 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
                 raise HTTPException(400, "Choose only active product sections")
             seen.add(key)
             requested.append((document_id, section_id, section, item))
-        for row in db.scalars(select(SectionPlacement).where(SectionPlacement.product_id == product["id"])).all():
+        old_rows = {(row.document_id, row.section_id): row for row in db.scalars(select(SectionPlacement).where(SectionPlacement.product_id == product["id"])).all()}
+        for row in old_rows.values():
             db.delete(row)
         for document_id, section_id, section, item in requested:
+            old = old_rows.get((document_id, section_id))
             db.add(SectionPlacement(
                 id=new_id("plc"), product_id=product["id"], product_slug=product["slug"],
                 document_id=document_id, section_id=section_id, section_type=section.get("type", ""),
@@ -3121,9 +3154,10 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
                 # A placement carries its own window and its own campaign fields.
                 # That is what lets one product sit in a Flash Sale on different
                 # terms from the same product in a plain row.
-                starts_at=parse(item.get("startsAt"), None),
-                ends_at=parse(item.get("endsAt"), None),
-                config=item.get("config") if isinstance(item.get("config"), dict) else {},
+                starts_at=parse(item["startsAt"], None) if "startsAt" in item else (old.starts_at if old else None),
+                ends_at=parse(item["endsAt"], None) if "endsAt" in item else (old.ends_at if old else None),
+                config=(item.get("config") if isinstance(item.get("config"), dict) else {}) if "config" in item else (old.config if old else {}),
+                active=bool(item.get("active")) if "active" in item else (old.active if old else True),
             ))
         audit(db, "admin", staff.email, "product.sections.replace", product["slug"], str(len(requested)))
         db.commit()

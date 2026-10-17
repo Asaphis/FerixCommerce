@@ -61,6 +61,8 @@ export function FlashSaleBand({
   products,
   savedIds,
   display,
+  layout = "grid",
+  ctaLabel = "See all",
 }: {
   title: string;
   eyebrow?: string;
@@ -79,6 +81,8 @@ export function FlashSaleBand({
   products: Product[];
   savedIds: string[];
   display?: ProductCardDisplay;
+  layout?: string;
+  ctaLabel?: string;
 }) {
   const [remaining, setRemaining] = useState<ReturnType<typeof splitRemaining>>(null);
 
@@ -133,13 +137,13 @@ export function FlashSaleBand({
             ) : null}
             {showViewAll !== false ? (
               <Link href={href} className="inline-flex items-center gap-1 rounded-[2px] border px-3 py-2 text-[12px] font-semibold transition-opacity hover:opacity-80" style={{ borderColor: accent, color: ink }}>
-                See all <ArrowRight width={14} height={14} />
+                {ctaLabel} <ArrowRight width={14} height={14} />
               </Link>
             ) : null}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5">
+        <div className={layout === "horizontal" ? "flex gap-3 overflow-x-auto" : "grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5"}>
           {products.map((product) => (
             <ProductCard
               key={product.id}

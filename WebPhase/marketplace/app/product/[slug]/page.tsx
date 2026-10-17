@@ -42,10 +42,8 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
     savedIds(),
     getCataloguePage("marketplace_product").catch(() => ({ page: null, sections: [], placements: {} })),
   ]);
-  const sectionVisible = (type: string) => {
-    if (!cmsPage.page) return true;
-    return cmsPage.sections.some((section) => section.type === type && section.visible !== false);
-  };
+  const sectionVisible = (type: string) => Boolean(cmsPage.page && cmsPage.sections.some((section) => section.type === type && section.visible !== false));
+  const sectionPosition = (type: string) => Number(cmsPage.sections.find((section) => section.type === type && section.visible !== false)?.position ?? 0);
   const relatedSection = cmsPage.sections.find(
     (section) => section.type === "product_carousel"
       && (section.source === "related" || section.id === "sec_related")
@@ -58,7 +56,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const maxQuantity = Math.max(1, Math.min(product.availableQuantity ?? (product.stockStatus === "out_of_stock" ? 0 : 10), 10));
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 py-8">
+    <div className="mx-auto flex max-w-[1240px] flex-col px-4 py-8">
       <nav className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
         <Link href="/" className="transition-colors hover:text-ember">
           Home
@@ -71,14 +69,14 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
         <span className="text-ink">{product.title}</span>
       </nav>
 
-      <div className={`mt-6 grid gap-10 ${sectionVisible("product_gallery") && sectionVisible("buy_box") ? "lg:grid-cols-[1.05fr_0.95fr]" : "lg:grid-cols-1"}`}>
+      <div className={`mt-6 grid grid-cols-1 items-start gap-8 ${sectionVisible("product_gallery") && sectionVisible("buy_box") ? "lg:grid-cols-[1.05fr_0.95fr]" : "lg:grid-cols-1"}`}>
         {sectionVisible("product_gallery") ? (
-          <div>
+          <div style={{ order: sectionPosition("product_gallery") }}>
             <ProductGallery slug={product.slug} title={product.title} images={product.images} />
           </div>
         ) : null}
 
-        {sectionVisible("buy_box") ? <div>
+        {sectionVisible("buy_box") ? <div style={{ order: sectionPosition("buy_box") }}>
           <div className="flex flex-wrap items-center gap-2">
             <Pill tone={merchant.verified ? "success" : "neutral"}>
               <Check width={10} height={10} /> {merchant.verified ? "Verified seller" : "Marketplace seller"}
@@ -230,7 +228,9 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
             ))}
           </ul>
 
-          {sectionVisible("delivery_block") ? <div className="mt-6 grid gap-3 rounded-[3px] border border-line-warm bg-white p-4">
+        </div> : null}
+
+        {sectionVisible("delivery_block") ? <section style={{ order: sectionPosition("delivery_block") }} className="grid gap-3 rounded-[3px] border border-line-warm bg-white p-4 lg:col-span-2">
             {shipping.map((option) => (
               <div key={option.label} className="flex items-start gap-2.5">
                 <Truck width={15} height={15} className="mt-[2px] shrink-0 text-ember" />
@@ -248,11 +248,8 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
               <MapPin width={15} height={15} className="mt-[2px] shrink-0 text-ember" />
               <span className="text-[13px] text-ink">Dispatched from {merchant.location}</span>
             </div>
-          </div> : null}
-        </div> : null}
-      </div>
-
-      {sectionVisible("reviews") ? <section className="mt-14 grid gap-10 lg:grid-cols-[280px_1fr]">
+          </section> : null}
+      {sectionVisible("reviews") ? <section style={{ order: sectionPosition("reviews") }} className="mt-8 grid gap-10 lg:col-span-2 lg:grid-cols-[280px_1fr]">
         <div>
           <Eyebrow>Ratings</Eyebrow>
           <div className="mt-3">
@@ -274,9 +271,10 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
           </div>
         </div>
       </section> : null}
+      </div>
 
       {relatedSection && relatedProducts.length ? (
-        <section className="mt-14">
+        <section style={{ order: sectionPosition("product_carousel") }} className="mt-14">
           <SectionHead
             title={relatedSection.title ?? "Related products"}
             action={String(relatedSection.seeAll) !== "false" ? (

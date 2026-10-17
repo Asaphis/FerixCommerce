@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getPageContent } from "@/lib/api";
+import { CmsInfoSections } from "@/components/ferix/cms-info-sections";
 import { Globe, Store } from "lucide-react";
 import { LinkButton } from "@/components/ferix/marks";
 
@@ -76,6 +77,7 @@ export default async function AboutPage() {
           Browse products
         </LinkButton>
       </div>
+      <CmsInfoSections pageType="marketplace_about" />
     </div>
   );
 }

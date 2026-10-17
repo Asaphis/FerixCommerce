@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, ShoppingBag, Store as StoreIcon } from "lucide-react";
 import type { CatalogueBrand, Category, Product } from "@/lib/api";
-import { assetUrl, getHome, listAdverts, type Advert } from "@/lib/api";
+import { assetUrl, getHome, getCataloguePage, listAdverts, type Advert } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { PromoBanner } from "@/components/ferix/banner";
 import { MediaHero } from "@/components/ferix/media-hero";

@@ -759,9 +759,11 @@ def stores(search: Optional[str] = None, sort: str = "top"):
         q = (search or "").lower()
         rows = [m for m in rows if not q or q in m["name"].lower() or q in (m.get("tagline") or "").lower()]
         if sort == "new":
-            rows.sort(key=lambda m: m.get("since", ""), reverse=True)
+            rows.sort(key=lambda m: (m.get("since", ""), m.get("id", "")), reverse=True)
+        elif sort == "products":
+            rows.sort(key=lambda m: (-int(m.get("productCount") or 0), str(m.get("name") or "").casefold(), str(m.get("id") or "")))
         else:
-            rows.sort(key=lambda m: -((m.get("rating") or 0) * 100 + (m.get("followers") or 0) / 100))
+            rows.sort(key=lambda m: (-((m.get("rating") or 0) * 100 + (m.get("followers") or 0) / 100), str(m.get("name") or "").casefold(), str(m.get("id") or "")))
         return {"stores": rows, "total": len(rows)}
 
 
@@ -992,6 +994,9 @@ def add_cart(p: CartItemIn, session: Optional[str] = Header(None, alias="X-Ferix
         if placement and int(placement.quantity or 0) > 0 and already + p.qty > int(placement.quantity):
             left = max(0, int(placement.quantity) - already)
             raise HTTPException(409, f"Only {left} more available in this section.")
+        stock = max(0, int(product.get("stock") or 0))
+        if stock and already + p.qty > stock:
+            raise HTTPException(409, f"Only {max(0, stock - already)} available in stock.")
         if raw:
             raw["qty"] = min(99, raw["qty"] + p.qty)
         else:
@@ -1009,10 +1014,17 @@ def set_cart(p: CartQtyIn, session: Optional[str] = Header(None, alias="X-Ferix-
         user = require_user(db, session)
         cart = cart_for(db, user.id, p.cartId or x_cart)
         raw = next((line for line in (cart.lines or []) if line_key(line) == p.key), None)
-        if raw and p.qty > 0 and raw.get("documentId") and raw.get("sectionId"):
-            placement = _cart_section_placement(db, raw["productId"], raw["documentId"], raw["sectionId"])
-            if int(placement.quantity or 0) > 0 and p.qty > int(placement.quantity):
-                raise HTTPException(409, f"Only {int(placement.quantity)} available in this section.")
+        if raw and p.qty > 0:
+            product = find_product(db, raw["productId"])
+            if not product or not marketplace_product_available(db, product):
+                raise HTTPException(409, "That product is no longer available.")
+            stock = max(0, int(product.get("stock") or 0))
+            if stock and p.qty > stock:
+                raise HTTPException(409, f"Only {stock} available in stock.")
+            if raw.get("documentId") and raw.get("sectionId"):
+                placement = _cart_section_placement(db, raw["productId"], raw["documentId"], raw["sectionId"])
+                if int(placement.quantity or 0) > 0 and p.qty > int(placement.quantity):
+                    raise HTTPException(409, f"Only {int(placement.quantity)} available in this section.")
         cart.lines = [x for x in cart.lines if line_key(x) != p.key or p.qty == 0]
         for line in cart.lines:
             if line_key(line) == p.key:

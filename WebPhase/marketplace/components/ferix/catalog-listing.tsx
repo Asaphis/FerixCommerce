@@ -5,7 +5,7 @@ import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
 import { AutoForm } from "@/components/ferix/add-to-cart";
 import { EmptyState, Eyebrow, LinkButton } from "@/components/ferix/marks";
-import { RenderSections, type HomePayload, type Section as CmsSection } from "@/components/ferix/render-sections";
+import { RenderSections, safeSectionHref, type HomePayload, type Section as CmsSection } from "@/components/ferix/render-sections";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -106,7 +106,7 @@ export async function CatalogListing({
   // The page contract and the homepage share one section renderer. Explore used
   // to hand-render only hero/product/brand/ad sections, so a published department,
   // store, message-strip or footer section could silently disappear here.
-  const pageType = PAGE_TYPES[basePath] ?? "marketplace_explore";
+  const pageType = PAGE_TYPES[basePath] || "marketplace_explore";
   const page = await getCataloguePage(pageType).catch(() => ({
     page: null,
     sections: [],
@@ -473,7 +473,7 @@ function AdvertSlot({ advert, label }: { advert: Advert; label: string }) {
   const isVideo = advert.kind === "video";
   return (
     <a
-      href={advert.href || "/browse"}
+      href={safeSectionHref(advert.href, "/browse")}
       className="group grid overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
     >
       <span className="relative block min-h-[132px] bg-gradient-to-br from-[#5b3a7a] via-[#8b63b0] to-[#c8a7e0]">

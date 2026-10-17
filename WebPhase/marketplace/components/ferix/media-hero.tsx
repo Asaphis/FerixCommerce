@@ -44,7 +44,7 @@ export function MediaHero({
   align = "left",
   vertical = "middle",
   tone = "dark",
-  scrim = 48,
+  scrim = 55,
   heightClassName = "aspect-[16/8] min-h-[150px] sm:aspect-[16/6] lg:aspect-[16/5]",
   className,
 }: Props) {

@@ -61,6 +61,16 @@ class SectionContractTest(unittest.TestCase):
     def tearDown(self):
         self.client.__exit__(None, None, None)
 
+    def test_section_normalization_coerces_legacy_visibility_and_hero_choices(self):
+        hidden = normalize_section({"type": "hero_banner", "visible": "false", "align": "sideways", "vertical": "centre", "tone": "unknown"})
+        self.assertIs(hidden["visible"], False)
+        self.assertEqual(hidden["align"], "left")
+        self.assertEqual(hidden["vertical"], "middle")
+        self.assertEqual(hidden["tone"], "dark")
+        visible = normalize_section({"type": "hero_banner", "visible": "yes", "align": "CENTER"})
+        self.assertIs(visible["visible"], True)
+        self.assertEqual(visible["align"], "center")
+
     def test_every_palette_button_is_a_section_the_storefront_can_draw(self):
         entries = [entry for group in PALETTE for entry in group["entries"]]
         self.assertTrue(entries, "The palette cannot be empty.")
@@ -102,6 +112,20 @@ class SectionContractTest(unittest.TestCase):
         self.assertEqual(card["sectionPrice"], 75)
         self.assertEqual(card["compareAt"], 120)
         self.assertEqual(card["sectionQuantity"], 3)
+
+        from datetime import datetime, timezone
+        starts = datetime(2026, 10, 1, 12, tzinfo=timezone.utc)
+        ends = datetime(2026, 10, 5, 12, tzinfo=timezone.utc)
+        timed = SimpleNamespace(price=0, compare_at=0, quantity=0, section_id="sec_offer",
+                                config={}, starts_at=starts, ends_at=ends)
+        timed_card = apply_placement_overrides(base, timed)
+        self.assertEqual(timed_card["placementStartsAt"], starts.isoformat())
+        self.assertEqual(timed_card["placementEndsAt"], ends.isoformat())
+
+        untimed = SimpleNamespace(price=0, compare_at=0, quantity=0, section_id="sec_offer", config={})
+        untimed_card = apply_placement_overrides(base, untimed)
+        self.assertNotIn("placementStartsAt", untimed_card)
+        self.assertNotIn("placementEndsAt", untimed_card)
 
         compare_only = SimpleNamespace(price=120, compare_at=150, quantity=0, section_id="sec_offer", config={})
         card = apply_placement_overrides(base, compare_only)
@@ -222,6 +246,49 @@ class SectionContractTest(unittest.TestCase):
         self.assertFalse(section_is_live(finished))
         self.assertFalse(section_is_live(upcoming))
 
+    def test_section_preview_resolves_automatic_source_from_draft_configuration(self):
+        page = self.client.get("/admin/cms/page", headers={"X-Ferix-Session": self.admin},
+                               params={"id": "doc_marketplace_home"}).json()["page"]
+        sections = list(page["sections"])
+        target = next((row for row in sections if row.get("type") == "product_carousel"), None)
+        self.assertIsNotNone(target)
+        target.update({"source": "category", "selectionMode": "automatic", "categorySlug": "electronics", "limit": 3})
+        saved = self.client.patch("/admin/cms/page", headers={"X-Ferix-Session": self.admin},
+                                  json={"id": "doc_marketplace_home", "sections": sections})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        preview = self.client.get("/admin/cms/page/section-preview", headers={"X-Ferix-Session": self.admin},
+                                  params={"id": "doc_marketplace_home", "section_id": target["id"]})
+        self.assertEqual(preview.status_code, 200, preview.text)
+        self.assertLessEqual(len(preview.json()["products"]), 3)
+        self.assertTrue(all("id" in item and "stockStatus" in item for item in preview.json()["products"]))
+
+    def test_placement_update_clears_null_dates_empty_config_and_persists_pause(self):
+        with SessionLocal() as db:
+            page = db.get(ContentDocument, "doc_marketplace_home")
+            section = next(row for row in page.data["sections"] if row.get("type") == "product_carousel")
+            product = find_product(db, "aurasound-pro-anc-headphones")
+            product_id, document_id, section_id = product["id"], page.id, section["id"]
+            row = SectionPlacement(id="plc_preview_regression", product_id=product_id,
+                                   product_slug=product["slug"], document_id=document_id,
+                                   section_id=section_id, section_type=section["type"],
+                                   price=product["price"], compare_at=product.get("compareAt") or 0,
+                                   quantity=1, position=1, starts_at=None, ends_at=None,
+                                   config={"label": "existing"}, active=True)
+            db.add(row)
+            db.commit()
+        response = self.client.post("/admin/product/section", headers={"X-Ferix-Session": self.admin}, json={
+            "productId": product_id, "documentId": document_id, "sectionId": section_id,
+            "startsAt": None, "endsAt": None, "config": {}, "active": False,
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertFalse(response.json()["placement"]["active"])
+        self.assertEqual(response.json()["placement"]["config"], {})
+        with SessionLocal() as db:
+            row = db.query(SectionPlacement).filter_by(product_id=product_id, document_id=document_id, section_id=section_id).one()
+            self.assertIsNone(row.starts_at)
+            self.assertIsNone(row.ends_at)
+            self.assertFalse(row.active)
+
     def test_the_console_can_read_the_whole_contract(self):
         response = self.client.get("/admin/cms/section-types", headers={"X-Ferix-Session": self.admin})
         self.assertEqual(response.status_code, 200, response.text)
@@ -278,6 +345,25 @@ class SectionContractTest(unittest.TestCase):
         self.assertNotIn("product_gallery", home_types)
         self.assertIn("product_gallery", product_types)
         self.assertNotIn("category_grid", product_types)
+
+    def test_product_page_palette_and_save_match_rendered_template(self):
+        headers = {"X-Ferix-Session": self.admin}
+        palette = self.client.get("/admin/cms/section-types", headers=headers,
+                                  params={"document_type": "marketplace_product"}).json()["palette"]
+        offered = {entry["type"] for group in palette for entry in group["entries"]}
+        self.assertEqual(offered, {"product_gallery", "buy_box", "delivery_block", "reviews"})
+
+        page = self.client.get("/admin/cms/page", headers=headers,
+                               params={"id": "doc_marketplace_product"}).json()["page"]
+        # The seeded related rail is retained as a legacy product-specific block.
+        self.assertTrue(any(row.get("type") == "product_carousel" and row.get("source") == "related"
+                            for row in page["sections"]))
+        rejected_sections = list(page["sections"]) + [{
+            "id": "sec_unrendered_product_hero", "type": "hero_banner", "position": 99, "visible": True,
+        }]
+        rejected = self.client.patch("/admin/cms/page", headers=headers,
+                                     json={"id": "doc_marketplace_product", "sections": rejected_sections})
+        self.assertEqual(rejected.status_code, 422, rejected.text)
 
     def test_section_price_reaches_cart_and_is_validated_server_side(self):
         document_id, section_id = "doc_marketplace_home", "sec_flash"

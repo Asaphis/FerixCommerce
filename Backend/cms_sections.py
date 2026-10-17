@@ -387,12 +387,12 @@ PALETTE: list[dict] = [
 #: Which page kind each family belongs to, so a family is never offered where it
 #: cannot draw.
 FAMILY_PAGE_KINDS: dict[str, tuple] = {
-    "hero": ("marketplace_home", "marketplace_explore", "marketplace_product", "information"),
-    "product": ("marketplace_home", "marketplace_explore", "marketplace_product", "information"),
+    "hero": ("marketplace_home", "marketplace_explore", "information"),
+    "product": ("marketplace_home", "marketplace_explore", "information"),
     "category": ("marketplace_home", "marketplace_explore", "information"),
     "brand": ("marketplace_home", "marketplace_explore", "information"),
     "store": ("marketplace_home", "marketplace_explore", "information"),
-    "other": ("marketplace_home", "marketplace_explore", "marketplace_product", "information"),
+    "other": ("marketplace_home", "marketplace_explore", "information"),
     "product_template": ("marketplace_product",),
 }
 
@@ -655,6 +655,17 @@ def normalize_section(section: dict) -> dict:
     change. Unknown fields are preserved.
     """
     row = dict(section or {})
+    # Accept legacy form values but persist a consistent JSON contract.
+    visible = row.get("visible", True)
+    if isinstance(visible, str):
+        row["visible"] = visible.strip().lower() not in {"false", "0", "no", "off", ""}
+    elif visible is None:
+        row["visible"] = True
+    for key, choices in (("align", {"left", "center", "right"}), ("vertical", {"top", "middle", "bottom"}), ("tone", {"dark", "light"})):
+        if key in row and str(row[key]).strip().lower() not in choices:
+            row[key] = {"align": "left", "vertical": "middle", "tone": "dark"}[key]
+        elif key in row:
+            row[key] = str(row[key]).strip().lower()
     if is_product_section(row):
         source = str(row.get("source") or ASSIGNED_SOURCE).strip().lower()
         if source in LEGACY_SOURCES or source not in ALL_SOURCES:
@@ -757,6 +768,12 @@ def apply_placement_overrides(product: dict, row) -> dict:
     if quantity > 0:
         data["sectionQuantity"] = quantity
         data["sectionRemaining"] = quantity
+    starts_at = getattr(row, "starts_at", None)
+    ends_at = getattr(row, "ends_at", None)
+    if starts_at is not None:
+        data["placementStartsAt"] = starts_at.isoformat()
+    if ends_at is not None:
+        data["placementEndsAt"] = ends_at.isoformat()
     if getattr(row, "section_id", None):
         data["sectionId"] = row.section_id
         data["sectionDocumentId"] = getattr(row, "document_id", None)

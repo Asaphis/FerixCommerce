@@ -254,11 +254,12 @@ function fieldsFor(section: CmsSection, documentType = "", sectionTypes: CmsSect
   // with the right control and no frontend change.
   const served = sectionTypes.sectionFields?.[key];
   if (Array.isArray(served) && served.length) {
-    return served.map((item) => ({
+    return served.filter((item) => !(String(section.presentation ?? "") === "flash_sale" && item.key === "layout")).map((item) => ({
       key: String(item.key),
       title: String(item.label ?? item.key),
       kind: typeof item.kind === "string" ? item.kind : "text",
       help: typeof item.hint === "string" ? item.hint : undefined,
+      default: item.default,
       long: item.long === true,
       numeric: item.kind === "number",
       options: Array.isArray(item.options) ? (item.options as Choice[]) : undefined,
@@ -314,7 +315,16 @@ function initialOption(field: EditorField, section: CmsSection) {
     hero_banner: { mediaOnly: "false" },
     hero_slim: { mediaOnly: "false" },
   };
-  return defaults[String(section.type ?? "")]?.[field.key] ?? "";
+  return defaults[String(section.type ?? "")]?.[field.key] ?? asOption(field, field.default);
+}
+
+function initialValue(field: EditorField, section: CmsSection, fallback = "") {
+  const value = section[field.key];
+  return value !== undefined && value !== null ? String(value) : field.default == null ? fallback : String(field.default);
+}
+
+function isOn(value: unknown) {
+  return value === true || ["true", "1", "yes", "on"].includes(String(value).toLowerCase());
 }
 
 /** Where the section's own clock stands, read the same way the shop reads it. */
@@ -454,7 +464,7 @@ export default async function CmsSectionEditor({
                             name={`field_${field.key}`}
                             type="checkbox"
                             value="true"
-                            defaultChecked={Boolean(section[field.key] ?? field.default ?? false)}
+                            defaultChecked={isOn(section[field.key] ?? field.default)}
                             className="h-4 w-4 accent-[#e4572e]"
                           />
                           On
@@ -478,7 +488,7 @@ export default async function CmsSectionEditor({
                         <textarea
                           name={`field_${field.key}`}
                           rows={3}
-                          defaultValue={String(section[field.key] ?? "")}
+                          defaultValue={initialValue(field, section)}
                           className={`${inputClass} min-h-[92px] py-2`}
                         />
                       </Field>
@@ -486,16 +496,16 @@ export default async function CmsSectionEditor({
                       <Field key={field.key} title={field.title}>
                         <div className="flex items-center gap-2.5">
                           <input name={`field_${field.key}`} type="color"
-                            defaultValue={String(section[field.key] ?? "#ffffff")}
+                            defaultValue={initialValue(field, section, "#FFFFFF")}
                             className="h-11 w-16 shrink-0 cursor-pointer rounded-[10px] border border-hairline bg-panel-2 p-1" />
-                          <span className="font-mono text-[11px] text-chalk-dim">{String(section[field.key] ?? "#ffffff")}</span>
+                          <span className="font-mono text-[11px] text-chalk-dim">{initialValue(field, section, "#FFFFFF")}</span>
                         </div>
                         {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
                       </Field>
                     ) : field.kind === "datetime" ? (
                       <Field key={field.key} title={field.title}>
                         <input name={`field_${field.key}`} type="datetime-local"
-                          defaultValue={String(section[field.key] ?? "").replace(/Z$/, "").slice(0, 16)}
+                          defaultValue={initialValue(field, section).replace(/Z$/, "").slice(0, 16)}
                           className={inputClass} />
                         {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
                       </Field>
@@ -505,7 +515,7 @@ export default async function CmsSectionEditor({
                           name={`field_${field.key}`}
                           type={field.numeric ? "number" : "text"}
                           min={field.numeric ? 0 : undefined}
-                          defaultValue={String(section[field.key] ?? "")}
+                          defaultValue={initialValue(field, section)}
                           className={inputClass}
                         />
                         {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
@@ -659,6 +669,10 @@ export default async function CmsSectionEditor({
               key={section.id}
               section={section}
               products={previewData?.products ?? []}
+              categories={previewData?.categories ?? []}
+              brands={previewData?.brands ?? []}
+              stores={previewData?.stores ?? []}
+              adverts={previewData?.adverts ?? []}
               banners={reusableBanners}
               hasDraft={previewData?.hasDraft ?? page?.hasDraft ?? false}
               documentStatus={previewData?.documentStatus ?? page?.status ?? "draft"}

@@ -100,6 +100,9 @@ export type Product = {
   sectionLabel?: string;
   sectionBadgeColor?: string;
   sectionRemaining?: number;
+  /** Placement-specific availability window, separate from its parent section. */
+  placementStartsAt?: string;
+  placementEndsAt?: string;
   basePrice?: number;
   baseCompareAt?: number | null;
   baseDiscount?: number | null;
@@ -438,6 +441,9 @@ export type CatalogueSection = {
   placement?: string;
   position?: number;
   visible?: boolean;
+  startsAt?: string;
+  endsAt?: string;
+  showCountdown?: boolean | string;
 
   // How a section arranges what it holds, as the listing reads it. JSON from the database,
   // so a switch may be the word rather than a boolean.

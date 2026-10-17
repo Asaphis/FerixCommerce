@@ -211,7 +211,11 @@ function SlideMedia({ slide, mediaOnly = false }: { slide: Banner; mediaOnly?: b
 }
 
 function Scrim({ overlay, accent }: { overlay: Banner["overlay"]; accent: string }) {
-  const strength = Math.max(0, Math.min(100, overlay.scrim)) / 100;
+  // Older banner records store a fractional opacity (e.g. 0.55), while the
+  // current CMS contract stores percentage points (55). Accept both on read.
+  const rawScrim = Number(overlay.scrim);
+  const percentage = rawScrim > 0 && rawScrim <= 1 ? rawScrim * 100 : rawScrim;
+  const strength = Math.max(0, Math.min(100, Number.isFinite(percentage) ? percentage : 55)) / 100;
   const tint = overlay.tone === "light" ? "0,0,0" : "255,255,255";
   const gradients: Record<string, string> = {
     left: `linear-gradient(90deg, rgba(${tint},${strength}) 0%, rgba(${tint},${strength * 0.72}) 42%, rgba(${tint},0) 78%)`,

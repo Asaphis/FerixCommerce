@@ -7,13 +7,17 @@ import { AddToCartForm, WishlistForm } from "@/components/ferix/add-to-cart";
 import { removeLineAction, saveForLaterAction, setQtyAction } from "@/lib/actions";
 import { compact, dateShort, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { PlacementCountdown } from "@/components/ferix/placement-countdown";
 
 export type ProductCardDisplay = {
   accentColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
   showSectionPrice?: boolean;
   showCompareAt?: boolean;
   showLabel?: boolean;
   showRemaining?: boolean;
+  showCountdown?: boolean;
   showDiscountBadges?: boolean;
 };
 
@@ -43,6 +47,7 @@ export function ProductCard({
   const showCompareAt = display?.showCompareAt !== false;
   const showLabel = display?.showLabel !== false;
   const showRemaining = display?.showRemaining === true;
+  const showCountdown = display?.showCountdown === true;
   const showDiscountBadges = display?.showDiscountBadges !== false;
   const price = showSectionPrice ? product.price : product.basePrice ?? product.price;
   const compareAt = showCompareAt ? (showSectionPrice ? product.compareAt : product.baseCompareAt ?? product.compareAt) : null;
@@ -57,16 +62,21 @@ export function ProductCard({
         "group relative flex min-w-0 flex-col overflow-hidden rounded-[2px] rounded-tr-[14px] border border-line-warm bg-white shadow-[0_2px_10px_rgba(16,45,67,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-ember/40 hover:shadow-[0_8px_24px_rgba(16,45,67,0.12)]",
         className,
       )}
+      style={{
+        backgroundColor: display?.backgroundColor && /^#[0-9a-f]{6}$/i.test(display.backgroundColor) ? display.backgroundColor : undefined,
+        color: display?.textColor && /^#[0-9a-f]{6}$/i.test(display.textColor) ? display.textColor : undefined,
+      }}
     >
       <Link href={href} className="relative block">
         <Plate
           seed={product.slug}
-          accent="#e4572e"
+          accent={display?.accentColor && /^#[0-9a-f]{6}$/i.test(display.accentColor) ? display.accentColor : "#e4572e"}
           src={assetUrl(product.images?.[0])}
           alt={product.title}
             className="aspect-[1/1] w-full rounded-none sm:aspect-[4/3]"
         />
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
+          {showCountdown && product.placementEndsAt ? <PlacementCountdown endsAt={product.placementEndsAt} /> : null}
           {showLabel && sectionLabel ? (
             <span
               className="inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-white"
@@ -80,7 +90,7 @@ export function ProductCard({
           {product.stockStatus === "out_of_stock" ? <Pill tone="danger">Sold out</Pill> : null}
           {showRemaining && sectionRemaining > 0 && product.stockStatus !== "out_of_stock" ? (
             <span className="inline-flex items-center rounded-[3px] bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
-              Only {sectionRemaining} left
+              Section limit: {sectionRemaining}
             </span>
           ) : null}
         </span>
@@ -90,7 +100,7 @@ export function ProductCard({
         <Link href={`/store/${product.merchantSlug}`} className="block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:text-ember sm:text-[10px] sm:tracking-[0.14em]">
           {product.merchantName}
         </Link>
-        <Link href={href} className="mt-1 line-clamp-2 min-h-[2.25em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">
+        <Link href={href} style={display?.textColor && /^#[0-9a-f]{6}$/i.test(display.textColor) ? { color: display.textColor } : undefined} className="mt-1 line-clamp-2 min-h-[2.25em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">
           {product.title}
         </Link>
         <div className="mt-2 hidden items-center gap-2 sm:flex">

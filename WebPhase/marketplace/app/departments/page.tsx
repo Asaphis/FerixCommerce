@@ -17,9 +17,9 @@ export default async function DepartmentsPage() {
       <p className="mt-2 max-w-[68ch] text-[13px] leading-relaxed text-ink-soft">
         Browse the departments managed by Ferixas. A department may be listed here before its first products are published.
       </p>
-      {categories.length ? (
+      {categories.filter((category) => category.showAsTile !== false && String(category.showAsTile) !== "false").length ? (
         <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {categories.map((category) => <CategoryTile key={category.slug} category={category} size="large" />)}
+          {categories.filter((category) => category.showAsTile !== false && String(category.showAsTile) !== "false").map((category) => <CategoryTile key={category.slug} category={category} size="large" />)}
         </div>
       ) : (
         <p className="mt-6 rounded-[3px] border border-line-warm bg-white px-4 py-8 text-center text-[13px] text-ink-soft">

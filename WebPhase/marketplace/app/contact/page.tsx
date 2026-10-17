@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Clock, CreditCard, Mail, Store, Truck } from "lucide-react";
 import { ContactForm } from "@/components/ferix/contact-form";
+import { CmsInfoSections } from "@/components/ferix/cms-info-sections";
 import { Eyebrow } from "@/components/ferix/marks";
 
 export const metadata: Metadata = {
@@ -105,6 +106,7 @@ export default function ContactPage() {
           Messages about a parcel move faster with the order number in the subject
         </p>
       </section>
+      <CmsInfoSections pageType="marketplace_contact" />
     </div>
   );
 }

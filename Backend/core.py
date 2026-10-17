@@ -920,7 +920,7 @@ brand_rows = brands
 
 
 DEFAULT_OVERLAY = {
-    "enabled": True, "align": "left", "vertical": "bottom", "scrim": 0.55,
+    "enabled": True, "align": "left", "vertical": "bottom", "scrim": 55,
     "tone": "light", "width": 52, "showText": True, "showButtons": True,
 }
 

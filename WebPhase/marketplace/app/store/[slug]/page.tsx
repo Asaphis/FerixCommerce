@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Check, Mail, MapPin, Package, Phone, Star } from "lucide-react";
-import { assetUrl, getStore, ApiError, checkFollowing } from "@/lib/api";
+import { assetUrl, getStore, getHome, getCataloguePage, listAdverts, ApiError, checkFollowing } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
 import { Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
 import { compact, dateLong } from "@/lib/format";
 import { readCredentials } from "@/lib/session";
-import { StoreHeader } from "@/components/ferix/store-header";
+import { StoreHeader } from "@/components/ferix/store-header"
+import { RenderSections, type HomePayload, type Section } from "@/components/ferix/render-sections";
 
 export default async function StorePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -19,7 +20,11 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
     throw error;
   }
   const { store, about, products, categories, stats, responseRate, fulfilmentRate } = data;
-  const saved = await savedIds();
+  const [saved, cmsPage, home] = await Promise.all([
+    savedIds(),
+    getCataloguePage("marketplace_store").catch(() => ({ page: null, sections: [], placements: {} })),
+    getHome().catch(() => null),
+  ]);
   const credentials = await readCredentials();
   const following = credentials.session
     ? await checkFollowing(store.slug, credentials).then((result) => result.following).catch(() => false)
@@ -27,6 +32,14 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
   const brand = store.brand;
   const record = store as unknown as { logo?: string; imageUrl?: string; image?: string };
   const storeArtwork = assetUrl(record.logo ?? record.imageUrl ?? record.image ?? null);
+  const cmsSections = cmsPage.page
+    ? cmsPage.sections.filter((section) => section.visible !== false).sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    : [];
+  const advertSection = cmsSections.find((section) => section.type === "promo_slots");
+  const cmsAdverts = advertSection
+    ? (await listAdverts(advertSection.placement || "explore").catch(() => ({ adverts: [] }))).adverts
+    : [];
+  const sectionHome = home ? { ...home, placements: cmsPage.placements ?? {} } as unknown as HomePayload : null;
 
   return (
     <div>
@@ -152,6 +165,13 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         </div>
 
       </section>
+      {sectionHome && cmsSections.length ? RenderSections({
+        sections: cmsSections as Section[],
+        home: sectionHome,
+        adverts: cmsAdverts,
+        saved,
+        mode: "page",
+      }) : null}
     </div>
   );
 }

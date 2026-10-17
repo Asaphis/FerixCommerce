@@ -62,7 +62,14 @@ function safeSectionColor(value: unknown): string | undefined {
   return /^#[0-9a-f]{6}$/i.test(color) ? color : undefined;
 }
 
-function safeSectionHref(value: unknown, fallback: string): string {
+function scrimPercent(value: unknown, fallback = 55): number {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return fallback;
+  const percentage = raw > 0 && raw <= 1 ? raw * 100 : raw;
+  return Math.max(0, Math.min(100, percentage));
+}
+
+export function safeSectionHref(value: unknown, fallback: string): string {
   const href = String(value ?? "").trim();
   if (href.startsWith("/") && !href.startsWith("//")) return href;
   if (href && !href.startsWith("\\") && !/^[a-z][a-z0-9+.-]*:/i.test(href) && !/[\u0000-\u0020]/.test(href)) return `/${href}`;
@@ -149,7 +156,7 @@ function HomeAdvert({ advert, label }: { advert: Advert; label: string }) {
   const isVideo = advert.kind === "video";
   return (
     <a
-      href={advert.href || "/browse"}
+      href={safeSectionHref(advert.href, "/browse")}
       className="group grid overflow-hidden rounded-[14px] border border-line-warm bg-white transition-colors hover:border-ember/40 sm:grid-cols-[minmax(0,120px)_minmax(0,1fr)]"
     >
       <span className="relative block min-h-[104px] bg-gradient-to-br from-[#5b3a7a] via-[#8b63b0] to-[#c8a7e0]">
@@ -216,16 +223,17 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
       /* ── The campaign ───────────────────────────────────────────── */
       case "hero_banner": {
         const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
-        const slides = section.bannerId
-          ? home.banners.filter((banner) => banner.id === section.bannerId).map((banner) => ({
+        const usableBanners = home.banners.filter((banner) => (banner as Banner & { active?: boolean }).active !== false);
+        const slides = (section.bannerId
+          ? usableBanners.filter((banner) => banner.id === section.bannerId)
+          : usableBanners).map((banner) => ({
               ...banner,
               ctaHref: safeSectionHref(banner.ctaHref, "/browse"),
               secondaryHref: safeSectionHref(banner.secondaryHref, "/browse"),
-            }))
-          : [];
+            }));
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] sm:px-5 sm:pt-5">
-            {section.mediaUrl && !section.bannerId ? (
+            {section.mediaUrl ? (
               <MediaHero
                 mediaUrl={section.mediaUrl}
                 kind={section.kind}
@@ -240,7 +248,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
                 align={section.align}
                 vertical={section.vertical}
                 tone={section.tone}
-                scrim={section.scrim}
+                scrim={scrimPercent(section.scrim)}
                 heightClassName="h-[250px] sm:h-[340px] lg:h-[420px]"
                 className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
               />
@@ -265,7 +273,9 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
       case "hero_slim": {
         const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
         const reusableBanner = section.bannerId ? home.banners.find((banner) => banner.id === section.bannerId) : undefined;
-        const useSectionMedia = Boolean(section.mediaUrl) && !reusableBanner;
+        // A section's directly selected media is authoritative; a reusable
+        // banner is only the fallback when no direct media has been set.
+        const useSectionMedia = Boolean(section.mediaUrl);
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pt-4 sm:px-6">
             <MediaHero
@@ -282,7 +292,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               align={useSectionMedia ? section.align : reusableBanner?.overlay?.align ?? section.align}
               vertical={useSectionMedia ? section.vertical : reusableBanner?.overlay?.vertical ?? section.vertical}
               tone={useSectionMedia ? section.tone : reusableBanner?.overlay?.tone ?? section.tone}
-              scrim={useSectionMedia ? section.scrim : reusableBanner?.overlay?.scrim ?? section.scrim}
+              scrim={scrimPercent(useSectionMedia ? section.scrim : reusableBanner?.overlay?.scrim ?? section.scrim)}
               heightClassName="h-[150px] sm:h-[180px] lg:h-[210px]"
               className="rounded-[3px] rounded-tr-[14px]"
             />
@@ -301,7 +311,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
             accentColor={safeSectionColor(section.accentColor)}
             icon={String(section.icon ?? "")}
             ctaLabel={String(section.ctaLabel ?? "")}
-            ctaHref={String(section.ctaHref ?? "")}
+            ctaHref={safeSectionHref(section.ctaHref, "/browse")}
             dismissible={String(section.dismissible) === "true" || section.dismissible === true}
           />
         );
@@ -435,9 +445,12 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         const shown = limit ? products.slice(0, limit) : products;
         const cardDisplay = {
           accentColor: safeSectionColor(section.accentColor),
+          backgroundColor: safeSectionColor(section.backgroundColor),
+          textColor: safeSectionColor(section.textColor),
           showSectionPrice: isSectionOn(section.showSectionPrice, true),
           showCompareAt: isSectionOn(section.showCompareAt, true),
           showLabel: isSectionOn(section.showLabel, true),
+          showCountdown: isSectionOn(section.showCountdown, true),
           showRemaining: isSectionOn(section.showRemaining, false),
           showDiscountBadges: isSectionOn(section.showDiscountBadges, true),
         };
@@ -456,11 +469,13 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               countdownLabel={section.countdownLabel as string | undefined}
               showCountdown={String(section.showCountdown ?? "true") !== "false"}
               showDiscountBadges={String(section.showDiscountBadges ?? "true") !== "false"}
-              showViewAll={String(section.showViewAll ?? "true") !== "false"}
+              showViewAll={isSectionOn(section.showViewAll, isSectionOn(section.seeAll, true))}
               href={safeSectionHref(sectionHref, "/browse?sort=discount")}
               backgroundColor={section.backgroundColor as string | undefined}
               accentColor={section.accentColor as string | undefined}
               textColor={section.textColor as string | undefined}
+              layout={String(section.layout ?? "grid")}
+              ctaLabel={String(section.ctaLabel ?? "See all")}
               timerBackgroundColor={section.timerBackgroundColor as string | undefined}
               timerTextColor={section.timerTextColor as string | undefined}
               products={shown}
@@ -512,7 +527,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 sm:py-6">
             <div className="grid gap-3 sm:grid-cols-2">
               {slots.map((advert) => (
-                <HomeAdvert key={advert.id} advert={advert} label={section.subtitle ?? "Advertisement"} />
+                <HomeAdvert key={advert.id} advert={advert} label={section.title ?? section.subtitle ?? "Advertisement"} />
               ))}
             </div>
           </section>

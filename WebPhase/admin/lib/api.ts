@@ -1075,6 +1075,11 @@ export type CmsSectionPreviewData = {
   products: CmsSectionPreviewProduct[];
   assignedCount: number;
   publicNowCount: number;
+  /** Shopper-safe records resolved for manager-driven and advert sections. */
+  categories?: Record<string, unknown>[];
+  brands?: Record<string, unknown>[];
+  stores?: Record<string, unknown>[];
+  adverts?: Record<string, unknown>[];
 };
 
 export const getCmsSectionPreview = (session: string | null, id: string, sectionId: string) =>

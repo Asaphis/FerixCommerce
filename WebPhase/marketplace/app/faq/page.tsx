@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { LinkButton } from "@/components/ferix/marks";
+import { CmsInfoSections } from "@/components/ferix/cms-info-sections";
 
 export const metadata: Metadata = {
   title: "Frequently asked questions — Ferixas",
@@ -221,6 +222,7 @@ export default function FaqPage() {
           Privacy
         </Link>
       </p>
+      <CmsInfoSections pageType="marketplace_faq" />
     </div>
   );
 }
