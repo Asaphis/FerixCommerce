@@ -93,6 +93,16 @@ export type Product = {
   images?: string[];
   tags: string[];
   createdAt: string;
+  sectionId?: string;
+  sectionDocumentId?: string;
+  sectionPlacementId?: string;
+  sectionPrice?: number;
+  sectionLabel?: string;
+  sectionBadgeColor?: string;
+  sectionRemaining?: number;
+  basePrice?: number;
+  baseCompareAt?: number | null;
+  baseDiscount?: number | null;
 };
 
 export type Category = {
@@ -204,9 +214,14 @@ export type CartLine = {
   product: Product;
   variant: string | null;
   qty: number;
+  unitPrice: number;
   lineTotal: number;
   merchant: Merchant;
   inStock: boolean;
+  documentId?: string | null;
+  sectionId?: string | null;
+  sectionUnavailable?: boolean;
+  sectionLabel?: string | null;
 };
 
 export type CartGroup = {
@@ -470,7 +485,9 @@ export const listAdverts = (placement: string) =>
 
 export const listProducts = (params: Params) => call<ProductList>("GET", "catalog/products", { params });
 
-export const getProduct = (slug: string) => call<ProductDetail>("GET", "catalog/product", { params: { slug } });
+export const getProduct = (slug: string, context?: { documentId?: string; sectionId?: string }) => call<ProductDetail>("GET", "catalog/product", {
+  params: { slug, document_id: context?.documentId, section_id: context?.sectionId },
+});
 
 export const getCategories = async () => {
   return call<{ categories: Category[] }>("GET", "catalog/categories");
@@ -523,7 +540,7 @@ export const getUser = (creds: Creds) => call<{ user: AccountUser | null }>("GET
 
 export const getCart = (creds: Creds) => call<Cart>("GET", "cart", { creds });
 
-export const addCartItem = (body: { productId: string; variant?: string | null; qty?: number }, creds: Creds) =>
+export const addCartItem = (body: { productId: string; variant?: string | null; qty?: number; documentId?: string | null; sectionId?: string | null; expectedPrice?: number }, creds: Creds) =>
   call<Cart>("POST", "cart/items", { body, creds });
 
 export const setCartQty = (body: { key: string; qty: number }, creds: Creds) =>

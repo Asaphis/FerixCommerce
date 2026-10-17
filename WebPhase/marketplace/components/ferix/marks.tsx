@@ -143,16 +143,18 @@ export function SectionHead({
   title,
   action,
   className,
+  titleColor,
 }: {
   eyebrow?: string;
   title: string;
   action?: ReactNode;
   className?: string;
+  titleColor?: string;
 }) {
   return (
     <div className={cn("mb-6 flex flex-wrap items-end justify-between gap-3", className)}>
       <div>
-        <h2 className="font-display text-[22px] font-semibold leading-tight text-ink sm:text-[27px]">{title}</h2>
+        <h2 className="font-display text-[22px] font-semibold leading-tight text-ink sm:text-[27px]" style={titleColor ? { color: titleColor } : undefined}>{title}</h2>
       </div>
       {action}
     </div>

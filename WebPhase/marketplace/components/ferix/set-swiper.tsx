@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Product } from "@/lib/api";
-import { ProductCard } from "@/components/ferix/cards";
+import { ProductCard, type ProductCardDisplay } from "@/components/ferix/cards";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,12 +23,14 @@ export function SetSwiper({
   across = 2,
   rowsPerSet = 2,
   className,
+  display,
 }: {
   products: Product[];
   savedIds?: string[];
   across?: number;
   rowsPerSet?: number;
   className?: string;
+  display?: ProductCardDisplay;
 }) {
   const columns = Math.min(4, Math.max(1, Math.round(Number(across) || 2)));
   const rows = Math.min(6, Math.max(1, Math.round(Number(rowsPerSet) || 2)));
@@ -68,7 +70,7 @@ export function SetSwiper({
     return (
       <div className={cn(grid, className)}>
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} saved={savedIds.includes(product.id)} />
+          <ProductCard key={product.id} product={product} saved={savedIds.includes(product.id)} display={display} />
         ))}
       </div>
     );
@@ -87,7 +89,7 @@ export function SetSwiper({
           <div key={index} className="w-full shrink-0 snap-start pr-3 last:pr-0">
             <div className={grid}>
               {set.map((product) => (
-                <ProductCard key={product.id} product={product} saved={savedIds.includes(product.id)} />
+                <ProductCard key={product.id} product={product} saved={savedIds.includes(product.id)} display={display} />
               ))}
             </div>
           </div>
@@ -118,11 +120,13 @@ export function HorizontalRail({
   savedIds = [],
   across = 2,
   className,
+  display,
 }: {
   products: Product[];
   savedIds?: string[];
   across?: number;
   className?: string;
+  display?: ProductCardDisplay;
 }) {
   const visible = Math.min(4, Math.max(1, Math.round(Number(across) || 2)));
 
@@ -143,7 +147,7 @@ export function HorizontalRail({
       >
         {products.map((product) => (
           <div key={product.id} className={cn("shrink-0 snap-start", basis[visible])}>
-            <ProductCard product={product} saved={savedIds.includes(product.id)} />
+            <ProductCard product={product} saved={savedIds.includes(product.id)} display={display} />
           </div>
         ))}
       </div>

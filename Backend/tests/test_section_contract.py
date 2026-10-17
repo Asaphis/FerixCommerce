@@ -25,7 +25,7 @@ os.environ["FERIXAS_TEST_STAFF_PASSWORD"] = "TestOnly-Password-123!"
 
 from fastapi.testclient import TestClient  # noqa: E402
 from app import app  # noqa: E402
-from core import ContentDocument, SectionPlacement, SessionLocal, is_assignable_product_section  # noqa: E402
+from core import ContentDocument, SectionPlacement, SessionLocal, find_product, is_assignable_product_section  # noqa: E402
 from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FLASH_SALE_DEFAULTS, LEGACY_SOURCES,
                           PALETTE, PRESENTATIONS, REQUIREMENT_LIBRARY, REQUIREMENT_SETS,
                           SELECTION_AUTOMATIC, SELECTION_MANUAL, SECTION_FIELDS,
@@ -189,6 +189,13 @@ class SectionContractTest(unittest.TestCase):
             self.assertIsNotNone(placement.starts_at)
             self.assertIsNotNone(placement.ends_at)
 
+        rejected_color = self.client.post("/merchant/product", headers={"X-Ferix-Session": merchant}, json={
+            "title": "Invalid badge color test product", "category": options.json()["categories"][0]["slug"],
+            "price": 25, "stock": 3, "marketplace": True, "section_tags": [section_value],
+            "section_terms": {section_value: {"price": 20, "label": "Bad color", "badgeColor": "red;display:none"}},
+        })
+        self.assertEqual(rejected_color.status_code, 422, rejected_color.text)
+
     def test_a_broken_section_is_rejected_before_it_is_stored(self):
         with self.assertRaises(ValueError):
             validate_section({"id": "sec_bad", "type": "product_carousel", "source": "not_a_source"})
@@ -197,6 +204,12 @@ class SectionContractTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_section({"id": "sec_bad", "type": "product_carousel",
                               "startsAt": "2026-13-45T99:99", "endsAt": ""})
+        with self.assertRaises(ValueError):
+            validate_section({"id": "sec_bad", "type": "product_carousel", "backgroundColor": "red;display:none"})
+        with self.assertRaises(ValueError):
+            validate_section({"id": "sec_bad", "type": "product_carousel", "ctaHref": "javascript:alert(1)"})
+        validate_section({"id": "sec_good", "type": "product_carousel", "backgroundColor": "#12aBef"})
+        validate_section({"id": "sec_good", "type": "product_carousel", "ctaHref": "https://ferixas.com/browse"})
 
     def test_a_closed_campaign_is_not_live(self):
         live = {"id": "sec_a", "type": "product_carousel", "visible": True,
@@ -249,6 +262,176 @@ class SectionContractTest(unittest.TestCase):
                          "source": "definitely_not_a_source", "position": len(sections) + 1,
                          "visible": True})
         rejected = self.client.patch("/admin/cms/page", headers={"X-Ferix-Session": self.admin},
+                                     json={"id": "doc_marketplace_home", "sections": sections})
+        self.assertEqual(rejected.status_code, 422, rejected.text)
+
+    def test_section_palette_is_filtered_to_the_page_family(self):
+        headers = {"X-Ferix-Session": self.admin}
+        home = self.client.get("/admin/cms/section-types", headers=headers,
+                               params={"document_type": "marketplace_home"})
+        product = self.client.get("/admin/cms/section-types", headers=headers,
+                                  params={"document_type": "marketplace_product"})
+        self.assertEqual(home.status_code, 200, home.text)
+        self.assertEqual(product.status_code, 200, product.text)
+        home_types = {entry["type"] for group in home.json()["palette"] for entry in group["entries"]}
+        product_types = {entry["type"] for group in product.json()["palette"] for entry in group["entries"]}
+        self.assertNotIn("product_gallery", home_types)
+        self.assertIn("product_gallery", product_types)
+        self.assertNotIn("category_grid", product_types)
+
+    def test_section_price_reaches_cart_and_is_validated_server_side(self):
+        document_id, section_id = "doc_marketplace_home", "sec_flash"
+        with SessionLocal() as db:
+            product = find_product(db, "aurasound-pro-anc-headphones")
+            self.assertIsNotNone(product)
+            db.add(SectionPlacement(
+                id="plc_cart_contract", product_id=product["id"], product_slug=product["slug"],
+                document_id=document_id, section_id=section_id, section_type="product_carousel",
+                price=41.0, compare_at=69.0, quantity=2, position=1,
+                config={"label": "Weekend price", "badgeColor": "#123456"},
+            ))
+            base_price = product["price"]
+            db.commit()
+
+        public = self.client.get("/catalog/home")
+        self.assertEqual(public.status_code, 200, public.text)
+        section_product = public.json()["placements"][section_id][0]
+        self.assertEqual(section_product["price"], 41.0)
+        self.assertEqual(section_product["sectionDocumentId"], document_id)
+        self.assertEqual(section_product["sectionId"], section_id)
+        detail = self.client.get("/catalog/product", params={
+            "slug": product["slug"], "document_id": document_id, "section_id": section_id,
+        })
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()["product"]["price"], 41.0)
+        self.assertEqual(detail.json()["product"]["sectionId"], section_id)
+        ordinary_detail = self.client.get("/catalog/product", params={"slug": product["slug"]})
+        self.assertEqual(ordinary_detail.status_code, 200, ordinary_detail.text)
+        effective_base_price = ordinary_detail.json()["product"]["price"]
+
+        shopper = self.client.post("/auth/register", json={
+            "name": "Section Cart Shopper", "email": "section-cart@example.com",
+            "password": "Shopper-Test-Password-123!",
+        })
+        self.assertEqual(shopper.status_code, 200, shopper.text)
+        headers = {"X-Ferix-Session": shopper.json()["token"]}
+        scoped_body = {"productId": product["id"], "qty": 1, "documentId": document_id,
+                       "sectionId": section_id, "expectedPrice": 41.0}
+
+        added = self.client.post("/cart/items", headers=headers, json=scoped_body)
+        self.assertEqual(added.status_code, 200, added.text)
+        cart = added.json()
+        self.assertEqual(len(cart["lines"]), 1)
+        self.assertEqual(cart["lines"][0]["unitPrice"], 41.0)
+        self.assertEqual(cart["lines"][0]["lineTotal"], 41.0)
+        self.assertEqual(cart["lines"][0]["sectionLabel"], "Weekend price")
+        scoped_key = cart["lines"][0]["key"]
+
+        stale_price = self.client.post("/cart/items", headers=headers,
+                                       json={**scoped_body, "expectedPrice": base_price})
+        self.assertEqual(stale_price.status_code, 409, stale_price.text)
+
+        # Same product outside the section remains a separate, base-price line.
+        ordinary = self.client.post("/cart/items", headers=headers,
+                                    json={"productId": product["id"], "qty": 1})
+        self.assertEqual(ordinary.status_code, 200, ordinary.text)
+        lines = ordinary.json()["lines"]
+        self.assertEqual(len(lines), 2)
+        self.assertEqual(next(line for line in lines if line["key"] == scoped_key)["unitPrice"], 41.0)
+        self.assertEqual(next(line for line in lines if line["key"] != scoped_key)["unitPrice"], effective_base_price)
+
+        too_many = self.client.post("/cart/items", headers=headers, json={**scoped_body, "qty": 2})
+        self.assertEqual(too_many.status_code, 409, too_many.text)
+        qty_update = self.client.patch("/cart/items", headers=headers,
+                                       json={"key": scoped_key, "qty": 3})
+        self.assertEqual(qty_update.status_code, 409, qty_update.text)
+        forged = self.client.post("/cart/items", headers=headers,
+                                  json={**scoped_body, "sectionId": "sec_not_real"})
+        self.assertEqual(forged.status_code, 409, forged.text)
+
+        with SessionLocal() as db:
+            document = db.get(ContentDocument, document_id)
+            data = dict(document.data or {})
+            data["sections"] = [
+                {**section, "showSectionPrice": False} if section.get("id") == section_id else section
+                for section in data.get("sections", [])
+            ]
+            document.data = data
+            db.commit()
+        updated_cart = self.client.get("/cart", headers=headers)
+        self.assertEqual(updated_cart.status_code, 200, updated_cart.text)
+        scoped_line = next(line for line in updated_cart.json()["lines"] if line.get("sectionId") == section_id)
+        self.assertEqual(scoped_line["unitPrice"], effective_base_price)
+
+    def test_private_section_preview_reads_draft_and_real_placements_without_publishing(self):
+        headers = {"X-Ferix-Session": self.admin}
+        document_id, section_id = "doc_marketplace_home", "sec_flash"
+        with SessionLocal() as db:
+            base = find_product(db, "aurasound-pro-anc-headphones")
+            self.assertIsNotNone(base)
+            db.add(SectionPlacement(
+                id="plc_preview_contract", product_id=base["id"], product_slug=base["slug"],
+                document_id=document_id, section_id=section_id, section_type="product_carousel",
+                price=41.0, compare_at=69.0, quantity=3, position=1,
+                config={"label": "Preview label", "badgeColor": "#123456"},
+            ))
+            db.commit()
+
+        original = self.client.get("/catalog/home")
+        self.assertEqual(original.status_code, 200, original.text)
+        original_title = next(section["title"] for section in original.json()["content"]["sections"]
+                              if section["id"] == section_id)
+        page = self.client.get("/admin/cms/page", headers=headers, params={"id": document_id}).json()["page"]
+        sections = [
+            {**section, "title": "A draft title, not public yet"} if section["id"] == section_id else section
+            for section in page["sections"]
+        ]
+        saved = self.client.patch("/admin/cms/page", headers=headers,
+                                  json={"id": document_id, "sections": sections})
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertTrue(saved.json()["page"]["hasDraft"])
+        self.assertEqual(saved.json()["page"]["publishedSectionCount"], len(page["sections"]))
+
+        # The public API still serves the old, published page while the preview
+        # privately reads the draft and its real assigned product.
+        public_after_save = self.client.get("/catalog/home").json()
+        public_title = next(section["title"] for section in public_after_save["content"]["sections"]
+                            if section["id"] == section_id)
+        self.assertEqual(public_title, original_title)
+        no_auth = self.client.get("/admin/cms/page/section-preview",
+                                  params={"id": document_id, "section_id": section_id})
+        self.assertEqual(no_auth.status_code, 401)
+        preview = self.client.get("/admin/cms/page/section-preview", headers=headers,
+                                  params={"id": document_id, "section_id": section_id})
+        self.assertEqual(preview.status_code, 200, preview.text)
+        body = preview.json()
+        self.assertTrue(body["hasDraft"])
+        self.assertEqual(body["section"]["title"], "A draft title, not public yet")
+        self.assertEqual(body["assignedCount"], 1)
+        product = body["products"][0]
+        self.assertEqual(product["title"], "AuraSound Pro ANC Headphones")
+        self.assertEqual(product["price"], 41.0)
+        self.assertEqual(product["sectionLabel"], "Preview label")
+        self.assertEqual(product["previewStatus"], "Live")
+        for private_key in ("sku", "cost", "reservedStock", "sellerEmail"):
+            self.assertNotIn(private_key, product)
+
+        published = self.client.post("/admin/cms/page/publish", headers=headers, json={"id": document_id})
+        self.assertEqual(published.status_code, 200, published.text)
+        self.assertFalse(published.json()["page"]["hasDraft"])
+        live = self.client.get("/catalog/home").json()
+        live_section = next(section for section in live["content"]["sections"] if section["id"] == section_id)
+        self.assertEqual(live_section["title"], "A draft title, not public yet")
+        self.assertEqual(live["placements"][section_id][0]["title"], "AuraSound Pro ANC Headphones")
+
+    def test_page_save_rejects_a_family_the_public_page_does_not_render(self):
+        headers = {"X-Ferix-Session": self.admin}
+        page = self.client.get("/admin/cms/page", headers=headers,
+                               params={"id": "doc_marketplace_home"}).json()["page"]
+        sections = list(page["sections"]) + [{
+            "id": "sec_invalid_product_template", "type": "product_gallery", "position": 99, "visible": True,
+        }]
+        rejected = self.client.patch("/admin/cms/page", headers=headers,
                                      json={"id": "doc_marketplace_home", "sections": sections})
         self.assertEqual(rejected.status_code, 422, rejected.text)
 

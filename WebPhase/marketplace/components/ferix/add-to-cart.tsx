@@ -78,6 +78,9 @@ export function AddToCartButton({
  */
 export function AddToCartForm({
   productId,
+  documentId,
+  sectionId,
+  expectedPrice,
   className,
   children,
   label = "Add",
@@ -86,6 +89,9 @@ export function AddToCartForm({
   showButton = true,
 }: {
   productId: string;
+  documentId?: string;
+  sectionId?: string;
+  expectedPrice?: number;
   className?: string;
   children?: React.ReactNode;
   label?: string;
@@ -109,6 +115,11 @@ export function AddToCartForm({
   return (
     <form action={action} className={cn("flex min-w-0 flex-1 flex-col gap-1.5", className)}>
       <input type="hidden" name="productId" value={productId} />
+      {documentId && sectionId ? <>
+        <input type="hidden" name="documentId" value={documentId} />
+        <input type="hidden" name="sectionId" value={sectionId} />
+      </> : null}
+      {typeof expectedPrice === "number" && Number.isFinite(expectedPrice) ? <input type="hidden" name="expectedPrice" value={expectedPrice.toFixed(2)} /> : null}
       {children}
       {showButton ? (
         <AddToCartButton label={label} className={buttonClassName} disabled={disabled} added={justAdded} />

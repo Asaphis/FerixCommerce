@@ -8,24 +8,49 @@ import { removeLineAction, saveForLaterAction, setQtyAction } from "@/lib/action
 import { compact, dateShort, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+export type ProductCardDisplay = {
+  accentColor?: string;
+  showSectionPrice?: boolean;
+  showCompareAt?: boolean;
+  showLabel?: boolean;
+  showRemaining?: boolean;
+  showDiscountBadges?: boolean;
+};
+
 export function ProductCard({
   product,
   saved = false,
   className,
   showAdd = true,
+  display,
 }: {
   product: Product;
   saved?: boolean;
   className?: string;
   showAdd?: boolean;
+  display?: ProductCardDisplay;
 }) {
   // A section may give this product its own label, its own badge colour and a
   // remaining count. The server writes them onto the product for that section
   // only, so the same product reads differently in two places - or not at all.
   const sectionLabel = (product as { sectionLabel?: string }).sectionLabel;
   const sectionBadgeColor = (product as { sectionBadgeColor?: string }).sectionBadgeColor;
+  const safeBadgeColor = sectionBadgeColor && /^#[0-9a-f]{6}$/i.test(sectionBadgeColor)
+    ? sectionBadgeColor
+    : display?.accentColor && /^#[0-9a-f]{6}$/i.test(display.accentColor) ? display.accentColor : "#e4572e";
   const sectionRemaining = Number((product as { sectionRemaining?: number }).sectionRemaining) || 0;
-  const href = `/product/${product.slug}`;
+  const showSectionPrice = display?.showSectionPrice !== false;
+  const showCompareAt = display?.showCompareAt !== false;
+  const showLabel = display?.showLabel !== false;
+  const showRemaining = display?.showRemaining === true;
+  const showDiscountBadges = display?.showDiscountBadges !== false;
+  const price = showSectionPrice ? product.price : product.basePrice ?? product.price;
+  const compareAt = showCompareAt ? (showSectionPrice ? product.compareAt : product.baseCompareAt ?? product.compareAt) : null;
+  const discount = showDiscountBadges ? (showSectionPrice ? product.discount : product.baseDiscount ?? product.discount) : null;
+  const context = product.sectionDocumentId && product.sectionId
+    ? `?documentId=${encodeURIComponent(product.sectionDocumentId)}&sectionId=${encodeURIComponent(product.sectionId)}`
+    : "";
+  const href = `/product/${product.slug}${context}`;
   return (
     <article
       className={cn(
@@ -42,18 +67,18 @@ export function ProductCard({
             className="aspect-[1/1] w-full rounded-none sm:aspect-[4/3]"
         />
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
-          {sectionLabel ? (
+          {showLabel && sectionLabel ? (
             <span
               className="inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-white"
-              style={{ background: sectionBadgeColor || "#e4572e" }}
+              style={{ backgroundColor: safeBadgeColor }}
             >
               {sectionLabel}
             </span>
           ) : null}
-          {product.discount ? <Pill tone="ember">−{product.discount}%</Pill> : null}
+          {showDiscountBadges && discount ? <Pill tone="ember">−{discount}%</Pill> : null}
           {product.stockStatus === "limited" ? <Pill tone="warn">Limited availability</Pill> : null}
           {product.stockStatus === "out_of_stock" ? <Pill tone="danger">Sold out</Pill> : null}
-          {sectionRemaining > 0 && product.stockStatus !== "out_of_stock" ? (
+          {showRemaining && sectionRemaining > 0 && product.stockStatus !== "out_of_stock" ? (
             <span className="inline-flex items-center rounded-[3px] bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
               Only {sectionRemaining} left
             </span>
@@ -73,7 +98,7 @@ export function ProductCard({
           <span className="font-mono text-[10.5px] text-ink-soft">({compact(product.reviewCount)})</span>
         </div>
         <div className="mt-2 flex items-end justify-between gap-2 sm:mt-3">
-          <Price value={product.price} compareAt={product.compareAt} discount={product.discount} />
+          <Price value={price} compareAt={compareAt} discount={discount} />
         </div>
         {product.stockStatus === "limited" ? (
           <div className="mt-1.5">
@@ -83,7 +108,7 @@ export function ProductCard({
 
         {showAdd ? (
           <div className="mt-2 flex items-center gap-1.5 border-t border-line-warm pt-2 sm:mt-3 sm:pt-3">
-            {product.stockStatus !== "out_of_stock" ? <AddToCartForm productId={product.id} /> : <span className="flex-1"><button type="button" disabled className="w-full rounded-[2px] bg-bone-soft py-2 text-[13px] font-semibold text-ink-soft">Sold out</button></span>}
+            {product.stockStatus !== "out_of_stock" ? <AddToCartForm productId={product.id} documentId={product.sectionDocumentId} sectionId={product.sectionId} expectedPrice={price} /> : <span className="flex-1"><button type="button" disabled className="w-full rounded-[2px] bg-bone-soft py-2 text-[13px] font-semibold text-ink-soft">Sold out</button></span>}
             <WishlistForm productId={product.id} back="/browse" saved={saved} />
           </div>
         ) : null}
@@ -98,6 +123,7 @@ export function ProductGrid({
   className,
   columns = 4,
   across,
+  display,
 }: {
   products: Product[];
   savedIds?: string[];
@@ -111,6 +137,7 @@ export function ProductGrid({
    * desktop - a large screen showing two enormous cards reads as a mistake.
    */
   across?: number;
+  display?: ProductCardDisplay;
 }) {
   const phone = Math.min(4, Math.max(1, Math.round(Number(across) || (columns === 3 ? 3 : 2))));
   const width: Record<number, string> = {
@@ -128,7 +155,7 @@ export function ProductGrid({
       )}
     >
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} saved={savedIds.includes(product.id)} />
+        <ProductCard key={product.id} product={product} saved={savedIds.includes(product.id)} display={display} />
       ))}
     </div>
   );
@@ -376,7 +403,7 @@ export function QtyStepper({ lineKey, qty }: { lineKey: string; qty: number }) {
   );
 }
 
-export function CartLineRow({ line }: { line: { key: string; product: Product; variant: string | null; qty: number; lineTotal: number } }) {
+export function CartLineRow({ line }: { line: { key: string; product: Product; variant: string | null; qty: number; unitPrice: number; lineTotal: number; sectionUnavailable?: boolean; sectionLabel?: string | null } }) {
   return (
     <li className="flex gap-4 py-4">
       <Link href={`/product/${line.product.slug}`} className="shrink-0">
@@ -395,6 +422,8 @@ export function CartLineRow({ line }: { line: { key: string; product: Product; v
               {line.product.title}
             </Link>
             {line.variant ? <p className="mt-1 font-mono text-[10.5px] text-ink-soft">{line.variant}</p> : null}
+            {line.sectionLabel ? <p className="mt-1 font-mono text-[10px] text-ink-soft">Section offer: {line.sectionLabel} · {money(line.unitPrice)} each</p> : <p className="mt-1 font-mono text-[10px] text-ink-soft">{money(line.unitPrice)} each</p>}
+            {line.sectionUnavailable ? <p role="status" className="mt-2 max-w-[48ch] rounded-[3px] bg-[#fff0dc] px-2 py-1.5 text-[11px] font-medium text-[#744a08]">This section offer has ended or changed. The basket now shows the regular product price; review it before continuing.</p> : null}
           </div>
           <p className="font-mono text-[14px] font-semibold text-ink">{money(line.lineTotal)}</p>
         </div>

@@ -100,6 +100,13 @@ export async function signOutAction(): Promise<void> {
 export async function addToCartAction(formData: FormData): Promise<FormState> {
   const productId = String(formData.get("productId") ?? "");
   if (!productId) return { error: "Choose a product before adding it." };
+  const documentId = String(formData.get("documentId") ?? "").trim() || null;
+  const sectionId = String(formData.get("sectionId") ?? "").trim() || null;
+  const expectedPriceValue = formData.get("expectedPrice");
+  const expectedPriceRaw = expectedPriceValue === null || !String(expectedPriceValue).trim()
+    ? Number.NaN
+    : Number(expectedPriceValue);
+  const expectedPrice = Number.isFinite(expectedPriceRaw) && expectedPriceRaw >= 0 ? expectedPriceRaw : undefined;
   // A product can have several variant groups (size, colour); they arrive as
   // variant_<group> fields and are combined into the line's variant label.
   const chosen = Array.from(formData.entries())
@@ -111,7 +118,7 @@ export async function addToCartAction(formData: FormData): Promise<FormState> {
   const qty = Number(formData.get("qty") ?? 1);
   const creds = await withCart();
   try {
-    const cart = await api.addCartItem({ productId, variant, qty: qty > 0 ? qty : 1 }, creds);
+    const cart = await api.addCartItem({ productId, variant, qty: qty > 0 ? qty : 1, documentId, sectionId, expectedPrice }, creds);
     if (cart.cartId) await writeCartId(cart.cartId);
   } catch (error) {
     return { error: error instanceof api.ApiError ? error.message : "We could not add that item. Please try again." };

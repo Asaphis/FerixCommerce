@@ -76,7 +76,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
   let sectionTypes: CmsSectionTypes = FALLBACK_SECTION_TYPES;
   let paletteStale = false;
   try {
-    sectionTypes = await listCmsSectionTypes(session);
+    sectionTypes = await listCmsSectionTypes(session, page?.documentType);
   } catch {
     paletteStale = true;
   }

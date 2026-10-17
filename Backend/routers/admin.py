@@ -30,10 +30,10 @@ from core import (
 
 # The section contract. The CMS writes sections through it, so a section saved
 # here means the same thing to the storefront and to the product forms.
-from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FLASH_SALE_DEFAULTS, LEGACY_SOURCES,
-                          PALETTE, PRESENTATIONS, PRODUCT_CONFIG_PRESETS, SELECTION_MODES,
-                          normalize_section, presentation_of, product_config_schema,
-                          validate_section)
+from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FAMILY_PAGE_KINDS, FLASH_SALE_DEFAULTS,
+                          LEGACY_SOURCES, PALETTE, PRESENTATIONS, PRODUCT_CONFIG_PRESETS,
+                          SELECTION_MODES, family_of, normalize_section, palette_for,
+                          presentation_of, product_config_schema, validate_section)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -2409,6 +2409,7 @@ def _page_summary(document) -> dict:
         "documentType": document.document_type,
         "kind": kind,
         "status": document.status,
+        "hasDraft": False,
         "sectionCount": len(sections),
         "visibleCount": sum(1 for s in sections if s.get("visible", True)),
         "sections": [_section_summary(s, i) for i, s in enumerate(sections)],
@@ -2419,7 +2420,8 @@ def _page_summary(document) -> dict:
 
 
 @router.get("/cms/section-types")
-def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                      document_type: Optional[str] = Query(None)):
     """The add-section palette, and what each kind of section can be set up with.
 
     The CMS's own menu is served by the backend, so the buttons an operator sees,
@@ -2432,7 +2434,7 @@ def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         from cms_sections import (CARD_DISPLAY_FIELDS, REQUIREMENT_LIBRARY, REQUIREMENT_SETS,
                                   SECTION_FIELDS, section_fields)
         return {
-            "palette": PALETTE,
+            "palette": palette_for(document_type or ""),
             "selectionModes": list(SELECTION_MODES),
             "presentations": list(PRESENTATIONS),
             "automaticSources": [
@@ -2466,7 +2468,13 @@ def cms_pages(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         # Sync the platform's standard pages so the CMS never starts empty.
         _ensure_platform_pages(db)
         rows = db.scalars(select(ContentDocument)).all()
-        pages = [_page_summary(d) for d in rows]
+        pages = []
+        for document in rows:
+            summary = _page_summary(document)
+            summary["hasDraft"] = db.scalar(select(ContentVersion.id).where(
+                ContentVersion.document_id == document.id, ContentVersion.status == "draft"
+            ).limit(1)) is not None
+            pages.append(summary)
         pages.sort(key=lambda p: (p["documentType"] != "marketplace_home", p["title"] or ""))
         return {"pages": pages}
 
@@ -2565,9 +2573,105 @@ def cms_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
             .order_by(ContentVersion.version.desc())
         )
         source = (draft.data if draft is not None else document.data) or {}
-        summary["sections"] = sorted(source.get("sections") or [],
-                                     key=lambda section: section.get("position", 0))
+        published_sections = sorted((document.data or {}).get("sections") or [],
+                                    key=lambda section: section.get("position", 0))
+        sections = sorted(source.get("sections") or [], key=lambda section: section.get("position", 0))
+        summary.update({
+            "sections": sections,
+            "hasDraft": draft is not None,
+            "draftStatus": "draft" if draft is not None else None,
+            "publishedSections": published_sections,
+            "publishedSectionCount": len(published_sections),
+            "publishedVisibleCount": sum(1 for section in published_sections if section.get("visible", True)),
+            "sectionCount": len(sections),
+            "visibleCount": sum(1 for section in sections if section.get("visible", True)),
+        })
         return {"page": summary}
+
+
+@router.get("/cms/page/section-preview")
+def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                             id: str = Query(...), section_id: str = Query(...)):
+    """Private Admin preview data for a section, including its real placements.
+
+    This deliberately reads the latest draft section even though public catalog
+    routes continue to read only published data. Products are projected through
+    the shopper-safe serializer before placement terms are applied.
+    """
+    from core import SectionPlacement, decorate, public_product_fields
+    from cms_sections import apply_placement_overrides, placement_is_live, section_is_live
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        document = db.get(ContentDocument, id)
+        if not document or document.owner_type != "platform":
+            raise HTTPException(404, "That CMS page does not exist")
+        draft = db.scalar(select(ContentVersion).where(
+            ContentVersion.document_id == id, ContentVersion.status == "draft"
+        ).order_by(ContentVersion.version.desc()))
+        source = (draft.data if draft is not None else document.data) or {}
+        section = next((row for row in source.get("sections", [])
+                        if isinstance(row, dict) and str(row.get("id") or "") == section_id), None)
+        if not section:
+            raise HTTPException(404, "That section does not exist in the current draft or published page")
+
+        products_by_id = {str(product.get("id")): product for product in all_products(db)}
+        rows = db.scalars(select(SectionPlacement).where(
+            SectionPlacement.document_id == id, SectionPlacement.section_id == section_id
+        ).order_by(SectionPlacement.position, SectionPlacement.created_at)).all()
+        published_ids = {str(row.get("id") or "") for row in ((document.data or {}).get("sections") or [])
+                         if isinstance(row, dict)}
+        current = now()
+        preview_products = []
+        for row in rows:
+            product = products_by_id.get(str(row.product_id))
+            if not product:
+                continue
+            shopper_product = decorate(db, [product])[0]
+            safe = public_product_fields(shopper_product)
+            safe["basePrice"] = shopper_product.get("price")
+            safe["baseCompareAt"] = shopper_product.get("compareAt")
+            safe = apply_placement_overrides(safe, row)
+            is_public = (
+                document.status == "published"
+                and section_id in published_ids
+                and section.get("visible", True) is not False
+                and section_is_live(section, current)
+                and placement_is_live(row, current)
+                and marketplace_product_available(db, product)
+            )
+            if not getattr(row, "active", True):
+                status = "Paused"
+            elif not placement_is_live(row, current):
+                status = "Scheduled or expired"
+            elif not marketplace_product_available(db, product):
+                status = "Not approved or unavailable"
+            elif section_id not in published_ids or document.status != "published":
+                status = "Draft page — private until publish"
+            elif not section_is_live(section, current):
+                status = "Section is scheduled or closed"
+            else:
+                status = "Live"
+            safe["previewStatus"] = status
+            safe["publicNow"] = is_public
+            safe["placement"] = {
+                "id": row.id,
+                "active": bool(getattr(row, "active", True)),
+                "startsAt": iso(row.starts_at) if row.starts_at else None,
+                "endsAt": iso(row.ends_at) if row.ends_at else None,
+                "quantity": row.quantity,
+                "position": row.position,
+            }
+            preview_products.append(safe)
+        return {
+            "section": section,
+            "documentStatus": document.status,
+            "hasDraft": draft is not None,
+            "products": preview_products,
+            "assignedCount": len(preview_products),
+            "publicNowCount": sum(1 for product in preview_products if product.get("publicNow")),
+        }
 
 
 @router.patch("/cms/page")
@@ -2586,7 +2690,24 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
         data = dict((current_draft.data if current_draft is not None else document.data) or {})
         if payload.sections is not None:
             cleaned = []
+            seen_ids = set()
+            page_kind = "information" if str((document.data or {}).get("kind") or "").lower() == "information" else document.document_type
+            known_types = {entry.get("type") for group in PALETTE for entry in group.get("entries", [])}
             for index, section in enumerate(payload.sections):
+                if not isinstance(section, dict):
+                    raise HTTPException(422, f"Section {index + 1} must be an object.")
+                section_id = str(section.get("id") or "").strip()
+                if not section_id:
+                    raise HTTPException(422, f"Section {index + 1} needs a stable id.")
+                if section_id in seen_ids:
+                    raise HTTPException(422, f"Section id '{section_id}' is duplicated.")
+                seen_ids.add(section_id)
+                section_type = str(section.get("type") or "").strip()
+                if section_type not in known_types:
+                    raise HTTPException(422, f"'{section_type or '(empty)'}' is not a section type this storefront can render.")
+                family = family_of(section_type)
+                if family and page_kind not in FAMILY_PAGE_KINDS.get(family, ()):
+                    raise HTTPException(422, f"'{section_type}' cannot be used on a {page_kind} page.")
                 try:
                     validate_section(section or {})
                 except ValueError as error:
@@ -2619,8 +2740,18 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
         audit(db, "admin", staff.email, "cms.page.save", document.id, staff.role)
         db.commit()
         summary = _page_summary(document)
-        summary["sections"] = sorted(data.get("sections") or [], key=lambda section: section.get("position", 0))
-        summary["draftStatus"] = "draft"
+        published_sections = sorted((document.data or {}).get("sections") or [], key=lambda section: section.get("position", 0))
+        draft_sections = sorted(data.get("sections") or [], key=lambda section: section.get("position", 0))
+        summary.update({
+            "sections": draft_sections,
+            "hasDraft": True,
+            "draftStatus": "draft",
+            "publishedSections": published_sections,
+            "publishedSectionCount": len(published_sections),
+            "publishedVisibleCount": sum(1 for section in published_sections if section.get("visible", True)),
+            "sectionCount": len(draft_sections),
+            "visibleCount": sum(1 for section in draft_sections if section.get("visible", True)),
+        })
         return {"page": summary}
 
 
@@ -2659,7 +2790,16 @@ def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                               created_by=staff.email))
         audit(db, "admin", staff.email, "cms.page.publish", document.id, staff.role)
         db.commit()
-        return {"page": _page_summary(document)}
+        summary = _page_summary(document)
+        sections = summary["sections"]
+        summary.update({
+            "hasDraft": False,
+            "draftStatus": None,
+            "publishedSections": sections,
+            "publishedSectionCount": len(sections),
+            "publishedVisibleCount": summary["visibleCount"],
+        })
+        return {"page": summary}
 
 @router.post("/auth/refresh")
 def auth_refresh(session: Optional[str] = Header(None, alias="X-Ferix-Session")):

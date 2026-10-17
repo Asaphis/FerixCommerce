@@ -7,6 +7,7 @@ import { PromoBanner } from "@/components/ferix/banner";
 import { CategoryTile, ProductGrid, StoreCard } from "@/components/ferix/cards";
 import { FlashSaleBand } from "@/components/ferix/flash-sale";
 import { SectionHead } from "@/components/ferix/marks";
+import { CmsPromoStrip } from "@/components/ferix/cms-promo-strip";
 import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { TileSwiper } from "@/components/ferix/tile-swiper";
 import { assetUrl } from "@/lib/api";
@@ -56,6 +57,27 @@ export type Section = {
   [key: string]: unknown;
 };
 
+function safeSectionColor(value: unknown): string | undefined {
+  const color = String(value ?? "").trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : undefined;
+}
+
+function safeSectionHref(value: unknown, fallback: string): string {
+  const href = String(value ?? "").trim();
+  if (href.startsWith("/") && !href.startsWith("//")) return href;
+  if (href && !href.startsWith("\\") && !/^[a-z][a-z0-9+.-]*:/i.test(href) && !/[\u0000-\u0020]/.test(href)) return `/${href}`;
+  try {
+    const parsed = new URL(href);
+    return parsed.protocol === "https:" && parsed.hostname ? href : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function isSectionOn(value: unknown, fallback: boolean): boolean {
+  if (value === undefined || value === null || value === "") return fallback;
+  return value === true || ["true", "1", "yes", "on"].includes(String(value).toLowerCase());
+}
 
 
 function tileWidth(across: number) {
@@ -195,7 +217,11 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
       case "hero_banner": {
         const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
         const slides = section.bannerId
-          ? home.banners.filter((banner) => banner.id === section.bannerId)
+          ? home.banners.filter((banner) => banner.id === section.bannerId).map((banner) => ({
+              ...banner,
+              ctaHref: safeSectionHref(banner.ctaHref, "/browse"),
+              secondaryHref: safeSectionHref(banner.secondaryHref, "/browse"),
+            }))
           : [];
         return (
           <section key={section.id ?? index} className="mx-auto max-w-[1440px] sm:px-5 sm:pt-5">
@@ -208,9 +234,9 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
                 title={section.title}
                 description={section.subtitle}
                 ctaLabel={section.ctaLabel}
-                ctaHref={section.ctaHref}
+                ctaHref={safeSectionHref(section.ctaHref, "/browse")}
                 secondaryLabel={section.secondaryLabel}
-                secondaryHref={section.secondaryHref}
+                secondaryHref={safeSectionHref(section.secondaryHref, "/browse")}
                 align={section.align}
                 vertical={section.vertical}
                 tone={section.tone}
@@ -250,9 +276,9 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               title={useSectionMedia ? (section.title ?? section.name ?? "") : (reusableBanner?.headline ?? section.title ?? section.name ?? "This week on Ferixas")}
               description={useSectionMedia ? section.subtitle : reusableBanner?.body ?? section.subtitle}
               ctaLabel={useSectionMedia ? section.ctaLabel : reusableBanner?.ctaLabel ?? section.ctaLabel}
-              ctaHref={useSectionMedia ? section.ctaHref : reusableBanner?.ctaHref ?? section.ctaHref}
+              ctaHref={safeSectionHref(useSectionMedia ? section.ctaHref : reusableBanner?.ctaHref ?? section.ctaHref, "/browse")}
               secondaryLabel={useSectionMedia ? section.secondaryLabel : reusableBanner?.secondaryLabel ?? section.secondaryLabel}
-              secondaryHref={useSectionMedia ? section.secondaryHref : reusableBanner?.secondaryHref ?? section.secondaryHref}
+              secondaryHref={safeSectionHref(useSectionMedia ? section.secondaryHref : reusableBanner?.secondaryHref ?? section.secondaryHref, "/browse")}
               align={useSectionMedia ? section.align : reusableBanner?.overlay?.align ?? section.align}
               vertical={useSectionMedia ? section.vertical : reusableBanner?.overlay?.vertical ?? section.vertical}
               tone={useSectionMedia ? section.tone : reusableBanner?.overlay?.tone ?? section.tone}
@@ -266,14 +292,19 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
 
       /* ── One line of reassurance ────────────────────────────────── */
       case "promo_strip": {
-        if (section.message) {
-          return (
-            <div key={section.id ?? index} className="mt-2.5 border-y border-line-warm bg-white px-4 py-2.5 text-center text-[11px] font-semibold text-ink-soft">
-              {section.message}
-            </div>
-          );
-        }
-        return null;
+        const message = String(section.message ?? "").trim();
+        if (!message) return null;
+        return (
+          <CmsPromoStrip
+            key={section.id ?? index}
+            message={message}
+            accentColor={safeSectionColor(section.accentColor)}
+            icon={String(section.icon ?? "")}
+            ctaLabel={String(section.ctaLabel ?? "")}
+            ctaHref={String(section.ctaHref ?? "")}
+            dismissible={String(section.dismissible) === "true" || section.dismissible === true}
+          />
+        );
       }
 
       /* ── Departments ────────────────────────────────────────────── */
@@ -288,12 +319,13 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         const isGrouped = arrangement === "groups";
         const seeAllDepartments = String((section as { seeAll?: string }).seeAll) !== "false";
         return (
-          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-1 pt-5 sm:px-6 sm:pt-7 lg:pt-8">
+          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-1 pt-5 sm:px-6 sm:pt-7 lg:pt-8" style={{ backgroundColor: safeSectionColor(section.backgroundColor) }}>
             <SectionHead
               title={section.title ?? section.name ?? "Shop by department"}
+              titleColor={safeSectionColor(section.textColor)}
               action={
                 seeAllDepartments ? (
-                  <Link href="/departments" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
+                  <Link href="/departments" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline" style={{ color: safeSectionColor(section.accentColor) }}>
                     See all <ArrowRight width={14} height={14} />
                   </Link>
                 ) : null
@@ -354,12 +386,13 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         const shown = limit ? brands.slice(0, limit) : brands;
         const brandSeeAll = String(section.seeAll) !== "false";
         return (
-          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
+          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9" style={{ backgroundColor: safeSectionColor(section.backgroundColor) }}>
             <SectionHead
               title={section.title ?? section.name ?? "Shop by brand"}
+              titleColor={safeSectionColor(section.textColor)}
               action={
                 brandSeeAll ? (
-                  <Link href="/brands" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
+                  <Link href="/brands" className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-ember hover:underline" style={{ color: safeSectionColor(section.accentColor) }}>
                     All brands <ArrowRight width={14} height={14} />
                   </Link>
                 ) : null
@@ -400,6 +433,14 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         }
         if (!products.length) return null;
         const shown = limit ? products.slice(0, limit) : products;
+        const cardDisplay = {
+          accentColor: safeSectionColor(section.accentColor),
+          showSectionPrice: isSectionOn(section.showSectionPrice, true),
+          showCompareAt: isSectionOn(section.showCompareAt, true),
+          showLabel: isSectionOn(section.showLabel, true),
+          showRemaining: isSectionOn(section.showRemaining, false),
+          showDiscountBadges: isSectionOn(section.showDiscountBadges, true),
+        };
 
         // A timed campaign is its own band: its own words, its own countdown and
         // its own colours, all set in the CMS.
@@ -416,7 +457,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               showCountdown={String(section.showCountdown ?? "true") !== "false"}
               showDiscountBadges={String(section.showDiscountBadges ?? "true") !== "false"}
               showViewAll={String(section.showViewAll ?? "true") !== "false"}
-              href={sectionHref || "/browse?sort=discount"}
+              href={safeSectionHref(sectionHref, "/browse?sort=discount")}
               backgroundColor={section.backgroundColor as string | undefined}
               accentColor={section.accentColor as string | undefined}
               textColor={section.textColor as string | undefined}
@@ -424,17 +465,19 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               timerTextColor={section.timerTextColor as string | undefined}
               products={shown}
               savedIds={saved}
+              display={cardDisplay}
             />
           );
         }
         const seeAll = String(section.seeAll) !== "false";
         return (
-          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
+          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9" style={{ backgroundColor: safeSectionColor(section.backgroundColor) }}>
               <SectionHead
               title={section.title ?? section.name ?? "Featured products"}
+              titleColor={safeSectionColor(section.textColor)}
               action={seeAll ? (
-                <Link href="/browse?sort=best" className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
-                  See all <ArrowRight width={14} height={14} />
+                <Link href={safeSectionHref(section.ctaHref, "/browse?sort=best")} className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline" style={{ color: safeSectionColor(section.accentColor) }}>
+                  {String(section.ctaLabel ?? "").trim() || "See all"} <ArrowRight width={14} height={14} />
                 </Link>
               ) : null}
               className="mb-3 sm:mb-4"
@@ -445,15 +488,17 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
                 savedIds={saved}
                 across={Number(section.across) || 2}
                 rowsPerSet={Number((section as { rowsPerSet?: number }).rowsPerSet) || 2}
+                display={cardDisplay}
               />
             ) : (section as { layout?: string }).layout === "horizontal" ? (
               <HorizontalRail
                 products={shown}
                 savedIds={saved}
                 across={Number(section.across) || 2}
+                display={cardDisplay}
               />
             ) : (
-              <ProductGrid products={shown} savedIds={saved} across={Number(section.across) || 2} />
+              <ProductGrid products={shown} savedIds={saved} across={Number(section.across) || 2} display={cardDisplay} />
             )}
           </section>
         );
@@ -479,13 +524,14 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         if (!home.stores.length) return null;
         const shown = limit ? home.stores.slice(0, limit) : home.stores;
         return (
-          <section key={section.id ?? index} className="border-y border-line-warm bg-white">
+          <section key={section.id ?? index} className="border-y border-line-warm bg-white" style={{ backgroundColor: safeSectionColor(section.backgroundColor) }}>
             <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
               <SectionHead
                 title={section.title ?? "Meet the stores"}
+                titleColor={safeSectionColor(section.textColor)}
                 action={
-                  <Link href="/stores" className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
-                    All stores <ArrowRight width={14} height={14} />
+                  <Link href={safeSectionHref(section.ctaHref, "/stores")} className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline" style={{ color: safeSectionColor(section.accentColor) }}>
+                    {String(section.ctaLabel ?? "").trim() || "All stores"} <ArrowRight width={14} height={14} />
                   </Link>
                 }
                 className="mb-3 sm:mb-4"
@@ -505,8 +551,13 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         const closing = String(section.message ?? section.title ?? "").trim();
         if (!closing) return null;
         return (
-          <div key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-3 pt-6 text-center text-[11px] text-ink-soft sm:px-6">
+          <div key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-3 pt-6 text-center text-[11px] text-ink-soft sm:px-6" style={{ backgroundColor: safeSectionColor(section.backgroundColor), color: safeSectionColor(section.textColor) }}>
             {closing}
+            {String(section.ctaLabel ?? "").trim() ? (
+              <Link href={safeSectionHref(section.ctaHref, "/browse")} className="ml-2 font-semibold underline underline-offset-2" style={{ color: safeSectionColor(section.accentColor) }}>
+                {String(section.ctaLabel)}
+              </Link>
+            ) : null}
           </div>
         );
       }

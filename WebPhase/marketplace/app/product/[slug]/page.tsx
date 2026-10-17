@@ -26,11 +26,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProductPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams?: Promise<{ documentId?: string; sectionId?: string }> }) {
   const { slug } = await params;
+  const query: { documentId?: string; sectionId?: string } = searchParams ? await searchParams : {};
+  const sectionContext = { documentId: query.documentId, sectionId: query.sectionId };
   let detail;
   try {
-    detail = await getProduct(slug);
+    detail = await getProduct(slug, sectionContext);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) notFound();
     throw error;
@@ -134,6 +136,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
           <AddToCartForm
             productId={product.id}
+            documentId={product.sectionDocumentId}
+            sectionId={product.sectionId}
+            expectedPrice={product.price}
             className="mt-5 grid gap-4"
             showButton={false}
           >

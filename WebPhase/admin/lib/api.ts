@@ -929,10 +929,13 @@ export type CmsPage = {
   documentType: string;
   status: string;
   hasDraft: boolean;
+  draftStatus?: string | null;
   sectionCount: number;
   visibleCount: number;
   sections: CmsSection[];
   publishedSections?: CmsSection[];
+  publishedSectionCount?: number;
+  publishedVisibleCount?: number;
   kind?: "managed" | "information";
   data?: { content?: Record<string, unknown>; sections?: unknown[]; kind?: string };
 };
@@ -1031,5 +1034,51 @@ export type CmsSectionTypes = {
   cardDisplay?: CmsSectionSetting[];
 };
 
-export const listCmsSectionTypes = (session: string | null) =>
-  call<CmsSectionTypes>("GET", "admin/cms/section-types", { session });
+export const listCmsSectionTypes = (session: string | null, documentType?: string) =>
+  call<CmsSectionTypes>("GET", "admin/cms/section-types", {
+    session,
+    params: documentType ? { document_type: documentType } : undefined,
+  });
+
+export type CmsSectionPreviewProduct = {
+  id: string;
+  slug: string;
+  title: string;
+  images?: string[];
+  price?: number;
+  compareAt?: number | null;
+  merchantName?: string;
+  sectionPrice?: number;
+  sectionLabel?: string;
+  sectionBadgeColor?: string;
+  sectionRemaining?: number;
+  discount?: number;
+  previewStatus: string;
+  publicNow: boolean;
+  placement: {
+    id: string;
+    active: boolean;
+    startsAt?: string | null;
+    endsAt?: string | null;
+    quantity?: number;
+    position: number;
+  };
+  basePrice?: number;
+  baseCompareAt?: number | null;
+  baseDiscount?: number | null;
+};
+
+export type CmsSectionPreviewData = {
+  section: CmsSection;
+  documentStatus: string;
+  hasDraft: boolean;
+  products: CmsSectionPreviewProduct[];
+  assignedCount: number;
+  publicNowCount: number;
+};
+
+export const getCmsSectionPreview = (session: string | null, id: string, sectionId: string) =>
+  call<CmsSectionPreviewData>("GET", "admin/cms/page/section-preview", {
+    session,
+    params: { id, section_id: sectionId },
+  });

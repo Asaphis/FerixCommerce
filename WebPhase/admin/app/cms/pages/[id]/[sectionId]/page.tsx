@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
-import { assetUrl, getCmsPage, listBanners, listCmsSectionTypes, listMedia, type Banner, type CmsSection, type CmsSectionTypes, type MediaAsset } from "@/lib/api";
+import { assetUrl, getCmsPage, getCmsSectionPreview, listBanners, listCmsSectionTypes, listMedia, type Banner, type CmsSection, type CmsSectionTypes, type MediaAsset } from "@/lib/api";
 import { FALLBACK_SECTION_TYPES } from "@/components/ops/section-palette";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
@@ -10,6 +10,7 @@ import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { deleteCmsSectionAction, saveCmsSectionAction } from "@/lib/actions";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
+import { CmsSectionPreview } from "@/components/ops/cms-section-preview";
 
 /** The fields each section type can be managed by, in the order they read. */
 type Choice = { value: string; label: string };
@@ -20,6 +21,7 @@ type EditorField = {
   kind?: string;
   /** One line of explanation under the control. */
   help?: string;
+  default?: unknown;
   /** A paragraph rather than a line. */
   long?: boolean;
   /** A number field. */
@@ -347,7 +349,7 @@ export default async function CmsSectionEditor({
   // cannot be read the editor still opens from the mirrored copy.
   let sectionTypes: CmsSectionTypes = FALLBACK_SECTION_TYPES;
   try {
-    sectionTypes = await listCmsSectionTypes(session);
+    sectionTypes = await listCmsSectionTypes(session, page?.documentType);
   } catch {
     sectionTypes = FALLBACK_SECTION_TYPES;
   }
@@ -356,6 +358,16 @@ export default async function CmsSectionEditor({
   const isHeroSection = Boolean(section && ["hero_banner", "hero_slim"].includes(String(section.type)));
   const mediaOnly = section?.mediaOnly === true || String(section?.mediaOnly) === "true";
   const sectionMediaUrl = section ? assetUrl(String(section.mediaUrl ?? "")) : "";
+
+  let previewData = null;
+  let previewError: string | null = null;
+  if (section) {
+    try {
+      previewData = await getCmsSectionPreview(session, id, sectionId);
+    } catch (error) {
+      previewError = explain(error);
+    }
+  }
 
   let mediaAssets: MediaAsset[] = [];
   let reusableBanners: Banner[] = [];
@@ -373,25 +385,10 @@ export default async function CmsSectionEditor({
   }
 
   const selectedBannerId = String(section?.bannerId ?? "");
-  const bannerPreview = selectedBannerId
-    ? reusableBanners.find((banner) => banner.id === selectedBannerId) ?? null
-    : section?.type === "hero_banner" && !sectionMediaUrl
-      ? reusableBanners.find((banner) => banner.active) ?? null
-      : null;
-  const useSectionMedia = Boolean(sectionMediaUrl) && !bannerPreview;
-  const previewMediaUrl = useSectionMedia ? sectionMediaUrl : (bannerPreview ? assetUrl(bannerPreview.mediaUrl || bannerPreview.image || bannerPreview.videoUrl) : "");
-  const previewVideo = String(section?.kind ?? bannerPreview?.kind) === "video" || /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(previewMediaUrl);
-  const previewMediaOnly = mediaOnly || bannerPreview?.showText === false;
-  const previewEyebrow = useSectionMedia ? section?.eyebrow : bannerPreview?.eyebrow ?? section?.eyebrow;
-  const previewTitle = useSectionMedia ? section?.title : bannerPreview?.headline ?? section?.title ?? section?.name;
-  const previewDescription = useSectionMedia ? section?.subtitle : bannerPreview?.body ?? section?.subtitle;
-  const previewCtaLabel = useSectionMedia ? section?.ctaLabel : bannerPreview?.ctaLabel ?? section?.ctaLabel;
-  const previewCtaHref = useSectionMedia ? section?.ctaHref : bannerPreview?.ctaHref ?? section?.ctaHref;
-  const previewSecondaryLabel = useSectionMedia ? section?.secondaryLabel : bannerPreview?.secondaryLabel ?? section?.secondaryLabel;
-  const previewSecondaryHref = useSectionMedia ? section?.secondaryHref : bannerPreview?.secondaryHref ?? section?.secondaryHref;
+  const cardDisplayFields = sectionTypes.cardDisplay ?? [];
 
   return (
-    <div className="grid min-w-0 gap-5">
+    <div data-cms-section-preview-scope className="grid min-w-0 gap-5">
       <PageHeader
         back={
           <Link href={`/cms/pages/${id}`} className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk">
@@ -449,7 +446,22 @@ export default async function CmsSectionEditor({
                     </Field>
                   ) : null}
                   {fields.map((field) =>
-                    field.options ? (
+                    field.kind === "toggle" ? (
+                      <Field key={field.key} title={field.title}>
+                        <label className="flex items-center gap-2.5 text-[12px] text-chalk">
+                          <input type="hidden" name={`field_${field.key}`} value="false" />
+                          <input
+                            name={`field_${field.key}`}
+                            type="checkbox"
+                            value="true"
+                            defaultChecked={Boolean(section[field.key] ?? field.default ?? false)}
+                            className="h-4 w-4 accent-[#e4572e]"
+                          />
+                          On
+                        </label>
+                        {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
+                      </Field>
+                    ) : field.options ? (
                       <Field key={field.key} title={field.title}>
                         <select
                           name={`field_${field.key}`}
@@ -559,6 +571,30 @@ export default async function CmsSectionEditor({
               </Panel>
             ) : null}
 
+            {["product_carousel", "product_grid"].includes(String(section.type)) ? (
+              <Panel>
+                <PanelHead title="What each product card shows" hint="These are presentation switches only; product and section prices remain owned by the catalogue and placement." />
+                <CmsActionForm action={saveCmsSectionAction} className="grid gap-3">
+                  <input type="hidden" name="id" value={id} />
+                  <input type="hidden" name="sectionId" value={section.id} />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {cardDisplayFields.map((field) => {
+                      const raw = section[field.key];
+                      const checked = raw === undefined ? Boolean(field.default) : raw === true || String(raw).toLowerCase() === "true";
+                      return (
+                        <label key={field.key} className="flex cursor-pointer items-start gap-2.5 rounded-[10px] border border-hairline bg-panel-2 p-3">
+                          <input type="hidden" name={`field_${field.key}`} value="false" />
+                          <input type="checkbox" name={`field_${field.key}`} value="true" defaultChecked={checked} className="mt-0.5 accent-[#e4572e]" />
+                          <span className="text-[12.5px] text-chalk">{field.label}{typeof field.hint === "string" ? <span className="mt-0.5 block text-[11px] leading-relaxed text-chalk-dim">{field.hint}</span> : null}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div><SubmitButton pendingLabel="Saving">Save card display</SubmitButton></div>
+                </CmsActionForm>
+              </Panel>
+            ) : null}
+
             {String(section.type) === "hero_banner" ? (
               <Panel>
                 <PanelHead title="Carousel slides" hint="The image/video above takes priority. Clear it to use the active banners from the shared library." />
@@ -619,83 +655,15 @@ export default async function CmsSectionEditor({
           </div>
 
           <aside className="grid gap-5 xl:sticky xl:top-4">
-            <Panel>
-              <PanelHead title="Preview" action={<Pill tone="neutral">as it will render</Pill>} />
-              <div className="overflow-hidden rounded-[14px] border border-hairline">
-                {isHeroSection ? (
-                  <div className="relative aspect-[16/8] min-h-[180px] overflow-hidden bg-transparent">
-                    {previewMediaUrl ? (
-                      previewVideo ? (
-                        // eslint-disable-next-line jsx-a11y/media-has-caption
-                        <video src={previewMediaUrl} controls muted playsInline preload="metadata" className="absolute inset-0 h-full w-full bg-[#17232b] object-cover" />
-                      ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={previewMediaUrl} alt="Hero media preview" className="absolute inset-0 h-full w-full object-cover" />
-                      )
-                    ) : null}
-                    {!previewMediaOnly ? (
-                      <>
-                        {previewMediaUrl ? (
-                          <div aria-hidden className="absolute inset-0" style={{ background: String(section.tone ?? "dark") === "light" ? "linear-gradient(90deg,rgba(255,255,255,.65),rgba(255,255,255,0))" : "linear-gradient(90deg,rgba(7,20,35,.64),rgba(7,20,35,0))" }} />
-                        ) : (
-                          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-[#e85022] via-[#f17446] to-[#ffd6bd]" />
-                        )}
-                        <div className="absolute inset-0 z-10 flex flex-col justify-center p-5">
-                          {previewEyebrow ? <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/80">{String(previewEyebrow)}</span> : null}
-                          {previewTitle ? <span className="mt-2 block max-w-[26ch] font-display text-[21px] font-extrabold leading-tight text-white">{String(previewTitle)}</span> : null}
-                          {previewDescription ? <span className="mt-2 block max-w-[34ch] text-[12px] leading-relaxed text-white/85">{String(previewDescription)}</span> : null}
-                          {previewCtaLabel || previewSecondaryLabel ? (
-                            <div className="mt-4 flex flex-wrap gap-2">
-                              {previewCtaLabel ? <span className="inline-flex w-fit bg-white px-3.5 py-2 text-[12px] font-semibold text-[#c2441a]">{String(previewCtaLabel)}</span> : null}
-                              {previewSecondaryLabel ? <span className="inline-flex w-fit border border-white/60 px-3.5 py-2 text-[12px] font-semibold text-white">{String(previewSecondaryLabel)}</span> : null}
-                            </div>
-                          ) : null}
-                        </div>
-                      </>
-                    ) : !previewMediaUrl ? (
-                      <div className="absolute inset-0 grid place-items-center bg-[#f4f6f8] px-5 text-center text-[12px] text-chalk-dim">Upload or choose an image/video to preview media-only mode.</div>
-                    ) : null}
-                  </div>
-                ) : String(section.type) === "category_grid" ? (
-                  <div className="grid min-h-[140px] place-items-center bg-[#f4f6f8] p-5 text-center">
-                    <div>
-                      <p className="font-display text-[16px] font-semibold text-chalk">Departments</p>
-                      <p className="mt-1 text-[12px] text-chalk-dim">
-                        Every department renders as a tile
-                        {Number(section.across) ? `, ${Number(section.across)} across` : " at the standard width"}
-                        {Number(section.rowsPerSet) ? `, ${Number(section.rowsPerSet)} rows per page` : ""}.
-                      </p>
-                      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-chalk-dim">{String(section.layout ?? "groups")} · {String(section.seeAll) === "false" ? "no See all link" : "See all link on"}</p>
-                    </div>
-                  </div>
-                ) : ["product_carousel", "product_grid"].includes(String(section.type)) ? (
-                  <div className="p-4" style={{ background: String(section.backgroundColor ?? "#ffffff"), color: String(section.textColor ?? "#12263a") }}>
-                    <span className="font-mono text-[9.5px] uppercase tracking-[0.16em]" style={{ color: String(section.accentColor ?? "#e4572e") }}>{String(section.eyebrow ?? "Eyebrow")}</span>
-                    <p className="mt-1 font-display text-[18px] font-semibold">{String(section.name ?? section.title ?? "This section")}</p>
-                    {section.subtitle ? <p className="mt-1 text-[12px]">{String(section.subtitle)}</p> : null}
-                    {String(section.presentation ?? "") === "flash_sale" ? (
-                      <span className="mt-3 inline-flex rounded-[8px] px-2.5 py-1 font-mono text-[11px]" style={{ background: String(section.timerBackgroundColor ?? "#12263a"), color: String(section.timerTextColor ?? "#ffffff") }}>
-                        {String(section.countdownLabel ?? "Ends in")} · counts down to the section end
-                      </span>
-                    ) : null}
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {[0, 1, 2].map((slot) => (
-                        <div key={slot} className="rounded-[8px] border border-hairline bg-white/80 p-2 text-center text-[10.5px] text-chalk-dim">Product</div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid min-h-[140px] place-items-center bg-[#f4f6f8] px-5 py-6 text-center text-[12px] text-chalk-dim">
-                    {["product_carousel", "product_grid"].includes(String(section.type))
-                      ? "This section shows the products the catalogue assigns to it from the product form. The CMS only sets how it looks."
-                      : DRAW_FROM[String(section.type)] ? `This section draws from your ${DRAW_FROM[String(section.type)].label}. The storefront uses its live content and layout settings.` : "This section is rendered from its own content and the page's published settings."}
-                  </div>
-                )}
-              </div>
-              <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
-                {isHeroSection ? previewMediaOnly ? "Media only · no copy, button or shading" : `Text ${String(section.align ?? "left")} · ${previewMediaUrl ? "media overlay" : "brand fallback"}` : String(section.type) === "category_grid" ? "Department tiles render from the live departments list" : "Preview depends on the section's live content"}
-              </p>
-            </Panel>
+            <CmsSectionPreview
+              key={section.id}
+              section={section}
+              products={previewData?.products ?? []}
+              banners={reusableBanners}
+              hasDraft={previewData?.hasDraft ?? page?.hasDraft ?? false}
+              documentStatus={previewData?.documentStatus ?? page?.status ?? "draft"}
+              error={previewError}
+            />
 
             <Panel>
               <PanelHead title="This section" />

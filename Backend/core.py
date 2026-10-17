@@ -27,7 +27,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sess
 # The section contract. Everything that decides what a CMS section is, how its
 # products are chosen and when it is live reads this one module.
 from cms_sections import (ALL_SOURCES, PRODUCT_SECTION_TYPES, is_manual_product_section,
-                          section_is_live)
+                          placement_is_live, section_is_live)
 
 # ── Configuration ──────────────────────────────────────────────────────────
 
@@ -1258,7 +1258,11 @@ def media_json(m: MediaAsset) -> dict:
 # ── Cart ───────────────────────────────────────────────────────────────────
 
 def line_key(line: dict) -> str:
-    return f"{line['productId']}::{line.get('variant') or ''}"
+    base = f"{line['productId']}::{line.get('variant') or ''}"
+    document_id = str(line.get("documentId") or "")
+    section_id = str(line.get("sectionId") or "")
+    # Preserve old unscoped keys for existing carts and security-sensitive callers.
+    return f"{base}::{document_id}::{section_id}" if document_id and section_id else base
 
 
 def cart_for(db: Session, user_id: Optional[str], cart_id: Optional[str]) -> Optional[Cart]:
@@ -1288,14 +1292,43 @@ def cart_payload(db: Session, cart: Optional[Cart]) -> dict:
             product = find_product(db, raw["productId"])
             if not product or not marketplace_product_available(db, product):
                 continue
+            price_product = decorate(db, [product])[0]
+            unit_price = float(price_product["price"])
+            document_id = str(raw.get("documentId") or "")
+            section_id = str(raw.get("sectionId") or "")
+            section_unavailable = False
+            section_label = None
+            if document_id and section_id:
+                placement = db.scalar(select(SectionPlacement).where(
+                    SectionPlacement.product_id == product["id"],
+                    SectionPlacement.document_id == document_id,
+                    SectionPlacement.section_id == section_id,
+                ))
+                document = db.get(ContentDocument, document_id)
+                section = next((row for row in ((document.data or {}).get("sections") or [])
+                                if isinstance(row, dict) and str(row.get("id") or "") == section_id), None) if document else None
+                if (placement and document and document.status == "published" and section
+                        and section.get("visible", True) is not False and section_is_live(section)
+                        and placement_is_live(placement)):
+                    if str(section.get("showSectionPrice", "true")).lower() not in {"false", "0", "no"}:
+                        unit_price = float(placement.price or unit_price)
+                    section_label = str((placement.config or {}).get("label") or "").strip() or None
+                else:
+                    # The offer is no longer current. Keep the line visible at
+                    # the product's base price and block checkout until reviewed.
+                    section_unavailable = True
             item = {
                 "key": line_key(raw), "product": product, "productId": product["id"],
                 "image": (product.get("images") or [None])[0],
                 "slug": product.get("slug"),
                 "variant": raw.get("variant"), "qty": raw["qty"],
-                "unitPrice": product["price"],
-                "lineTotal": round(product["price"] * raw["qty"], 2),
+                "unitPrice": unit_price,
+                "lineTotal": round(unit_price * raw["qty"], 2),
                 "inStock": (product.get("stock") or 0) > 0,
+                "documentId": document_id or None,
+                "sectionId": section_id or None,
+                "sectionUnavailable": section_unavailable,
+                "sectionLabel": section_label,
             }
             lines.append(item)
             grouped.setdefault(product["merchantId"], []).append(item)
@@ -1383,6 +1416,11 @@ PUBLIC_PRODUCT_FIELDS = (
     "id", "slug", "title", "merchantId", "merchantName", "merchantSlug", "brandName",
     "category", "collections", "description", "bullets", "price", "compareAt", "discount",
     "variants", "plates", "images", "tags", "createdAt", "promotion",
+    # Section-specific shopper data is deliberately allowlisted: these fields
+    # let the CMS card and basket agree without exposing placement internals.
+    "sectionId", "sectionDocumentId", "sectionPlacementId", "sectionPrice",
+    "sectionLabel", "sectionBadgeColor", "sectionQuantity", "sectionRemaining",
+    "basePrice", "baseCompareAt", "baseDiscount",
 )
 
 

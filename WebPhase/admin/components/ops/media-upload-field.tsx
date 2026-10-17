@@ -59,6 +59,12 @@ export function MediaUploadField({
   const isVideo = kind === "video" || (kind === "auto" && (file?.type.startsWith("video/") || isVideoUrl(previewUrl)));
   const accept = kind === "image" ? "image/*" : kind === "video" ? "video/*" : "image/*,video/*";
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("ferix:cms-section-media", {
+      detail: { url: previewUrl, kind: isVideo ? "video" : "image" },
+    }));
+  }, [previewUrl, isVideo]);
+
   const assets = libraryAssets ?? [];
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();

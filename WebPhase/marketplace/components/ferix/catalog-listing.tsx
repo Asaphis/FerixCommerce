@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
-import { assetUrl, getCataloguePage, getHome, listAdverts, listProducts, type Advert, type CatalogueBrand, type Product } from "@/lib/api";
+import { assetUrl, getCataloguePage, getHome, listAdverts, listProducts, type Advert, type Product } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
-import { PromoBanner } from "@/components/ferix/banner";
-import { MediaHero } from "@/components/ferix/media-hero";
 import { AutoForm } from "@/components/ferix/add-to-cart";
-import { EmptyState, Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
-import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
+import { EmptyState, Eyebrow, LinkButton } from "@/components/ferix/marks";
+import { RenderSections, type HomePayload, type Section as CmsSection } from "@/components/ferix/render-sections";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -105,10 +103,9 @@ export async function CatalogListing({
 
   const [feed, saved] = await Promise.all([listProducts(filters), savedIds()]);
 
-  // The listing builds itself from the page document. The slots section decides
-  // whether advertisements are woven into the results at all, how often, how many
-  // and for which placement, so where they appear is a CMS decision rather than
-  // something baked into this file.
+  // The page contract and the homepage share one section renderer. Explore used
+  // to hand-render only hero/product/brand/ad sections, so a published department,
+  // store, message-strip or footer section could silently disappear here.
   const pageType = PAGE_TYPES[basePath] ?? "marketplace_explore";
   const page = await getCataloguePage(pageType).catch(() => ({
     page: null,
@@ -121,55 +118,35 @@ export async function CatalogListing({
   const slotEvery = Math.max(1, Number(slotSection?.adEvery) || 6);
   const slotLimit = Math.max(0, Number(slotSection?.limit) || 3);
   const adverts = slotSection && slotLimit > 0
-    ? (await listAdverts(slotSection.placement ?? "explore").catch(() => ({ adverts: [] }))).adverts.slice(0, slotLimit)
+    ? (await listAdverts(slotSection.placement ?? "explore").catch(() => ({ adverts: [] as Advert[] }))).adverts.slice(0, slotLimit)
     : [];
-
-  // The other two sections this page can carry. The band above the results and
-  // the brand row below them are the CMS's to switch on, reword and fill; the
-  // listing only decides where they land.
-  const hero = page.sections.find(
-    (section) => (section.type === "hero_slim" || section.type === "hero_banner") && section.visible !== false,
+  const homeData = await getHome().catch(() => null);
+  const renderHome: HomePayload = {
+    banners: homeData?.banners ?? [],
+    brands: homeData?.brands ?? [],
+    categories: homeData?.categories ?? [],
+    collections: homeData?.collections ?? [],
+    featured: homeData?.featured ?? [],
+    trending: homeData?.trending ?? [],
+    newArrivals: homeData?.newArrivals ?? [],
+    under100: homeData?.under100 ?? [],
+    official: homeData?.official ?? [],
+    stores: homeData?.stores ?? [],
+    placements: page.placements,
+    stats: { merchants: homeData?.stats?.merchants ?? 0 },
+  };
+  // Promo slots weave through the catalogue results below; the main catalogue
+  // grid marker controls the listing itself; footer furniture belongs at the end.
+  const sectionsForRenderer = page.sections.filter((section) =>
+    section.visible !== false
+      && section.type !== "promo_slots"
+      && section.type !== "footer"
+      && !(section.type === "product_grid" && section.perPage !== undefined),
   );
+  const footerSections = page.sections.filter((section) => section.type === "footer" && section.visible !== false);
   const gridSection = page.sections.find(
     (section) => section.type === "product_grid" && section.perPage !== undefined && section.visible !== false,
   );
-  const productSections = page.sections.filter(
-    (section) => section.visible !== false
-      && (section.type === "product_carousel"
-        || (section.type === "product_grid" && section.perPage === undefined)),
-  );
-  const heroMediaOnly = Boolean(
-    hero &&
-      (hero.mediaOnly === true ||
-        String(hero.mediaOnly) === "true" ||
-        hero.showText === false ||
-        String(hero.showText) === "false"),
-  );
-  const brandRow = page.sections.find(
-    (section) => section.type === "brand_carousel" && section.visible !== false,
-  );
-  const needsHomeData = Boolean(brandRow) || (hero?.type === "hero_banner" && hero.bannerId && !hero.mediaUrl);
-  const homeData = needsHomeData ? await getHome().catch(() => null) : null;
-  const allBrands: CatalogueBrand[] = brandRow ? homeData?.brands ?? [] : [];
-  const brandLimit = Number(brandRow?.limit) || 0;
-  const brands = brandLimit > 0 ? allBrands.slice(0, brandLimit) : allBrands;
-  const brandAcross = Math.min(4, Math.max(1, Math.round(Number(brandRow?.across) || 2)));
-  const brandGridColumns: Record<number, string> = {
-    1: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
-    2: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5",
-    3: "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6",
-    4: "grid-cols-4 sm:grid-cols-6 lg:grid-cols-8",
-  };
-  const brandRailWidth: Record<number, string> = {
-    1: "w-[82%] sm:w-[40%] lg:w-[25%]",
-    2: "w-[46%] sm:w-[30%] lg:w-[20%]",
-    3: "w-[31%] sm:w-[23%] lg:w-[16%]",
-    4: "w-[23%] sm:w-[17%] lg:w-[12%]",
-  };
-  const brandIsGrid = ["wrap", "grid"].includes(String(brandRow?.layout));
-  const selectedHeroBanner = hero?.bannerId
-    ? homeData?.banners.find((banner) => banner.id === hero.bannerId)
-    : undefined;
   const activeStore = feed.facets.stores.find((item) => item.slug === filters.store);
   const activeCategory = feed.facets.categories.find((item) => item.slug === filters.category);
   // Filtering by department renames the page, so the heading always matches the list.
@@ -215,37 +192,13 @@ export async function CatalogListing({
         </nav>
       ) : null}
 
-      {hero ? (
-        <div className="mx-auto mt-4 max-w-[1440px]">
-          {hero.type === "hero_banner" && selectedHeroBanner ? (
-            <PromoBanner
-              banners={selectedHeroBanner ? [selectedHeroBanner] : []}
-              mediaOnly={heroMediaOnly}
-              heightClassName="h-[190px] sm:h-[250px] lg:h-[320px]"
-              className="rounded-[3px] rounded-tr-[16px] shadow-[0_8px_22px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
-            />
-          ) : (
-            <MediaHero
-              mediaUrl={selectedHeroBanner?.mediaUrl ?? hero.mediaUrl}
-              kind={selectedHeroBanner?.kind ?? hero.kind}
-              mediaOnly={heroMediaOnly || selectedHeroBanner?.showText === false}
-              eyebrow={selectedHeroBanner?.eyebrow ?? hero.eyebrow}
-              title={selectedHeroBanner?.headline ?? hero.title ?? "This week on Ferixas"}
-              description={selectedHeroBanner?.body ?? hero.subtitle}
-              ctaLabel={selectedHeroBanner?.ctaLabel ?? hero.ctaLabel}
-              ctaHref={selectedHeroBanner?.ctaHref ?? hero.ctaHref ?? basePath}
-              secondaryLabel={selectedHeroBanner?.secondaryLabel ?? hero.secondaryLabel}
-              secondaryHref={selectedHeroBanner?.secondaryHref ?? hero.secondaryHref}
-              align={selectedHeroBanner?.overlay?.align ?? hero.align}
-              vertical={selectedHeroBanner?.overlay?.vertical ?? hero.vertical}
-              tone={selectedHeroBanner?.overlay?.tone ?? hero.tone}
-              scrim={selectedHeroBanner?.overlay?.scrim ?? hero.scrim}
-              heightClassName="h-[190px] sm:h-[250px] lg:h-[320px]"
-              className="rounded-[3px] rounded-tr-[16px] shadow-[0_8px_22px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
-            />
-          )}
-        </div>
-      ) : null}
+      {sectionsForRenderer.length ? RenderSections({
+        sections: sectionsForRenderer as unknown as CmsSection[],
+        home: renderHome,
+        adverts,
+        saved,
+        mode: "page",
+      }) : null}
 
       <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
@@ -285,36 +238,6 @@ export async function CatalogListing({
           </noscript>
         </AutoForm>
       </div>
-
-      {productSections.map((section) => {
-        const assigned = page.placements?.[section.id] ?? [];
-        if (!assigned.length) return null;
-        const limit = Number(section.limit) || 0;
-        const shown = limit > 0 ? assigned.slice(0, limit) : assigned;
-        const across = Math.min(4, Math.max(1, Math.round(Number(section.across) || 2)));
-        const seeAll = String(section.seeAll) !== "false";
-        const layout = String(section.layout ?? "grid");
-        return (
-          <section key={section.id} className="mt-5 border-b border-line-warm pb-5">
-            <SectionHead
-              title={section.title ?? "Featured products"}
-              action={seeAll ? (
-                <Link href="/browse" className="inline-flex items-center gap-1 text-[12px] font-semibold text-ember hover:underline">
-                  See all
-                </Link>
-              ) : null}
-              className="mb-3"
-            />
-            {layout === "groups" ? (
-              <SetSwiper products={shown} savedIds={saved} across={across} rowsPerSet={Number(section.rowsPerSet) || 2} />
-            ) : layout === "horizontal" ? (
-              <HorizontalRail products={shown} savedIds={saved} across={across} />
-            ) : (
-              <ProductGrid products={shown} savedIds={saved} across={across} />
-            )}
-          </section>
-        );
-      })}
 
       <div className="mt-4 grid gap-4 lg:mt-6 lg:grid-cols-[236px_1fr] lg:gap-8">
         <aside>
@@ -398,52 +321,13 @@ export async function CatalogListing({
             />
           )}
 
-          {brands.length ? (
-            <section className="mt-8 border-t border-line-warm pt-6">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="font-display text-[18px] font-semibold text-ink">
-                    {brandRow?.title ?? "Shop by brand"}
-                  </h2>
-                </div>
-                {String(brandRow?.seeAll) !== "false" ? (
-                  <Link href="/brands" className="text-[12px] font-semibold text-ember hover:underline">All brands</Link>
-                ) : null}
-              </div>
-              <div className={brandIsGrid
-                ? `mt-3 grid gap-2.5 ${brandGridColumns[brandAcross]}`
-                : "no-scrollbar -mx-4 mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 lg:mx-0 lg:px-0"}>
-                {brands.map((record) => {
-                  const artwork = assetUrl(record.imageUrl);
-                  return (
-                    <Link
-                      key={record.slug}
-                      href={`/brands/${record.slug}`}
-                      className={`group flex flex-col items-center ${brandIsGrid ? "min-w-0" : `shrink-0 snap-start ${brandRailWidth[brandAcross]}`}`}
-                    >
-                      {/* The same badge the homepage draws: the mark in a circle, the name under
-                          it. One brand should look like one brand wherever it appears. */}
-                      {artwork ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={artwork}
-                          alt={record.name}
-                          className="h-[52px] w-[52px] rounded-full object-cover ring-1 ring-line-warm transition-transform duration-300 group-hover:scale-[1.05]"
-                        />
-                      ) : (
-                        <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-bone-soft font-display text-[16px] font-bold text-ink-soft ring-1 ring-line-warm">
-                          {record.name.slice(0, 1)}
-                        </span>
-                      )}
-                      <span className="mt-2 block w-full truncate text-center text-[12px] font-semibold text-ink group-hover:text-ember">
-                        {record.name}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-          ) : null}
+          {footerSections.length ? RenderSections({
+            sections: footerSections as unknown as CmsSection[],
+            home: renderHome,
+            adverts,
+            saved,
+            mode: "page",
+          }) : null}
 
           {feed.pages > 1 ? (
             <div className="mt-8 flex items-center justify-between gap-3 border-t border-line-warm pt-5">

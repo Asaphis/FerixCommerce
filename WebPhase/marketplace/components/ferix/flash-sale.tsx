@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Zap } from "lucide-react";
-import { ProductCard } from "@/components/ferix/cards";
+import { ProductCard, type ProductCardDisplay } from "@/components/ferix/cards";
 import type { Product } from "@/lib/api";
 
 /**
@@ -21,8 +21,7 @@ import type { Product } from "@/lib/api";
 /** Only a plain colour is ever written into a style attribute. */
 function safeColour(value: unknown, fallback: string): string {
   const text = String(value ?? "").trim();
-  if (/^#[0-9a-fA-F]{3,8}$/.test(text)) return text;
-  if (/^[a-zA-Z]{3,20}$/.test(text)) return text;
+  if (/^#[0-9a-fA-F]{6}$/.test(text)) return text;
   return fallback;
 }
 
@@ -61,6 +60,7 @@ export function FlashSaleBand({
   timerTextColor,
   products,
   savedIds,
+  display,
 }: {
   title: string;
   eyebrow?: string;
@@ -78,6 +78,7 @@ export function FlashSaleBand({
   timerTextColor?: string;
   products: Product[];
   savedIds: string[];
+  display?: ProductCardDisplay;
 }) {
   const [remaining, setRemaining] = useState<ReturnType<typeof splitRemaining>>(null);
 
@@ -144,6 +145,7 @@ export function FlashSaleBand({
               key={product.id}
               product={showDiscountBadges === false ? { ...product, discount: 0 } : product}
               saved={savedIds.includes(product.id)}
+              display={display}
             />
           ))}
         </div>

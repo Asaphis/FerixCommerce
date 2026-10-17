@@ -267,6 +267,11 @@ def _validated_section_terms(section_tags: list[str], raw_terms, options: dict) 
                 if moment is None:
                     raise HTTPException(422, f"Enter a valid date and time for {field.get('label') or key}.")
                 clean[str(key)] = moment.isoformat()
+            elif kind == "color":
+                color = str(raw).strip()
+                if re.fullmatch(r"#[0-9A-Fa-f]{6}", color) is None:
+                    raise HTTPException(422, f"Choose a valid colour for {field.get('label') or key}.")
+                clean[str(key)] = color
             else:
                 clean[str(key)] = str(raw).strip()
         for key, field in schema.items():

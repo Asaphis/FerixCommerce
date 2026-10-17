@@ -27,6 +27,7 @@ be the same list behind two names.
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -698,6 +699,22 @@ def validate_section(section: dict) -> None:
         preset = str(row.get("requirementsPreset") or "").strip().lower()
         if preset and preset not in REQUIREMENT_SETS and preset != REQUIREMENT_PRESET_CUSTOM:
             raise ValueError(f"'{preset}' is not a recommended product-field set.")
+    for setting in SECTION_FIELDS.get(str(row.get("type") or ""), []):
+        if setting.get("kind") != KIND_COLOR:
+            continue
+        key = str(setting.get("key") or "")
+        raw = str(row.get(key) or "").strip()
+        if raw and re.fullmatch(r"#[0-9A-Fa-f]{6}", raw) is None:
+            raise ValueError(f"'{key}' must be a six-digit hexadecimal colour.")
+    for key in ("ctaHref", "secondaryHref"):
+        href = str(row.get(key) or "").strip()
+        if not href:
+            continue
+        if href.startswith(("//", "\\")) or any(ord(char) < 32 for char in href):
+            raise ValueError(f"'{key}' must be a same-site path or an HTTPS URL.")
+        scheme = re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", href)
+        if scheme and re.match(r"^https://[^/\s]+(?:/|$)", href, re.IGNORECASE) is None:
+            raise ValueError(f"'{key}' must use HTTPS for an external destination.")
     for key in ("startsAt", "endsAt"):
         raw = str(row.get(key) or "").strip()
         if raw and moment_of(raw) is None:
@@ -722,9 +739,13 @@ def apply_placement_overrides(product: dict, row) -> dict:
     price_changed = price > 0 and abs(price - base_price) > 1e-9
     compare_at_changed = abs(compare_at - base_compare_at) > 1e-9
     if price_changed or compare_at_changed:
+        data["basePrice"] = base_price
+        data["baseCompareAt"] = base_compare_at or None
+        data["baseDiscount"] = data.get("discount")
         data["price"] = price if price > 0 else base_price
         data["sectionPrice"] = data["price"]
         data["compareAt"] = compare_at if compare_at > price else None
+        data["discount"] = round((compare_at - price) / compare_at * 100) if compare_at > price else None
     config = getattr(row, "config", None) or {}
     label = str(config.get("label") or "").strip()
     if label:
@@ -738,4 +759,6 @@ def apply_placement_overrides(product: dict, row) -> dict:
         data["sectionRemaining"] = quantity
     if getattr(row, "section_id", None):
         data["sectionId"] = row.section_id
+        data["sectionDocumentId"] = getattr(row, "document_id", None)
+        data["sectionPlacementId"] = getattr(row, "id", None)
     return data

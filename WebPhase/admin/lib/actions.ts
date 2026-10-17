@@ -385,9 +385,9 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
     const numericFields = new Set(["across", "rowsPerSet", "interruptAfter", "limit", "adEvery", "height", "duration", "width", "scrim", "columns", "perPage",
       // How an automatic feed decides its products.
       "windowDays", "minimumSales"]);
-    const booleanFields = new Set(["mediaOnly", "seeAll", "swipe", "showAsTile", "showAsText", "showFollow", "showText", "showButtons", "verifiedOnly",
+    const booleanFields = new Set(["mediaOnly", "seeAll", "swipe", "showAsTile", "showAsText", "showFollow", "showText", "showButtons", "verifiedOnly", "dismissible",
       // How a campaign presents itself.
-      "showCountdown", "showDiscountBadges", "showViewAll"]);
+      "showCountdown", "showDiscountBadges", "showViewAll", "showSectionPrice", "showCompareAt", "showLabel", "showRemaining"]);
     const next: Record<string, unknown> = { ...current };
     for (const [field, value] of formData.entries()) {
       if (!field.startsWith("field_") || value instanceof File) continue;

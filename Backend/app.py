@@ -64,6 +64,9 @@ class CartItemIn(BaseModel):
     variant: Optional[str] = None
     qty: int = Field(default=1, ge=1, le=99)
     cartId: Optional[str] = None
+    documentId: Optional[str] = None
+    sectionId: Optional[str] = None
+    expectedPrice: Optional[float] = Field(default=None, ge=0)
 
 
 class CartQtyIn(BaseModel):
@@ -489,18 +492,33 @@ def products(search: Optional[str] = None,
 
 
 @app.get("/catalog/product")
-def product(slug: str):
+def product(slug: str, document_id: Optional[str] = None, section_id: Optional[str] = None):
     with SessionLocal() as db:
         found = find_product(db, slug)
         if not found or not marketplace_product_available(db, found):
             raise HTTPException(404, "That product is not available")
+        detail_product = decorate(db, [found])[0]
+        if document_id or section_id:
+            try:
+                placement = _cart_section_placement(db, found["id"], document_id, section_id)
+            except HTTPException:
+                placement = None
+            if placement:
+                detail_product = apply_placement_overrides(detail_product, placement)
+                document = db.get(ContentDocument, document_id)
+                section = next((row for row in ((document.data or {}).get("sections") or [])
+                                if isinstance(row, dict) and str(row.get("id") or "") == section_id), None) if document else None
+                if section and str(section.get("showSectionPrice", "true")).lower() in {"false", "0", "no"}:
+                    detail_product["price"] = detail_product.get("basePrice", detail_product["price"])
+                    detail_product["compareAt"] = detail_product.get("baseCompareAt")
+                    detail_product["discount"] = detail_product.get("baseDiscount")
         merchant = find_merchant(db, found["merchantId"])
         related = [p for p in product_rows(db)
                    if marketplace_product_available(db, p) and p["id"] != found["id"]
                    and (p.get("merchantId") == found.get("merchantId") or p.get("category") == found.get("category"))][:8]
         reviews = db.scalars(select(Review).where(Review.product_id == found["id"])).all()
         return {
-            "product": public_products(db, decorate(db, [found]))[0],
+            "product": public_products(db, [detail_product])[0],
             "merchant": store_card(db, merchant) if merchant else {},
             "reviews": [public_review_data(review) for review in reviews],
             "related": public_products(db, decorate(db, related)),
@@ -920,6 +938,26 @@ def cart_for(db, user_id, cart_id):
     return _cart_for(db, user_id, cart_id) or Cart(id=cart_id or "cart_empty", lines=[])
 
 
+def _cart_section_placement(db, product_id: str, document_id: Optional[str], section_id: Optional[str]):
+    if bool(document_id) != bool(section_id):
+        raise HTTPException(422, "A section offer needs both its page and section identifiers.")
+    if not document_id or not section_id:
+        return None
+    document = db.get(ContentDocument, document_id)
+    section = next((row for row in ((document.data or {}).get("sections") or [])
+                    if isinstance(row, dict) and str(row.get("id") or "") == section_id), None) if document else None
+    placement = db.scalar(select(SectionPlacement).where(
+        SectionPlacement.product_id == product_id,
+        SectionPlacement.document_id == document_id,
+        SectionPlacement.section_id == section_id,
+    ))
+    if (not document or document.status != "published" or not section
+            or section.get("visible", True) is False or not section_is_live(section)
+            or not is_manual_product_section(section) or not placement or not placement_is_live(placement)):
+        raise HTTPException(409, "That section offer is no longer live. Refresh the page and add the current offer.")
+    return placement
+
+
 @app.get("/cart")
 def get_cart(session: Optional[str] = Query(None), cartId: Optional[str] = Query(None),
              x_session: Optional[str] = Header(None, alias="X-Ferix-Session"),
@@ -938,11 +976,29 @@ def add_cart(p: CartItemIn, session: Optional[str] = Header(None, alias="X-Ferix
         product = find_product(db, p.productId)
         if not product or not marketplace_product_available(db, product):
             raise HTTPException(404, "That product is not available")
-        raw = next((x for x in cart.lines if x["productId"] == p.productId and x.get("variant") == p.variant), None)
+        placement = _cart_section_placement(db, p.productId, p.documentId, p.sectionId)
+        current_price = float(decorate(db, [product])[0]["price"])
+        if placement:
+            document = db.get(ContentDocument, p.documentId)
+            section = next((row for row in ((document.data or {}).get("sections") or [])
+                            if isinstance(row, dict) and str(row.get("id") or "") == p.sectionId), None) if document else None
+            if section and str(section.get("showSectionPrice", "true")).lower() not in {"false", "0", "no"}:
+                current_price = float(placement.price or current_price)
+        if p.expectedPrice is not None and abs(float(p.expectedPrice) - current_price) > 0.005:
+            raise HTTPException(409, "The price changed. Refresh the page and review the current price before adding it.")
+        raw = next((x for x in cart.lines if x["productId"] == p.productId and x.get("variant") == p.variant
+                    and x.get("documentId") == p.documentId and x.get("sectionId") == p.sectionId), None)
+        already = int(raw.get("qty", 0)) if raw else 0
+        if placement and int(placement.quantity or 0) > 0 and already + p.qty > int(placement.quantity):
+            left = max(0, int(placement.quantity) - already)
+            raise HTTPException(409, f"Only {left} more available in this section.")
         if raw:
             raw["qty"] = min(99, raw["qty"] + p.qty)
         else:
-            cart.lines = (cart.lines or []) + [{"productId": p.productId, "variant": p.variant, "qty": p.qty}]
+            line = {"productId": p.productId, "variant": p.variant, "qty": p.qty}
+            if p.documentId and p.sectionId:
+                line.update({"documentId": p.documentId, "sectionId": p.sectionId})
+            cart.lines = (cart.lines or []) + [line]
         db.commit()
         return cart_payload(db, cart)
 
@@ -952,6 +1008,11 @@ def set_cart(p: CartQtyIn, session: Optional[str] = Header(None, alias="X-Ferix-
     with SessionLocal() as db:
         user = require_user(db, session)
         cart = cart_for(db, user.id, p.cartId or x_cart)
+        raw = next((line for line in (cart.lines or []) if line_key(line) == p.key), None)
+        if raw and p.qty > 0 and raw.get("documentId") and raw.get("sectionId"):
+            placement = _cart_section_placement(db, raw["productId"], raw["documentId"], raw["sectionId"])
+            if int(placement.quantity or 0) > 0 and p.qty > int(placement.quantity):
+                raise HTTPException(409, f"Only {int(placement.quantity)} available in this section.")
         cart.lines = [x for x in cart.lines if line_key(x) != p.key or p.qty == 0]
         for line in cart.lines:
             if line_key(line) == p.key:
@@ -1282,6 +1343,8 @@ def quote(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
         ):
             raise HTTPException(409, "A product in your cart is no longer available. Remove it before checkout.")
         payload = cart_payload(db, cart)
+        if any(line.get("sectionUnavailable") for line in payload["lines"]):
+            raise HTTPException(409, "A section offer in your cart has ended or changed. Review the basket before continuing.")
         option = next((o for o in SHIPPING_OPTIONS if o["id"] == p.shippingMethod), SHIPPING_OPTIONS[0])
         cost = 0.0 if payload["subtotal"] >= FREE_SHIPPING_OVER else option["price"]
         payload["shipping"] = cost
@@ -1307,6 +1370,8 @@ def place(p: CheckoutIn, session: Optional[str] = Header(None, alias="X-Ferix-Se
         ):
             raise HTTPException(409, "A product in your cart is no longer available. Remove it before checkout.")
         payload = cart_payload(db, cart)
+        if any(line.get("sectionUnavailable") for line in payload["lines"]):
+            raise HTTPException(409, "A section offer in your cart has ended or changed. Review the basket before continuing.")
         if not payload["lines"]:
             raise HTTPException(409, "Your cart is empty")
         # No payment-provider integration exists yet. Do not create an order,
