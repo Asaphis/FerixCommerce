@@ -10,13 +10,15 @@ export function Panel({
   children,
   className,
   flush,
+  id,
 }: {
   children: ReactNode;
   className?: string;
   flush?: boolean;
+  id?: string;
 }) {
   return (
-    <section className={cn("min-w-0 rounded-[14px] border border-hairline bg-panel shadow-[0_2px_14px_rgba(16,45,67,0.06)]", !flush && "p-3 sm:p-5", className)}>
+    <section id={id} className={cn("min-w-0 rounded-[14px] border border-hairline bg-panel shadow-[0_2px_14px_rgba(16,45,67,0.06)]", !flush && "p-3 sm:p-5", className)}>
       {children}
     </section>
   );

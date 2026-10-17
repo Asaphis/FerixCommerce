@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Boxes, Plus, Search, Store } from "lucide-react";
+import { Boxes, Pencil, Plus, Search, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
 import { assetUrl, listCatalog } from "@/lib/api";
 import { FilterForm, SubmitButton } from "@/components/ops/controls";
-import { inputClass, selectClass } from "@/components/ops/table";
+import { inputClass, selectClass, Row, Td, TdDetail, TdEnd, TdLead, RowActions, RowAction } from "@/components/ops/table";
 import { Empty, Panel, PanelHead, Pill, Readout } from "@/components/ops/bits";
 import { deleteCatalogProductAction } from "@/lib/ops-actions";
 import { money, num, titleCase } from "@/lib/format";
@@ -40,7 +40,9 @@ export default async function CatalogPage({
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mt-1.5 font-display text-[23px] font-semibold text-chalk">Products</h1>
-          
+          <p className="mt-1.5 max-w-[70ch] text-[13px] leading-relaxed text-chalk-dim">
+            Edit a product to update its details, images, stock, or assign it to product sections.
+          </p>
         </div>
         <Link
           href="/catalog/new"
@@ -94,7 +96,7 @@ export default async function CatalogPage({
         <Empty title="No products match" body="Clear the filters, or upload the first Ferixas Official product." />
       ) : (
         <Panel flush className="overflow-hidden">
-          <div className="min-w-0 md:overflow-x-auto">
+          <div className="min-w-0 p-3 md:overflow-x-auto md:p-0">
             <table className="w-full min-w-0 border-collapse text-left md:min-w-[900px]">
               <thead>
                 <tr className="hidden border-b border-hairline md:table-row">
@@ -107,11 +109,8 @@ export default async function CatalogPage({
               </thead>
               <tbody>
                 {data.products.map((product) => (
-                  <tr
-                    key={product.id}
-                    className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-hairline px-4 py-3 last:border-0 hover:bg-panel-2 md:table-row md:px-0 md:py-0"
-                  >
-                    <td className="w-full min-w-0 px-0 py-0 md:w-auto md:px-4 md:py-3">
+                  <Row key={product.id}>
+                    <TdLead className="md:pl-4">
                       <div className="flex items-center gap-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
@@ -131,31 +130,40 @@ export default async function CatalogPage({
                           </p>
                         </div>
                       </div>
-                    </td>
-                    <td className="hidden px-4 py-3 md:table-cell">
+                    </TdLead>
+                    <TdDetail>
                       <span className="inline-flex items-center gap-1.5 text-[12.5px] text-chalk-dim">
                         <Store width={13} height={13} />
                         {product.merchantName}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-chalk">
+                    </TdDetail>
+                    <Td className="font-mono text-[12.5px] tabular-nums text-chalk">
+                      <span className="mr-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim/70 md:hidden">Price</span>
                       {money(product.price)}
                       {product.compareAt ? (
                         <span className="ml-2 text-[11px] text-chalk-dim line-through">{money(product.compareAt)}</span>
                       ) : null}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-[12.5px] tabular-nums text-chalk-dim">{num(product.stock)}</td>
-                    <td className="hidden px-4 py-3 md:table-cell">
+                    </Td>
+                    <Td className="font-mono text-[12.5px] tabular-nums text-chalk-dim">
+                      <span className="mr-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim/70 md:hidden">Stock</span>
+                      {num(product.stock)}
+                    </Td>
+                    <TdDetail>
                       <div className="flex flex-wrap gap-1.5">
                         {product.channels.store ? <Pill tone="mint">store</Pill> : null}
                         {product.channels.marketplace ? <Pill tone="signal">marketplace</Pill> : null}
                         {product.featured ? <Pill tone="violet">featured</Pill> : null}
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TdDetail>
+                    <Td>
+                      <span className="mr-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-chalk-dim/70 md:hidden">Status</span>
                       <Pill tone={STATUS_TONE[product.status] ?? "neutral"}>{product.status}</Pill>
-                    </td>
-                    <td className="px-4 py-3">
+                    </Td>
+                    <TdEnd className="md:pr-4">
+                      <RowActions>
+                        <RowAction href={`/catalog/${encodeURIComponent(product.slug)}#placements`} tone="primary">
+                          <Pencil width={13} height={13} /> Edit & assign sections
+                        </RowAction>
                       <form action={deleteCatalogProductAction}>
                         <input type="hidden" name="id" value={product.id} />
                         <input type="hidden" name="slug" value={product.slug} />
@@ -163,8 +171,9 @@ export default async function CatalogPage({
                           Delete
                         </SubmitButton>
                       </form>
-                    </td>
-                  </tr>
+                      </RowActions>
+                    </TdEnd>
+                  </Row>
                 ))}
               </tbody>
             </table>

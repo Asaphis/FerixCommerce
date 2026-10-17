@@ -148,7 +148,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
           </div>
         </Panel>
 
-        <Panel className="grid gap-4">
+        <Panel id="placements" className="grid gap-4">
           <PanelHead title="Media, shipping and placement" />
           <MediaUploadField
             key="product-image"
