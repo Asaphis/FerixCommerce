@@ -1,4 +1,5 @@
 import { inputClass } from "@/components/ops/table";
+import { LocalDateTimeInput } from "@/components/ops/local-datetime-input";
 import type { SectionOption } from "@/lib/api";
 
 /**
@@ -27,18 +28,25 @@ export function PlacementTerms({ section, slot, values = {} }: {
             {field.label}
             {field.required ? <span className="text-signal"> *</span> : null}
           </span>
-          <input
-            name={`config__${slot}__${field.key}`}
-            type={field.kind === "number" ? "number" : field.kind === "datetime" ? "datetime-local" : field.kind === "color" ? "color" : "text"}
-            step={field.kind === "number" ? "0.01" : undefined}
-            min={field.kind === "number" ? 0 : undefined}
-            required={Boolean(field.required)}
-            defaultValue={field.kind === "datetime"
-              ? String(values[field.key] ?? "").replace(/Z$/, "").slice(0, 16)
-              : values[field.key] == null ? "" : String(values[field.key])}
-            placeholder={field.placeholder ?? ""}
-            className={inputClass}
-          />
+          {field.kind === "datetime" ? (
+            <LocalDateTimeInput
+              name={`config__${slot}__${field.key}`}
+              value={values[field.key] == null ? "" : String(values[field.key])}
+              required={Boolean(field.required)}
+              className={inputClass}
+            />
+          ) : (
+            <input
+              name={`config__${slot}__${field.key}`}
+              type={field.kind === "number" ? "number" : field.kind === "color" ? "color" : "text"}
+              step={field.kind === "number" ? "0.01" : undefined}
+              min={field.kind === "number" ? 0 : undefined}
+              required={Boolean(field.required)}
+              defaultValue={values[field.key] == null ? "" : String(values[field.key])}
+              placeholder={field.placeholder ?? ""}
+              className={inputClass}
+            />
+          )}
         </label>
       ))}
     </div>

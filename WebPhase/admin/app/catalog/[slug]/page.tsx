@@ -192,11 +192,13 @@ export default async function ProductEditorPage({ params, searchParams }: { para
                         />
                         <span className="min-w-0">
                           <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName || "Unnamed section"}</span>
+                          <span className="mt-1 inline-flex"><Pill tone={section.status === "draft" ? "amber" : "mint"}>{section.status === "draft" ? "Draft — not public" : "Published"}</Pill></span>
                           <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
                             {section.documentTitle || "Unknown page"} · Assigned products · {section.sectionType || "unknown type"}{section.placements ? ` · ${section.placements} already` : ""}
                           </span>
                         </span>
                       </label>
+                      {section.status === "draft" ? <p className="mt-2 text-[11px] leading-relaxed text-amber-700">This product is staged for a draft page. Publish the CMS page before expecting it on the public storefront.</p> : null}
                       {(() => {
                         const current = placements.find((row) => row.documentId === section.documentId && row.sectionId === section.sectionId);
                         const values = {

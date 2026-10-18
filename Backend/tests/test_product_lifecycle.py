@@ -92,6 +92,19 @@ class ProductLifecycleTest(unittest.TestCase):
         self.assertEqual(saved["seoTitle"], "Updated SEO")
         self.assertIsNone(saved["shipping_amount"])
 
+    def test_catalogue_section_choices_mark_unpublished_page_as_draft(self):
+        with SessionLocal() as db:
+            document = db.get(ContentDocument, "doc_marketplace_home")
+            self.assertIsNotNone(document)
+            document.status = "draft"
+            db.commit()
+
+        response = self.client.get("/admin/product/sections", headers={"X-Ferix-Session": self.admin})
+        self.assertEqual(response.status_code, 200, response.text)
+        home_sections = [row for row in response.json()["available"] if row["documentId"] == "doc_marketplace_home"]
+        self.assertTrue(home_sections)
+        self.assertTrue(all(row["status"] == "draft" for row in home_sections))
+
     def test_admin_team_role_updates_preserve_permissions_and_block_self_lockout(self):
         created = self.client.post("/admin/staff", headers={"X-Ferix-Session": self.admin}, json={
             "name": "Role Contract", "email": "role-contract@example.test",

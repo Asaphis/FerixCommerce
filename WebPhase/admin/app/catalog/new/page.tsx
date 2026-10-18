@@ -6,7 +6,7 @@ import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { PlacementTerms } from "@/components/ops/placement-terms";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { inputClass, selectClass, textareaClass } from "@/components/ops/table";
-import { Eyebrow, Panel, PanelHead } from "@/components/ops/bits";
+import { Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { createCatalogProductAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
 
@@ -151,11 +151,13 @@ export default async function NewProductPage({ searchParams }: { searchParams: P
                         />
                         <span className="min-w-0">
                           <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName || "Unnamed section"}</span>
+                          <span className="mt-1 inline-flex"><Pill tone={section.status === "draft" ? "amber" : "mint"}>{section.status === "draft" ? "Draft — not public" : "Published"}</Pill></span>
                           <span className="mt-0.5 block font-mono text-[10.5px] uppercase tracking-[0.12em] text-chalk-dim">
                             {section.documentTitle || "Unknown page"} · Assigned products · {section.sectionType || "unknown type"}{section.placements ? ` · ${section.placements} already` : ""}
                           </span>
                         </span>
                       </label>
+                      {section.status === "draft" ? <p className="mt-2 text-[11px] leading-relaxed text-amber-700">This product is staged for a draft page. Publish the CMS page before expecting it on the public storefront.</p> : null}
                       <PlacementTerms section={section} slot={slot} />
                     </div>
                   );

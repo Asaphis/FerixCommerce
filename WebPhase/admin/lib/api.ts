@@ -418,6 +418,8 @@ export const deleteMerchant = (session: string | null, id: string) =>
 export type SectionOption = {
   documentId: string; documentTitle: string; sectionId: string;
   sectionName?: string; sectionType?: string; source?: string; placements?: number;
+  /** Draft destinations accept staged products but are not visible on the public site yet. */
+  status?: "draft" | "published";
   /** Everything here is filled by hand: an automatic feed is never listed. */
   selectionMode?: string;
   presentation?: string;

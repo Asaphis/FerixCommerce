@@ -11,6 +11,7 @@ import { Field, SubmitButton } from "@/components/ops/controls";
 import { deleteCmsSectionAction, saveCmsSectionAction } from "@/lib/actions";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { CmsSectionPreview } from "@/components/ops/cms-section-preview";
+import { LocalDateTimeInput } from "@/components/ops/local-datetime-input";
 
 /** The fields each section type can be managed by, in the order they read. */
 type Choice = { value: string; label: string };
@@ -504,9 +505,7 @@ export default async function CmsSectionEditor({
                       </Field>
                     ) : field.kind === "datetime" ? (
                       <Field key={field.key} title={field.title}>
-                        <input name={`field_${field.key}`} type="datetime-local"
-                          defaultValue={initialValue(field, section).replace(/Z$/, "").slice(0, 16)}
-                          className={inputClass} />
+                        <LocalDateTimeInput name={`field_${field.key}`} value={initialValue(field, section)} className={inputClass} />
                         {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
                       </Field>
                     ) : (

@@ -3011,7 +3011,7 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                     "productConfigSchema": product_config_schema(section),
                     "startsAt": section.get("startsAt"),
                     "endsAt": section.get("endsAt"),
-                    "status": "draft" if draft is not None else "published",
+                    "status": "draft" if draft is not None or document.status != "published" else "published",
                     "placements": len(used),
                 })
         return {"placements": placements, "available": available}

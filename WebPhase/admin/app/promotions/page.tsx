@@ -6,6 +6,7 @@ import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { deletePromotionAction, savePromotionAction } from "@/lib/ops-actions";
 import { money, num } from "@/lib/format";
+import { LocalDateTimeInput } from "@/components/ops/local-datetime-input";
 
 const STATUS_TONE: Record<string, "mint" | "amber" | "neutral"> = {
   live: "mint",
@@ -118,10 +119,10 @@ export default async function PromotionsPage() {
                       </select>
                     </Field>
                     <Field title="Starts">
-                      <input name="startsAt" type="datetime-local" defaultValue={sale.startsAt.slice(0, 16)} className={inputClass} />
+                      <LocalDateTimeInput name="startsAt" value={sale.startsAt} className={inputClass} />
                     </Field>
                     <Field title="Ends">
-                      <input name="endsAt" type="datetime-local" defaultValue={sale.endsAt.slice(0, 16)} className={inputClass} />
+                      <LocalDateTimeInput name="endsAt" value={sale.endsAt} className={inputClass} />
                     </Field>
                     <Field title="Banner URL">
                       <input name="bannerUrl" defaultValue={sale.bannerUrl} className={inputClass} />
@@ -189,10 +190,10 @@ export default async function PromotionsPage() {
               </select>
             </Field>
             <Field title="Starts">
-              <input name="startsAt" type="datetime-local" className={inputClass} />
+              <LocalDateTimeInput name="startsAt" className={inputClass} />
             </Field>
             <Field title="Ends">
-              <input name="endsAt" type="datetime-local" className={inputClass} />
+              <LocalDateTimeInput name="endsAt" className={inputClass} />
             </Field>
             <Field title="Banner URL">
               <input name="bannerUrl" placeholder="https://" className={inputClass} />

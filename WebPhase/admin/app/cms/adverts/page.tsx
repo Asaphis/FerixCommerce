@@ -4,6 +4,7 @@ import { requireAdmin, explain } from "@/lib/data";
 import { listAdverts, type AdminAdvert } from "@/lib/api";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
+import { LocalDateTimeInput } from "@/components/ops/local-datetime-input";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
@@ -11,11 +12,11 @@ import { deleteAdvertAction, saveAdvertAction } from "@/lib/actions";
 
 /** An hour ago, so a new advertisement starts immediately rather than by default. */
 function nowForInput() {
-  return new Date(Date.now() - 60 * 60 * 1000).toISOString().slice(0, 16);
+  return new Date(Date.now() - 60 * 60 * 1000).toISOString();
 }
 
 function inNinetyDays() {
-  return new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  return new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
 }
 
 function shortDate(value?: string) {
@@ -169,10 +170,10 @@ export default async function AdvertsPage({ searchParams }: { searchParams: Prom
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field title="Starts">
-                <input name="startsAt" type="datetime-local" defaultValue={(active.startsAt ?? "").slice(0, 16)} key={`st-${active.id}`} className={inputClass} />
+                <LocalDateTimeInput name="startsAt" value={active.startsAt} key={`st-${active.id}`} className={inputClass} />
               </Field>
               <Field title="Ends">
-                <input name="endsAt" type="datetime-local" defaultValue={(active.endsAt ?? "").slice(0, 16)} key={`en-${active.id}`} className={inputClass} />
+                <LocalDateTimeInput name="endsAt" value={active.endsAt} key={`en-${active.id}`} className={inputClass} />
               </Field>
             </div>
             <label className="flex items-center gap-2 text-[12.5px] text-chalk">
