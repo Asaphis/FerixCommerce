@@ -686,6 +686,32 @@ def home():
                         section, decorated, public_by_id, paid_units, flash_ids, units_by_window,
                     )
 
+            # For every manual section with no placements, record exactly why.
+            # This is what the admin shows in the section editor as "why is this
+            # section empty?" — the same reason reaches the CMS UI over the API.
+            manual_diagnostics: dict[str, dict] = {}
+            for section in visible_sections.values():
+                if selection_mode_of(section) != "manual":
+                    continue
+                sid = section.get("id")
+                if sid in placement_products and placement_products[sid]:
+                    continue
+                tag_key = f"{doc.id}__{sid}"
+                tagged = [p for p in items if tag_key in (p.get("section_tags") or [])]
+                approved_tagged = [p for p in tagged if p.get("status") == "approved"]
+                if not tagged:
+                    reason = "no products are tagged for this section in the product form"
+                elif not approved_tagged:
+                    reason = "products are tagged but none have been approved yet"
+                else:
+                    reason = "products are approved but no placement was created — re-save the product"
+                manual_diagnostics[sid] = {
+                    "assigned": len(placement_products.get(sid, [])),
+                    "tagged": len(tagged),
+                    "approved": len(approved_tagged),
+                    "reason": reason,
+                }
+
         live_banners = [b for b in banner_rows(db) if b.get("active", True)]
         flash_items = []
         if sale:
@@ -696,6 +722,7 @@ def home():
             "banners": sorted(live_banners, key=lambda b: b.get("position", 0)),
             "content": content,
             "placements": placement_products,
+            "manualDiagnostics": manual_diagnostics,
             "categories": sorted([{**c, "count": sum(p.get("category") == c.get("slug") for p in items)}
                                   for c in cats if c.get("visible", True)], key=lambda c: c.get("position", 0)),
             "collections": [{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in items),

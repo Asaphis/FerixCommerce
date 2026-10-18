@@ -1424,9 +1424,17 @@ PUBLIC_PRODUCT_FIELDS = (
 )
 
 
-def public_product_fields(product: dict) -> dict:
-    """Return only shopper-facing listing fields; never serialize seller/admin internals."""
+def public_product_fields(product: dict, valid_section_tags: Optional[set] = None) -> dict:
+    """Return only shopper-facing listing fields; never serialize seller/admin internals.
+
+    When ``valid_section_tags`` is provided, any section_tags on the product that
+    do not appear in that set are dropped. That prunes stale tags left behind by
+    a section that was renamed, replaced, or removed from the CMS.
+    """
     public = {key: product[key] for key in PUBLIC_PRODUCT_FIELDS if key in product}
+    if valid_section_tags is not None:
+        raw_tags = product.get("section_tags") or []
+        public["section_tags"] = [t for t in raw_tags if t in valid_section_tags]
     safe_variants = []
     for variant in product.get("variants") or []:
         if not isinstance(variant, dict):
@@ -1449,10 +1457,28 @@ def public_product_fields(product: dict) -> dict:
     return public
 
 
+def valid_section_tag_set(db: Session) -> set:
+    """Every ``<document_id>__<section_id>`` that currently exists in the CMS.
+
+    Used to prune stale tags from products before they reach a shopper.
+    """
+    tags: set = set()
+    for doc in db.scalars(select(ContentDocument)).all():
+        for section in (doc.data or {}).get("sections") or []:
+            if isinstance(section, dict) and section.get("id"):
+                tags.add(f"{doc.id}__{section['id']}")
+    return tags
+
+
 def public_products(db: Session, items: list[dict]) -> list[dict]:
     """Serialize marketplace products with ratings calculated from persisted reviews only."""
     if not items:
         return []
+    # Compute the set of section tags that currently exist, once, so every
+    # product in this batch prunes the same way. A section that has been
+    # renamed or replaced leaves a stale tag on the product; pruning here
+    # prevents it reaching the shopper.
+    valid_tags = valid_section_tag_set(db)
     product_ids = list({str(item.get("id") or "") for item in items if item.get("id")})
     summaries: dict[str, dict] = {
         product_id: {"ratings": [], "breakdown": {str(star): 0 for star in range(1, 6)}}
@@ -1473,7 +1499,7 @@ def public_products(db: Session, items: list[dict]) -> list[dict]:
 
     output = []
     for item in items:
-        public = public_product_fields(item)
+        public = public_product_fields(item, valid_tags)
         summary = summaries.get(str(item.get("id") or ""), {"ratings": [], "breakdown": {}})
         ratings = summary["ratings"]
         public.update({
