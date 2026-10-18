@@ -33,7 +33,7 @@ from core import (
 from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FAMILY_PAGE_KINDS, FLASH_SALE_DEFAULTS,
                           LEGACY_SOURCES, PALETTE, PRESENTATIONS, PRODUCT_CONFIG_PRESETS,
                           SELECTION_MODES, family_of, normalize_section, palette_for,
-                          presentation_of, product_config_schema, validate_section)
+                          is_safe_css_color, presentation_of, product_config_schema, validate_section)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -1739,6 +1739,9 @@ def cms_banner(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
         banner_id = payload.id or new_id("bnr")
         existing = next((b for b in rows_of(db, "banner") if b.get("id") == banner_id), {})
         media = payload.mediaUrl or payload.image or payload.videoUrl or existing.get("mediaUrl") or ""
+        accent = payload.accent if payload.accent is not None else existing.get("accent", "#c8ff3d")
+        if accent and not is_safe_css_color(accent):
+            raise HTTPException(422, "Choose a valid accent colour code, such as #C8FF3D.")
         row = {
             **existing, "id": banner_id,
             "kind": payload.kind or existing.get("kind", "image"),
@@ -1752,7 +1755,7 @@ def cms_banner(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
             "mediaUrl": media, "image": media, "imageUrl": media,
             "videoUrl": payload.videoUrl if payload.videoUrl is not None else (media if (payload.kind == "video") else existing.get("videoUrl")),
             "showText": payload.showText if payload.showText is not None else existing.get("showText", True),
-            "accent": payload.accent if payload.accent is not None else existing.get("accent", "#c8ff3d"),
+            "accent": accent,
             "audience": payload.audience if payload.audience is not None else existing.get("audience", "everyone"),
             "active": payload.active if payload.active is not None else existing.get("active", True),
             "position": payload.order if payload.order is not None else existing.get("position", 99),
@@ -3144,6 +3147,21 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
             db.delete(row)
         for document_id, section_id, section, item in requested:
             old = old_rows.get((document_id, section_id))
+            raw_config = item.get("config") if isinstance(item.get("config"), dict) else {}
+            config_schema = {
+                str(field.get("key")): field
+                for field in product_config_schema(section)
+                if isinstance(field, dict) and field.get("key")
+            }
+            placement_config: dict = {}
+            for key, value in raw_config.items():
+                field = config_schema.get(str(key))
+                if not field:
+                    continue
+                if field.get("kind") == "color" and value not in (None, ""):
+                    if not is_safe_css_color(value, allow_gradient=bool(field.get("allowGradient"))):
+                        raise HTTPException(422, f"Choose a valid colour for {field.get('label') or key}.")
+                placement_config[str(key)] = value
             db.add(SectionPlacement(
                 id=new_id("plc"), product_id=product["id"], product_slug=product["slug"],
                 document_id=document_id, section_id=section_id, section_type=section.get("type", ""),
@@ -3156,7 +3174,7 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
                 # terms from the same product in a plain row.
                 starts_at=parse(item["startsAt"], None) if "startsAt" in item else (old.starts_at if old else None),
                 ends_at=parse(item["endsAt"], None) if "endsAt" in item else (old.ends_at if old else None),
-                config=(item.get("config") if isinstance(item.get("config"), dict) else {}) if "config" in item else (old.config if old else {}),
+                config=placement_config if "config" in item else (old.config if old else {}),
                 active=bool(item.get("active")) if "active" in item else (old.active if old else True),
             ))
         audit(db, "admin", staff.email, "product.sections.replace", product["slug"], str(len(requested)))

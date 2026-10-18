@@ -9,6 +9,7 @@ import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { deleteBannerAction, saveBannerAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
+import { ColorInput } from "@/components/shared/color-input";
 
 export default async function BannersPage() {
   const { session } = await requireAdmin();
@@ -95,7 +96,7 @@ export default async function BannersPage() {
                       <input name="headline" defaultValue={banner.headline} className={inputClass} />
                     </Field>
                     <Field title="Accent colour">
-                      <input name="accent" defaultValue={banner.accent} className={inputClass} />
+                      <ColorInput name="accent" value={banner.accent} className={inputClass} />
                     </Field>
                     <Field title="Action label">
                       <input name="ctaLabel" defaultValue={banner.ctaLabel} className={inputClass} />
@@ -179,7 +180,7 @@ export default async function BannersPage() {
               <input name="headline" placeholder="Up to 40% off home audio" className={inputClass} />
             </Field>
             <Field title="Accent colour">
-              <input name="accent" defaultValue="#c8ff3d" className={inputClass} />
+              <ColorInput name="accent" value="#c8ff3d" className={inputClass} />
             </Field>
             <Field title="Action label">
               <input name="ctaLabel" defaultValue="Shop now" className={inputClass} />

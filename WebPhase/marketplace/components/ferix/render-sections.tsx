@@ -12,6 +12,7 @@ import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { TileSwiper } from "@/components/ferix/tile-swiper";
 import { assetUrl } from "@/lib/api";
 import type { Advert, Banner, CatalogueBrand, Category, Collection, Product } from "@/lib/api";
+import { isSafeBackground, safeBackgroundStyle, safeColor } from "@/components/shared/colors";
 
 /**
  * One section shape, as it is stored in a CMS document. Fields beyond the
@@ -58,8 +59,12 @@ export type Section = {
 };
 
 function safeSectionColor(value: unknown): string | undefined {
-  const color = String(value ?? "").trim();
-  return /^#[0-9a-f]{6}$/i.test(color) ? color : undefined;
+  return safeColor(value);
+}
+
+function safeSectionBackground(value: unknown): string | undefined {
+  const background = String(value ?? "").trim();
+  return isSafeBackground(background) ? background : undefined;
 }
 
 function scrimPercent(value: unknown, fallback = 55): number {
@@ -309,6 +314,8 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
             key={section.id ?? index}
             message={message}
             accentColor={safeSectionColor(section.accentColor)}
+            backgroundColor={safeSectionBackground(section.backgroundColor)}
+            textColor={safeSectionColor(section.textColor)}
             icon={String(section.icon ?? "")}
             ctaLabel={String(section.ctaLabel ?? "")}
             ctaHref={safeSectionHref(section.ctaHref, "/browse")}
@@ -329,7 +336,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         const isGrouped = arrangement === "groups";
         const seeAllDepartments = String((section as { seeAll?: string }).seeAll) !== "false";
         return (
-          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-1 pt-5 sm:px-6 sm:pt-7 lg:pt-8" style={{ backgroundColor: safeSectionColor(section.backgroundColor) }}>
+          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-1 pt-5 sm:px-6 sm:pt-7 lg:pt-8" style={safeBackgroundStyle(safeSectionBackground(section.backgroundColor))}>
             <SectionHead
               title={section.title ?? section.name ?? "Shop by department"}
               titleColor={safeSectionColor(section.textColor)}
@@ -396,7 +403,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         const shown = limit ? brands.slice(0, limit) : brands;
         const brandSeeAll = String(section.seeAll) !== "false";
         return (
-          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9" style={{ backgroundColor: safeSectionColor(section.backgroundColor) }}>
+          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9" style={safeBackgroundStyle(safeSectionBackground(section.backgroundColor))}>
             <SectionHead
               title={section.title ?? section.name ?? "Shop by brand"}
               titleColor={safeSectionColor(section.textColor)}
@@ -445,7 +452,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         const shown = limit ? products.slice(0, limit) : products;
         const cardDisplay = {
           accentColor: safeSectionColor(section.accentColor),
-          backgroundColor: safeSectionColor(section.backgroundColor),
+          backgroundColor: safeSectionBackground(section.backgroundColor),
           textColor: safeSectionColor(section.textColor),
           showSectionPrice: isSectionOn(section.showSectionPrice, true),
           showCompareAt: isSectionOn(section.showCompareAt, true),
@@ -486,7 +493,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         }
         const seeAll = String(section.seeAll) !== "false";
         return (
-          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9" style={{ backgroundColor: safeSectionColor(section.backgroundColor) }}>
+          <section key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9" style={safeBackgroundStyle(safeSectionBackground(section.backgroundColor))}>
               <SectionHead
               title={section.title ?? section.name ?? "Featured products"}
               titleColor={safeSectionColor(section.textColor)}
@@ -539,7 +546,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         if (!home.stores.length) return null;
         const shown = limit ? home.stores.slice(0, limit) : home.stores;
         return (
-          <section key={section.id ?? index} className="border-y border-line-warm bg-white" style={{ backgroundColor: safeSectionColor(section.backgroundColor) }}>
+          <section key={section.id ?? index} className="border-y border-line-warm bg-white" style={safeBackgroundStyle(safeSectionBackground(section.backgroundColor))}>
             <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
               <SectionHead
                 title={section.title ?? "Meet the stores"}
@@ -566,7 +573,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         const closing = String(section.message ?? section.title ?? "").trim();
         if (!closing) return null;
         return (
-          <div key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-3 pt-6 text-center text-[11px] text-ink-soft sm:px-6" style={{ backgroundColor: safeSectionColor(section.backgroundColor), color: safeSectionColor(section.textColor) }}>
+          <div key={section.id ?? index} className="mx-auto max-w-[1440px] px-4 pb-3 pt-6 text-center text-[11px] text-ink-soft sm:px-6" style={{ ...safeBackgroundStyle(safeSectionBackground(section.backgroundColor)), color: safeSectionColor(section.textColor) }}>
             {closing}
             {String(section.ctaLabel ?? "").trim() ? (
               <Link href={safeSectionHref(section.ctaHref, "/browse")} className="ml-2 font-semibold underline underline-offset-2" style={{ color: safeSectionColor(section.accentColor) }}>

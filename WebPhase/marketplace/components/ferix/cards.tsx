@@ -8,6 +8,7 @@ import { removeLineAction, saveForLaterAction, setQtyAction } from "@/lib/action
 import { compact, dateShort, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PlacementCountdown } from "@/components/ferix/placement-countdown";
+import { safeBackgroundStyle, safeColor } from "@/components/shared/colors";
 
 export type ProductCardDisplay = {
   accentColor?: string;
@@ -39,9 +40,7 @@ export function ProductCard({
   // only, so the same product reads differently in two places - or not at all.
   const sectionLabel = (product as { sectionLabel?: string }).sectionLabel;
   const sectionBadgeColor = (product as { sectionBadgeColor?: string }).sectionBadgeColor;
-  const safeBadgeColor = sectionBadgeColor && /^#[0-9a-f]{6}$/i.test(sectionBadgeColor)
-    ? sectionBadgeColor
-    : display?.accentColor && /^#[0-9a-f]{6}$/i.test(display.accentColor) ? display.accentColor : "#e4572e";
+  const safeBadgeColor = safeColor(sectionBadgeColor, safeColor(display?.accentColor, "#e4572e"));
   const sectionRemaining = Number((product as { sectionRemaining?: number }).sectionRemaining) || 0;
   const showSectionPrice = display?.showSectionPrice !== false;
   const showCompareAt = display?.showCompareAt !== false;
@@ -62,15 +61,12 @@ export function ProductCard({
         "group relative flex min-w-0 flex-col overflow-hidden rounded-[2px] rounded-tr-[14px] border border-line-warm bg-white shadow-[0_2px_10px_rgba(16,45,67,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-ember/40 hover:shadow-[0_8px_24px_rgba(16,45,67,0.12)]",
         className,
       )}
-      style={{
-        backgroundColor: display?.backgroundColor && /^#[0-9a-f]{6}$/i.test(display.backgroundColor) ? display.backgroundColor : undefined,
-        color: display?.textColor && /^#[0-9a-f]{6}$/i.test(display.textColor) ? display.textColor : undefined,
-      }}
+      style={{ ...safeBackgroundStyle(display?.backgroundColor), color: safeColor(display?.textColor) }}
     >
       <Link href={href} className="relative block">
         <Plate
           seed={product.slug}
-          accent={display?.accentColor && /^#[0-9a-f]{6}$/i.test(display.accentColor) ? display.accentColor : "#e4572e"}
+          accent={safeColor(display?.accentColor, "#e4572e")}
           src={assetUrl(product.images?.[0])}
           alt={product.title}
             className="aspect-[1/1] w-full rounded-none sm:aspect-[4/3]"
@@ -100,7 +96,7 @@ export function ProductCard({
         <Link href={`/store/${product.merchantSlug}`} className="block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:text-ember sm:text-[10px] sm:tracking-[0.14em]">
           {product.merchantName}
         </Link>
-        <Link href={href} style={display?.textColor && /^#[0-9a-f]{6}$/i.test(display.textColor) ? { color: display.textColor } : undefined} className="mt-1 line-clamp-2 min-h-[2.25em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">
+        <Link href={href} style={{ color: safeColor(display?.textColor) }} className="mt-1 line-clamp-2 min-h-[2.25em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">
           {product.title}
         </Link>
         <div className="mt-2 hidden items-center gap-2 sm:flex">

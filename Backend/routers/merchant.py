@@ -230,7 +230,7 @@ def _product_options(db) -> dict:
 
 def _validated_section_terms(section_tags: list[str], raw_terms, options: dict) -> dict[str, dict]:
     """Keep only schema-approved placement fields for the seller's selected sections."""
-    from cms_sections import moment_of
+    from cms_sections import is_safe_css_color, moment_of
 
     by_value = {str(section.get("value") or ""): section for section in options.get("sections", [])}
     supplied = raw_terms if isinstance(raw_terms, dict) else {}
@@ -269,7 +269,7 @@ def _validated_section_terms(section_tags: list[str], raw_terms, options: dict) 
                 clean[str(key)] = moment.isoformat()
             elif kind == "color":
                 color = str(raw).strip()
-                if re.fullmatch(r"#[0-9A-Fa-f]{6}", color) is None:
+                if not is_safe_css_color(color, allow_gradient=bool(field.get("allowGradient"))):
                     raise HTTPException(422, f"Choose a valid colour for {field.get('label') or key}.")
                 clean[str(key)] = color
             else:

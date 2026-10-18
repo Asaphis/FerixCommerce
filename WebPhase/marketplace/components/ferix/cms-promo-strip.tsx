@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ShieldCheck, Tag, Truck, X } from "lucide-react";
+import { safeBackgroundStyle, safeColor } from "@/components/shared/colors";
 
 const ICONS = { truck: Truck, shield: ShieldCheck, tag: Tag } as const;
 
 export function CmsPromoStrip({
   message,
   accentColor,
+  backgroundColor,
+  textColor,
   icon,
   ctaLabel,
   ctaHref,
@@ -16,6 +19,8 @@ export function CmsPromoStrip({
 }: {
   message: string;
   accentColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
   icon?: string;
   ctaLabel?: string;
   ctaHref?: string;
@@ -32,7 +37,7 @@ export function CmsPromoStrip({
     </span>
   );
   return (
-    <div className="border-y border-line-warm bg-white px-4 py-2.5 text-center text-[11px] font-semibold text-ink-soft" style={accentColor ? { borderColor: accentColor } : undefined}>
+    <div className="border-y border-line-warm bg-white px-4 py-2.5 text-center text-[11px] font-semibold text-ink-soft" style={{ ...safeBackgroundStyle(backgroundColor), borderColor: safeColor(accentColor), color: safeColor(textColor) }}>
       <div className="mx-auto flex max-w-[1440px] items-center justify-center gap-3">
         {ctaLabel && ctaHref ? <Link href={ctaHref} className="hover:underline" style={accentColor ? { color: accentColor } : undefined}>{content}</Link> : content}
         {dismissible ? (

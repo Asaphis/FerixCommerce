@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 /**
- * Copy the canonical shared primitives into each app.
+ * Copy canonical shared primitives into each app.
  *
- * The three apps are separate Next.js projects with separate node_modules, so a
- * workspace package would need a dependency install per app. Copying a single
- * canonical file keeps one source of truth without that cost, and this script
- * is what makes the copies trustworthy: run it after editing `shared/ui.tsx`.
+ * The apps are independent Next.js projects; this keeps common UI and color
+ * safety logic in one source without a workspace install in every app.
  *
  *   node sync-shared.mjs          # write the copies
  *   node sync-shared.mjs --check  # fail if a copy has drifted
@@ -16,35 +14,39 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const source = join(here, "shared", "ui.tsx");
 const apps = ["marketplace", "merchant", "admin"];
 const check = process.argv.includes("--check");
-
-const canonical = readFileSync(source, "utf8");
-const banner = "// GENERATED FILE — do not edit. Source: WebPhase/shared/ui.tsx (run `node sync-shared.mjs`).\n";
-const body = banner + canonical;
-
+const files = [
+  { source: "shared/ui.tsx", target: "ui.tsx" },
+  { source: "shared/colors.ts", target: "colors.ts" },
+  { source: "shared/color-input.tsx", target: "color-input.tsx" },
+];
 let drifted = 0;
-for (const app of apps) {
-  const target = join(here, app, "components", "shared", "ui.tsx");
-  mkdirSync(dirname(target), { recursive: true });
 
-  if (check) {
-    const current = existsSync(target) ? readFileSync(target, "utf8") : "";
-    if (current !== body) {
-      console.error(`drifted: ${app}/components/shared/ui.tsx`);
-      drifted++;
+for (const file of files) {
+  const sourcePath = join(here, file.source);
+  const canonical = readFileSync(sourcePath, "utf8");
+  const banner = `// GENERATED FILE — do not edit. Source: WebPhase/${file.source} (run \`node sync-shared.mjs\`).\n`;
+  const body = banner + canonical;
+  for (const app of apps) {
+    const target = join(here, app, "components", "shared", file.target);
+    mkdirSync(dirname(target), { recursive: true });
+    if (check) {
+      const current = existsSync(target) ? readFileSync(target, "utf8") : "";
+      if (current !== body) {
+        console.error(`drifted: ${app}/components/shared/${file.target}`);
+        drifted++;
+      }
+    } else {
+      writeFileSync(target, body);
+      console.log(`synced: ${app}/components/shared/${file.target}`);
     }
-    continue;
   }
-
-  writeFileSync(target, body);
-  console.log(`synced: ${app}/components/shared/ui.tsx`);
 }
 
 if (check) {
   if (drifted) {
-    console.error(`\n${drifted} app(s) out of sync — run: node sync-shared.mjs`);
+    console.error(`\n${drifted} shared file(s) out of sync — run: node sync-shared.mjs`);
     process.exit(1);
   }
   console.log("all apps in sync");

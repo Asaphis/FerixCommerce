@@ -1,5 +1,6 @@
 import { inputClass } from "@/components/ops/table";
 import { LocalDateTimeInput } from "@/components/ops/local-datetime-input";
+import { ColorInput } from "@/components/shared/color-input";
 import type { SectionOption } from "@/lib/api";
 
 /**
@@ -35,10 +36,17 @@ export function PlacementTerms({ section, slot, values = {} }: {
               required={Boolean(field.required)}
               className={inputClass}
             />
+          ) : field.kind === "color" ? (
+            <ColorInput
+              name={`config__${slot}__${field.key}`}
+              value={values[field.key] == null ? "" : String(values[field.key])}
+              required={Boolean(field.required)}
+              className={inputClass}
+            />
           ) : (
             <input
               name={`config__${slot}__${field.key}`}
-              type={field.kind === "number" ? "number" : field.kind === "color" ? "color" : "text"}
+              type={field.kind === "number" ? "number" : "text"}
               step={field.kind === "number" ? "0.01" : undefined}
               min={field.kind === "number" ? 0 : undefined}
               required={Boolean(field.required)}

@@ -5,6 +5,7 @@ import { Clock3, ExternalLink, Image as ImageIcon, ShieldCheck, ShoppingBag, Tag
 import { Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { assetUrl, type CmsSection, type CmsSectionPreviewProduct } from "@/lib/api";
 import { money } from "@/lib/format";
+import { isSafeBackground, safeBackgroundStyle, safeColor } from "@/components/shared/colors";
 
 type PreviewBanner = {
   id: string;
@@ -43,7 +44,12 @@ function text(value: unknown, fallback = "") {
 
 function color(value: unknown, fallback: string) {
   const raw = text(value).trim();
-  return /^#[0-9a-f]{6}$/i.test(raw) ? raw : fallback;
+  return safeColor(raw, fallback) ?? fallback;
+}
+
+function backgroundValue(value: unknown, fallback: string) {
+  const raw = text(value).trim();
+  return isSafeBackground(raw) ? raw : fallback;
 }
 
 function isOn(value: unknown, fallback = false) {
@@ -113,7 +119,7 @@ function ProductCardPreview({ product, section, now }: { product: CmsSectionPrev
     ? Number(showSectionPrice ? product.compareAt ?? 0 : product.baseCompareAt ?? product.compareAt ?? 0)
     : 0;
   return (
-    <article className="min-w-0 overflow-hidden rounded-[10px] border border-[#d9dee2] text-[#17232b] shadow-sm" style={{ backgroundColor: color(section.backgroundColor, "#FFFFFF"), color: color(section.textColor, "#17232b") }}>
+    <article className="min-w-0 overflow-hidden rounded-[10px] border border-[#d9dee2] text-[#17232b] shadow-sm" style={{ ...safeBackgroundStyle(backgroundValue(section.backgroundColor, "#FFFFFF")), color: color(section.textColor, "#17232b") }}>
       <div className="relative aspect-[4/3] bg-[#f2f4f6]">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -219,10 +225,10 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
   const mediaUrl = useSectionMedia ? directMedia : bannerMedia;
   const mediaOnly = isOn(section.mediaOnly, false) || (activeBanner?.showText === false && !directMedia);
   const isVideo = text(section.kind || activeBanner?.kind) === "video" || /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(mediaUrl);
-  const background = color(section.backgroundColor, presentation === "flash_sale" ? "#FFF3EF" : "#FFFFFF");
+  const background = backgroundValue(section.backgroundColor, presentation === "flash_sale" ? "#FFF3EF" : "#FFFFFF");
   const accent = color(section.accentColor, "#E4572E");
   const foreground = color(section.textColor, presentation === "flash_sale" ? "#12263A" : "#12263A");
-  const timerBackground = color(section.timerBackgroundColor, "#12263A");
+  const timerBackground = backgroundValue(section.timerBackgroundColor, "#12263A");
   const timerForeground = color(section.timerTextColor, "#FFFFFF");
   const count = Math.max(1, Math.min(8, Number(section.limit) || 4));
   const visibleProducts = products.slice(0, count);
@@ -269,7 +275,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
   } else if (type === "product_carousel" || type === "product_grid") {
     const campaign = presentation === "flash_sale";
     preview = (
-      <div className="p-4" style={{ background, color: foreground }}>
+      <div className="p-4" style={{ ...safeBackgroundStyle(background), color: foreground }}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             {section.eyebrow ? <p className="font-mono text-[9px] uppercase tracking-[.14em]" style={{ color: accent }}>{text(section.eyebrow)}</p> : null}
@@ -278,7 +284,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
           </div>
           {isOn(section.seeAll, true) || isOn(section.showViewAll, campaign) ? <span className="text-[11px] font-semibold" style={{ color: accent }}>{text(section.ctaLabel, "See all products")} →</span> : null}
         </div>
-        {campaign && isOn(section.showCountdown, true) ? <div className="mt-3 inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 font-mono text-[11px]" style={{ backgroundColor: timerBackground, color: timerForeground }}>
+        {campaign && isOn(section.showCountdown, true) ? <div className="mt-3 inline-flex items-center gap-2 rounded-md px-2.5 py-1.5 font-mono text-[11px]" style={{ ...safeBackgroundStyle(timerBackground), color: timerForeground }}>
           <Clock3 size={13} />{text(section.countdownLabel, "Ends in")} {countdown(endsAt, now)}
         </div> : null}
         {visibleProducts.length ? <div className={`mt-3 ${layout === "grid" || type === "product_grid" ? "grid" : "flex overflow-x-auto"} gap-2`} style={layout === "grid" || type === "product_grid" ? { gridTemplateColumns: `repeat(${Math.max(1, Math.min(4, Number(section.across) || 2))}, minmax(0, 1fr))` } : undefined}>
@@ -297,11 +303,11 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
   } else if (type === "promo_strip") {
     const iconName = text(section.icon).toLowerCase();
     const PromoIcon = iconName === "truck" ? Truck : iconName === "shield" ? ShieldCheck : iconName === "tag" ? Tag : null;
-    preview = <div className="flex flex-wrap items-center justify-center gap-2 px-4 py-3 text-center text-xs font-semibold" style={{ backgroundColor: background, color: foreground, borderColor: accent, borderTopWidth: 1, borderBottomWidth: 1 }}>
+    preview = <div className="flex flex-wrap items-center justify-center gap-2 px-4 py-3 text-center text-xs font-semibold" style={{ ...safeBackgroundStyle(background), color: color(section.textColor, "#12263A"), borderColor: accent, borderTopWidth: 1, borderBottomWidth: 1 }}>
       {PromoIcon ? <PromoIcon size={14} aria-hidden="true" /> : null}<span>{text(section.message, "Your message appears here")}</span>{section.ctaLabel ? <span style={{ color: accent }}>{text(section.ctaLabel)} →</span> : null}{isOn(section.dismissible, false) ? <span className="ml-auto grid h-6 w-6 place-items-center rounded-full border border-current/20 text-[10px]" aria-label="Dismissible"><X size={12} /></span> : null}
     </div>;
   } else if (type === "footer") {
-    preview = <div className="px-5 py-6 text-center" style={{ backgroundColor: background, color: foreground }}>
+    preview = <div className="px-5 py-6 text-center" style={{ ...safeBackgroundStyle(background), color: foreground }}>
       {section.title ? <h3 className="font-display text-lg font-semibold">{text(section.title)}</h3> : null}
       <p className="mt-1 text-xs opacity-80">{text(section.message, "Your footer closing line")}</p>
       {section.ctaLabel ? <span className="mt-3 inline-flex text-xs font-semibold" style={{ color: accent }}>{text(section.ctaLabel)} →</span> : null}
@@ -314,7 +320,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
     const rows = type === "featured_stores" && recordLayout === "rows";
     const wrapped = ["wrap", "grid", "cards"].includes(recordLayout);
     const seeAllLabel = text(section.ctaLabel, type === "featured_stores" ? "All stores" : type === "brand_carousel" ? "See all brands" : "See all departments");
-    preview = <div className="p-4" style={{ backgroundColor: background, color: foreground }}>
+    preview = <div className="p-4" style={{ ...safeBackgroundStyle(background), color: foreground }}>
       <div className="flex items-center justify-between gap-2"><div>{section.eyebrow ? <p className="font-mono text-[9px] uppercase tracking-wide" style={{ color: accent }}>{text(section.eyebrow)}</p> : null}<h3 className="font-display text-lg font-semibold">{title || nouns[type]}</h3>{section.subtitle ? <p className="mt-1 text-xs opacity-75">{text(section.subtitle)}</p> : null}</div>{isOn(section.seeAll, true) ? <span className="shrink-0 text-[11px] font-semibold" style={{ color: accent }}>{seeAllLabel} →</span> : null}</div>
       {visibleRecords.length ? <div className={`mt-3 ${rows ? "grid grid-cols-1" : wrapped ? "grid gap-2" : "flex gap-2 overflow-x-auto"}`} style={wrapped && !rows ? { gridTemplateColumns: `repeat(${Math.max(1, Math.min(4, Number(section.across) || 2))}, minmax(0, 1fr))` } : undefined}>
         {visibleRecords.map((record, index) => {
@@ -328,7 +334,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
     </div>;
   } else if (type === "promo_slots") {
     const visibleAdverts = adverts.slice(0, Math.max(1, Math.min(8, Number(section.limit) || 2)));
-    preview = <div className="p-4" style={{ backgroundColor: background, color: foreground }}>
+    preview = <div className="p-4" style={{ ...safeBackgroundStyle(background), color: foreground }}>
       <h3 className="font-display text-lg font-semibold">{title || "Advertisements"}</h3>
       {visibleAdverts.length ? <div className="mt-3 grid gap-2 sm:grid-cols-2">{visibleAdverts.map((advert, index) => {
         const headline = recordText(advert, "headline", "title", "name") || "Sponsored placement";

@@ -6,6 +6,12 @@ import { ArrowLeft, ArrowRight, Pause, Play } from "lucide-react";
 import type { Banner } from "@/lib/api";
 import { assetUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { safeColor, safeColorWithAlpha } from "@/components/shared/colors";
+
+/** The accent a slide carries, or the banner's own fallback when it says nothing usable. */
+function accentOf(slide: Banner, fallback = "#ff8d59"): string {
+  return safeColor(slide.accent, fallback) ?? fallback;
+}
 
 /**
  * The storefront promotional banner. Each slide's uploaded image or video fills
@@ -101,7 +107,7 @@ export function PromoBanner({
           )}
         >
           <SlideMedia slide={slide} mediaOnly={mediaOnly || slide.showText === false} />
-          {!mediaOnly && slide.showText !== false && slide.overlay?.enabled ? <Scrim overlay={slide.overlay} accent={slide.accent} /> : null}
+          {!mediaOnly && slide.showText !== false && slide.overlay?.enabled ? <Scrim overlay={slide.overlay} accent={accentOf(slide)} /> : null}
           {!mediaOnly && slide.showText !== false ? <SlideCopy slide={slide} active={i === index} /> : null}
         </article>
       ))}
@@ -204,7 +210,7 @@ function SlideMedia({ slide, mediaOnly = false }: { slide: Banner; mediaOnly?: b
     >
       <span
         className="absolute -right-24 -top-24 h-[380px] w-[380px] rounded-full opacity-45"
-        style={{ background: `radial-gradient(circle, ${slide.accent || "#ff8d59"}, transparent 70%)` }}
+        style={{ background: `radial-gradient(circle, ${accentOf(slide)}, transparent 70%)` }}
       />
     </div>
   );
@@ -257,12 +263,12 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
               <span
                 className="inline-flex items-center gap-2 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] backdrop-blur-sm sm:px-2.5 sm:py-1 sm:text-[10px]"
                 style={{
-                  borderColor: `${slide.accent}77`,
-                  background: `${slide.accent}26`,
+                  borderColor: safeColorWithAlpha(accentOf(slide), "77", 47),
+                  background: safeColorWithAlpha(accentOf(slide), "26", 15),
                   color: light ? "#f2f4f7" : "#14110e",
                 }}
               >
-                <span className="h-1.5 w-1.5 rounded-full" style={{ background: slide.accent }} />
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: accentOf(slide) }} />
                 {slide.eyebrow}
               </span>
             ) : null}
@@ -301,7 +307,7 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
                     href={slide.ctaHref || "/browse"}
                     tabIndex={active ? 0 : -1}
                     className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-[2px] px-4 text-[12.5px] font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 sm:h-11 sm:px-5 sm:text-[13.5px]"
-                    style={{ background: slide.accent }}
+                    style={{ background: accentOf(slide) }}
                   >
                     {slide.ctaLabel}
                     <ArrowRight width={15} height={15} />

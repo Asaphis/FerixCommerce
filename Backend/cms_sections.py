@@ -54,6 +54,82 @@ def field(key: str, label: str, kind: str = KIND_TEXT, **extra) -> dict:
     return row
 
 
+_CSS_NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?"
+_RGB_COLOR = re.compile(rf"^rgba?\(\s*{_CSS_NUMBER}\s*,\s*{_CSS_NUMBER}\s*,\s*{_CSS_NUMBER}(?:\s*,\s*{_CSS_NUMBER})?\s*\)$", re.IGNORECASE)
+_HSL_COLOR = re.compile(r"^hsla?\(\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:deg|turn|rad)?\s*,\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)%\s*,\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)%\s*(?:,\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)%?)?\)$", re.IGNORECASE)
+_CSS_NAMED_COLORS = {
+    "transparent", "black", "white", "red", "green", "blue", "yellow", "orange", "purple", "pink",
+    "gray", "grey", "silver", "maroon", "navy", "teal", "olive", "lime", "aqua", "fuchsia",
+    "coral", "tomato", "gold", "indigo", "violet", "beige", "brown", "chocolate", "crimson",
+    "khaki", "lavender", "plum", "salmon", "tan", "turquoise", "rebeccapurple",
+}
+
+
+def _safe_solid_color(value: str) -> bool:
+    color = value.strip()
+    if re.fullmatch(r"#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})", color):
+        return True
+    if _RGB_COLOR.fullmatch(color) or _HSL_COLOR.fullmatch(color):
+        return True
+    return color.lower() in _CSS_NAMED_COLORS
+
+
+def _split_css_arguments(value: str) -> list[str] | None:
+    parts: list[str] = []
+    depth = 0
+    start = 0
+    for index, char in enumerate(value):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth < 0:
+                return None
+        elif char == "," and depth == 0:
+            parts.append(value[start:index].strip())
+            start = index + 1
+    if depth != 0:
+        return None
+    parts.append(value[start:].strip())
+    return parts
+
+
+def is_safe_css_color(value: object, allow_gradient: bool = False) -> bool:
+    """Accept a bounded CSS color grammar; never pass arbitrary CSS from a form to a style."""
+    raw = str(value or "").strip()
+    if _safe_solid_color(raw):
+        return True
+    if not allow_gradient:
+        return False
+    match = re.fullmatch(r"(linear|radial|conic)-gradient\((.*)\)", raw, re.IGNORECASE)
+    if not match:
+        return False
+    kind, body = match.group(1).lower(), match.group(2)
+    parts = _split_css_arguments(body)
+    if not parts:
+        return False
+    stops = parts
+    first = parts[0]
+    header_patterns = {
+        "linear": r"(?:to\s+(?:left|right|top|bottom)(?:\s+(?:left|right|top|bottom))?|[+-]?(?:\d+(?:\.\d*)?|\.\d+)deg)",
+        "radial": r"(?:(?:circle|ellipse)(?:\s+(?:closest-side|closest-corner|farthest-side|farthest-corner))?)?(?:\s+at\s+(?:center|left|right|top|bottom)(?:\s+(?:left|right|top|bottom))?)?",
+        "conic": r"from\s+[+-]?(?:\d+(?:\.\d*)?|\.\d+)deg(?:\s+at\s+(?:center|left|right|top|bottom))?",
+    }
+    if not _safe_solid_color(re.sub(r"\s+[+-]?(?:\d+(?:\.\d*)?|\.\d+)%$", "", first)):
+        if re.fullmatch(header_patterns[kind], first, re.IGNORECASE) is None:
+            return False
+        stops = parts[1:]
+    if not 2 <= len(stops) <= 8:
+        return False
+    for stop in stops:
+        parsed = re.fullmatch(r"(.+?)(?:\s+([+-]?(?:\d+(?:\.\d*)?|\.\d+))%)?", stop)
+        if not parsed or not _safe_solid_color(parsed.group(1)):
+            return False
+        if parsed.group(2) is not None and not 0 <= float(parsed.group(2)) <= 100:
+            return False
+    return True
+
+
 def ch(*pairs) -> list:
     """Choice options from ("value", "Label") pairs."""
     return [{"value": str(value), "label": label} for value, label in pairs]
@@ -215,7 +291,7 @@ SHARED_DESIGN_FIELDS = (
     field("title", "Title", KIND_TEXT),
     field("eyebrow", "Eyebrow", KIND_TEXT),
     field("subtitle", "Description", KIND_TEXT, long=True),
-    field("backgroundColor", "Background", KIND_COLOR, default="#FFFFFF"),
+    field("backgroundColor", "Background", KIND_COLOR, default="#FFFFFF", allowGradient=True),
     field("accentColor", "Accent", KIND_COLOR, default="#E4572E"),
     field("textColor", "Text", KIND_COLOR, default="#12263A"),
     field("padY", "Vertical padding", KIND_CHOICE, default="normal",
@@ -279,7 +355,7 @@ SECTION_FIELDS: dict[str, list[dict]] = {
             field("ctaLabel", "Button label"),
             field("ctaHref", "Button link"),
             field("showDiscountBadges", "Discount badges", KIND_TOGGLE, default=True),
-            field("timerBackgroundColor", "Timer background", KIND_COLOR),
+            field("timerBackgroundColor", "Timer background", KIND_COLOR, allowGradient=True),
             field("timerTextColor", "Timer text", KIND_COLOR),
         ),
         ARRANGEMENT,
@@ -315,7 +391,9 @@ SECTION_FIELDS: dict[str, list[dict]] = {
         field("ctaLabel", "Directory link label"), field("ctaHref", "Directory link"),
     ] + copy_of(COLOUR_FIELDS) + copy_of(SECTION_CLOCK_FIELDS),
     "promo_strip": [field("message", "Message", KIND_TEXT),
+        field("backgroundColor", "Background", KIND_COLOR, default="#FFFFFF", allowGradient=True),
         field("accentColor", "Colour", KIND_COLOR, default="#E4572E"),
+        field("textColor", "Text", KIND_COLOR, default="#12263A"),
         field("icon", "Icon", KIND_CHOICE, default="",
               options=ch(("", "None"), ("truck", "Delivery"), ("shield", "Guarantee"), ("tag", "Offer"))),
         field("ctaLabel", "Link label"), field("ctaHref", "Link"),
@@ -332,7 +410,7 @@ SECTION_FIELDS: dict[str, list[dict]] = {
     ] + copy_of(SECTION_CLOCK_FIELDS),
     "footer": [field("message", "Closing line", KIND_TEXT), field("title", "Footer title", KIND_TEXT),
         field("ctaLabel", "Link label"), field("ctaHref", "Link"),
-        field("backgroundColor", "Background", KIND_COLOR, default="#FFFFFF"),
+        field("backgroundColor", "Background", KIND_COLOR, default="#FFFFFF", allowGradient=True),
         field("textColor", "Text", KIND_COLOR, default="#637586")],
     "product_gallery": [], "buy_box": [], "delivery_block": [], "reviews": [],
 }
@@ -715,8 +793,9 @@ def validate_section(section: dict) -> None:
             continue
         key = str(setting.get("key") or "")
         raw = str(row.get(key) or "").strip()
-        if raw and re.fullmatch(r"#[0-9A-Fa-f]{6}", raw) is None:
-            raise ValueError(f"'{key}' must be a six-digit hexadecimal colour.")
+        if raw and not is_safe_css_color(raw, allow_gradient=bool(setting.get("allowGradient"))):
+            expectation = "a supported CSS colour or gradient" if setting.get("allowGradient") else "a supported CSS colour code"
+            raise ValueError(f"'{key}' must be {expectation}.")
     for key in ("ctaHref", "secondaryHref"):
         href = str(row.get(key) or "").strip()
         if not href:

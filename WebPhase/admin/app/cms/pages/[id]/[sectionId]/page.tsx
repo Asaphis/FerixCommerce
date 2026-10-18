@@ -12,6 +12,7 @@ import { deleteCmsSectionAction, saveCmsSectionAction } from "@/lib/actions";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { CmsSectionPreview } from "@/components/ops/cms-section-preview";
 import { LocalDateTimeInput } from "@/components/ops/local-datetime-input";
+import { ColorInput } from "@/components/shared/color-input";
 
 /** The fields each section type can be managed by, in the order they read. */
 type Choice = { value: string; label: string };
@@ -27,6 +28,7 @@ type EditorField = {
   long?: boolean;
   /** A number field. */
   numeric?: boolean;
+  allowGradient?: boolean;
   /** A set of options, rendered as a picker. */
   options?: Choice[];
 };
@@ -263,6 +265,7 @@ function fieldsFor(section: CmsSection, documentType = "", sectionTypes: CmsSect
       default: item.default,
       long: item.long === true,
       numeric: item.kind === "number",
+      allowGradient: item.allowGradient === true,
       options: Array.isArray(item.options) ? (item.options as Choice[]) : undefined,
     }));
   }
@@ -495,12 +498,8 @@ export default async function CmsSectionEditor({
                       </Field>
                     ) : field.kind === "color" ? (
                       <Field key={field.key} title={field.title}>
-                        <div className="flex items-center gap-2.5">
-                          <input name={`field_${field.key}`} type="color"
-                            defaultValue={initialValue(field, section, "#FFFFFF")}
-                            className="h-11 w-16 shrink-0 cursor-pointer rounded-[10px] border border-hairline bg-panel-2 p-1" />
-                          <span className="font-mono text-[11px] text-chalk-dim">{initialValue(field, section, "#FFFFFF")}</span>
-                        </div>
+                        <ColorInput name={`field_${field.key}`} value={initialValue(field, section, "#FFFFFF")}
+                          allowGradient={field.allowGradient} className={inputClass} />
                         {field.help ? <span className="mt-1 block text-[11px] leading-relaxed text-chalk-dim">{field.help}</span> : null}
                       </Field>
                     ) : field.kind === "datetime" ? (

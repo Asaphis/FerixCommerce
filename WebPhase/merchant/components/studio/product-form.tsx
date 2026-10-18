@@ -20,6 +20,7 @@ import { Field, Notice, inputClass, selectClass, textareaClass } from "@/compone
 import { Panel, PanelHead, Pill } from "@/components/studio/bits";
 import { createProductAction, saveProductAction, type FormState } from "@/lib/actions";
 import { money } from "@/lib/format";
+import { ColorInput } from "@/components/shared/color-input";
 
 /**
  * A section a seller may ask to be placed in.
@@ -268,12 +269,19 @@ export function ProductForm({
                           </label>
                           {fields.length ? (
                             <div className={`${selected ? "grid" : "hidden"} mt-3 gap-2 border-t border-hairline pt-3 sm:grid-cols-2`}>
-                              {fields.map((field) => (
+                              {fields.map((field) => field.kind === "color" ? (
+                                <div key={field.key} className="grid gap-1">
+                                  <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-chalk-dim">{field.label}{field.required ? <span className="text-[#e4572e"> *</span> : null}</span>
+                                  <ColorInput name={`section_term__${section.value}__${field.key}`}
+                                    value={terms[field.key] == null ? "" : String(terms[field.key])}
+                                    required={selected && Boolean(field.required)} disabled={!selected} className={inputClass} />
+                                </div>
+                              ) : (
                                 <label key={field.key} className="grid gap-1">
                                   <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-chalk-dim">{field.label}{field.required ? <span className="text-[#e4572e"> *</span> : null}</span>
                                   <input
                                     name={`section_term__${section.value}__${field.key}`}
-                                    type={field.kind === "number" ? "number" : field.kind === "datetime" ? "datetime-local" : field.kind === "color" ? "color" : "text"}
+                                    type={field.kind === "number" ? "number" : field.kind === "datetime" ? "datetime-local" : "text"}
                                     step={field.kind === "number" ? "0.01" : undefined}
                                     min={field.kind === "number" ? 0 : undefined}
                                     required={selected && Boolean(field.required)}

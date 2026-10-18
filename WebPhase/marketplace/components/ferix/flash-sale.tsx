@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Zap } from "lucide-react";
 import { ProductCard, type ProductCardDisplay } from "@/components/ferix/cards";
 import type { Product } from "@/lib/api";
+import { isSafeBackground, safeBackgroundStyle, safeColor } from "@/components/shared/colors";
 
 /**
  * A Flash Sale band.
@@ -18,11 +19,9 @@ import type { Product } from "@/lib/api";
  * browser, so the first paint never disagrees with the real clock.
  */
 
-/** Only a plain colour is ever written into a style attribute. */
-function safeColour(value: unknown, fallback: string): string {
+function safeBackground(value: unknown, fallback: string): string {
   const text = String(value ?? "").trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(text)) return text;
-  return fallback;
+  return isSafeBackground(text) ? text : fallback;
 }
 
 function splitRemaining(endsAt: string) {
@@ -96,18 +95,18 @@ export function FlashSaleBand({
 
   if (!products.length) return null;
 
-  const background = safeColour(backgroundColor, "#1b1b1b");
-  const accent = safeColour(accentColor, "#e4572e");
-  const ink = safeColour(textColor, "#ffffff");
-  const timerBackground = safeColour(timerBackgroundColor, "#000000");
-  const timerInk = safeColour(timerTextColor, "#ffffff");
+  const background = safeBackground(backgroundColor, "#1b1b1b");
+  const accent = safeColor(accentColor, "#e4572e");
+  const ink = safeColor(textColor, "#ffffff");
+  const timerBackground = safeBackground(timerBackgroundColor, "#000000");
+  const timerInk = safeColor(timerTextColor, "#ffffff");
   const units: [string, number][] = remaining
     ? [["Days", remaining.days], ["Hours", remaining.hours], ["Mins", remaining.minutes], ["Secs", remaining.seconds]]
     : [["Days", 0], ["Hours", 0], ["Mins", 0], ["Secs", 0]];
 
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
-      <div className="overflow-hidden rounded-[2px] rounded-tr-[18px] p-4 sm:p-6" style={{ backgroundColor: background, color: ink }}>
+      <div className="overflow-hidden rounded-[2px] rounded-tr-[18px] p-4 sm:p-6" style={{ ...safeBackgroundStyle(background), color: ink }}>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             {eyebrow ? (
@@ -127,7 +126,7 @@ export function FlashSaleBand({
                 </span>
                 <span className="flex items-center gap-1">
                   {units.map(([label, value]) => (
-                    <span key={label} className="grid min-w-[38px] place-items-center rounded-[6px] px-1.5 py-1" style={{ backgroundColor: timerBackground, color: timerInk }}>
+                    <span key={label} className="grid min-w-[38px] place-items-center rounded-[6px] px-1.5 py-1" style={{ ...safeBackgroundStyle(timerBackground), color: timerInk }}>
                       <span className="font-display text-[15px] font-bold tabular-nums leading-none">{pad(value)}</span>
                       <span className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] opacity-70">{label}</span>
                     </span>

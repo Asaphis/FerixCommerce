@@ -32,7 +32,7 @@ from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FLASH_SALE_DEFAULTS, L
                           apply_placement_overrides, card_display_defaults, feed_rule, is_manual_product_section,
                           normalize_section, palette_for, placement_is_live, product_config_schema,
                           requirement_fields, section_fields, section_is_live, section_requirements,
-                          selection_mode_of, selector_of, source_of, validate_section)  # noqa: E402
+                          is_safe_css_color, selection_mode_of, selector_of, source_of, validate_section)  # noqa: E402
 from test_support import reset_test_database  # noqa: E402
 from fixtures import create_test_records  # noqa: E402
 
@@ -231,8 +231,16 @@ class SectionContractTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_section({"id": "sec_bad", "type": "product_carousel", "backgroundColor": "red;display:none"})
         with self.assertRaises(ValueError):
+            validate_section({"id": "sec_bad", "type": "product_carousel", "accentColor": "linear-gradient(90deg, red, blue)"})
+        with self.assertRaises(ValueError):
+            validate_section({"id": "sec_bad", "type": "product_carousel", "backgroundColor": "linear-gradient(90deg, red, url(javascript:alert(1)))"})
+        with self.assertRaises(ValueError):
             validate_section({"id": "sec_bad", "type": "product_carousel", "ctaHref": "javascript:alert(1)"})
         validate_section({"id": "sec_good", "type": "product_carousel", "backgroundColor": "#12aBef"})
+        validate_section({"id": "sec_good", "type": "product_carousel", "backgroundColor": "linear-gradient(135deg, #e4572e 0%, rgb(18, 38, 58) 100%)"})
+        validate_section({"id": "sec_good", "type": "product_carousel", "textColor": "hsl(210, 40%, 20%)"})
+        self.assertTrue(is_safe_css_color("#abc"))
+        self.assertFalse(is_safe_css_color("linear-gradient(90deg, red, blue)"))
         validate_section({"id": "sec_good", "type": "product_carousel", "ctaHref": "https://ferixas.com/browse"})
 
     def test_a_closed_campaign_is_not_live(self):
