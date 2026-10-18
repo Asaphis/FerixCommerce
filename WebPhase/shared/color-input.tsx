@@ -83,6 +83,8 @@ export function ColorInput({
   }
 
   const codeValue = gradient ? raw : raw;
+  // A hand-written origin such as `30% 20%` stays selectable rather than being lost.
+  const positionOptions = POSITIONS.includes(position) ? POSITIONS : [position, ...POSITIONS];
   return (
     <div className="grid gap-2">
       <input ref={hiddenRef} type="hidden" name={name} defaultValue={initial} disabled={disabled} />
@@ -130,7 +132,7 @@ export function ColorInput({
                     setPosition(next);
                     publishGradient(kind, angle, shape, next);
                   }} className="min-h-10 rounded border border-hairline bg-panel px-2 text-[12px] text-chalk">
-                    {POSITIONS.map((item) => <option key={item} value={item}>{item}</option>)}
+                    {positionOptions.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </label>
               </>

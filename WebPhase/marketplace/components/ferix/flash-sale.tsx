@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Zap } from "lucide-react";
 import { ProductCard, type ProductCardDisplay } from "@/components/ferix/cards";
 import type { Product } from "@/lib/api";
-import { isSafeBackground, safeBackgroundStyle, safeColor } from "@/components/shared/colors";
+import { contrastInk, isSafeBackground, safeBackgroundStyle, safeColor } from "@/components/shared/colors";
 
 /**
  * A Flash Sale band.
@@ -110,7 +110,7 @@ export function FlashSaleBand({
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             {eyebrow ? (
-              <span className="mb-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ backgroundColor: accent, color: "#ffffff" }}>
+              <span className="mb-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ backgroundColor: accent, color: contrastInk(accent) }}>
                 <Zap width={11} height={11} /> {eyebrow}
               </span>
             ) : null}

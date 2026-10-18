@@ -110,10 +110,12 @@ def is_safe_css_color(value: object, allow_gradient: bool = False) -> bool:
         return False
     stops = parts
     first = parts[0]
+    # A gradient origin is a keyword, a percentage, or one of each - never free text.
+    position = r"(?:center|left|right|top|bottom|[+-]?(?:\d+(?:\.\d*)?|\.\d+)%)(?:\s+(?:center|left|right|top|bottom|[+-]?(?:\d+(?:\.\d*)?|\.\d+)%))?"
     header_patterns = {
         "linear": r"(?:to\s+(?:left|right|top|bottom)(?:\s+(?:left|right|top|bottom))?|[+-]?(?:\d+(?:\.\d*)?|\.\d+)deg)",
-        "radial": r"(?:(?:circle|ellipse)(?:\s+(?:closest-side|closest-corner|farthest-side|farthest-corner))?)?(?:\s+at\s+(?:center|left|right|top|bottom)(?:\s+(?:left|right|top|bottom))?)?",
-        "conic": r"from\s+[+-]?(?:\d+(?:\.\d*)?|\.\d+)deg(?:\s+at\s+(?:center|left|right|top|bottom))?",
+        "radial": rf"(?:(?:circle|ellipse)(?:\s+(?:closest-side|closest-corner|farthest-side|farthest-corner))?)?(?:\s+at\s+{position})?",
+        "conic": rf"from\s+[+-]?(?:\d+(?:\.\d*)?|\.\d+)deg(?:\s+at\s+{position})?",
     }
     if not _safe_solid_color(re.sub(r"\s+[+-]?(?:\d+(?:\.\d*)?|\.\d+)%$", "", first)):
         if re.fullmatch(header_patterns[kind], first, re.IGNORECASE) is None:

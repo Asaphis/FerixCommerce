@@ -8,7 +8,7 @@ import { removeLineAction, saveForLaterAction, setQtyAction } from "@/lib/action
 import { compact, dateShort, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { PlacementCountdown } from "@/components/ferix/placement-countdown";
-import { safeBackgroundStyle, safeColor } from "@/components/shared/colors";
+import { contrastInk, safeBackgroundStyle, safeColor } from "@/components/shared/colors";
 
 export type ProductCardDisplay = {
   accentColor?: string;
@@ -75,8 +75,8 @@ export function ProductCard({
           {showCountdown && product.placementEndsAt ? <PlacementCountdown endsAt={product.placementEndsAt} /> : null}
           {showLabel && sectionLabel ? (
             <span
-              className="inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-white"
-              style={{ backgroundColor: safeBadgeColor }}
+              className="inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em]"
+              style={{ backgroundColor: safeBadgeColor, color: contrastInk(safeBadgeColor) }}
             >
               {sectionLabel}
             </span>

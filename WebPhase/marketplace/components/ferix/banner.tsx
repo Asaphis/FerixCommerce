@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, Pause, Play } from "lucide-react";
 import type { Banner } from "@/lib/api";
 import { assetUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { safeColor, safeColorWithAlpha } from "@/components/shared/colors";
+import { contrastInk, safeColor, safeColorWithAlpha } from "@/components/shared/colors";
 
 /** The accent a slide carries, or the banner's own fallback when it says nothing usable. */
 function accentOf(slide: Banner, fallback = "#ff8d59"): string {
@@ -306,8 +306,8 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
                   <Link
                     href={slide.ctaHref || "/browse"}
                     tabIndex={active ? 0 : -1}
-                    className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-[2px] px-4 text-[12.5px] font-semibold text-white transition-transform duration-200 hover:-translate-y-0.5 sm:h-11 sm:px-5 sm:text-[13.5px]"
-                    style={{ background: accentOf(slide) }}
+                    className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-[2px] px-4 text-[12.5px] font-semibold transition-transform duration-200 hover:-translate-y-0.5 sm:h-11 sm:px-5 sm:text-[13.5px]"
+                    style={{ background: accentOf(slide), color: contrastInk(accentOf(slide)) }}
                   >
                     {slide.ctaLabel}
                     <ArrowRight width={15} height={15} />

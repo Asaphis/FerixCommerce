@@ -5,7 +5,7 @@ import { Clock3, ExternalLink, Image as ImageIcon, ShieldCheck, ShoppingBag, Tag
 import { Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { assetUrl, type CmsSection, type CmsSectionPreviewProduct } from "@/lib/api";
 import { money } from "@/lib/format";
-import { isSafeBackground, safeBackgroundStyle, safeColor } from "@/components/shared/colors";
+import { contrastInk, isSafeBackground, safeBackgroundStyle, safeColor } from "@/components/shared/colors";
 
 type PreviewBanner = {
   id: string;
@@ -133,8 +133,8 @@ function ProductCardPreview({ product, section, now }: { product: CmsSectionPrev
           </span>
         ) : null}
         {showLabel && product.sectionLabel ? (
-          <span className="absolute left-2 top-2 rounded-[3px] px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wide text-white"
-            style={{ backgroundColor: color(product.sectionBadgeColor, color(section.accentColor, "#e4572e")) }}>
+          <span className="absolute left-2 top-2 rounded-[3px] px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wide"
+            style={{ backgroundColor: color(product.sectionBadgeColor, color(section.accentColor, "#e4572e")), color: contrastInk(color(product.sectionBadgeColor, color(section.accentColor, "#e4572e"))) }}>
             {product.sectionLabel}
           </span>
         ) : null}
@@ -278,7 +278,10 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
       <div className="p-4" style={{ ...safeBackgroundStyle(background), color: foreground }}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
-            {section.eyebrow ? <p className="font-mono text-[9px] uppercase tracking-[.14em]" style={{ color: accent }}>{text(section.eyebrow)}</p> : null}
+            {/* A campaign shows its eyebrow as a filled pill, exactly as the shop does. */}
+            {section.eyebrow ? (campaign
+              ? <span className="mb-1 inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-[.16em]" style={{ backgroundColor: accent, color: contrastInk(accent) }}>{text(section.eyebrow)}</span>
+              : <p className="font-mono text-[9px] uppercase tracking-[.14em]" style={{ color: accent }}>{text(section.eyebrow)}</p>) : null}
             <h3 className="font-display text-lg font-semibold" style={{ color: titleColor }}>{title}</h3>
             {section.subtitle ? <p className="mt-1 text-xs opacity-80">{text(section.subtitle)}</p> : null}
           </div>

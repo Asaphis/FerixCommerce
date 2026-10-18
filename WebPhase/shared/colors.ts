@@ -50,10 +50,12 @@ export function isSafeGradient(value: unknown): boolean {
   if (!parts) return false;
   let stops = parts;
   const first = parts[0] ?? "";
+  // A gradient origin is a keyword, a percentage, or one of each - never free text.
+  const position = "(?:center|left|right|top|bottom|[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)%)(?:\\s+(?:center|left|right|top|bottom|[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)%))?";
   const headers: Record<GradientKind, RegExp> = {
     linear: /^(?:to\s+(?:left|right|top|bottom)(?:\s+(?:left|right|top|bottom))?|[-+\d.]+deg)$/i,
-    radial: /^(?:(?:circle|ellipse)(?:\s+(?:closest-side|closest-corner|farthest-side|farthest-corner))?)?(?:\s+at\s+(?:center|left|right|top|bottom)(?:\s+(?:left|right|top|bottom))?)?$/i,
-    conic: /^(?:from\s+[-+\d.]+deg(?:\s+at\s+(?:center|left|right|top|bottom))?)$/i,
+    radial: new RegExp(`^(?:(?:circle|ellipse)(?:\\s+(?:closest-side|closest-corner|farthest-side|farthest-corner))?)?(?:\\s+at\\s+${position})?$`, "i"),
+    conic: new RegExp(`^(?:from\\s+[-+]?[\\d.]+deg(?:\\s+at\\s+${position})?)$`, "i"),
   };
   if (!isStop(first)) {
     if (!headers[kind].test(first)) return false;
@@ -94,6 +96,36 @@ export function safeColorWithAlpha(value: unknown, alphaHex: string, percent = 3
   return `color-mix(in srgb, ${color} ${Math.max(0, Math.min(100, percent))}%, transparent)`;
 }
 
+function relativeLuminance(color: string): number {
+  const hex = /^#([\da-f]{6})$/i.exec(color.trim());
+  const rgb = hex
+    ? [0, 2, 4].map((offset) => parseInt(hex[1].slice(offset, offset + 2), 16))
+    : /^rgba?\(([^)]+)\)$/i.exec(color.trim())
+      ? color.replace(/^rgba?\(|\)$/gi, "").split(",").slice(0, 3).map((part) => Number.parseFloat(part))
+      : [255, 255, 255];
+  const [r, g, b] = rgb.map((value) => {
+    const channel = (Number.isFinite(value) ? value : 255) / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * Text that stays readable on a filled badge, pill or button.
+ *
+ * A bright accent such as lime carries dark ink; a deep ember carries white.
+ * Both are checked against the real fill, so an operator can pick any accent
+ * and the label on top of it still reads.
+ */
+export function contrastInk(value: unknown, dark = "#12263A", light = "#ffffff"): string {
+  const fill = safeColor(value);
+  if (!fill) return light;
+  const luminance = relativeLuminance(fill);
+  const onLight = (1.05) / (luminance + 0.05);
+  const onDark = (luminance + 0.05) / (relativeLuminance(dark) + 0.05);
+  return onDark >= onLight ? dark : light;
+}
+
 export function pickerHex(value: unknown): string {
   const color = String(value ?? "").trim();
   if (/^#[\da-f]{6}$/i.test(color)) return color;
@@ -116,8 +148,8 @@ export function parseGradient(value: unknown): { kind: GradientKind; angle: numb
   }
   const angleMatch = header.match(/(?:from\s+)?([-+\d.]+)deg/i);
   const shape = /ellipse/i.test(header) ? "ellipse" : "circle";
-  const positionMatch = header.match(/\bat\s+(center|left|right|top|bottom)(?:\s+(left|right|top|bottom))?/i);
-  const position = positionMatch ? [positionMatch[1], positionMatch[2]].filter(Boolean).join(" ") : "center";
+  const positionMatch = header.match(/\bat\s+((?:center|left|right|top|bottom|[-+]?[\d.]+%)(?:\s+(?:center|left|right|top|bottom|[-+]?[\d.]+%))?)/i);
+  const position = positionMatch ? positionMatch[1].replace(/\s+/g, " ").trim() : "center";
   const stops = stopParts.map((part, index) => {
     const parsed = part.match(/^(.*?)(?:\s+([\d.]+)%)?$/);
     return { color: parsed?.[1] ?? "#000000", position: parsed?.[2] ? Number(parsed[2]) : Math.round(index * 100 / Math.max(1, stopParts.length - 1)) };
@@ -127,7 +159,8 @@ export function parseGradient(value: unknown): { kind: GradientKind; angle: numb
 
 export function buildGradient(kind: GradientKind, angle: number, shape: "circle" | "ellipse", position: string, stops: { color: string; position: number }[]): string {
   const stopText = stops.map((stop) => `${stop.color} ${Math.max(0, Math.min(100, stop.position))}%`).join(", ");
-  if (kind === "radial") return `radial-gradient(${shape} at ${position}, ${stopText})`;
-  if (kind === "conic") return `conic-gradient(from ${Math.max(0, Math.min(360, angle))}deg, ${stopText})`;
+  const origin = String(position || "center").trim() || "center";
+  if (kind === "radial") return `radial-gradient(${shape} at ${origin}, ${stopText})`;
+  if (kind === "conic") return `conic-gradient(from ${Math.max(0, Math.min(360, angle))}deg at ${origin}, ${stopText})`;
   return `linear-gradient(${Math.max(0, Math.min(360, angle))}deg, ${stopText})`;
 }
