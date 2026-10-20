@@ -53,7 +53,7 @@ TEST_STAFF_PASSWORD = os.getenv("FERIXAS_TEST_STAFF_PASSWORD", "").strip()
 BOOTSTRAP_SECRET = os.getenv("FERIXAS_BOOTSTRAP_SECRET", "").strip()
 ENVIRONMENT = os.getenv("FERIXAS_ENV", os.getenv("ENVIRONMENT", "development")).strip().lower()
 PRODUCTION_ENVIRONMENTS = {"production", "prod"}
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 PLACEHOLDER = "https://picsum.photos/seed/{seed}/900/900"
 UPLOAD_ROOT = ROOT / "uploads" if "ROOT" in globals() else Path(__file__).resolve().parent / "uploads"
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
@@ -488,6 +488,37 @@ class SectionPlacement(Base):
     #: back for a product whose own window has run out in this section.
     active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+class Section(Base):
+    """A CMS section as a row, not only a node inside a page document.
+
+    The page document stays the published artefact: publish, restore and the
+    version history all operate on it. This table is the same sections,
+    materialised, so a placement can be checked against a real record, a
+    section can be listed without parsing every document, and "which sections
+    hold this product" is a join rather than a scan through JSON.
+
+    The table is a projection, never a second source of truth:
+    ``sync_document_sections`` rewrites it from the document, so it can always
+    be rebuilt and cannot drift.
+    """
+
+    __tablename__ = "sections"
+    document_id: Mapped[str] = mapped_column(String(60), primary_key=True)
+    section_id: Mapped[str] = mapped_column(String(60), primary_key=True)
+    status: Mapped[str] = mapped_column(String(20), primary_key=True, default="published")
+    document_type: Mapped[str] = mapped_column(String(40), default="", index=True)
+    type: Mapped[str] = mapped_column(String(40), default="", index=True)
+    name: Mapped[str] = mapped_column(String(200), default="")
+    position: Mapped[int] = mapped_column(default=0)
+    visible: Mapped[bool] = mapped_column(default=True)
+    selection_mode: Mapped[str] = mapped_column(String(20), default="")
+    source: Mapped[str] = mapped_column(String(40), default="")
+    presentation: Mapped[str] = mapped_column(String(40), default="")
+    version: Mapped[int] = mapped_column(default=0)
+    settings: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
 
 class FlashSale(Base):
     __tablename__ = "flash_sales"
@@ -1591,3 +1622,123 @@ def ensure_schema() -> None:
     """Prepare the schema only. Application content is never written here."""
     Base.metadata.create_all(engine)
     migrate()
+
+
+# ── Sections as rows ───────────────────────────────────────────────────────
+# The page document is the artefact; `sections` is its index.
+
+SECTION_PUBLISHED = "published"
+SECTION_DRAFT = "draft"
+SECTION_IDENTITY_KEYS = frozenset({"id", "type", "name", "position", "visible",
+                                   "selectionMode", "source", "presentation"})
+
+
+def section_visible(raw: dict) -> bool:
+    """The same visibility rule the contract uses, tolerant of legacy values."""
+    value = (raw or {}).get("visible", True)
+    if isinstance(value, str):
+        return value.strip().lower() not in {"false", "0", "no", "off", ""}
+    return True if value is None else bool(value)
+
+
+def section_rows_for(document, data: dict, status: str, version: int = 0) -> list:
+    """The rows one page state implies, in document order."""
+    rows = []
+    for index, raw in enumerate((data or {}).get("sections") or []):
+        if not isinstance(raw, dict):
+            continue
+        section_id = str(raw.get("id") or "").strip()
+        if not section_id:
+            continue
+        settings = {key: value for key, value in raw.items() if key not in SECTION_IDENTITY_KEYS}
+        try:
+            position = int(raw.get("position"))
+        except (TypeError, ValueError):
+            position = index + 1
+        rows.append({"document_id": document.id, "section_id": section_id, "status": status,
+                     "document_type": str(document.document_type or ""),
+                     "type": str(raw.get("type") or ""),
+                     "name": str(raw.get("name") or raw.get("type") or ""),
+                     "position": position, "visible": section_visible(raw),
+                     "selection_mode": str(raw.get("selectionMode") or ""),
+                     "source": str(raw.get("source") or ""),
+                     "presentation": str(raw.get("presentation") or ""),
+                     "version": int(version or 0), "settings": settings})
+    return rows
+
+
+def latest_draft(db: Session, document_id: str):
+    return db.scalar(select(ContentVersion).where(
+        ContentVersion.document_id == document_id,
+        ContentVersion.status == SECTION_DRAFT,
+    ).order_by(ContentVersion.version.desc()))
+
+
+def sync_document_sections(db: Session, document) -> dict:
+    """Rewrite this document's section rows from its published and draft data."""
+    result = {"documentId": document.id, "written": 0, "removed": 0}
+    draft = latest_draft(db, document.id)
+    states = [(SECTION_PUBLISHED, dict(document.data or {}), 0)]
+    if draft is not None:
+        states.append((SECTION_DRAFT, dict(draft.data or {}), int(draft.version or 0)))
+
+    for status, data, version in states:
+        payloads = section_rows_for(document, data, status, version)
+        existing = {row.section_id: row for row in db.scalars(select(Section).where(
+            Section.document_id == document.id, Section.status == status)).all()}
+        for payload in payloads:
+            current = existing.pop(payload["section_id"], None)
+            if current is None:
+                db.add(Section(**payload))
+            else:
+                for key, value in payload.items():
+                    setattr(current, key, value)
+                current.updated_at = now()
+            result["written"] += 1
+        for gone in existing.values():
+            db.delete(gone)
+            result["removed"] += 1
+
+    if draft is None:
+        for stale in db.scalars(select(Section).where(
+                Section.document_id == document.id, Section.status == SECTION_DRAFT)).all():
+            db.delete(stale)
+            result["removed"] += 1
+    return result
+
+
+def sync_all_sections(db: Session) -> dict:
+    """Rebuild the whole index. Cheap: sections are a few hundred rows at most."""
+    totals = {"documents": 0, "written": 0, "removed": 0}
+    for document in db.scalars(select(ContentDocument)).all():
+        part = sync_document_sections(db, document)
+        totals["documents"] += 1
+        totals["written"] += part["written"]
+        totals["removed"] += part["removed"]
+    return totals
+
+
+def published_section_keys(db: Session) -> set:
+    return {(row.document_id, row.section_id) for row in db.scalars(
+        select(Section).where(Section.status == SECTION_PUBLISHED)).all()}
+
+
+def section_exists(db: Session, document_id: str, section_id: str, status=None) -> bool:
+    query = select(Section).where(Section.document_id == document_id,
+                                  Section.section_id == section_id)
+    if status:
+        query = query.where(Section.status == status)
+    return db.scalar(query) is not None
+
+
+def orphan_placements(db: Session) -> list:
+    """Placements pointing at a section that is no longer published."""
+    live = published_section_keys(db)
+    out = []
+    for row in db.scalars(select(SectionPlacement)).all():
+        if (row.document_id, row.section_id) in live:
+            continue
+        out.append({"placementId": row.id, "productId": row.product_id,
+                    "productSlug": row.product_slug, "documentId": row.document_id,
+                    "sectionId": row.section_id, "sectionType": row.section_type})
+    return out

@@ -211,13 +211,56 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="Ferixas Commerce API", version="3.0.0", lifespan=lifespan)
 app.mount("/media", CompatibleMediaFiles(str(MEDIA_ROOT), str(UPLOAD_ROOT)), name="media")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_ROOT)), name="uploads")
+# Credentials travel in a header, never a cookie, so a wildcard origin only
+# exposed public reads. It is an explicit list anyway: the day a cookie is
+# added, this must already be safe. CORS_ORIGINS="*" restores the old
+# behaviour deliberately rather than by default.
+DEFAULT_CORS_ORIGINS = ",".join((
+    "https://shop.ferixas.com", "https://ferixas.com", "https://www.ferixas.com",
+    "http://localhost:3000", "http://127.0.0.1:3000",
+))
+CORS_ORIGINS = [origin.strip() for origin in
+                os.getenv("CORS_ORIGINS", DEFAULT_CORS_ORIGINS).split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
+    allow_origins=CORS_ORIGINS,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Retry-After", "X-RateLimit-Limit"],
 )
+
+
+@app.middleware("http")
+async def harden_and_throttle(request: Request, call_next):
+    """Security headers on every response, and a ceiling on abusable routes."""
+    from fastapi.responses import JSONResponse
+
+    from ratelimit import bucket_for, check, client_key, disabled
+
+    bucket = bucket_for(request.method, request.url.path)
+    if bucket and not disabled():
+        allowed, retry_after, limit = check(bucket, client_key(request))
+        if not allowed:
+            return JSONResponse(
+                {"detail": "Too many requests. Wait a moment and try again."},
+                status_code=429,
+                headers={"Retry-After": str(retry_after),
+                         "X-RateLimit-Limit": str(limit),
+                         "X-Content-Type-Options": "nosniff",
+                         "X-Frame-Options": "DENY",
+                         "Referrer-Policy": "strict-origin-when-cross-origin"},
+            )
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+    if os.getenv("FERIXAS_ENV", "").strip().lower() in {"production", "prod"}:
+        response.headers.setdefault("Strict-Transport-Security",
+                                    "max-age=31536000; includeSubDomains")
+    return response
 
 
 @app.middleware("http")

@@ -2422,6 +2422,169 @@ def _page_summary(document) -> dict:
     }
 
 
+# ── Sections as rows ───────────────────────────────────────────────────────
+# The editor, the product form and the integrity report all read the same
+# projection: the sections of a page, materialised from its documents.
+
+
+def _section_row_json(row) -> dict:
+    """One section row, in the shape both consoles read."""
+    return {"documentId": row.document_id, "sectionId": row.section_id, "id": row.section_id,
+            "status": row.status, "documentType": row.document_type, "type": row.type,
+            "name": row.name, "slug": row.section_id, "description": row.type,
+            "position": row.position, "sort_order": row.position,
+            "visible": row.visible, "is_active": row.visible,
+            "selectionMode": row.selection_mode, "source": row.source,
+            "presentation": row.presentation, "version": row.version,
+            "settings": row.settings or {},
+            "updatedAt": iso(row.updated_at) if row.updated_at else None}
+
+
+@router.get("/cms/sections")
+def cms_sections(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                 document_id: Optional[str] = Query(None),
+                 status: Optional[str] = Query(None)):
+    """Every section on every page, as a row, rebuilt from the documents first."""
+    from core import ContentDocument, Section, sync_all_sections, sync_document_sections
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        if document_id:
+            document = db.get(ContentDocument, document_id)
+            if not document:
+                raise HTTPException(404, "That page does not exist")
+            sync_document_sections(db, document)
+        else:
+            sync_all_sections(db)
+        db.commit()
+
+        query = select(Section)
+        if document_id:
+            query = query.where(Section.document_id == document_id)
+        if status:
+            query = query.where(Section.status == status)
+        rows = db.scalars(query.order_by(Section.document_id, Section.status,
+                                         Section.position)).all()
+        return {"sections": [_section_row_json(row) for row in rows], "count": len(rows)}
+
+
+@router.post("/cms/sections")
+def cms_section_create(payload: dict,
+                       session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Add a section to a page draft, then re-index it."""
+    from cms_sections import normalize_section, validate_section
+    from core import ContentDocument, ContentVersion, audit, new_id, sync_document_sections
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+
+        document_id = str((payload or {}).get("document_id") or "").strip()
+        document = db.get(ContentDocument, document_id) if document_id else None
+        if not document:
+            raise HTTPException(404, "That page does not exist")
+
+        draft = _cms_draft(db, document.id)
+        data = dict((draft.data if draft is not None else document.data) or {})
+        sections = [dict(row) for row in (data.get("sections") or []) if isinstance(row, dict)]
+
+        raw = dict((payload or {}).get("settings") or {})
+        section_type = str((payload or {}).get("type") or raw.get("type") or "").strip()
+        if not section_type:
+            raise HTTPException(422, "A new section needs a type.")
+        try:
+            position = int((payload or {}).get("position")
+                           or (max([int(row.get("position") or 0) for row in sections], default=0) + 1))
+        except (TypeError, ValueError):
+            position = len(sections) + 1
+        raw.update({"id": str((payload or {}).get("section_id") or new_id("sec")),
+                    "type": section_type,
+                    "name": str((payload or {}).get("name") or section_type),
+                    "position": position})
+        section = normalize_section(raw)
+        try:
+            validate_section(section)
+        except ValueError as error:
+            raise HTTPException(422, str(error))
+
+        sections.append(section)
+        data["sections"] = sections
+        if draft is None:
+            draft = ContentVersion(id=new_id("cv"), document_id=document.id, version=1,
+                                   status="draft", data=data, note="Section added",
+                                   created_by=str(getattr(staff, "email", "") or getattr(staff, "id", "")))
+            db.add(draft)
+        else:
+            draft.data = data
+        db.flush()
+        sync_document_sections(db, document)
+        audit(db, "staff", str(getattr(staff, "email", "") or ""), "cms.section.create",
+              target=f"{document.id}:{section.get('id')}", detail=section_type)
+        db.commit()
+        return {"section": section, "documentId": document.id, "hasDraft": True}
+
+
+@router.delete("/cms/sections")
+def cms_section_remove(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                       document_id: str = Query(...), section_id: str = Query(...),
+                       purge_placements: bool = Query(True)):
+    """Remove a section from the page and from its index, with its placements."""
+    from core import ContentDocument, SectionPlacement, audit, sync_document_sections
+
+    def without(data):
+        kept = [row for row in ((data or {}).get("sections") or [])
+                if not (isinstance(row, dict) and str(row.get("id") or "") == section_id)]
+        merged = dict(data or {})
+        merged["sections"] = kept
+        return merged
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        document = db.get(ContentDocument, document_id)
+        if not document:
+            raise HTTPException(404, "That page does not exist")
+
+        placements = db.scalars(select(SectionPlacement).where(
+            SectionPlacement.document_id == document_id,
+            SectionPlacement.section_id == section_id)).all()
+        if placements and not purge_placements:
+            return {"removed": False, "placements": len(placements),
+                    "detail": "That section still holds products; pass purge_placements=true to remove them with it."}
+
+        for row in placements:
+            db.delete(row)
+        document.data = without(document.data)
+        draft = _cms_draft(db, document.id)
+        if draft is not None:
+            draft.data = without(draft.data)
+        db.flush()
+        sync_document_sections(db, document)
+        audit(db, "staff", str(getattr(staff, "email", "") or ""), "cms.section.remove",
+              target=f"{document_id}:{section_id}", detail=f"{len(placements)} placement(s)")
+        db.commit()
+        return {"removed": True, "placementsRemoved": len(placements)}
+
+
+@router.get("/cms/integrity")
+def cms_integrity(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Sections that exist, and placements that no longer point at one."""
+    from core import Section, SectionPlacement, orphan_placements, sync_all_sections
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        totals = sync_all_sections(db)
+        db.commit()
+        orphans = orphan_placements(db)
+        return {"ok": not orphans, "orphanPlacements": orphans,
+                "counts": {"documents": totals["documents"],
+                           "sections": len(db.scalars(select(Section)).all()),
+                           "placements": len(db.scalars(select(SectionPlacement)).all())},
+                "sync": totals}
+
+
 @router.get("/cms/section-types")
 def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
                       document_type: Optional[str] = Query(None)):
