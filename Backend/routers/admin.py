@@ -2585,6 +2585,31 @@ def cms_integrity(session: Optional[str] = Header(None, alias="X-Ferix-Session")
                 "sync": totals}
 
 
+@router.post("/cms/integrity/prune")
+def cms_integrity_prune(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+                        dry_run: bool = Query(True)):
+    """Delete product placements whose section no longer exists.
+
+    A dry run by default: the report comes back first, and only an explicit
+    dry_run=false writes. Every removal is audit-logged, so a cleanup is a
+    recorded decision rather than a hand-typed DELETE.
+    """
+    from core import audit, delete_orphan_placements, sync_all_sections
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+        sync_all_sections(db)
+        db.flush()
+        result = delete_orphan_placements(db, dry_run=dry_run)
+        if not dry_run:
+            audit(db, "staff", str(getattr(staff, "email", "") or ""),
+                  "cms.placements.prune", target="section_placements",
+                  detail=f"{result['count']} orphan placement(s)")
+        db.commit()
+        return result
+
+
 @router.get("/cms/section-types")
 def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
                       document_type: Optional[str] = Query(None)):

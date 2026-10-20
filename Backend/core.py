@@ -1742,3 +1742,21 @@ def orphan_placements(db: Session) -> list:
                     "productSlug": row.product_slug, "documentId": row.document_id,
                     "sectionId": row.section_id, "sectionType": row.section_type})
     return out
+
+
+def delete_orphan_placements(db: Session, dry_run: bool = True) -> dict:
+    """Remove placements whose section no longer exists.
+
+    Orphans are inert: the resolver already refuses to price or render a section
+    it cannot find, so deleting them changes nothing a shopper sees. It only
+    makes the integrity report honest. Call `sync_all_sections` first, and pass
+    dry_run=False to actually write.
+    """
+    orphans = orphan_placements(db)
+    if not dry_run:
+        for entry in orphans:
+            row = db.get(SectionPlacement, entry["placementId"])
+            if row is not None:
+                db.delete(row)
+        db.flush()
+    return {"dryRun": bool(dry_run), "count": len(orphans), "placements": orphans}

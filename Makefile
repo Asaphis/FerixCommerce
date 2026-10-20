@@ -1,4 +1,4 @@
-.PHONY: backend-test postgres-smoke frontend-check verify
+.PHONY: backend-test postgres-smoke frontend-check verify sections-report sections-prune
 
 backend-test:
 	cd Backend && python3 -m unittest discover -s tests -v
@@ -18,3 +18,10 @@ frontend-check:
 	done
 
 verify: backend-test postgres-smoke frontend-check
+
+#: Placements pointing at a section that no longer exists.
+sections-report:
+	cd Backend && python3 prune_orphans.py
+
+sections-prune:
+	cd Backend && python3 prune_orphans.py --apply
