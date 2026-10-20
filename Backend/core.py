@@ -1105,7 +1105,7 @@ def visible_published_sections(document: Optional[ContentDocument]) -> list[dict
         return []
     sections = (document.data or {}).get("sections") or []
     return sorted([s for s in sections
-                   if isinstance(s, dict) and s.get("visible", True) and section_is_live(s)],
+                   if isinstance(s, dict) and section_visible(s) and section_is_live(s)],
                   key=lambda s: s.get("position", 0))
 
 

@@ -668,6 +668,76 @@ def resolve_cms_product_source(section: dict, decorated: list[dict], public_by_i
         rows = rows[:min(limit, 60)]
     return [public_by_id[product["id"]] for product in rows if product.get("id") in public_by_id]
 
+def _section_diagnostics(db, document, published_sections: list) -> dict:
+    """Why each section is, or is not, on the shop.
+
+    "The database has five sections and the API returns four" is the hardest
+    thing to see from outside, so the response answers it itself: one row per
+    section, naming the gate that decided.
+    """
+    from core import SectionPlacement, latest_draft, section_visible
+    from cms_sections import placement_is_live, section_is_live, selection_mode_of
+
+    if document is None:
+        return {"page": None, "sections": [], "note": "no home page document exists"}
+
+    def index(data) -> dict:
+        return {str(row.get("id")): row for row in (data or {}).get("sections") or []
+                if isinstance(row, dict) and row.get("id")}
+
+    published = index(document.data)
+    draft_row = latest_draft(db, document.id)
+    draft = index(draft_row.data if draft_row is not None else {})
+    served = {str(section.get("id")) for section in published_sections}
+    moment = now()
+    rows: dict = {}
+    for row in db.scalars(select(SectionPlacement).where(
+            SectionPlacement.document_id == document.id)).all():
+        rows.setdefault(str(row.section_id), []).append(row)
+
+    out = []
+    for section_id in sorted(set(published) | set(draft)):
+        section = published.get(section_id) or draft.get(section_id) or {}
+        placements = rows.get(section_id, [])
+        live_rows = [row for row in placements if placement_is_live(row, moment)]
+        if section_id not in published:
+            gate, reason = "draft", "draft only — the page has not been published since this section was added"
+        elif str(document.status) != "published":
+            gate, reason = "page", "the page itself is not published"
+        elif not section_visible(section):
+            gate, reason = "hidden", "switched off in the editor (visible: false)"
+        elif not section_is_live(section, moment):
+            gate, reason = "window", "the section's own window has closed (startsAt / endsAt)"
+        elif placements and not live_rows:
+            gate, reason = "products-expired", "on the page, but every product in it has expired"
+        elif not placements and selection_mode_of(section) == "manual":
+            gate, reason = "empty", "on the page, but it holds no products"
+        else:
+            gate, reason = "live", "on the page"
+        out.append({
+            "id": section_id,
+            "name": section.get("name") or section.get("type"),
+            "type": section.get("type"),
+            "selectionMode": selection_mode_of(section),
+            "source": section.get("source"),
+            "presentation": section.get("presentation"),
+            "visible": section_visible(section),
+            "startsAt": section.get("startsAt"),
+            "endsAt": section.get("endsAt"),
+            "sectionLive": section_is_live(section, moment),
+            "inDraft": section_id in draft,
+            "inPublished": section_id in published,
+            "onPage": section_id in served,
+            "placements": len(placements),
+            "livePlacements": len(live_rows),
+            "gate": gate,
+            "reason": reason,
+        })
+    return {"page": {"id": document.id, "status": document.status,
+                     "sectionsStored": len(published), "sectionsServed": len(served)},
+            "sections": out}
+
+
 @app.get("/catalog/home")
 def home():
     """The marketplace homepage. Everything here is CMS-managed."""
@@ -697,12 +767,16 @@ def home():
         doc = db.get(ContentDocument, "doc_marketplace_home")
         published_sections = visible_published_sections(doc)
         content = {"sections": published_sections}
+        section_diagnostics = _section_diagnostics(db, doc, published_sections)
         units_by_window = _paid_units_by_window(db, published_sections, paid_units)
 
         # CMS owns the published section structure. SectionPlacement owns the
         # approved membership of curated/product sections. Seller requests never
         # reach shoppers until Admin approval creates a placement row.
         placement_products: dict[str, list[dict]] = {}
+        #: Every placement row for a visible section, before any product check.
+        placement_counts: dict[str, int] = {}
+        manual_diagnostics: dict[str, dict] = {}
         if doc and doc.status == "published":
             product_by_id = {p.get("id"): p for p in items}
             current_time = now()
@@ -713,9 +787,12 @@ def home():
             for row in sorted(placement_rows, key=lambda item: (item.section_id, item.position, item.created_at)):
                 # The product's own window inside the section: when it runs out
                 # the product drops out silently and the section carries on.
-                if not placement_is_live(row, current_time):
-                    continue
                 if row.section_id not in visible_sections:
+                    continue
+                # Counted before the window check: the diagnostic has to show a
+                # section that holds rows even when every one of them expired.
+                placement_counts[row.section_id] = placement_counts.get(row.section_id, 0) + 1
+                if not placement_is_live(row, current_time):
                     continue
                 product = product_by_id.get(row.product_id)
                 if not product:
@@ -732,7 +809,6 @@ def home():
             # For every manual section with no placements, record exactly why.
             # This is what the admin shows in the section editor as "why is this
             # section empty?" — the same reason reaches the CMS UI over the API.
-            manual_diagnostics: dict[str, dict] = {}
             for section in visible_sections.values():
                 if selection_mode_of(section) != "manual":
                     continue
@@ -742,13 +818,20 @@ def home():
                 tag_key = f"{doc.id}__{sid}"
                 tagged = [p for p in items if tag_key in (p.get("section_tags") or [])]
                 approved_tagged = [p for p in tagged if p.get("status") == "approved"]
-                if not tagged:
+                placed = placement_counts.get(sid, 0)
+                if placed:
+                    # The rows exist; only the product side failed. Calling this
+                    # "empty" would contradict the database.
+                    reason = ("products are placed in this section but none are available on the "
+                              "marketplace — check approval, stock and the seller's status")
+                elif not tagged:
                     reason = "no products are tagged for this section in the product form"
                 elif not approved_tagged:
                     reason = "products are tagged but none have been approved yet"
                 else:
                     reason = "products are approved but no placement was created — re-save the product"
                 manual_diagnostics[sid] = {
+                    "placed": placed,
                     "assigned": len(placement_products.get(sid, [])),
                     "tagged": len(tagged),
                     "approved": len(approved_tagged),
@@ -766,6 +849,7 @@ def home():
             "content": content,
             "placements": placement_products,
             "manualDiagnostics": manual_diagnostics,
+            "sectionsDiagnostics": section_diagnostics,
             "categories": sorted([{**c, "count": sum(p.get("category") == c.get("slug") for p in items)}
                                   for c in cats if c.get("visible", True)], key=lambda c: c.get("position", 0)),
             "collections": [{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in items),
