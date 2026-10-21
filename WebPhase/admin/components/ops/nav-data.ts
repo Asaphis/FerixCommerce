@@ -41,11 +41,18 @@ export const NAV_GROUPS: NavGroupData[] = [
       { href: "/cms", label: "CMS", icon: "palette", permission: "cms.manage" },
       { href: "/brands", label: "Brands", icon: "tag", permission: "catalog.manage" },
       { href: "/departments", label: "Departments", icon: "dashboard", permission: "catalog.manage" },
-      // Collections, banners, adverts, and media are supporting records owned by
-      // CMS/Catalogue workflows. They are intentionally not competing primary
-      // destinations. Flash Sale campaigns remain available as an operational
-      // workflow because they carry time, price, and quantity rules.
       { href: "/promotions", label: "Campaigns", icon: "megaphone", permission: "promotions.manage" },
+    ],
+  },
+  {
+    // The records a page is built out of. They were reachable only by typing the
+    // address, which is why they read as missing even though they existed.
+    label: "Content",
+    items: [
+      { href: "/cms/media", label: "Media library", icon: "image", permission: "cms.manage" },
+      { href: "/cms/banners", label: "Banners", icon: "image", permission: "cms.manage" },
+      { href: "/cms/adverts", label: "Adverts", icon: "megaphone", permission: "cms.manage" },
+      { href: "/cms/collections", label: "Collections", icon: "boxes", permission: "cms.manage" },
     ],
   },
   {

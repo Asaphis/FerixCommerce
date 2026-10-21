@@ -8,6 +8,7 @@ import {
   Boxes,
   CreditCard,
   History,
+  Image as ImageIcon,
   LayoutDashboard,
   Megaphone,
   Menu,
@@ -28,6 +29,7 @@ import { MOBILE_PRIMARY, NAV_GROUPS, isActivePath, visibleGroups, type NavItem }
 /** Icons are the only React-bound part of the nav, so they live here. */
 const ICONS: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
+  image: ImageIcon,
   chart: BarChart3,
   palette: Palette,
   boxes: Boxes,
