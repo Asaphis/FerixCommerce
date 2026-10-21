@@ -466,13 +466,27 @@ PALETTE: list[dict] = [
 
 #: Which page kind each family belongs to, so a family is never offered where it
 #: cannot draw.
+#: Which page kinds can actually draw each family.
+#:
+#: Two rules keep this honest, and both were previously wrong:
+#:
+#: * an information page (About, Contact, FAQ, ...) draws its content fields and
+#:   nothing else, so it is offered no section family at all - the palette and
+#:   the save gate used to disagree, and the gate let a hero be stored on a page
+#:   that could never render it;
+#: * the storefront renders its own document, so it has to be configurable - it
+#:   appeared in no family's list and therefore offered an empty palette.
+#:
+#: The product page is deliberately not a section page: its content is the
+#: product record from the catalogue, and the CMS only arranges the four
+#: template blocks around it.
 FAMILY_PAGE_KINDS: dict[str, tuple] = {
-    "hero": ("marketplace_home", "marketplace_explore", "information"),
-    "product": ("marketplace_home", "marketplace_explore", "information"),
-    "category": ("marketplace_home", "marketplace_explore", "information"),
-    "brand": ("marketplace_home", "marketplace_explore", "information"),
-    "store": ("marketplace_home", "marketplace_explore", "information"),
-    "other": ("marketplace_home", "marketplace_explore", "information"),
+    "hero": ("marketplace_home", "marketplace_explore", "marketplace_store"),
+    "product": ("marketplace_home", "marketplace_explore"),
+    "category": ("marketplace_home", "marketplace_explore", "marketplace_store"),
+    "brand": ("marketplace_home", "marketplace_explore", "marketplace_store"),
+    "store": ("marketplace_home", "marketplace_explore", "marketplace_store"),
+    "other": ("marketplace_home", "marketplace_explore", "marketplace_store"),
     "product_template": ("marketplace_product",),
 }
 

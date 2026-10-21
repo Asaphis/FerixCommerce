@@ -2908,7 +2908,14 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
                     and section_type == "product_carousel"
                     and str(section.get("source") or "").strip().lower() == "related"
                 )
-                if family and page_kind not in FAMILY_PAGE_KINDS.get(family, ()) and not legacy_related_products:
+                # A section already on the page may always be re-saved, so no
+                # operator is locked out of a page that predates this matrix.
+                already_stored = any(
+                    isinstance(row, dict) and str(row.get("id") or "") == section_id
+                    for row in ((document.data or {}).get("sections") or [])
+                )
+                if (family and page_kind not in FAMILY_PAGE_KINDS.get(family, ())
+                        and not legacy_related_products and not already_stored):
                     raise HTTPException(422, f"'{section_type}' cannot be used on a {page_kind} page.")
                 try:
                     validate_section(section or {})
