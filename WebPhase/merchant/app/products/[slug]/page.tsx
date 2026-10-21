@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { requireMerchant } from "@/lib/data";
-import { getProduct, getProductOptions, listProducts, ApiError } from "@/lib/api";
+import { getProduct, getProductOptions, listMedia, listProducts, ApiError } from "@/lib/api";
 import { ProductDeleteForm } from "@/components/studio/product-delete-form";
 import { ProductForm } from "@/components/studio/product-form";
 import { Panel, PanelHead, Pill, StatTile } from "@/components/studio/bits";
@@ -12,6 +12,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const { slug } = await params;
   const { session, merchant } = await requireMerchant();
   const options = await getProductOptions(session);
+  // The seller's own files, so a picture already uploaded can be reused.
+  let library: { url: string; label: string }[] = [];
+  try {
+    const media = await listMedia(session);
+    library = (media.assets ?? []).map((asset) => ({
+      url: String(asset.url),
+      label: String((asset as { label?: string; alt?: string }).label ?? (asset as { alt?: string }).alt ?? asset.url),
+    }));
+  } catch {
+    library = [];
+  }
   let data;
   try {
     data = await getProduct(session, slug);
@@ -146,7 +157,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <StatTile label="Sold to date" value={num(sold)} sub={`${num(product.sold30d)} in the last 30 days`} accent="azure" />
       </div>
 
-      <ProductForm product={product} categories={options.categories.map((item) => item.slug)} brands={options.brands} sections={options.sections} />
+      <ProductForm
+          product={product}
+          categories={options.categories.map((item) => item.slug)}
+          brands={options.brands}
+          sections={options.sections}
+          library={library}
+        />
 
       <Panel>
         <PanelHead title="Marketplace listing" />

@@ -50,12 +50,15 @@ export function ProductForm({
   brands = [],
   sections = [],
   storeName,
+  library = [],
 }: {
   product?: Product;
   categories: string[];
   brands?: { id: string; slug: string; name: string }[];
   sections?: SectionOption[];
   storeName?: string;
+  /** The seller's own media, so a product can reuse a picture already uploaded. */
+  library?: { url: string; label: string }[];
 }) {
   const [state, action] = useActionState<FormState, FormData>(
     product ? saveProductAction : createProductAction,
@@ -149,7 +152,47 @@ export function ProductForm({
                 <span className="text-[11px] text-chalk-dim">JPG, PNG, WEBP or GIF · up to 20 MB each</span>
                 <input name="mediaFiles" type="file" accept="image/*" multiple className="sr-only" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} />
               </label>
-              {(images.length || previews.length) ? (
+              {library.length > 0 ? (
+        <div className="grid gap-2 border-t border-hairline pt-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+            Or pick from your media
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {library.map((asset) => {
+              const chosen = images.includes(asset.url);
+              return (
+                <button
+                  key={asset.url}
+                  type="button"
+                  aria-pressed={chosen}
+                  aria-label={`Use ${asset.label}`}
+                  title={asset.label}
+                  onClick={() =>
+                    setImages((current) => (current.includes(asset.url) ? current : [...current, asset.url]))
+                  }
+                  className={
+                    "relative shrink-0 overflow-hidden rounded-[3px] border transition-colors " +
+                    (chosen ? "border-lime ring-1 ring-lime" : "border-hairline hover:border-chalk-dim")
+                  }
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={apiImageUrl(asset.url) ?? asset.url} alt={asset.label} className="h-14 w-14 object-cover" />
+                  {chosen ? (
+                    <span className="absolute right-0.5 top-0.5 grid h-4 w-4 place-items-center rounded-full bg-lime text-[9px] text-[#102d43]">
+                      <Check width={10} height={10} />
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] leading-relaxed text-chalk-dim">
+            Choosing here adds the picture to the gallery without uploading it again. The first one stays the lead image.
+          </p>
+        </div>
+      ) : null}
+
+      {(images.length || previews.length) ? (
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {images.map((url, index) => (
                     <div key={url} className="group relative overflow-hidden rounded-[12px] border border-hairline bg-panel-2">
