@@ -215,6 +215,10 @@ class MediaIn(BaseModel):
     publicId: str = ""
     width: int = 0
     height: int = 0
+    label: str = ""
+    tags: list = []
+    originPage: str = ""
+    originSection: str = ""
 
 
 class BrandCreate(BaseModel):
@@ -2067,13 +2071,44 @@ def cms_restore(session: Optional[str] = Header(None, alias="X-Ferix-Session"), 
 # ── Media library ──────────────────────────────────────────────────────────
 
 @router.get("/media")
-def media(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+def media(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
+          q: str = Query(""), kind: str = Query(""), origin: str = Query(""),
+          unused: bool = Query(False)):
+    """The library: every file in the platform, searchable and traceable."""
+    from core import media_usage
+
     with SessionLocal() as db:
         require_staff(db, session, "admin")
         sync_pending_media(db)
-        rows = db.scalars(select(MediaAsset).where(MediaAsset.owner_type == "platform").order_by(MediaAsset.created_at.desc())).all()
-        return {"assets": [media_json(m) for m in rows],
-                "storage": storage_info()["provider"], "storageInfo": storage_info()}
+        rows = db.scalars(select(MediaAsset).where(MediaAsset.owner_type == "platform")
+                          .order_by(MediaAsset.created_at.desc())).all()
+        usage = media_usage(db)
+        needle = (q or "").strip().lower()
+        selected = []
+        for asset in rows:
+            if kind and asset.kind != kind:
+                continue
+            if origin:
+                where = (asset.origin_page or "").lower()
+                if origin == "unused":
+                    if usage.get(asset.id):
+                        continue
+                elif origin not in where:
+                    continue
+            if needle:
+                haystack = " ".join([asset.label or "", asset.alt or "", asset.folder or "",
+                                     asset.origin_page or "", " ".join(asset.tags or [])]).lower()
+                if needle not in haystack:
+                    continue
+            if unused and usage.get(asset.id):
+                continue
+            selected.append(asset)
+        return {
+            "assets": [{**media_json(m), "usedBy": usage.get(m.id, [])} for m in selected],
+            "counts": {"total": len(rows), "shown": len(selected),
+                       "unused": sum(1 for m in rows if not usage.get(m.id))},
+            "storage": storage_info()["provider"], "storageInfo": storage_info(),
+        }
 
 
 @router.post("/media")
@@ -2083,9 +2118,19 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
         require_permission(staff, "media.manage")
         if payload.kind not in {"image", "video"}:
             raise HTTPException(422, "Media kind must be image or video")
+        from core import find_media_by_hash, url_hash
+        digest = url_hash(payload.url)
+        already = find_media_by_hash(db, digest)
+        if already is not None:
+            return {"asset": media_json(already), "duplicate": True, "reused": True}
         asset = MediaAsset(id=new_id("med"), owner_type="platform", owner_id="platform",
                            kind=payload.kind, url=payload.url, alt=payload.alt, folder=payload.folder,
-                           public_id=payload.publicId, width=payload.width, height=payload.height)
+                           public_id=payload.publicId, width=payload.width, height=payload.height,
+                           label=(payload.label or payload.alt or payload.url)[:200],
+                           tags=list(payload.tags or []),
+                           origin_page=(payload.originPage or payload.folder or "")[:40],
+                           origin_section=(payload.originSection or "")[:60],
+                           content_hash=digest)
         db.add(asset)
         audit(db, "admin", staff.email, "media.add", payload.folder, payload.url[:120])
         db.commit()
@@ -2101,6 +2146,10 @@ async def upload_media(
     kind: str = Form("image"),
     alt: str = Form(""),
     folder: str = Form("platform"),
+    label: str = Form(""),
+    origin_page: str = Form(""),
+    origin_section: str = Form(""),
+    tags: str = Form(""),
 ):
     """Local-disk upload fallback for MVP deployments without Cloudinary."""
     with SessionLocal() as db:
@@ -2112,6 +2161,14 @@ async def upload_media(
         if not content or len(content) > 20 * 1024 * 1024:
             raise HTTPException(400, "Upload must be between 1 byte and 20 MB")
         validate_media_upload(content, file.filename or "asset", kind)
+        # Identity is the bytes. Upload the same picture twice and the second
+        # call answers with the file that is already in the library.
+        from core import content_hash, find_media_by_hash
+        digest = content_hash(content)
+        already = find_media_by_hash(db, digest)
+        if already is not None:
+            return {"asset": media_json(already), "duplicate": True, "reused": True,
+                    "storage": storage_info()["provider"], "storageInfo": storage_info()}
         url, public_id, storage = upload_media_blob(content, file.filename or "asset", kind)
         if url.startswith("/"):
             url = f"{str(request.base_url).rstrip('/')}{url}"
@@ -2119,6 +2176,11 @@ async def upload_media(
             id=new_id("med"), owner_type="platform", owner_id="platform",
             kind=kind, url=url,
             public_id=public_id, alt=alt[:300], folder=folder[:80], bytes=len(content),
+            label=(label or alt or (file.filename or ""))[:200],
+            tags=[tag.strip() for tag in (tags or "").split(",") if tag.strip()],
+            origin_page=(origin_page or folder or "")[:40],
+            origin_section=(origin_section or "")[:60],
+            content_hash=digest,
         )
         db.add(asset)
         audit(db, "admin", staff.email, "media.upload", folder, public_id)
@@ -2134,6 +2196,14 @@ def remove_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
         asset = db.get(MediaAsset, str(payload.get("id")))
         if not asset:
             raise HTTPException(404, "Media not found")
+        # A file a page points at is not deletable; the reference would break.
+        from core import media_usage_for
+        uses = media_usage_for(db, asset.id)
+        if uses and not bool(payload.get("force")):
+            raise HTTPException(409, {
+                "detail": "This file is still in use. Remove it from those places first, or send force=true.",
+                "usedBy": uses,
+            })
         cleanup = remove_media_blob(asset)
         db.delete(asset)
         db.commit()
@@ -3035,6 +3105,8 @@ class AdvertIn(BaseModel):
     body: Optional[str] = None
     mediaUrl: Optional[str] = None
     kind: Optional[str] = None
+    #: Ordered creatives. One is a normal advert; several rotate in its band.
+    media: Optional[list] = None
     href: Optional[str] = None
     placement: Optional[str] = None
     sponsor: Optional[str] = None

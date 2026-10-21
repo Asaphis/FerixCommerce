@@ -53,7 +53,7 @@ TEST_STAFF_PASSWORD = os.getenv("FERIXAS_TEST_STAFF_PASSWORD", "").strip()
 BOOTSTRAP_SECRET = os.getenv("FERIXAS_BOOTSTRAP_SECRET", "").strip()
 ENVIRONMENT = os.getenv("FERIXAS_ENV", os.getenv("ENVIRONMENT", "development")).strip().lower()
 PRODUCTION_ENVIRONMENTS = {"production", "prod"}
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 PLACEHOLDER = "https://picsum.photos/seed/{seed}/900/900"
 UPLOAD_ROOT = ROOT / "uploads" if "ROOT" in globals() else Path(__file__).resolve().parent / "uploads"
 UPLOAD_ROOT.mkdir(parents=True, exist_ok=True)
@@ -416,6 +416,15 @@ class MediaAsset(Base):
     height: Mapped[int] = mapped_column(default=0)
     bytes: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    #: The library fields. A file is identified by its bytes, not its name,
+    #: so the same image can never be stored twice by accident.
+    label: Mapped[str] = mapped_column(String(200), default="")
+    tags: Mapped[list] = mapped_column(JSON, default=list)
+    origin_page: Mapped[str] = mapped_column(String(40), default="", index=True)
+    origin_section: Mapped[str] = mapped_column(String(60), default="")
+    content_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+    perceptual_hash: Mapped[str] = mapped_column(String(32), default="")
 
 
 class ContentDocument(Base):
@@ -1278,7 +1287,7 @@ def media_for(db: Session, owner_type: str, owner_id: str) -> list[dict]:
     return [media_json(m) for m in rows]
 
 
-def media_json(m: MediaAsset) -> dict:
+def _media_json_base(m: MediaAsset) -> dict:
     return {
         "id": m.id, "ownerType": m.owner_type, "ownerId": m.owner_id, "kind": m.kind,
         "url": m.url, "publicId": m.public_id, "alt": m.alt, "folder": m.folder,
@@ -1588,6 +1597,10 @@ def migrate() -> None:
           "average_rating": "FLOAT DEFAULT 0.0", "success_rate": "FLOAT DEFAULT 0.0", "delivery_rate": "FLOAT DEFAULT 0.0"},
         # A placement can be switched off without being deleted.
         "section_placements": {"active": "BOOLEAN DEFAULT TRUE"},
+        # The library: identity by content, and where a file came from.
+        "media_assets": {"label": "VARCHAR(200)", "tags": "JSON", "origin_page": "VARCHAR(40)",
+                         "origin_section": "VARCHAR(60)", "content_hash": "VARCHAR(64)",
+                         "perceptual_hash": "VARCHAR(32)"},
     }
     with engine.begin() as connection:
         for table, columns in required.items():
@@ -1760,3 +1773,92 @@ def delete_orphan_placements(db: Session, dry_run: bool = True) -> dict:
                 db.delete(row)
         db.flush()
     return {"dryRun": bool(dry_run), "count": len(orphans), "placements": orphans}
+
+
+# ── The media library ─────────────────────────────────────────────────────
+# Two jobs: keep one copy of a file however many times it is uploaded, and
+# answer "where is this used" before anything is deleted.
+
+def content_hash(data: bytes) -> str:
+    """The identity of a file: its bytes, never its name or its date."""
+    import hashlib as _hashlib
+    return _hashlib.sha256(data).hexdigest()
+
+
+def url_hash(url: str) -> str:
+    """Identity for an asset added by address rather than uploaded."""
+    import hashlib as _hashlib
+    return _hashlib.sha256(str(url or "").strip().encode("utf-8")).hexdigest()
+
+
+def find_media_by_hash(db: Session, digest: str):
+    """The asset already holding these bytes, if there is one."""
+    if not digest:
+        return None
+    return db.scalar(select(MediaAsset).where(MediaAsset.content_hash == digest))
+
+
+def _asset_ids_in(blob) -> set:
+    """Every asset id referenced anywhere inside a stored JSON value."""
+    found = set()
+    try:
+        text = json.dumps(blob, default=str)
+    except (TypeError, ValueError):
+        return found
+    for key in ("assetId", "asset_id", "mediaId"):
+        marker = f'"{key}": "'
+        start = 0
+        while True:
+            index = text.find(marker, start)
+            if index < 0:
+                break
+            index += len(marker)
+            end = text.find('"', index)
+            if end < 0:
+                break
+            value = text[index:end]
+            if value:
+                found.add(value)
+            start = end + 1
+    return found
+
+
+def media_usage(db: Session) -> dict:
+    """Where every asset is used, so nothing is deleted out from under a page."""
+    usage = {}
+
+    def note(asset_id, where):
+        usage.setdefault(asset_id, []).append(where)
+
+    for document in db.scalars(select(ContentDocument)).all():
+        for row in ((document.data or {}).get("sections") or []):
+            if not isinstance(row, dict):
+                continue
+            for asset_id in _asset_ids_in(row):
+                note(asset_id, {"kind": "section", "documentId": document.id,
+                                "sectionId": str(row.get("id") or ""),
+                                "status": document.status})
+    for record in db.scalars(select(Catalog)).all():
+        if not record.data:
+            continue
+        for asset_id in _asset_ids_in(record.data):
+            note(asset_id, {"kind": record.kind, "id": record.slug, "status": "record"})
+    return usage
+
+
+def media_usage_for(db: Session, asset_id: str) -> list:
+    return media_usage(db).get(str(asset_id), [])
+
+
+def media_json(asset) -> dict:
+    """The base shape the consoles already read, plus the library fields."""
+    row = _media_json_base(asset)
+    row.update({
+        "label": getattr(asset, "label", "") or "",
+        "tags": list(getattr(asset, "tags", None) or []),
+        "originPage": getattr(asset, "origin_page", "") or "",
+        "originSection": getattr(asset, "origin_section", "") or "",
+        "contentHash": getattr(asset, "content_hash", "") or "",
+        "inLibrary": True,
+    })
+    return row
