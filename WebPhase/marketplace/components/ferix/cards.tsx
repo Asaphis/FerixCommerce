@@ -96,15 +96,17 @@ export function ProductCard({
         <Link href={`/store/${product.merchantSlug}`} className="block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:text-ember sm:text-[10px] sm:tracking-[0.14em]">
           {product.merchantName}
         </Link>
-        <Link href={href} style={{ color: safeColor(display?.textColor) }} className="mt-1 line-clamp-2 min-h-[2.25em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">
+        <Link href={href} style={{ color: safeColor(display?.textColor) }} className="mt-1 line-clamp-2 min-h-[2.75em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">
           {product.title}
         </Link>
-        <div className="mt-2 hidden items-center gap-2 sm:flex">
-          <Stars value={product.rating} />
-          <span className="font-mono text-[10.5px] text-ink-soft">({compact(product.reviewCount)})</span>
-        </div>
-        <div className="mt-2 flex items-end justify-between gap-2 sm:mt-3">
+        <div className="mt-2 flex items-end justify-between gap-2 sm:mt-2.5">
           <Price value={price} compareAt={compareAt} discount={discount} />
+          {/* The rating rides with the price rather than taking a row of its own:
+              five stacked rows is what made the card read as too tall. */}
+          <span className="hidden shrink-0 items-center gap-1.5 pb-0.5 sm:flex">
+            <Stars value={product.rating} />
+            <span className="font-mono text-[10.5px] text-ink-soft">({compact(product.reviewCount)})</span>
+          </span>
         </div>
         {product.stockStatus === "limited" ? (
           <div className="mt-1.5">
@@ -113,7 +115,7 @@ export function ProductCard({
         ) : null}
 
         {showAdd ? (
-          <div className="mt-2 flex items-center gap-1.5 border-t border-line-warm pt-2 sm:mt-3 sm:pt-3">
+          <div className="mt-auto flex items-center gap-1.5 border-t border-line-warm pt-2 sm:pt-3">
             {product.stockStatus !== "out_of_stock" ? <AddToCartForm productId={product.id} documentId={product.sectionDocumentId} sectionId={product.sectionId} expectedPrice={price} /> : <span className="flex-1"><button type="button" disabled className="w-full rounded-[2px] bg-bone-soft py-2 text-[13px] font-semibold text-ink-soft">Sold out</button></span>}
             <WishlistForm productId={product.id} back="/browse" saved={saved} />
           </div>
@@ -146,11 +148,15 @@ export function ProductGrid({
   display?: ProductCardDisplay;
 }) {
   const phone = Math.min(4, Math.max(1, Math.round(Number(across) || (columns === 3 ? 3 : 2))));
+  //: A portrait phone cannot carry more than two of these cards: at three or
+  //: four the add button drops under 44px and stops being a touch target, so
+  //: those choices are honoured from a sideways phone upward and the wider
+  //: screens take one more column rather than two.
   const width: Record<number, string> = {
     1: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
     2: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
-    3: "grid-cols-3 sm:grid-cols-4 lg:grid-cols-6",
-    4: "grid-cols-4 sm:grid-cols-6 lg:grid-cols-6",
+    3: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+    4: "grid-cols-2 sm:grid-cols-4 lg:grid-cols-5",
   };
   return (
     <div

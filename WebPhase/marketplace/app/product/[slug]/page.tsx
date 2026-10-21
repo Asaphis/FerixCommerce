@@ -56,7 +56,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
   const maxQuantity = Math.max(1, Math.min(product.availableQuantity ?? (product.stockStatus === "out_of_stock" ? 0 : 10), 10));
 
   return (
-    <div className="mx-auto flex max-w-[1240px] flex-col px-4 py-8">
+    <div className="mx-auto flex max-w-[1240px] flex-col px-4 py-5 sm:py-8">
       <nav className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
         <Link href="/" className="transition-colors hover:text-ember">
           Home
@@ -69,7 +69,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
         <span className="text-ink">{product.title}</span>
       </nav>
 
-      <div className={`mt-6 grid grid-cols-1 items-start gap-8 ${sectionVisible("product_gallery") && sectionVisible("buy_box") ? "lg:grid-cols-[1.05fr_0.95fr]" : "lg:grid-cols-1"}`}>
+      <div className={`mt-4 grid grid-cols-1 items-start gap-6 sm:mt-6 sm:gap-8 ${sectionVisible("product_gallery") && sectionVisible("buy_box") ? "lg:grid-cols-[1.05fr_0.95fr]" : "lg:grid-cols-1"}`}>
         {sectionVisible("product_gallery") ? (
           <div style={{ order: sectionPosition("product_gallery") }}>
             <ProductGallery slug={product.slug} title={product.title} images={product.images} />
