@@ -333,12 +333,18 @@ export async function addMediaAction(_previous: FormState, form: FormData): Prom
   const kind = str(form, "kind", "image");
   const alt = str(form, "alt");
   const folder = str(form, "folder", "platform");
+  // What the library searches on: a label, and where the file came from.
+  const label = str(form, "label");
+  const tags = str(form, "tags");
+  const originPage = str(form, "originPage");
+  const originSection = str(form, "originSection");
+  const library = { label, tags, originPage, originSection };
   if (!(file instanceof File && file.size > 0) && !url) return { error: "Choose a file or enter a hosted media URL." };
   try {
     if (file instanceof File && file.size > 0) {
-      await api.uploadMedia(session, file, { kind, alt, folder });
+      await api.uploadMedia(session, file, { kind, alt, folder, ...library });
     } else {
-      await api.addMedia(session, { url, kind, alt, folder });
+      await api.addMedia(session, { url, kind, alt, folder, ...library });
     }
   } catch (error) {
     return actionError(error, "We could not upload or add this media asset.");

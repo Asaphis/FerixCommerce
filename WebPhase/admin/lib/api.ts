@@ -725,6 +725,14 @@ export const deleteBrand = (session: string | null, id: string) =>
 
 // ── Media library ──────────────────────────────────────────────────────
 
+export type MediaUse = {
+  kind: string;
+  documentId?: string;
+  sectionId?: string;
+  id?: string;
+  status?: string;
+};
+
 export type MediaAsset = {
   id: string;
   kind: string;
@@ -734,15 +742,48 @@ export type MediaAsset = {
   width: number;
   height: number;
   createdAt: string;
+  label?: string;
+  tags?: string[];
+  originPage?: string;
+  originSection?: string;
+  contentHash?: string;
+  usedBy?: MediaUse[];
 };
 
-export const listMedia = (session: string | null) =>
-  call<{ assets: MediaAsset[]; storage: string }>("GET", "admin/media", { session });
+export const listMedia = (
+  session: string | null,
+  filters: { q?: string; kind?: string; origin?: string; unused?: boolean } = {},
+) =>
+  call<{ assets: MediaAsset[]; storage: string; counts?: { total: number; shown: number; unused: number } }>(
+    "GET",
+    "admin/media",
+    {
+      session,
+      params: {
+        q: filters.q || undefined,
+        kind: filters.kind || undefined,
+        origin: filters.origin || undefined,
+        unused: filters.unused ? "true" : undefined,
+      },
+    },
+  );
 
 export const addMedia = (session: string | null, body: Record<string, unknown>) =>
   call<{ asset: MediaAsset }>("POST", "admin/media", { body, session });
 
-export async function uploadMedia(session: string, file: File, metadata: { kind: string; alt: string; folder: string }) {
+export async function uploadMedia(
+  session: string,
+  file: File,
+  metadata: {
+    kind: string;
+    alt: string;
+    folder: string;
+    label?: string;
+    tags?: string;
+    originPage?: string;
+    originSection?: string;
+  },
+) {
   const url = new URL(`${apiBase}/admin/media/upload`);
   url.searchParams.set("session", session);
   const form = new FormData();
@@ -750,13 +791,17 @@ export async function uploadMedia(session: string, file: File, metadata: { kind:
   form.append("kind", metadata.kind);
   form.append("alt", metadata.alt);
   form.append("folder", metadata.folder);
+  if (metadata.label) form.append("label", metadata.label);
+  if (metadata.tags) form.append("tags", metadata.tags);
+  if (metadata.originPage) form.append("origin_page", metadata.originPage);
+  if (metadata.originSection) form.append("origin_section", metadata.originSection);
   const response = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${KEY}` }, body: form, cache: "no-store" });
   if (!response.ok) {
     let detail = `Request failed (${response.status})`;
     try { detail = ((await response.json()) as { detail?: string }).detail ?? detail; } catch {}
     throw new ApiError(response.status, detail);
   }
-  return (await response.json()) as { asset: MediaAsset; storage: string };
+  return (await response.json()) as { asset: MediaAsset; storage: string; duplicate?: boolean };
 }
 
 export const removeMedia = (session: string | null, id: string) =>
