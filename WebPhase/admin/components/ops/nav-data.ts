@@ -49,8 +49,10 @@ export const NAV_GROUPS: NavGroupData[] = [
     // address, which is why they read as missing even though they existed.
     label: "Content",
     items: [
+      // Media is owned by the section that shows it: a hero holds its own
+      // slides, and the library is where the files live. A separate banner
+      // manager would be a second place to author the same thing.
       { href: "/cms/media", label: "Media library", icon: "image", permission: "cms.manage" },
-      { href: "/cms/banners", label: "Banners", icon: "image", permission: "cms.manage" },
       { href: "/cms/adverts", label: "Adverts", icon: "megaphone", permission: "cms.manage" },
       { href: "/cms/collections", label: "Collections", icon: "boxes", permission: "cms.manage" },
     ],
