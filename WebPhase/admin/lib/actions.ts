@@ -424,6 +424,36 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
       delete next.eyebrow;
     }
 
+    // A hero may hold several slides. Each row posts a URL, a kind and
+    // optionally a file, in the same order, so the list keeps its order.
+    const slideUrls = formData.getAll("slideUrl").map((value) => String(value ?? "").trim());
+    if (slideUrls.length) {
+      const slideKinds = formData.getAll("slideKind").map((value) => String(value ?? ""));
+      const slideFiles = formData.getAll("slideFile");
+      const slides: { url: string; kind: string }[] = [];
+      for (let index = 0; index < slideUrls.length; index += 1) {
+        const file = slideFiles[index];
+        let url = slideUrls[index];
+        let kind = slideKinds[index] === "video" ? "video" : "image";
+        if (file instanceof File && file.size > 0) {
+          const uploadedKind = file.type.startsWith("video/") ? "video" : "image";
+          const uploaded = await api.uploadMedia(session, file, {
+            kind: uploadedKind,
+            alt: `${current.name || current.type || "Section"} slide ${index + 1}`,
+            folder: "banners",
+            originSection: sectionId,
+          });
+          url = uploaded.asset.url;
+          kind = uploadedKind;
+        }
+        if (!url) continue;
+        if (/\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(url)) kind = "video";
+        slides.push({ url, kind });
+      }
+      if (slides.length) next.slides = slides;
+      else delete next.slides;
+    }
+
     const mediaFile = formData.get("field_mediaFile");
     let uploadedMediaUrl = "";
     let uploadedKind = "";

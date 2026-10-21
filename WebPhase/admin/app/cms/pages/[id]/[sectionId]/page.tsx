@@ -10,6 +10,7 @@ import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
 import { deleteCmsSectionAction, saveCmsSectionAction } from "@/lib/actions";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
+import { MediaSlotsField } from "@/components/ops/media-slots-field";
 import { CmsSectionPreview } from "@/components/ops/cms-section-preview";
 import { LocalDateTimeInput } from "@/components/ops/local-datetime-input";
 import { ColorInput } from "@/components/shared/color-input";
@@ -537,6 +538,17 @@ export default async function CmsSectionEditor({
                         selectedLibraryUrl={mediaAssets.some((asset) => asset.url === sectionMediaUrl) ? sectionMediaUrl : ""}
                       />
                     </div>
+                  ) : null}
+                  {isHeroSection ? (
+                    <MediaSlotsField
+                      initial={Array.isArray((section as { slides?: { url: string; kind?: string }[] }).slides)
+                        ? ((section as { slides?: { url: string; kind?: string }[] }).slides ?? [])
+                        : []}
+                      library={mediaAssets.map((asset) => ({
+                        url: asset.url,
+                        label: `${asset.kind} · ${asset.alt || asset.id}`,
+                      }))}
+                    />
                   ) : null}
                   <div className="flex flex-wrap items-center gap-2">
                     <SubmitButton pendingLabel="Saving">Save draft</SubmitButton>

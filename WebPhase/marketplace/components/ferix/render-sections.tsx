@@ -229,9 +229,29 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
       case "hero_banner": {
         const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
         const usableBanners = home.banners.filter((banner) => (banner as Banner & { active?: boolean }).active !== false);
-        const slides = (section.bannerId
-          ? usableBanners.filter((banner) => banner.id === section.bannerId)
-          : usableBanners).map((banner) => ({
+        // The section's own slides come first: a hero holds its own list, and
+        // the banner library is only the fallback for a section that has none.
+        const ownSlides = Array.isArray((section as { slides?: { url?: string; kind?: string }[] }).slides)
+          ? ((section as { slides?: { url?: string; kind?: string }[] }).slides ?? []).filter((slot) =>
+              String(slot?.url ?? "").trim(),
+            )
+          : [];
+        const slides = ownSlides.length
+          ? ownSlides.map((slot, index) => ({
+              id: `${section.id ?? "section"}-slide-${index}`,
+              kind: slot.kind === "video" ? "video" : "image",
+              eyebrow: section.eyebrow ?? "",
+              headline: section.title ?? "",
+              body: section.subtitle ?? "",
+              mediaUrl: String(slot.url ?? ""),
+              ctaLabel: section.ctaLabel ?? "",
+              ctaHref: safeSectionHref(section.ctaHref, "/browse"),
+              secondaryLabel: section.secondaryLabel ?? "",
+              secondaryHref: safeSectionHref(section.secondaryHref, "/browse"),
+            } as unknown as (typeof usableBanners)[number]))
+          : (section.bannerId
+              ? usableBanners.filter((banner) => banner.id === section.bannerId)
+              : usableBanners).map((banner) => ({
               ...banner,
               ctaHref: safeSectionHref(banner.ctaHref, "/browse"),
               secondaryHref: safeSectionHref(banner.secondaryHref, "/browse"),
