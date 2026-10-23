@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Pause, Play } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Banner } from "@/lib/api";
 import { assetUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -107,75 +107,12 @@ export function PromoBanner({
           )}
         >
           <SlideMedia slide={slide} mediaOnly={mediaOnly || slide.showText === false} />
-          {!mediaOnly && slide.showText !== false && slide.overlay?.enabled ? <Scrim overlay={slide.overlay} accent={accentOf(slide)} /> : null}
+          {!mediaOnly && slide.showText !== false && slide.overlay?.enabled && Boolean(slide.headline || slide.eyebrow || slide.body)
+            ? <Scrim overlay={slide.overlay} accent={accentOf(slide)} />
+            : null}
           {!mediaOnly && slide.showText !== false ? <SlideCopy slide={slide} active={i === index} /> : null}
         </article>
       ))}
-
-      <div className={cn("absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/70 to-transparent", activeMediaOnly ? "hidden" : "")}>
-        <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-4 py-2.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
-            {String(index + 1).padStart(2, "0")} / {String(slides.length).padStart(2, "0")}
-          </span>
-          <div className="flex flex-1 items-center gap-1.5">
-            {slides.map((slide, i) => {
-              const active = i === index;
-              const animating = active && playing && !paused && !reduced;
-              return (
-                <button
-                  key={slide.id}
-                  type="button"
-                  onClick={() => go(i)}
-                  aria-label={`Go to promotion ${i + 1}`}
-                  aria-current={active}
-                  className="group relative h-1.5 flex-1 cursor-pointer overflow-hidden rounded-[1px] bg-chalk/25"
-                >
-                  <span
-                    className={cn("absolute inset-y-0 left-0 bg-chalk", active ? "" : "w-0 group-hover:w-1/4")}
-                    style={
-                      animating
-                        ? {
-                            width: "100%",
-                            transformOrigin: "left",
-                            animation: `fxprogress ${slide.duration}ms linear forwards`,
-                          }
-                        : active
-                          ? { width: "100%" }
-                          : undefined
-                    }
-                  />
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setPlaying((v) => !v)}
-              aria-label={playing ? "Pause the promotions" : "Play the promotions"}
-              className="grid h-8 w-8 cursor-pointer place-items-center rounded-[2px] text-chalk-dim transition-colors hover:bg-white/10 hover:text-chalk"
-            >
-              {playing ? <Pause width={13} height={13} /> : <Play width={13} height={13} />}
-            </button>
-            <button
-              type="button"
-              onClick={() => go(index - 1)}
-              aria-label="Previous promotion"
-              className="grid h-8 w-8 cursor-pointer place-items-center rounded-[2px] text-chalk-dim transition-colors hover:bg-white/10 hover:text-chalk"
-            >
-              <ArrowLeft width={14} height={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => go(index + 1)}
-              aria-label="Next promotion"
-              className="grid h-8 w-8 cursor-pointer place-items-center rounded-[2px] text-chalk-dim transition-colors hover:bg-white/10 hover:text-chalk"
-            >
-              <ArrowRight width={14} height={14} />
-            </button>
-          </div>
-        </div>
-      </div>
 
       <style>{`@keyframes fxprogress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
         @media (prefers-reduced-motion: reduce) { [style*="fxprogress"] { animation: none !important; } }`}</style>

@@ -255,7 +255,9 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               // banner does: the copy block reads overlay.tone, overlay.align
               // and overlay.width directly.
               overlay: {
-                enabled: true,
+                // No text, no scrim: the picture is left alone until an operator
+                // writes something to sit on it.
+                enabled: Boolean(section.title || section.eyebrow || section.ctaLabel),
                 tone: section.tone === "light" ? "light" : "dark",
                 align: section.align === "center" ? "center" : section.align === "right" ? "right" : "left",
                 vertical: section.vertical === "top" ? "top" : section.vertical === "bottom" ? "bottom" : "middle",

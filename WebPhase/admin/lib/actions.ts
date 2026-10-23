@@ -212,6 +212,23 @@ export async function savePageContentAction(_prev: FormState, formData: FormData
 }
 
 /** Publish the draft. This is the moment the storefront changes. */
+/** Publish the page you are looking at, and stay on it. */
+export async function publishCmsPageNowAction(form: FormData): Promise<void> {
+  const session = await readSession();
+  if (!session) redirect("/login");
+  const id = String(form.get("id") ?? "").trim();
+  if (!id) return;
+  try {
+    await api.publishCmsPage(session, id);
+  } catch {
+    // Back to the same page, which offers Publish again.
+    redirect(`/cms/pages/${id}?publish=failed`);
+  }
+  refresh(`/cms/pages/${id}`);
+  refresh("/cms");
+  refresh("/");
+}
+
 export async function publishCmsPageAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");

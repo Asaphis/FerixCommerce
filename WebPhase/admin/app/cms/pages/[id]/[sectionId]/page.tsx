@@ -8,7 +8,7 @@ import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
-import { deleteCmsSectionAction, saveCmsSectionAction } from "@/lib/actions";
+import { deleteCmsSectionAction, publishCmsPageNowAction, saveCmsSectionAction } from "@/lib/actions";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { MediaSlotsField } from "@/components/ops/media-slots-field";
 import { CmsSectionPreview } from "@/components/ops/cms-section-preview";
@@ -439,6 +439,13 @@ export default async function CmsSectionEditor({
               ) : null}
               {fields.length ? (
                 <>
+                <form action={publishCmsPageNowAction} className="flex flex-wrap items-center gap-2 rounded-[10px] border border-hairline bg-panel-2 px-3 py-2">
+                  <input type="hidden" name="id" value={id} />
+                  <span className="text-[11.5px] leading-relaxed text-chalk-dim">
+                    Saving keeps a draft. Publish to put this page live without leaving it.
+                  </span>
+                  <SubmitButton pendingLabel="Publishing">Publish page</SubmitButton>
+                </form>
                 <CmsActionForm action={saveCmsSectionAction} className="grid gap-4">
                   <input type="hidden" name="id" value={id} />
                   <input type="hidden" name="sectionId" value={section.id} />
