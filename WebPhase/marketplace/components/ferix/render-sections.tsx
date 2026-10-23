@@ -244,10 +244,26 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               headline: section.title ?? "",
               body: section.subtitle ?? "",
               mediaUrl: String(slot.url ?? ""),
+              accent: section.accent ?? "#e4572e",
+              showText: section.showText !== false && section.showText !== "false",
+              showButtons: true,
               ctaLabel: section.ctaLabel ?? "",
               ctaHref: safeSectionHref(section.ctaHref, "/browse"),
               secondaryLabel: section.secondaryLabel ?? "",
               secondaryHref: safeSectionHref(section.secondaryHref, "/browse"),
+              // A slide built here has to carry the same overlay shape a saved
+              // banner does: the copy block reads overlay.tone, overlay.align
+              // and overlay.width directly.
+              overlay: {
+                enabled: true,
+                tone: section.tone === "light" ? "light" : "dark",
+                align: section.align === "center" ? "center" : section.align === "right" ? "right" : "left",
+                vertical: section.vertical === "top" ? "top" : section.vertical === "bottom" ? "bottom" : "middle",
+                width: 28,
+                scrim: Number(section.scrim ?? 55),
+                showText: section.showText !== false && section.showText !== "false",
+                showButtons: true,
+              },
             } as unknown as (typeof usableBanners)[number]))
           : (section.bannerId
               ? usableBanners.filter((banner) => banner.id === section.bannerId)
