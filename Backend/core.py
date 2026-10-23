@@ -1862,3 +1862,20 @@ def media_json(asset) -> dict:
         "inLibrary": True,
     })
     return row
+
+
+def apply_section_update(data: dict, section_id: str, fields: dict) -> dict:
+    """Merge fields into one section, leaving every other section byte-identical.
+
+    The page editor rewrites the whole array; this exists so a section can be
+    saved on its own without touching its neighbours.
+    """
+    rows = [dict(row) for row in (data or {}).get("sections") or [] if isinstance(row, dict)]
+    for index, row in enumerate(rows):
+        if str(row.get("id") or "") != str(section_id):
+            continue
+        merged = {**row, **(fields or {}), "id": str(section_id)}
+        merged["type"] = str(merged.get("type") or row.get("type") or "")
+        rows[index] = merged
+        return {"sections": rows, "section": merged, "found": True}
+    return {"sections": rows, "section": None, "found": False}

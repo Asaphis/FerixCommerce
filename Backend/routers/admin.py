@@ -2680,6 +2680,56 @@ def cms_integrity_prune(session: Optional[str] = Header(None, alias="X-Ferix-Ses
         return result
 
 
+@router.patch("/cms/sections")
+def cms_section_update(payload: dict,
+                       session: Optional[str] = Header(None, alias="X-Ferix-Session")):
+    """Save one section, and nothing else.
+
+    The page editor sends the whole array back on every save, so two edits can
+    overwrite each other. This takes a section id and its fields and merges them
+    into the draft (or the published document when there is no draft).
+    """
+    from cms_sections import validate_section
+    from core import (ContentDocument, apply_section_update, audit,
+                      sync_document_sections)
+
+    with SessionLocal() as db:
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
+
+        document_id = str((payload or {}).get("document_id") or "").strip()
+        section_id = str((payload or {}).get("section_id") or "").strip()
+        fields = (payload or {}).get("fields") or {}
+        if not document_id or not section_id or not isinstance(fields, dict):
+            raise HTTPException(422, "Send document_id, section_id and the fields to change.")
+
+        document = db.get(ContentDocument, document_id)
+        if not document:
+            raise HTTPException(404, "That page does not exist")
+
+        draft = _cms_draft(db, document.id)
+        target = draft if draft is not None else document
+        data = dict(target.data or {})
+        result = apply_section_update(data, section_id, fields)
+        if not result["found"]:
+            raise HTTPException(404, "That section is not on this page")
+
+        try:
+            validate_section(result["section"])
+        except ValueError as error:
+            raise HTTPException(422, str(error))
+
+        data["sections"] = result["sections"]
+        target.data = data
+        db.flush()
+        sync_document_sections(db, document)
+        audit(db, "staff", str(getattr(staff, "email", "") or ""), "cms.section.update",
+              target=f"{document.id}:{section_id}", detail="draft" if draft is not None else "published")
+        db.commit()
+        return {"section": result["section"], "documentId": document.id,
+                "savedTo": "draft" if draft is not None else "published"}
+
+
 @router.get("/cms/section-types")
 def cms_section_types(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
                       document_type: Optional[str] = Query(None)):
