@@ -489,8 +489,8 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
         if (!products.length) return null;
         const shown = limit ? products.slice(0, limit) : products;
         const cardDisplay = {
-          accentColor: safeSectionColor(section.accentColor),
-          backgroundColor: safeSectionBackground(section.backgroundColor),
+          accentColor: safeSectionColor((section.accentColor ?? section.accent) as string | undefined),
+          backgroundColor: safeSectionBackground((section.backgroundColor ?? section.background) as string | undefined),
           textColor: safeSectionColor(section.textColor),
           showSectionPrice: isSectionOn(section.showSectionPrice, true),
           showCompareAt: isSectionOn(section.showCompareAt, true),
@@ -512,17 +512,21 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               subtitle={section.subtitle}
               endsAt={String(section.endsAt ?? "") || undefined}
               countdownLabel={section.countdownLabel as string | undefined}
-              showCountdown={String(section.showCountdown ?? "true") !== "false"}
+              // No end time, no countdown: "Ends in No end time set" is not a sentence.
+              showCountdown={String(section.showCountdown ?? "true") !== "false" && Boolean(String(section.endsAt ?? "").trim())}
               showDiscountBadges={String(section.showDiscountBadges ?? "true") !== "false"}
               showViewAll={isSectionOn(section.showViewAll, isSectionOn(section.seeAll, true))}
               href={safeSectionHref(sectionHref, "/browse?sort=discount")}
-              backgroundColor={section.backgroundColor as string | undefined}
-              accentColor={section.accentColor as string | undefined}
+              // The editor stores `background` and `accent`; older sections used the
+              // ...Color names. Read both, or a saved gradient is silently dropped
+              // and white text lands on the pale default.
+              backgroundColor={(section.backgroundColor ?? section.background) as string | undefined}
+              accentColor={(section.accentColor ?? section.accent) as string | undefined}
               textColor={section.textColor as string | undefined}
               layout={String(section.layout ?? "grid")}
               ctaLabel={String(section.ctaLabel ?? "See all")}
-              timerBackgroundColor={section.timerBackgroundColor as string | undefined}
-              timerTextColor={section.timerTextColor as string | undefined}
+              timerBackgroundColor={(section.timerBackgroundColor ?? section.timerBackground) as string | undefined}
+              timerTextColor={(section.timerTextColor ?? section.timerInk) as string | undefined}
               products={shown}
               savedIds={saved}
               display={cardDisplay}
