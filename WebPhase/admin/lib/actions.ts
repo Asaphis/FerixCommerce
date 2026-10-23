@@ -448,6 +448,13 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
         }
         if (!url) continue;
         if (/\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(url)) kind = "video";
+        if (!(file instanceof File && file.size > 0)) {
+          try {
+            await api.addMedia(session, { url, kind, alt: "", folder: "banners" });
+          } catch {
+            // best effort: the slide is still saved
+          }
+        }
         slides.push({ url, kind });
       }
       if (slides.length) next.slides = slides;
@@ -477,6 +484,15 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
       const kind = uploadedKind || (selectedKind === "video" || /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(mediaUrl) ? "video" : "image");
       next.mediaUrl = mediaUrl;
       next.kind = kind;
+      // A typed or library URL is still a file. Register it so the library can
+      // offer it next time instead of showing "0 stored".
+      if (mediaUrl && !uploadedMediaUrl) {
+        try {
+          await api.addMedia(session, { url: mediaUrl, kind, alt: "", folder: "banners" });
+        } catch {
+          // best effort: the section is still saved
+        }
+      }
     }
 
     const isMediaOnly = next.mediaOnly === true || String(next.mediaOnly) === "true";

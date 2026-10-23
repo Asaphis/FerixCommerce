@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ImagePlus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
 import { assetUrl, getCmsPage, getCmsSectionPreview, listBanners, listCmsSectionTypes, listMedia, type Banner, type CmsSection, type CmsSectionTypes, type MediaAsset } from "@/lib/api";
 import { FALLBACK_SECTION_TYPES } from "@/components/ops/section-palette";
@@ -521,24 +521,7 @@ export default async function CmsSectionEditor({
                       </Field>
                     ),
                   )}
-                  {isHeroSection ? (
-                    <div className="grid gap-2 border-t border-hairline pt-4">
-                      <p className="text-[12.5px] font-semibold text-chalk">Hero image or video</p>
-                      <p className="-mt-1 text-[11.5px] leading-relaxed text-chalk-dim">Upload or choose the media here. Media-only mode shows this image/video with no copy, button, or shading.</p>
-                      <MediaUploadField
-                        urlName="field_mediaUrl"
-                        fileName="field_mediaFile"
-                        kind="auto"
-                        kindName="field_kind"
-                        defaultUrl={sectionMediaUrl}
-                        libraryName="field_mediaLibraryUrl"
-                        urlLabel="Media URL"
-                        fileLabel="Upload image or video"
-                        libraryAssets={mediaAssets.map((asset) => ({ url: asset.url, label: `${asset.kind} · ${asset.alt || asset.id}` }))}
-                        selectedLibraryUrl={mediaAssets.some((asset) => asset.url === sectionMediaUrl) ? sectionMediaUrl : ""}
-                      />
-                    </div>
-                  ) : null}
+
                   {isHeroSection ? (
                     <MediaSlotsField
                       initial={Array.isArray((section as { slides?: { url: string; kind?: string }[] }).slides)
@@ -615,26 +598,7 @@ export default async function CmsSectionEditor({
               </Panel>
             ) : null}
 
-            {String(section.type) === "hero_banner" ? (
-              <Panel>
-                <PanelHead title="Carousel slides" hint="The image/video above takes priority. Clear it to use the active banners from the shared library." />
-                <div className="grid gap-3">
-                  <div className="flex items-center gap-3 rounded-[12px] border border-dashed border-hairline bg-panel-2 px-4 py-3.5">
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[11px] border border-hairline bg-panel text-signal">
-                      <ImagePlus width={18} height={18} />
-                    </span>
-                    <span className="min-w-0 flex-1 text-[12.5px] text-chalk-dim">
-                      {section.mediaUrl
-                        ? "Direct hero media is set. It will show instead of the carousel."
-                        : "No direct media is set. Active banners from the shared library will show here."}
-                    </span>
-                    <Link href="/cms/banners" className="shrink-0 rounded-[9px] border border-hairline px-3 py-1.5 text-[11px] font-semibold text-chalk transition-colors hover:bg-panel-2">
-                      Manage banners
-                    </Link>
-                  </div>
-                </div>
-              </Panel>
-            ) : null}
+
 
             {isHeroSection && !mediaOnly ? (
               <Panel>
