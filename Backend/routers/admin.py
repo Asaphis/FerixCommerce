@@ -2707,10 +2707,16 @@ def cms_section_update(payload: dict,
         if not document:
             raise HTTPException(404, "That page does not exist")
 
+        # Always write to a draft. Saving straight into the published document
+        # made the same button do two different things depending on whether a
+        # draft happened to exist, which is what made a save look like it had
+        # been ignored: the editor reads the draft first, the shop reads the
+        # document.
+        from core import ContentVersion, new_id
+
         draft = _cms_draft(db, document.id)
-        target = draft if draft is not None else document
-        data = dict(target.data or {})
-        result = apply_section_update(data, section_id, fields)
+        base = dict((draft.data if draft is not None else document.data) or {})
+        result = apply_section_update(base, section_id, fields)
         if not result["found"]:
             raise HTTPException(404, "That section is not on this page")
 
@@ -2719,15 +2725,25 @@ def cms_section_update(payload: dict,
         except ValueError as error:
             raise HTTPException(422, str(error))
 
-        data["sections"] = result["sections"]
-        target.data = data
+        base["sections"] = result["sections"]
+        if draft is None:
+            latest = db.scalar(select(ContentVersion.version).where(
+                ContentVersion.document_id == document.id).order_by(ContentVersion.version.desc()))
+            draft = ContentVersion(id=new_id("cv"), document_id=document.id,
+                                   version=int(latest or 0) + 1, status="draft", data=base,
+                                   note="Section saved",
+                                   created_by=str(getattr(staff, "email", "") or ""))
+            db.add(draft)
+        else:
+            draft.data = base
         db.flush()
         sync_document_sections(db, document)
         audit(db, "staff", str(getattr(staff, "email", "") or ""), "cms.section.update",
-              target=f"{document.id}:{section_id}", detail="draft" if draft is not None else "published")
+              target=f"{document.id}:{section_id}", detail="draft")
         db.commit()
         return {"section": result["section"], "documentId": document.id,
-                "savedTo": "draft" if draft is not None else "published"}
+                "savedTo": "draft", "version": int(draft.version or 0),
+                "published": False}
 
 
 @router.get("/cms/section-types")
