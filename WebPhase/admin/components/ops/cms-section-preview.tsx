@@ -215,24 +215,16 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
   const isClosed = endsAt !== null && now >= endsAt;
   const activeBanner = useMemo(() => {
     const chosen = text(section.bannerId);
-    if (text(section.mediaUrl).trim() || previewSlides.length) return null;
+    if (text(section.mediaUrl).trim()) return null;
     if (chosen) return banners.find((banner) => banner.id === chosen) ?? null;
     return type === "hero_banner" ? banners.find((banner) => banner.active) ?? null : null;
   }, [banners, section.bannerId, type]);
-  // A hero now holds a list. The preview shows the first slide, so a section
-  // whose media is a slide list no longer reads "No hero media selected".
-  const previewSlides = Array.isArray((section as { slides?: { url?: string; kind?: string }[] }).slides)
-    ? ((section as { slides?: { url?: string; kind?: string }[] }).slides ?? []).filter((slot) =>
-        String(slot?.url ?? "").trim(),
-      )
-    : [];
-  const firstSlide = previewSlides[0];
-  const directMedia = text(section.mediaUrl).trim() || text(firstSlide?.url).trim();
+  const directMedia = text(section.mediaUrl).trim();
   const bannerMedia = activeBanner?.mediaUrl || activeBanner?.image || activeBanner?.videoUrl || "";
   const useSectionMedia = Boolean(directMedia);
   const mediaUrl = useSectionMedia ? directMedia : bannerMedia;
   const mediaOnly = isOn(section.mediaOnly, false) || (activeBanner?.showText === false && !directMedia);
-  const isVideo = text(section.kind || firstSlide?.kind || activeBanner?.kind) === "video" || /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(mediaUrl);
+  const isVideo = text(section.kind || activeBanner?.kind) === "video" || /\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(mediaUrl);
   const background = backgroundValue(section.backgroundColor, presentation === "flash_sale" ? "#FFF3EF" : "#FFFFFF");
   const accent = color(section.accentColor, "#E4572E");
   const foreground = color(section.textColor, presentation === "flash_sale" ? "#12263A" : "#12263A");
