@@ -142,6 +142,11 @@ export async function createCatalogProductAction(form: FormData): Promise<void> 
   const uploaded = await uploadedMediaUrl(session, form, "mediaFile", "image", String(payload.title), "products");
   const chosen = uploaded || str(form, "mediaLibraryUrl") || str(form, "imageUrl");
   if (chosen) payload.images = [...new Set([...(payload.images as string[]), chosen])];
+  // Tick "remove" on an image and it is dropped; the rest keep their order.
+  const dropImages = form.getAll("removeImage").map(String);
+  if (dropImages.length) {
+    payload.images = (payload.images as string[]).filter((url) => !dropImages.includes(url));
+  }
   try {
     const created = await api.createCatalogProduct(session, payload as unknown as Record<string, unknown>);
     const product = created.product as { slug?: string; title?: string };
@@ -163,6 +168,11 @@ export async function updateCatalogProductAction(form: FormData): Promise<void> 
   const uploaded = await uploadedMediaUrl(session, form, "mediaFile", "image", String(payload.title ?? "Product"), "products");
   const chosen = uploaded || str(form, "mediaLibraryUrl") || str(form, "imageUrl");
   if (chosen) payload.images = [...new Set([...(payload.images as string[]), chosen])];
+  // Tick "remove" on an image and it is dropped; the rest keep their order.
+  const dropImages = form.getAll("removeImage").map(String);
+  if (dropImages.length) {
+    payload.images = (payload.images as string[]).filter((url) => !dropImages.includes(url));
+  }
   try {
     const updated = await api.updateCatalogProduct(session, { id, ...payload } as unknown as Record<string, unknown>);
     const product = updated.product as { slug?: string; title?: string };

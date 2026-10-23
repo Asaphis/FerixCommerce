@@ -159,8 +159,37 @@ export default async function ProductEditorPage({ params, searchParams }: { para
             urlLabel="Product image URL"
             fileLabel="Upload a product image"
           />
-          <Field title="Images — one URL per line (existing images are kept unless removed here)">
-            <textarea name="images" defaultValue={(product.images?.length ? product.images : [product.image]).filter(Boolean).join("\n")} className={textareaClass} />
+          <Field title="Product images — first is the cover">
+            {(() => {
+              const current = (product.images?.length ? product.images : [product.image]).filter(Boolean) as string[];
+              return (
+                <div className="grid gap-2">
+                  {current.map((url, index) => (
+                    <label
+                      key={url}
+                      className="flex cursor-pointer items-center gap-2.5 rounded-[10px] border border-hairline bg-panel-2 p-2"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={/^https?:\/\//i.test(url) ? url : `${process.env.NEXT_PUBLIC_FERIX_API_BASE ?? ""}${url}`}
+                        alt=""
+                        className="h-11 w-11 shrink-0 rounded-[6px] object-cover"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-mono text-[10px] text-chalk-dim">{url}</span>
+                        <span className="block text-[10.5px] text-chalk-dim">{index === 0 ? "cover" : `image ${index + 1}`}</span>
+                      </span>
+                      <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-chalk-dim">remove</span>
+                      <input type="checkbox" name="removeImage" value={url} className="shrink-0 accent-[#e4572e]" />
+                    </label>
+                  ))}
+                  <input type="hidden" name="images" value={current.join("\n")} />
+                  <p className="text-[11px] leading-relaxed text-chalk-dim">
+                    Upload or pick above to add another. Tick remove and save to drop one; the rest keep their order.
+                  </p>
+                </div>
+              );
+            })()}
           </Field>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <Field title="Shipping amount"><input name="shipping_amount" type="number" step="0.01" min="0" defaultValue={product.shipping_amount ?? ""} className={inputClass} placeholder="Optional" /></Field>
