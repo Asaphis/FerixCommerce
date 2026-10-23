@@ -103,17 +103,17 @@ export default async function TrackOrderPage() {
                   </ol>
 
                   <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-line-warm pt-3">
-                    <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                    <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">
                       <Truck width={12} height={12} />
                       {order.carrier && order.tracking ? `${order.carrier} · ${order.tracking}` : "Awaiting dispatch"}
                     </span>
-                    <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+                    <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">
                       <MapPin width={12} height={12} />
                       {order.address.city}, {order.address.country}
                     </span>
                     <Link
                       href={`/account/orders/${order.id}`}
-                      className="ml-auto inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ember"
+                      className="ml-auto inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ember"
                     >
                       Details <ArrowRight width={12} height={12} />
                     </Link>

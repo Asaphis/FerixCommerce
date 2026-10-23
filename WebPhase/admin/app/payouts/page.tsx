@@ -79,7 +79,7 @@ export default async function PayoutsPage() {
                       <Pill tone={STATUS_TONE[payout.status] ?? "neutral"}>recorded {payout.status}</Pill>
                     </td>
                     <td className="ml-auto px-0 py-0 md:ml-0 md:px-4 md:py-3">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-chalk-dim">Provider confirmation required</span>
+                      <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-chalk-dim">Provider confirmation required</span>
                     </td>
                   </tr>
                 ))}

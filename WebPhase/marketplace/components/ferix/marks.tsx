@@ -135,7 +135,7 @@ export function Stars({ value, size = 12, className }: { value: number | null | 
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cn("font-mono text-[10px] uppercase tracking-[0.18em] text-ink-soft", className)}>{children}</span>
+    <span className={cn("font-mono text-[11px] uppercase tracking-[0.18em] text-ink-soft", className)}>{children}</span>
   );
 }
 
@@ -181,7 +181,7 @@ export function Pill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] border px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em]",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] border px-2 py-[3px] font-mono text-[11px] uppercase tracking-[0.12em]",
         tones[tone],
         className,
       )}
@@ -209,7 +209,7 @@ export function Price({
         <span className="font-mono text-[11.5px] text-ink-soft line-through">{money(compareAt)}</span>
       ) : null}
       {discount ? (
-        <span className="rounded-[2px] bg-ember px-1.5 py-[1px] font-mono text-[10px] font-semibold text-white">
+        <span className="rounded-[2px] bg-ember px-1.5 py-[1px] font-mono text-[11px] font-semibold text-white">
           −{discount}%
         </span>
       ) : null}

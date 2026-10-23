@@ -40,7 +40,7 @@ export default async function AnalyticsPage({
             key={option}
             href={`/analytics?days=${option}`}
             className={cn(
-              "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+              "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors",
               range === option
                 ? "border-signal/40 bg-signal/10 text-signal"
                 : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",

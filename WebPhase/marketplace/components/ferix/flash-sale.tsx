@@ -110,7 +110,7 @@ export function FlashSaleBand({
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             {eyebrow ? (
-              <span className="mb-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ backgroundColor: accent, color: contrastInk(accent) }}>
+              <span className="mb-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.16em]" style={{ backgroundColor: accent, color: contrastInk(accent) }}>
                 <Zap width={11} height={11} /> {eyebrow}
               </span>
             ) : null}
@@ -121,14 +121,14 @@ export function FlashSaleBand({
           <div className="flex flex-wrap items-center gap-2">
             {showCountdown !== false && endsAt ? (
               <div className="flex items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-80">
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] opacity-80">
                   {countdownLabel || "Ends in"}
                 </span>
                 <span className="flex items-center gap-1">
                   {units.map(([label, value]) => (
                     <span key={label} className="grid min-w-[38px] place-items-center rounded-[6px] px-1.5 py-1" style={{ ...safeBackgroundStyle(timerBackground), color: timerInk }}>
                       <span className="font-display text-[15px] font-bold tabular-nums leading-none">{pad(value)}</span>
-                      <span className="mt-0.5 font-mono text-[8px] uppercase tracking-[0.1em] opacity-70">{label}</span>
+                      <span className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.1em] opacity-70">{label}</span>
                     </span>
                   ))}
                 </span>

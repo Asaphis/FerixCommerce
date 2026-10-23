@@ -54,7 +54,7 @@ export default async function AdvertsPage({ searchParams }: { searchParams: Prom
     <div className="grid min-w-0 gap-5">
       <PageHeader
         back={
-          <Link href="/cms" className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk">
+          <Link href="/cms" className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk">
             <ArrowLeft width={13} height={13} /> Content
           </Link>
         }
@@ -92,7 +92,7 @@ export default async function AdvertsPage({ searchParams }: { searchParams: Prom
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13.5px] font-semibold text-chalk">{advert.headline || advert.name}</span>
-                      <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
+                      <span className="mt-0.5 block truncate font-mono text-[11px] uppercase tracking-[0.12em] text-chalk-dim">
                         {advert.name} · {advert.kind ?? "image"} · {advert.sponsor ? `sponsored by ${advert.sponsor}` : "house"}
                       </span>
                     </span>
@@ -102,7 +102,7 @@ export default async function AdvertsPage({ searchParams }: { searchParams: Prom
                       Edit
                     </Link>
                   </div>
-                  <p className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
+                  <p className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-chalk-dim">
                     <span>{shortDate(advert.startsAt)} to {shortDate(advert.endsAt)}</span>
                     {advert.href ? <span>{advert.href}</span> : null}
                     {advert.mediaUrl ? <span>has artwork</span> : null}

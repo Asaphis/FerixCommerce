@@ -67,7 +67,7 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
           <div className="mb-2"><Eyebrow>Sections</Eyebrow></div>
           {sections.length ? <nav aria-label="Homepage sections" className="grid gap-1">{sections.map((section, index) => {
             const active = section.id === selected?.id;
-            return <Link key={section.id} href={`/cms/homepage?section=${encodeURIComponent(section.id)}`} className={`flex min-h-[44px] items-center gap-2 rounded-[2px] border px-2.5 py-2 transition-colors ${active ? "border-signal/40 bg-[#fff0e9]" : "border-transparent hover:border-hairline hover:bg-white"}`}><GripVertical width={13} height={13} className="shrink-0 text-chalk-dim/60" /><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-[2px] text-[10px] font-bold ${active ? "bg-signal text-white" : "bg-panel-2 text-chalk-dim"}`}>{index + 1}</span><span className="min-w-0 flex-1"><span className={`block truncate text-[11px] font-semibold ${active ? "text-signal" : "text-chalk"}`}>{section.title || titleCase(section.type)}</span><span className="block truncate text-[9px] text-chalk-dim">{titleCase(section.type)}</span></span>{section.visible ? <Eye width={13} height={13} className="shrink-0 text-[#2d875a]" /> : <EyeOff width={13} height={13} className="shrink-0 text-chalk-dim" />}</Link>;
+            return <Link key={section.id} href={`/cms/homepage?section=${encodeURIComponent(section.id)}`} className={`flex min-h-[44px] items-center gap-2 rounded-[2px] border px-2.5 py-2 transition-colors ${active ? "border-signal/40 bg-[#fff0e9]" : "border-transparent hover:border-hairline hover:bg-white"}`}><GripVertical width={13} height={13} className="shrink-0 text-chalk-dim/60" /><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-[2px] text-[11px] font-bold ${active ? "bg-signal text-white" : "bg-panel-2 text-chalk-dim"}`}>{index + 1}</span><span className="min-w-0 flex-1"><span className={`block truncate text-[11px] font-semibold ${active ? "text-signal" : "text-chalk"}`}>{section.title || titleCase(section.type)}</span><span className="block truncate text-[11px] text-chalk-dim">{titleCase(section.type)}</span></span>{section.visible ? <Eye width={13} height={13} className="shrink-0 text-[#2d875a]" /> : <EyeOff width={13} height={13} className="shrink-0 text-chalk-dim" />}</Link>;
           })}</nav> : <Empty title="No sections on this page" body="Add one below. Until something is published the homepage says it is empty rather than inventing a layout." />}
           <div className="mt-3 border-t border-hairline pt-3">
             <Eyebrow>Add a section</Eyebrow>
@@ -80,14 +80,14 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
               <SubmitButton pendingLabel="Adding">Add section</SubmitButton>
             </CmsActionForm>
           </div>
-          <Link href="/" target="_blank" className="mt-3 flex min-h-9 items-center justify-center gap-2 border-t border-hairline pt-2 text-[10px] font-semibold text-signal">View live page <ExternalLink width={12} height={12} /></Link>
+          <Link href="/" target="_blank" className="mt-3 flex min-h-9 items-center justify-center gap-2 border-t border-hairline pt-2 text-[11px] font-semibold text-signal">View live page <ExternalLink width={12} height={12} /></Link>
         </Panel>
 
         {selected ? <div className="grid min-w-0 gap-3">
           <Panel className="grid gap-3 p-3.5 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-hairline pb-3">
               <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="grid h-8 w-8 place-items-center rounded-[2px] bg-[#fff0e9] text-signal"><ImageIcon width={15} height={15} /></span><h2 className="truncate font-display text-[17px] font-bold text-chalk sm:text-[20px]">{selected.title || titleCase(selected.type)}</h2></div></div>
-              {destination ? <Link href={destination.href} className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-[2px] border border-hairline bg-white px-3 text-[10px] font-semibold text-signal transition-colors hover:border-signal">{destination.label}<ArrowRight width={12} height={12} /></Link> : null}
+              {destination ? <Link href={destination.href} className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-[2px] border border-hairline bg-white px-3 text-[11px] font-semibold text-signal transition-colors hover:border-signal">{destination.label}<ArrowRight width={12} height={12} /></Link> : null}
             </div>
 
             <CmsActionForm action={saveHomepageAction} className="grid gap-3">
@@ -119,7 +119,7 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
 
       <details className="rounded-[3px] border border-hairline bg-panel p-3.5 sm:p-4">
         <summary className="cursor-pointer text-[12px] font-semibold text-chalk">Version history</summary>
-        <div className="mt-3 grid gap-2">{versions.length ? versions.map((version) => <div key={version.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[2px] border border-hairline bg-white px-3 py-2.5"><div><p className="font-mono text-[11px] text-chalk">Version {version.version}</p><p className="mt-0.5 text-[10px] text-chalk-dim">{version.note} · {version.createdBy} · {version.status}</p></div><form action={restoreVersionAction}><input type="hidden" name="versionId" value={version.id} /><SubmitButton variant="outline" pendingLabel="Restoring">Restore</SubmitButton></form></div>) : <p className="text-[11px] text-chalk-dim">No versions saved yet.</p>}</div>
+        <div className="mt-3 grid gap-2">{versions.length ? versions.map((version) => <div key={version.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[2px] border border-hairline bg-white px-3 py-2.5"><div><p className="font-mono text-[11px] text-chalk">Version {version.version}</p><p className="mt-0.5 text-[11px] text-chalk-dim">{version.note} · {version.createdBy} · {version.status}</p></div><form action={restoreVersionAction}><input type="hidden" name="versionId" value={version.id} /><SubmitButton variant="outline" pendingLabel="Restoring">Restore</SubmitButton></form></div>) : <p className="text-[11px] text-chalk-dim">No versions saved yet.</p>}</div>
       </details>
     </div>
   );

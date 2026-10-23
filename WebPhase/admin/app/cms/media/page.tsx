@@ -31,7 +31,7 @@ export default async function MediaPage({
         <div>
           <Link
             href="/cms"
-            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
           >
             <ArrowLeft width={13} height={13} />
             Content
@@ -136,19 +136,19 @@ export default async function MediaPage({
               </div>
               <div className="min-w-0">
                 <p className="truncate text-[12.5px] text-chalk">{asset.label || asset.alt || "No label"}</p>
-                <p className="mt-0.5 font-mono text-[10px] text-chalk-dim">
+                <p className="mt-0.5 font-mono text-[11px] text-chalk-dim">
                   {asset.originPage || asset.folder} · {titleCase(asset.kind)} · {relative(asset.createdAt)}
                 </p>
                 {(asset.tags ?? []).length > 0 ? (
-                  <p className="mt-1 truncate font-mono text-[10px] text-chalk-dim">{(asset.tags ?? []).join(" · ")}</p>
+                  <p className="mt-1 truncate font-mono text-[11px] text-chalk-dim">{(asset.tags ?? []).join(" · ")}</p>
                 ) : null}
               </div>
               {(asset.usedBy ?? []).length > 0 ? (
-                <div className="rounded-[2px] border border-amber/40 bg-amber/10 px-2 py-1.5 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-amber">
+                <div className="rounded-[2px] border border-amber/40 bg-amber/10 px-2 py-1.5 text-center font-mono text-[11px] uppercase tracking-[0.12em] text-amber">
                   in use · {(asset.usedBy ?? []).length}
                 </div>
               ) : (
-                <div className="rounded-[2px] border border-mint/30 bg-mint/10 px-2 py-1.5 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-mint">
+                <div className="rounded-[2px] border border-mint/30 bg-mint/10 px-2 py-1.5 text-center font-mono text-[11px] uppercase tracking-[0.12em] text-mint">
                   unused
                 </div>
               )}
@@ -165,7 +165,7 @@ export default async function MediaPage({
         </div>
       )}
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
         {counts ? `${counts.shown} of ${counts.total} assets` : `${assets.length} assets`} · {counts?.unused ?? 0} unused · Cloudinary-first uploads enabled
       </p>
     </div>

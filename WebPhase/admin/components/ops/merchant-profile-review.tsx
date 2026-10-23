@@ -9,7 +9,7 @@ type Request = MerchantProfileRequest;
 
 function Value({ label, value }: { label: string; value?: string | boolean | null }) {
   const rendered = typeof value === "boolean" ? (value ? "Yes" : "No") : value || "Not provided";
-  return <div className="rounded-[8px] border border-hairline bg-white p-3"><p className="font-mono text-[9px] uppercase tracking-[0.12em] text-chalk-dim">{label}</p><p className="mt-1 break-words text-[12px] text-chalk">{rendered}</p></div>;
+  return <div className="rounded-[8px] border border-hairline bg-white p-3"><p className="font-mono text-[11px] uppercase tracking-[0.12em] text-chalk-dim">{label}</p><p className="mt-1 break-words text-[12px] text-chalk">{rendered}</p></div>;
 }
 
 function Snapshot({ profile }: { profile: Profile }) {
@@ -47,12 +47,12 @@ export function MerchantProfileReview({ merchantId, profile, requests }: { merch
         {requests.map((request) => {
           const proposed = request.profile as Profile;
           return <div key={request.id} className="rounded-[10px] border border-hairline bg-panel-2 p-3">
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><div><p className="font-mono text-[10px] text-chalk">Submitted {request.submittedAt ? new Date(request.submittedAt).toLocaleString() : ""}</p><p className="mt-0.5 text-[10px] text-chalk-dim">By {request.submittedBy}</p></div><Pill tone={request.status === "pending_review" ? "amber" : request.status === "approved" ? "mint" : "neutral"}>{request.status.replaceAll("_", " ")}</Pill></div>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><div><p className="font-mono text-[11px] text-chalk">Submitted {request.submittedAt ? new Date(request.submittedAt).toLocaleString() : ""}</p><p className="mt-0.5 text-[11px] text-chalk-dim">By {request.submittedBy}</p></div><Pill tone={request.status === "pending_review" ? "amber" : request.status === "approved" ? "mint" : "neutral"}>{request.status.replaceAll("_", " ")}</Pill></div>
             <Snapshot profile={proposed} />
             {request.note ? <p className="mt-2 rounded-[7px] bg-white p-2 text-[11px] text-chalk-dim">Review note: {request.note}</p> : null}
             {request.status === "pending_review" ? <CmsActionForm action={reviewMerchantProfileAction} className="mt-2 grid gap-2">
               <input type="hidden" name="merchantId" value={merchantId} /><input type="hidden" name="requestId" value={request.id} />
-              <label className="grid gap-1 text-[10px] text-chalk-dim">Reviewer note <textarea name="note" rows={2} className="rounded-[7px] border border-hairline bg-white p-2 text-[12px] text-chalk" placeholder="Required for changes requested or rejection" /></label>
+              <label className="grid gap-1 text-[11px] text-chalk-dim">Reviewer note <textarea name="note" rows={2} className="rounded-[7px] border border-hairline bg-white p-2 text-[12px] text-chalk" placeholder="Required for changes requested or rejection" /></label>
               <div className="flex flex-wrap gap-2">
                 <button name="decision" value="approve" className="rounded-[7px] bg-[#2d875a] px-3 py-2 text-[11px] font-semibold text-white">Approve and publish</button>
                 <button name="decision" value="changes" className="rounded-[7px] border border-hairline bg-white px-3 py-2 text-[11px] font-semibold text-chalk">Request changes</button>

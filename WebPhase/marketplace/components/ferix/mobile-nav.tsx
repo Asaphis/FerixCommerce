@@ -76,7 +76,7 @@ export function FerixMobileNav({ cartCount, signedIn }: { cartCount: number; sig
                   <span className="relative">
                     <Icon width={20} height={20} strokeWidth={active ? 2.3 : 1.9} />
                     {badge ? (
-                      <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-mono text-[9px] font-semibold tabular-nums text-white">
+                      <span className="absolute -right-2.5 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-ember px-1 font-mono text-[11px] font-semibold tabular-nums text-white">
                         {badge > 99 ? "99+" : badge}
                       </span>
                     ) : null}

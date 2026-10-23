@@ -35,7 +35,7 @@ export default async function ReviewsPage() {
                   )}
                   <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
                     <Stars value={review.rating} size={11} />
-                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
                       {dateShort(review.date)}
                     </span>
                     {review.verified ? <Pill tone="success">Verified buyer</Pill> : null}
@@ -45,7 +45,7 @@ export default async function ReviewsPage() {
                   <input type="hidden" name="id" value={review.id} />
                   <button
                     type="submit"
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] border border-line-warm px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ember/40 hover:text-ember"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] border border-line-warm px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ember/40 hover:text-ember"
                   >
                     <Trash2 width={12} height={12} /> Delete
                   </button>
@@ -56,7 +56,7 @@ export default async function ReviewsPage() {
               <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-soft">{review.body}</p>
 
               <details className="mt-4 border-t border-line-warm pt-4">
-                <summary className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ink">
+                <summary className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ink">
                   <Pencil width={12} height={12} /> Edit this review
                 </summary>
                 <div className="mt-4">
@@ -75,7 +75,7 @@ export default async function ReviewsPage() {
           </p>
           <Link
             href="/account/orders"
-            className="mt-5 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
+            className="mt-5 inline-block font-mono text-[11px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
           >
             Go to your orders
           </Link>

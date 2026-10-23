@@ -71,7 +71,7 @@ export function DataTable({
           {head.map((label) => (
             <th
               key={label}
-              className="border-b border-hairline pb-2.5 font-mono text-[10px] font-normal uppercase tracking-[0.14em] text-chalk-dim"
+              className="border-b border-hairline pb-2.5 font-mono text-[11px] font-normal uppercase tracking-[0.14em] text-chalk-dim"
             >
               {label}
             </th>

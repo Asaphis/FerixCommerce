@@ -29,7 +29,7 @@ function ObjectListEditor({ def, initial }: { def: FieldDef & { kind: "objectlis
       {items.map((item, index) => (
         <div key={index} className="rounded-[10px] border border-hairline bg-panel-2 p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">{def.label} {index + 1}</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">{def.label} {index + 1}</span>
             <button type="button" onClick={() => setItems(items.filter((_, i) => i !== index))} className="inline-flex items-center gap-1 rounded-[6px] border border-hairline px-2 py-1 text-[10.5px] text-chalk-dim hover:text-chalk">
               <Trash2 width={11} height={11} /> Remove
             </button>
@@ -62,7 +62,7 @@ export function InfoPageFields({ page }: { page: { id: string; title: string; do
   if (!schema.length) {
     return (
       <div className="grid min-w-0 gap-5">
-        <PageHeader back={<Link href="/cms" className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim hover:text-chalk"><ArrowLeft width={13} height={13} /> Content</Link>} eyebrow={page.documentType} title={page.title} />
+        <PageHeader back={<Link href="/cms" className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim hover:text-chalk"><ArrowLeft width={13} height={13} /> Content</Link>} eyebrow={page.documentType} title={page.title} />
         <Panel><PanelHead title="No field schema yet" hint="Add this page's fields in info-page-fields.tsx." /></Panel>
       </div>
     );
@@ -70,7 +70,7 @@ export function InfoPageFields({ page }: { page: { id: string; title: string; do
 
   return (
     <div className="grid min-w-0 gap-5">
-      <PageHeader back={<Link href="/cms" className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim hover:text-chalk"><ArrowLeft width={13} height={13} /> Content</Link>} eyebrow={page.documentType} title={page.title} action={<Pill tone="mint">{page.status}</Pill>} />
+      <PageHeader back={<Link href="/cms" className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim hover:text-chalk"><ArrowLeft width={13} height={13} /> Content</Link>} eyebrow={page.documentType} title={page.title} action={<Pill tone="mint">{page.status}</Pill>} />
       <Panel>
         <PanelHead title="Content" hint="Edit the words this page shows." />
         <CmsActionForm action={savePageContentAction} className="grid gap-4">

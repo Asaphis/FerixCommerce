@@ -75,7 +75,7 @@ export function ProductCard({
           {showCountdown && product.placementEndsAt ? <PlacementCountdown endsAt={product.placementEndsAt} /> : null}
           {showLabel && sectionLabel ? (
             <span
-              className="inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em]"
+              className="inline-flex items-center rounded-[3px] px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em]"
               style={{ backgroundColor: safeBadgeColor, color: contrastInk(safeBadgeColor) }}
             >
               {sectionLabel}
@@ -85,7 +85,7 @@ export function ProductCard({
           {product.stockStatus === "limited" ? <Pill tone="warn">Limited availability</Pill> : null}
           {product.stockStatus === "out_of_stock" ? <Pill tone="danger">Sold out</Pill> : null}
           {showRemaining && sectionRemaining > 0 && product.stockStatus !== "out_of_stock" ? (
-            <span className="inline-flex items-center rounded-[3px] bg-white/95 px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
+            <span className="inline-flex items-center rounded-[3px] bg-white/95 px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
               Section limit: {sectionRemaining}
             </span>
           ) : null}
@@ -93,7 +93,7 @@ export function ProductCard({
       </Link>
 
       <div className="flex flex-1 flex-col p-2.5 sm:p-3.5">
-        <Link href={`/store/${product.merchantSlug}`} className="block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:text-ember sm:text-[10px] sm:tracking-[0.14em]">
+        <Link href={`/store/${product.merchantSlug}`} className="block truncate font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:text-ember sm:text-[11px] sm:tracking-[0.14em]">
           {product.merchantName}
         </Link>
         <Link href={href} style={{ color: safeColor(display?.textColor) }} className="mt-1 line-clamp-2 min-h-[2.75em] font-display text-[12.5px] font-semibold leading-snug text-ink transition-colors group-hover:text-ember sm:mt-1.5 sm:text-[14.5px]">
@@ -233,7 +233,7 @@ export function CategoryTile({
       <span className="min-w-0 flex-1 sm:block">
         <p className="truncate font-display text-[12.5px] font-semibold text-ink sm:mt-3.5 sm:text-[14.5px]">{category.name}</p>
         <p className="mt-0.5 hidden line-clamp-2 text-[12px] leading-relaxed text-ink-soft sm:block">{category.blurb}</p>
-        <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft sm:mt-2.5 sm:text-[10px] sm:tracking-[0.14em]">{category.count} listed</p>
+        <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft sm:mt-2.5 sm:text-[11px] sm:tracking-[0.14em]">{category.count} listed</p>
       </span>
       <span className="absolute right-3 top-3 hidden text-ink-soft transition-transform duration-300 group-hover:translate-x-0.5 sm:block">
         <ArrowRight width={14} height={14} />
@@ -248,10 +248,10 @@ export function CollectionCard({ collection }: { collection: Collection }) {
       href={`/browse?collection=${collection.slug}`}
       className="group relative overflow-hidden rounded-[2px] rounded-tr-[9px] border border-line-warm bg-void p-3 transition-all duration-300 hover:-translate-y-0.5 sm:p-5"
     >
-      <Eyebrow className="text-[9px] text-lime sm:text-[10px]">{collection.count} products</Eyebrow>
+      <Eyebrow className="text-[11px] text-lime sm:text-[11px]">{collection.count} products</Eyebrow>
       <p className="mt-1 truncate font-display text-[14px] font-semibold text-chalk sm:mt-2 sm:text-[18px]">{collection.name}</p>
       <p className="mt-1.5 hidden max-w-[34ch] text-[12.5px] leading-relaxed text-chalk-dim sm:block">{collection.blurb}</p>
-      <span className="mt-2 inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-chalk sm:mt-4 sm:gap-2 sm:text-[10px] sm:tracking-[0.14em]">
+      <span className="mt-2 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-chalk sm:mt-4 sm:gap-2 sm:text-[11px] sm:tracking-[0.14em]">
         Shop the edit
         <ArrowRight width={13} height={13} className="transition-transform group-hover:translate-x-0.5" />
       </span>
@@ -312,7 +312,7 @@ export function StoreCard({ store }: { store: Merchant }) {
           <span className="mt-1.5 line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">{store.tagline}</span>
         ) : null}
 
-        <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+        <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">
           <span className="inline-flex items-center gap-1.5">
             <MapPin width={11} height={11} />
             {store.location}
@@ -324,7 +324,7 @@ export function StoreCard({ store }: { store: Merchant }) {
         </span>
 
         <span className="mt-auto flex items-center justify-between gap-2 border-t border-line-warm pt-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
             {store.productCount} products
           </span>
           <span className="rounded-[9px] bg-ink px-3 py-1.5 text-[11px] font-semibold text-bone transition-colors group-hover:bg-ember">
@@ -429,12 +429,12 @@ export function CartLineRow({ line }: { line: { key: string; product: Product; v
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{line.product.merchantName}</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{line.product.merchantName}</p>
             <Link href={`/product/${line.product.slug}`} className="mt-0.5 block font-display text-[15px] font-semibold text-ink hover:text-ember">
               {line.product.title}
             </Link>
             {line.variant ? <p className="mt-1 font-mono text-[10.5px] text-ink-soft">{line.variant}</p> : null}
-            {line.sectionLabel ? <p className="mt-1 font-mono text-[10px] text-ink-soft">Section offer: {line.sectionLabel} · {money(line.unitPrice)} each</p> : <p className="mt-1 font-mono text-[10px] text-ink-soft">{money(line.unitPrice)} each</p>}
+            {line.sectionLabel ? <p className="mt-1 font-mono text-[11px] text-ink-soft">Section offer: {line.sectionLabel} · {money(line.unitPrice)} each</p> : <p className="mt-1 font-mono text-[11px] text-ink-soft">{money(line.unitPrice)} each</p>}
             {line.sectionUnavailable ? <p role="status" className="mt-2 max-w-[48ch] rounded-[3px] bg-[#fff0dc] px-2 py-1.5 text-[11px] font-medium text-[#744a08]">This section offer has ended or changed. The basket now shows the regular product price; review it before continuing.</p> : null}
           </div>
           <p className="font-mono text-[14px] font-semibold text-ink">{money(line.lineTotal)}</p>
@@ -443,13 +443,13 @@ export function CartLineRow({ line }: { line: { key: string; product: Product; v
           <QtyStepper lineKey={line.key} qty={line.qty} />
           <form action={saveForLaterAction}>
             <input type="hidden" name="key" value={line.key} />
-            <button type="submit" className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
+            <button type="submit" className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
               <Heart width={12} height={12} /> Save for later
             </button>
           </form>
           <form action={removeLineAction}>
             <input type="hidden" name="key" value={line.key} />
-            <button type="submit" className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
+            <button type="submit" className="inline-flex cursor-pointer items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
               <Trash2 width={12} height={12} /> Remove
             </button>
           </form>

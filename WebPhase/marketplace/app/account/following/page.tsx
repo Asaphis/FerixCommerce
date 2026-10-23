@@ -27,7 +27,7 @@ export default async function FollowingPage() {
       actions={
         <Link
           href="/stores"
-          className="inline-flex items-center gap-2 rounded-[2px] border border-line-warm bg-white px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
+          className="inline-flex items-center gap-2 rounded-[2px] border border-line-warm bg-white px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
         >
           <Store width={13} height={13} /> Browse all stores
         </Link>

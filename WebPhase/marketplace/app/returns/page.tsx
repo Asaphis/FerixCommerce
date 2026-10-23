@@ -65,14 +65,14 @@ export default function ReturnsPage() {
                 <span className="grid h-8 w-8 place-items-center rounded-[2px] bg-bone-soft text-ember">
                   <RotateCcw width={15} height={15} strokeWidth={1.8} />
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{item.step}</span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{item.step}</span>
               </div>
               <h3 className="mt-3 font-display text-[14.5px] font-semibold text-ink">{item.title}</h3>
               <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">{item.body}</p>
             </article>
           ))}
         </div>
-        <p className="mt-4 flex flex-wrap items-center gap-2 rounded-[2px] border border-line-warm bg-bone-soft px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+        <p className="mt-4 flex flex-wrap items-center gap-2 rounded-[2px] border border-line-warm bg-bone-soft px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
           <Clock width={13} height={13} />
           30 days from delivery · return delivery free above $120 · $4.50 below it, waived on faults
         </p>
@@ -138,7 +138,7 @@ export default function ReturnsPage() {
             Problem with a return
           </LinkButton>
         </div>
-        <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+        <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
           Related:{" "}
           <Link href="/shipping-policy" className="text-chalk transition-colors hover:text-lime">
             Shipping policy

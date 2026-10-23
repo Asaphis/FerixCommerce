@@ -42,7 +42,7 @@ export default async function CategoryPage({
               </h2>
               <p className="mt-1.5 max-w-[62ch] text-[13px] leading-relaxed text-ink-soft">{category.blurb}</p>
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
               {category.count} product{category.count === 1 ? "" : "s"} listed
             </p>
           </div>
@@ -53,7 +53,7 @@ export default async function CategoryPage({
                 <Link
                   key={sibling.slug}
                   href={`/category/${sibling.slug}`}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-[2px] border border-line-warm px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-[2px] border border-line-warm px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
                 >
                   {sibling.name}
                   <ArrowRight width={11} height={11} />

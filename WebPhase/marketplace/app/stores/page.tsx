@@ -3,6 +3,12 @@ import { listStores } from "@/lib/api";
 import { StoreCard } from "@/components/ferix/cards";
 import { AutoForm } from "@/components/ferix/add-to-cart";
 
+export const metadata = {
+  title: "Stores on Ferixas",
+  description: "Every active store on Ferixas, with its own catalogue and delivery terms.",
+};
+
+
 
 export default async function StoresPage({
   searchParams,
@@ -33,7 +39,7 @@ export default async function StoresPage({
           className="h-10 w-full rounded-[2px] border border-line-warm bg-white px-3 text-[13.5px] text-ink outline-none focus:border-ink sm:w-[280px]"
         />
         <label className="flex items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">Sort</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">Sort</span>
           <select
             name="sort"
             defaultValue={sort ?? "top"}

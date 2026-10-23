@@ -37,7 +37,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
             key={item.id}
             href={item.id === "all" ? "/audit" : `/audit?group=${encodeURIComponent(item.id)}`}
             className={cn(
-              "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors",
+              "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors",
               active === item.id
                 ? "border-signal/40 bg-signal/10 text-signal"
                 : "border-hairline text-chalk-dim hover:bg-panel-2 hover:text-chalk",
@@ -100,7 +100,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         </Panel>
       )}
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
         <History width={11} height={11} className="mr-1 inline" />
         Showing {filtered.length} of {events.length} events
       </p>

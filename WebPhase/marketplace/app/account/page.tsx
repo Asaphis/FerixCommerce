@@ -68,7 +68,7 @@ export default async function AccountPage() {
                   <Truck width={12} height={12} strokeWidth={2.4} />
                   {statusLabel(focus.fulfillment)}
                 </Pill>
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
+                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">
                   {focus.number}
                 </span>
               </div>
@@ -101,14 +101,14 @@ export default async function AccountPage() {
                     </div>
                     <p
                       className={cn(
-                        "mt-2 font-mono text-[8.5px] uppercase tracking-[0.08em] sm:text-[9px]",
+                        "mt-2 font-mono text-[8.5px] uppercase tracking-[0.08em] sm:text-[11px]",
                         stage.state === "current" ? "text-ember" : stage.state === "done" ? "text-ink" : "text-ink-soft",
                       )}
                     >
                       {SHORT_STAGE[stage.label] ?? stage.label}
                     </p>
                     {stage.at ? (
-                      <p className="font-mono text-[8.5px] text-ink-soft sm:text-[9px]">{dateShort(stage.at)}</p>
+                      <p className="font-mono text-[8.5px] text-ink-soft sm:text-[11px]">{dateShort(stage.at)}</p>
                     ) : null}
                   </li>
                 ))}
@@ -192,7 +192,7 @@ export default async function AccountPage() {
           >
             <tile.Icon width={16} height={16} className="shrink-0 text-ember" />
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-mono text-[9px] uppercase tracking-[0.12em] text-ink-soft sm:text-[9.5px] sm:tracking-[0.14em]">{tile.label}</span>
+              <span className="block truncate font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft sm:text-[9.5px] sm:tracking-[0.14em]">{tile.label}</span>
               <span className="mt-1 block truncate font-mono text-[17px] font-semibold leading-none tabular-nums text-ink sm:mt-2 sm:text-[21px]">{tile.value}</span>
               <span className="mt-1 hidden truncate font-mono text-[9.5px] uppercase tracking-[0.12em] text-ink-soft sm:block">{tile.sub}</span>
             </span>
@@ -208,7 +208,7 @@ export default async function AccountPage() {
           </h2>
           <Link
             href="/account/following"
-            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
           >
             View all {account.follows.length} <ArrowRight width={13} height={13} />
           </Link>
@@ -231,7 +231,7 @@ export default async function AccountPage() {
                   <p className="truncate text-[12.5px] font-medium text-ink">
                     {slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
                   </p>
-                  <p className="truncate font-mono text-[9px] text-ink-soft">Followed seller</p>
+                  <p className="truncate font-mono text-[11px] text-ink-soft">Followed seller</p>
                 </div>
               </Link>
             ))}
@@ -269,7 +269,7 @@ export default async function AccountPage() {
           <h2 className="font-display text-[17px] font-semibold text-ink sm:text-[19px]">Recent orders</h2>
           <Link
             href="/account/orders"
-            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
           >
             View all {stats.orderCount} <ArrowRight width={13} height={13} />
           </Link>
@@ -321,7 +321,7 @@ export default async function AccountPage() {
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Link
                         href={`/account/orders/${order.id}`}
-                        className="rounded-[2px] bg-ink px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
+                        className="rounded-[2px] bg-ink px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
                       >
                         Order details
                       </Link>
@@ -329,7 +329,7 @@ export default async function AccountPage() {
                         <input type="hidden" name="orderId" value={order.id} />
                         <button
                           type="submit"
-                          className="cursor-pointer rounded-[2px] border border-ink/20 bg-white px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
+                          className="cursor-pointer rounded-[2px] border border-ink/20 bg-white px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
                         >
                           Buy again
                         </button>
@@ -354,7 +354,7 @@ export default async function AccountPage() {
             <h2 className="font-display text-[17px] font-semibold text-ink sm:text-[19px]">Saved items</h2>
             <Link
               href="/account/wishlist"
-              className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
+              className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
             >
               All {stats.wishlistCount} <ArrowRight width={13} height={13} />
             </Link>
@@ -423,7 +423,7 @@ export default async function AccountPage() {
                   : "No address saved yet"}
               </p>
             </div>
-            <Link href="/account/addresses" className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ember">
+            <Link href="/account/addresses" className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-ember">
               {defaultAddress ? "Change" : "Add"}
             </Link>
           </div>
@@ -438,7 +438,7 @@ export default async function AccountPage() {
                   : "Card saved at checkout"}
               </p>
             </div>
-            <Link href="/account/preferences" className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ember">
+            <Link href="/account/preferences" className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-ember">
               Change
             </Link>
           </div>
@@ -451,7 +451,7 @@ export default async function AccountPage() {
                 30 days · free over {money(shipping?.freeShippingOver ?? 120, { cents: false })}
               </p>
             </div>
-            <Link href="/returns" className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ember">
+            <Link href="/returns" className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-ember">
               Details
             </Link>
           </div>

@@ -66,7 +66,7 @@ export default async function OrdersPage({
               key={filter.id}
               href={filter.id === "all" ? "/orders" : `/orders?status=${filter.id}`}
               className={cn(
-                "rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "rounded-[2px] border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors",
                 (status ?? "all") === filter.id
                   ? "border-signal/40 bg-signal/10 text-signal"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -138,7 +138,7 @@ export default async function OrdersPage({
                     <Td>
                       <CellLabel>Customer</CellLabel>
                       <p className="text-[12.5px] text-chalk-dim">{order.customer.name}</p>
-                      <p className="font-mono text-[10px] text-chalk-dim/70">{order.customer.location}</p>
+                      <p className="font-mono text-[11px] text-chalk-dim/70">{order.customer.location}</p>
                     </Td>
                     <TdDetail className="font-mono text-[11.5px] text-chalk-dim">
                       {dateShort(order.placedAt)} · {relative(order.placedAt)}
@@ -153,7 +153,7 @@ export default async function OrdersPage({
                       <CellLabel>Status</CellLabel>
                       <Pill tone={statusTone(order.fulfillment)}>{titleCase(order.fulfillment)}</Pill>
                       {order.tracking ? (
-                        <p className="mt-1 font-mono text-[10px] text-chalk-dim">{order.carrier}</p>
+                        <p className="mt-1 font-mono text-[11px] text-chalk-dim">{order.carrier}</p>
                       ) : null}
                     </Td>
                     <TdDetail className="font-mono text-[12px] tabular-nums text-violet">{money(order.commission)}</TdDetail>
@@ -169,7 +169,7 @@ export default async function OrdersPage({
                           <input type="hidden" name="id" value={order.id} />
                           <SubmitButton variant="outline" pendingLabel="…" className="px-2.5 py-1.5 text-[10.5px]">Resend</SubmitButton>
                         </CmsActionForm>
-                      ) : <span className="text-[10px] text-chalk-dim">Awaiting confirmed payment</span>}
+                      ) : <span className="text-[11px] text-chalk-dim">Awaiting confirmed payment</span>}
                       {new Set(["paid", "captured", "succeeded", "settled"]).has(order.payment) ? (
                         <button type="button" disabled title="A verified payment-provider refund flow is not connected" className="cursor-not-allowed rounded-[2px] border border-hairline px-2.5 py-1.5 text-[10.5px] text-chalk-dim opacity-60">Refund unavailable</button>
                       ) : order.fulfillment === "processing" ? (

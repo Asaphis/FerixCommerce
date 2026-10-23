@@ -61,7 +61,7 @@ export default async function PreferencesPage() {
             </p>
             <Link
               href="/privacy"
-              className="mt-3 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
+              className="mt-3 inline-block font-mono text-[11px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
             >
               Read the privacy policy
             </Link>

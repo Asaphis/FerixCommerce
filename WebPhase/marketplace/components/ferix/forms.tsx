@@ -386,7 +386,7 @@ export function PlaceOrderForm({
       </Field>
       <Notice state={state} />
       <SubmitButton pendingLabel="Placing your order" className="w-full">Place order</SubmitButton>
-      <p className="text-center font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+      <p className="text-center font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
         Items are shipped separately by each seller
       </p>
     </form>

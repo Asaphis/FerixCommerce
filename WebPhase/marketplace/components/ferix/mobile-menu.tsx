@@ -140,13 +140,13 @@ export function FerixMobileMenu({ categories, user }: { categories: Category[]; 
                 <div className="flex gap-2">
                   <Link
                     href="/login"
-                    className="flex-1 rounded-[2px] bg-ink px-3 py-2.5 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-bone"
+                    className="flex-1 rounded-[2px] bg-ink px-3 py-2.5 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-bone"
                   >
                     Sign in
                   </Link>
                   <Link
                     href="/register"
-                    className="flex-1 rounded-[2px] border border-ink/25 px-3 py-2.5 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-ink"
+                    className="flex-1 rounded-[2px] border border-ink/25 px-3 py-2.5 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-ink"
                   >
                     Create account
                   </Link>
@@ -184,7 +184,7 @@ export function FerixMobileMenu({ categories, user }: { categories: Category[]; 
                       className="flex items-center justify-between gap-3 rounded-[2px] px-2 py-2.5 text-[13.5px] text-ink-soft transition-colors hover:bg-bone-soft hover:text-ink"
                     >
                       {category.name}
-                      <span className="font-mono text-[10px] tabular-nums text-ink-soft/70">{category.count}</span>
+                      <span className="font-mono text-[11px] tabular-nums text-ink-soft/70">{category.count}</span>
                     </Link>
                   </li>
                 ))}

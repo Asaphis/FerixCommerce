@@ -69,7 +69,7 @@ export function SettingsForm({ payload }: { payload: SettingsPayload }) {
             />
           </Field>
         </div>
-        <p className="mt-3 font-mono text-[10px] leading-relaxed text-chalk-dim/80">
+        <p className="mt-3 font-mono text-[11px] leading-relaxed text-chalk-dim/80">
           Free delivery is charged over {settings.freeShippingOver} in {settings.currency}. Commission applies to
           marketplace sales only; merchant storefront orders always carry none.
         </p>
@@ -124,7 +124,7 @@ export function SettingsForm({ payload }: { payload: SettingsPayload }) {
             </li>
           ))}
         </ul>
-        <p className="mt-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim/70">
+        <p className="mt-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim/70">
           <RotateCcw width={11} height={11} /> Save the factory value back at any time
         </p>
       </Panel>

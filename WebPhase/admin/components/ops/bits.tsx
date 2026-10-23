@@ -111,9 +111,9 @@ export function Readout({
     <div className="relative flex min-h-[72px] min-w-0 items-center gap-2 overflow-hidden rounded-[14px] border border-hairline bg-panel p-2 shadow-[0_2px_14px_rgba(16,45,67,0.06)] sm:min-h-[94px] sm:gap-2.5 sm:p-4 sm:pl-5">
       {icon ? <span className={cn("grid h-7 w-7 shrink-0 place-items-center rounded-[10px] bg-panel-2 [&>svg]:h-4 [&>svg]:w-4", colors[tone])}>{icon}</span> : null}
       <div className="min-w-0 flex-1">
-        <span className="block truncate font-mono text-[8px] leading-tight uppercase tracking-[0.08em] text-chalk-dim sm:text-[10px] sm:tracking-[0.12em]">{label}</span>
+        <span className="block truncate font-mono text-[11px] leading-tight uppercase tracking-[0.08em] text-chalk-dim sm:text-[11px] sm:tracking-[0.12em]">{label}</span>
         <p className="mt-1 font-display text-[17px] font-bold leading-none tabular-nums text-chalk sm:mt-2 sm:text-[22px]">{value}</p>
-        {sub ? <p className="mt-1 hidden truncate text-[10px] text-chalk-dim sm:block sm:text-[12px]">{sub}</p> : null}
+        {sub ? <p className="mt-1 hidden truncate text-[11px] text-chalk-dim sm:block sm:text-[12px]">{sub}</p> : null}
       </div>
       <span className={cn("absolute inset-y-0 left-0 w-[2px]", bars[tone])} />
     </div>

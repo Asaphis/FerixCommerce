@@ -30,7 +30,7 @@ export default async function WishlistPage() {
         )}
       </div>
 
-      <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
+      <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/70">
         Saved items stay with your account, so they follow you to another device.{" "}
         <Link href="/cart" className="underline decoration-ember decoration-2 underline-offset-4">
           Go to your cart

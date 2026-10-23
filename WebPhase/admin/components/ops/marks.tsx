@@ -91,9 +91,9 @@ export function Distribution({ rows }: { rows: { label: string; value: number; t
 export function Operator({ email, platformName }: { email: string; platformName: string }) {
   return (
     <div className="mx-4 mb-4 rounded-[2px] border border-hairline bg-panel-2 p-3">
-      <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-chalk-dim">Signed in as</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">Signed in as</p>
       <p className="mt-1 truncate text-[12.5px] font-medium text-chalk">{email}</p>
-      <p className="font-mono text-[10px] text-signal">{platformName} console</p>
+      <p className="font-mono text-[11px] text-signal">{platformName} console</p>
     </div>
   );
 }

@@ -82,7 +82,7 @@ export default function HelpPage() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
+                  className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
                 >
                   {link.label}
                 </Link>

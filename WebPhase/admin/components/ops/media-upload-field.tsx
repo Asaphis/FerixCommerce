@@ -215,7 +215,7 @@ export function MediaUploadField({
       </div>
 
       <div className="overflow-hidden rounded-[.55rem] border border-hairline bg-panel-2">
-        <div className="flex items-center gap-2 border-b border-hairline px-3 py-2 font-mono text-[9px] uppercase tracking-[.14em] text-chalk-dim">
+        <div className="flex items-center gap-2 border-b border-hairline px-3 py-2 font-mono text-[11px] uppercase tracking-[.14em] text-chalk-dim">
           {isVideo ? <Film width={13} height={13} /> : <ImagePlus width={13} height={13} />}
           Preview
           {file ? <span className="ml-auto truncate normal-case tracking-normal">{file.name}</span> : null}

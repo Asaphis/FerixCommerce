@@ -33,7 +33,7 @@ export default async function CollectionPage({
         <div className="mx-auto max-w-[1240px] px-4 py-6 lg:px-6 lg:py-9">
           <Link
             href="/collections"
-            className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-lime"
+            className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-lime"
           >
             <ArrowLeft width={12} height={12} /> All collections
           </Link>
@@ -47,7 +47,7 @@ export default async function CollectionPage({
                 {collection.blurb}
               </p>
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
               {collection.count} product{collection.count === 1 ? "" : "s"}
             </p>
           </div>

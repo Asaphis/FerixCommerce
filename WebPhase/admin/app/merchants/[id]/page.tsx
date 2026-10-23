@@ -36,7 +36,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
   }
   if (!detail) {
     return <div className="grid min-w-0 gap-5">
-      <Link href="/merchants" className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim hover:text-chalk"><ArrowLeft width={12} height={12} /> All merchants</Link>
+      <Link href="/merchants" className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim hover:text-chalk"><ArrowLeft width={12} height={12} /> All merchants</Link>
       <Panel><PanelHead title="Seller record unavailable" hint="The merchant list is still available while this record is checked." />
         <p role="alert" className="text-[12.5px] leading-relaxed text-rose">{loadError || "The seller record could not be loaded."}</p>
         <Link href="/merchants" className="mt-4 inline-flex text-[12px] text-signal hover:underline">Return to Merchants</Link>
@@ -50,7 +50,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
       <div>
         <Link
           href="/merchants"
-          className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-chalk"
+          className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-chalk"
         >
           <ArrowLeft width={12} height={12} /> All merchants
         </Link>
@@ -84,10 +84,10 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
           </div>
         </div>
         <div className="text-right">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
             {merchant.customDomain ?? merchant.domain}
           </p>
-          <p className="mt-1 inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
+          <p className="mt-1 inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-signal">
             {merchant.brand?.template ?? "FERIXAS"} template <ExternalLink width={10} height={10} />
           </p>
         </div>
@@ -147,7 +147,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
         <PanelHead
           title="Approved Ferixas marketplace profile"
           hint="Read-only here. The seller proposes profile changes; Admin reviews them in the Review queue."
-          action={canManageAccount ? <Link href={`/review?tab=profiles&merchantId=${encodeURIComponent(merchant.id)}`} className="font-mono text-[10px] uppercase tracking-[0.12em] text-signal hover:underline">Review profile proposals</Link> : undefined}
+          action={canManageAccount ? <Link href={`/review?tab=profiles&merchantId=${encodeURIComponent(merchant.id)}`} className="font-mono text-[11px] uppercase tracking-[0.12em] text-signal hover:underline">Review profile proposals</Link> : undefined}
         />
         <p className="mb-3 text-[11px] text-chalk-dim">Approved profile data · contact fields are private unless opted in.</p>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -166,7 +166,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
 
       <Panel flush>
         <div className="p-5 pb-3">
-          <PanelHead title="Ferixas seller catalogue" action={canManageAccount ? <Link href={`/review?tab=products&merchantId=${encodeURIComponent(merchant.id)}`} className="font-mono text-[10px] uppercase tracking-[0.12em] text-signal hover:underline">Review submissions</Link> : undefined} />
+          <PanelHead title="Ferixas seller catalogue" action={canManageAccount ? <Link href={`/review?tab=products&merchantId=${encodeURIComponent(merchant.id)}`} className="font-mono text-[11px] uppercase tracking-[0.12em] text-signal hover:underline">Review submissions</Link> : undefined} />
         </div>
         {catalog.length ? (
           <TablePanel>
@@ -216,7 +216,7 @@ export default async function MerchantDetailPage({ params }: { params: Promise<{
       <Panel flush>
         <div className="p-5 pb-3">
           <PanelHead title="Recent Ferixas marketplace orders" action={
-            <Link href={`/orders?merchantId=${merchant.id}`} className="font-mono text-[10px] uppercase tracking-[0.14em] text-signal">
+            <Link href={`/orders?merchantId=${merchant.id}`} className="font-mono text-[11px] uppercase tracking-[0.14em] text-signal">
               Filter the order view
             </Link>
           } />

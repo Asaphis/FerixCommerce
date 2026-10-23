@@ -20,7 +20,7 @@ export default async function LoginPage() {
           <h1 className="mt-2 max-w-[17ch] font-display text-[26px] font-bold leading-tight text-white sm:text-[34px]">A safer marketplace for everyone.</h1>
           <p className="mt-2 max-w-[42ch] text-[12px] text-white/80">Monitor and manage Ferixas from one console.</p>
           <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-[450px]">
-            {[{ title: "Merchants", Icon: Building2 }, { title: "Orders", Icon: Receipt }, { title: "Catalogue", Icon: Boxes }].map(({ title, Icon }) => <div key={title} className="flex min-h-10 items-center gap-1.5 rounded-[2px] border border-white/20 bg-white/10 px-2 text-[10px] font-semibold text-white"><Icon width={13} height={13} className="shrink-0 text-signal" />{title}</div>)}
+            {[{ title: "Merchants", Icon: Building2 }, { title: "Orders", Icon: Receipt }, { title: "Catalogue", Icon: Boxes }].map(({ title, Icon }) => <div key={title} className="flex min-h-10 items-center gap-1.5 rounded-[2px] border border-white/20 bg-white/10 px-2 text-[11px] font-semibold text-white"><Icon width={13} height={13} className="shrink-0 text-signal" />{title}</div>)}
           </div>
         </div>
       </section>
@@ -32,7 +32,7 @@ export default async function LoginPage() {
           <h2 className="mt-1.5 font-display text-[23px] font-bold text-chalk sm:text-[27px]">Sign in to the console</h2>
           <p className="mt-1.5 text-[12px] text-chalk-dim">Use your assigned operator credentials.</p>
           <div className="mt-6"><SignInForm /></div>
-          <div className="mt-5 flex items-start gap-2 border-t border-hairline pt-4"><AlertTriangle width={14} height={14} className="mt-0.5 shrink-0 text-amber" /><p className="text-[10px] leading-relaxed text-chalk-dim">Changes in this console can affect live merchants and marketplace operations.</p></div>
+          <div className="mt-5 flex items-start gap-2 border-t border-hairline pt-4"><AlertTriangle width={14} height={14} className="mt-0.5 shrink-0 text-amber" /><p className="text-[11px] leading-relaxed text-chalk-dim">Changes in this console can affect live merchants and marketplace operations.</p></div>
           <a href="https://shop.ferixas.com" className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold text-signal">Open marketplace <ArrowRight width={13} height={13} /></a>
         </div>
       </section>

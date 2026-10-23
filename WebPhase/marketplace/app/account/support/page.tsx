@@ -69,7 +69,7 @@ export default async function SupportPage() {
                     </span>
                     <Link
                       href={`/account/orders/${order.id}`}
-                      className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ember"
+                      className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-ember"
                     >
                       Open
                     </Link>
@@ -112,7 +112,7 @@ export default async function SupportPage() {
               Delivery and item questions go to the seller who packed your parcel, because they hold the tracking. Ferixas
               steps in for payment problems, refunds and anything that looks like a scam.
             </p>
-            <p className="mt-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink">
+            <p className="mt-3 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink">
               <Mail width={13} height={13} className="text-ember" /> support@ferixas.com
             </p>
           </section>

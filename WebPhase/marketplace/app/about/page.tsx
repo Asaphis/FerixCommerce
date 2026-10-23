@@ -59,7 +59,7 @@ export default async function AboutPage() {
         <div className="mt-4 grid gap-3 lg:grid-cols-3">
           {STEPS_RENDERED.map((step) => (
             <article key={step.step} className="flex flex-col rounded-[3px] border border-line-warm bg-white p-4">
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{step.step}</span>
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{step.step}</span>
               <h3 className="mt-3 font-display text-[15.5px] font-semibold text-ink">{step.title}</h3>
               <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-soft">{step.body}</p>
             </article>

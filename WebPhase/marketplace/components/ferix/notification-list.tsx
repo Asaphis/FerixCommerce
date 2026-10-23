@@ -69,7 +69,7 @@ export function NotificationList({ items }: { items: FeedItem[] }) {
               type="button"
               onClick={() => setFilter(value)}
               className={cn(
-                "cursor-pointer rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "cursor-pointer rounded-[2px] border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors",
                 filter === value
                   ? "border-ink bg-ink text-bone"
                   : "border-line-warm bg-white text-ink-soft hover:border-ink/30 hover:text-ink",
@@ -84,7 +84,7 @@ export function NotificationList({ items }: { items: FeedItem[] }) {
           <button
             type="button"
             onClick={() => persist(items.map((item) => item.id))}
-            className="ml-auto inline-flex cursor-pointer items-center gap-2 rounded-[2px] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
+            className="ml-auto inline-flex cursor-pointer items-center gap-2 rounded-[2px] px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
           >
             <CheckCheck width={13} height={13} /> Mark all read
           </button>

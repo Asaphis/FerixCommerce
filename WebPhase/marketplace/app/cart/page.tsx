@@ -48,14 +48,14 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
                     <Link href={`/store/${group.merchant.slug}`} className="font-display text-[14.5px] font-semibold text-ink hover:text-ember">
                       {group.merchant.name}
                     </Link>
-                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
                       Ships from {group.merchant.location}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-[12.5px] text-ink">{money(group.subtotal)}</p>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
                     {group.freeShipping ? "Free delivery" : `+ ${money(group.shipping)} delivery`}
                   </p>
                 </div>
@@ -68,7 +68,7 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
             </section>
           ))}
 
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
+          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/70">
             Secure marketplace payment is not available yet, so no order is created from this cart.
           </p>
         </div>
@@ -97,7 +97,7 @@ export default async function CartPage({ searchParams }: { searchParams?: Promis
             </LinkButton>
             <Link
               href="/browse"
-              className="mt-3 block text-center font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
+              className="mt-3 block text-center font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember"
             >
               Continue shopping
             </Link>

@@ -20,7 +20,7 @@ export async function OpsShell({ children }: { children: ReactNode }) {
           <OpsMark />
           <div className="hidden min-w-0 xl:block">
             <p className="font-display text-[13px] font-extrabold tracking-[0.12em] text-white">FERIXAS</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[#f05a28]">Admin console</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#f05a28]">Admin console</p>
           </div>
         </div>
         <div className="hidden xl:block"><Operator email={admin.email} platformName={admin.platformName} /></div>
@@ -29,7 +29,7 @@ export async function OpsShell({ children }: { children: ReactNode }) {
           <div className="hidden xl:block"><OpsSidebar permissions={admin.permissions} /></div>
         </div>
         <div className="hidden px-4 pb-5 xl:block">
-          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-white/70"><ShieldCheck width={13} height={13} className="text-[#f05a28]" /> Operator access</p>
+          <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/70"><ShieldCheck width={13} height={13} className="text-[#f05a28]" /> Operator access</p>
           <Link href="/settings" className="mt-3 inline-flex min-h-[40px] items-center gap-2 text-[11px] font-semibold text-white/65 transition-colors hover:text-white"><Settings2 width={14} height={14} /> Platform settings</Link>
         </div>
       </aside>
@@ -38,7 +38,7 @@ export async function OpsShell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-30 flex min-h-[60px] items-center justify-between gap-3 border-b border-line bg-white/95 px-4 shadow-[0_2px_10px_rgba(16,45,67,0.05)] backdrop-blur sm:px-6">
           <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Ferixas admin overview">
             <OpsMark className="h-7 w-7" />
-            <span className="leading-tight"><span className="block font-display text-[12px] font-extrabold tracking-[0.1em] text-ink">FERIXAS</span><span className="block text-[10px] text-ink-soft">Admin console</span></span>
+            <span className="leading-tight"><span className="block font-display text-[12px] font-extrabold tracking-[0.1em] text-ink">FERIXAS</span><span className="block text-[11px] text-ink-soft">Admin console</span></span>
           </Link>
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <span className="hidden items-center gap-1.5 border-l border-line pl-3 text-[11px] font-medium text-ink-soft sm:flex"><ShieldCheck width={14} height={14} className="text-ember" /> Platform operator</span>

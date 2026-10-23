@@ -57,7 +57,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
 
   return (
     <div className="mx-auto flex max-w-[1240px] flex-col px-4 py-5 sm:py-8">
-      <nav className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
+      <nav className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">
         <Link href="/" className="transition-colors hover:text-ember">
           Home
         </Link>
@@ -104,7 +104,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
                   </span>
                 ) : null}
               </div>
-              <span className="mt-0.5 block truncate font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+              <span className="mt-0.5 block truncate font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">
                 {merchant.location}
                 {typeof merchant.rating === "number" ? ` · ${merchant.rating.toFixed(1)} ★` : ""}
               </span>
@@ -191,7 +191,7 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
                   {money(product.price)}
                 </span>
                 {product.compareAt ? (
-                  <span className="mt-0.5 block font-mono text-[10px] text-ink-soft line-through">
+                  <span className="mt-0.5 block font-mono text-[11px] text-ink-soft line-through">
                     {money(product.compareAt)}
                   </span>
                 ) : null}

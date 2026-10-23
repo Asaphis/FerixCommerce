@@ -48,7 +48,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
         className="border-b border-line-warm"
       >
         <div className="mx-auto max-w-[1240px] px-4 py-10">
-          <nav className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
+          <nav className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">
             <Link href="/" className="transition-colors hover:text-ember">Ferixas</Link>
             <span>/</span>
             <Link href="/stores" className="transition-colors hover:text-ember">Stores</Link>
@@ -70,7 +70,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
                 <h1 className="font-display text-[22px] font-semibold leading-tight text-ink sm:text-[28px]">{store.name}</h1>
                 {store.verified ? (
                   <span
-                    className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[3px] font-mono text-[10px] uppercase tracking-[0.12em]"
+                    className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-[3px] font-mono text-[11px] uppercase tracking-[0.12em]"
                     style={{ borderColor: `${brand.accent}66`, background: `${brand.accent}1a`, color: brand.accent }}
                   >
                     <Check width={10} height={10} /> Verified
@@ -113,7 +113,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
               { label: "Followers", value: compact(stats.followers) },
             ].map((item) => (
               <div key={item.label} className="rounded-[3px] border border-line-warm bg-white p-3.5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{item.label}</p>
+                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{item.label}</p>
                 <p className="mt-1.5 font-mono text-[19px] font-semibold text-ink">{item.value}</p>
               </div>
             ))}

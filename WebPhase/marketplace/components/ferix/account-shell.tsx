@@ -65,7 +65,7 @@ export function AccountShell({
       </section>
 
       <div className="lg:hidden">
-        <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-ink-soft">Account</p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">Account</p>
         <h1 className="mt-1 font-display text-[19px] font-semibold leading-tight text-ink">{title}</h1>
         {/* Phones get the title only: the chips and the page itself carry the rest. */}
         {description ? (
@@ -93,7 +93,7 @@ export function AccountShell({
             </div>
             <Link
               href="/"
-              className="flex items-center justify-center gap-2 rounded-[3px] border border-line-warm bg-white px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
+              className="flex items-center justify-center gap-2 rounded-[3px] border border-line-warm bg-white px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
             >
               <ArrowLeft width={14} height={14} />
               Shop marketplace

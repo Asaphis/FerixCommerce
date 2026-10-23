@@ -92,7 +92,7 @@ export function MediaHero({
           <div className={cn("absolute inset-0 z-10 flex px-4 sm:px-8", verticalPosition)}>
             <div className={cn("mx-auto flex w-full max-w-[1240px]", align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start")}>
               <div className={cn("flex max-w-[36ch] flex-col", horizontal)}>
-                {eyebrow ? <span className={cn("font-mono text-[9px] uppercase tracking-[0.18em] sm:text-[10px]", tone === "light" ? "text-ink/70" : "text-white/80")}>{eyebrow}</span> : null}
+                {eyebrow ? <span className={cn("font-mono text-[11px] uppercase tracking-[0.18em] sm:text-[11px]", tone === "light" ? "text-ink/70" : "text-white/80")}>{eyebrow}</span> : null}
                 {title ? <h2 className={cn("mt-1.5 font-display text-[20px] font-extrabold leading-tight tracking-[-0.02em] sm:text-[28px] lg:text-[34px]", foreground)}>{title}</h2> : null}
                 {description ? <p className={cn("mt-1.5 line-clamp-2 max-w-[52ch] text-[11.5px] leading-relaxed sm:mt-2 sm:text-[13px]", tone === "light" ? "text-ink/80" : "text-white/85")}>{description}</p> : null}
                 {ctaLabel || secondaryLabel ? (

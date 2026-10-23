@@ -46,7 +46,7 @@ export default async function AddressesPage() {
                         <input type="hidden" name="id" value={address.id} />
                         <button
                           type="submit"
-                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] border border-line-warm px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
+                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] border border-line-warm px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
                         >
                           <Star width={12} height={12} /> Make default
                         </button>
@@ -56,7 +56,7 @@ export default async function AddressesPage() {
                       <input type="hidden" name="id" value={address.id} />
                       <button
                         type="submit"
-                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] border border-line-warm px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ember/40 hover:text-ember"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-[2px] border border-line-warm px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ember/40 hover:text-ember"
                       >
                         <Trash2 width={12} height={12} /> Remove
                       </button>
@@ -65,7 +65,7 @@ export default async function AddressesPage() {
                 </div>
 
                 <details className="mt-4 border-t border-line-warm pt-4">
-                  <summary className="cursor-pointer font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ink">
+                  <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ink">
                     Edit this address
                   </summary>
                   <div className="mt-4">
@@ -92,7 +92,7 @@ export default async function AddressesPage() {
         </section>
       </div>
 
-      <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
+      <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/70">
         {addresses.length} address{addresses.length === 1 ? "" : "es"} on file · used at checkout on every store
       </p>
     </AccountShell>

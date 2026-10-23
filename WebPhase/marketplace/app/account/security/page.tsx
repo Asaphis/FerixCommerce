@@ -34,7 +34,7 @@ export default async function SecurityPage() {
                 </p>
                 <Link
                   href="/forgot-password"
-                  className="mt-3 inline-flex items-center gap-2 rounded-[2px] bg-ink px-3.5 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
+                  className="mt-3 inline-flex items-center gap-2 rounded-[2px] bg-ink px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
                 >
                   <Lock width={13} height={13} /> Send a reset link
                 </Link>
@@ -69,7 +69,7 @@ export default async function SecurityPage() {
                 <form action={signOutAction} className="mt-3">
                   <button
                     type="submit"
-                    className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] border border-line-warm px-3.5 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:border-ember/40 hover:text-ember"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] border border-line-warm px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors hover:border-ember/40 hover:text-ember"
                   >
                     <LogOut width={13} height={13} /> Sign out of this browser
                   </button>
@@ -112,7 +112,7 @@ export default async function SecurityPage() {
             </p>
             <Link
               href="/contact"
-              className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
+              className="mt-2 inline-block font-mono text-[11px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
             >
               Request early access
             </Link>
@@ -127,7 +127,7 @@ export default async function SecurityPage() {
             </ul>
             <Link
               href="/account/orders"
-              className="mt-3 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
+              className="mt-3 inline-block font-mono text-[11px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
             >
               Review my orders
             </Link>

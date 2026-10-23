@@ -58,7 +58,7 @@ export default async function UsersPage({
               key={option.id}
               href={option.id === "all" ? "/users" : `/users?segment=${option.id}`}
               className={cn(
-                "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors",
                 (segment ?? "all") === option.id
                   ? "border-signal/40 bg-signal/10 text-signal"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -134,7 +134,7 @@ export default async function UsersPage({
                 </Td>
                 <Td className="w-full md:w-[130px]">
                   <Meter value={user.spent} max={maxSpend} tone="violet" />
-                  <p className="mt-1 font-mono text-[10px] text-chalk-dim">
+                  <p className="mt-1 font-mono text-[11px] text-chalk-dim">
                     {user.saved} saved · {user.reviews} reviews
                   </p>
                 </Td>

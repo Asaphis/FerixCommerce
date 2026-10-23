@@ -98,7 +98,7 @@ export default async function PromotionsPage() {
               ) : null}
 
               <details className="rounded-[2px] border border-hairline bg-panel-2">
-                <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+                <summary className="cursor-pointer px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
                   Edit promotion
                 </summary>
                 <form action={savePromotionAction} className="grid gap-3 border-t border-hairline p-4">
@@ -229,7 +229,7 @@ export default async function PromotionsPage() {
         </form>
       </Panel>
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
         <Megaphone width={11} height={11} className="mr-1 inline" />
         {sales.length} promotion{sales.length === 1 ? "" : "s"} · {sales.filter((s) => s.status === "live").length} live
       </p>

@@ -87,7 +87,7 @@ export function AccountSidebar({ counts }: { counts: AccountCounts }) {
                 <entry.Icon width={15} height={15} className="shrink-0" />
                 <span className="flex-1">{entry.label}</span>
                 {entry.count ? (
-                  <span className={cn("font-mono text-[10px] tabular-nums", active ? "text-bone/70" : "text-ink-soft")}>
+                  <span className={cn("font-mono text-[11px] tabular-nums", active ? "text-bone/70" : "text-ink-soft")}>
                     {entry.count}
                   </span>
                 ) : null}
@@ -130,7 +130,7 @@ export function AccountChips({ counts }: { counts: AccountCounts }) {
               href={entry.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "shrink-0 rounded-[2px] border px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors",
+                "shrink-0 rounded-[2px] border px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors",
                 active
                   ? "border-ink bg-ink text-bone"
                   : "border-line-warm bg-white text-ink-soft hover:border-ink/30 hover:text-ink",

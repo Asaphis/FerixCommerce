@@ -36,7 +36,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
       <header>
         <Link
           href="/catalog"
-          className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
+          className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
         >
           <ArrowLeft width={13} height={13} />
           Catalogue
@@ -176,10 +176,10 @@ export default async function ProductEditorPage({ params, searchParams }: { para
                         className="h-11 w-11 shrink-0 rounded-[6px] object-cover"
                       />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-mono text-[10px] text-chalk-dim">{url}</span>
+                        <span className="block truncate font-mono text-[11px] text-chalk-dim">{url}</span>
                         <span className="block text-[10.5px] text-chalk-dim">{index === 0 ? "cover" : `image ${index + 1}`}</span>
                       </span>
-                      <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] text-chalk-dim">remove</span>
+                      <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.1em] text-chalk-dim">remove</span>
                       <input type="checkbox" name="removeImage" value={url} className="shrink-0 accent-[#e4572e]" />
                     </label>
                   ))}
@@ -202,7 +202,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
             <p className="-mt-2 text-[11px] leading-relaxed text-chalk-dim">Only assigned product sections appear here. Automatic sections such as Trending or Newest arrivals choose products from their configured feed.</p>
             {sections.length ? (
               <div className="grid gap-4">
-                {Object.entries(sectionGroups).map(([page, pageSections]) => <fieldset key={page} className="grid gap-2"><legend className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend><div className="grid gap-2 sm:grid-cols-2">{pageSections.map((section) => {
+                {Object.entries(sectionGroups).map(([page, pageSections]) => <fieldset key={page} className="grid gap-2"><legend className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-chalk-dim">{page}</legend><div className="grid gap-2 sm:grid-cols-2">{pageSections.map((section) => {
                   const slot = `${section.documentId}__${section.sectionId}`;
                   const placed = placements.some(
                     (row) => row.documentId === section.documentId && row.sectionId === section.sectionId,
@@ -222,7 +222,7 @@ export default async function ProductEditorPage({ params, searchParams }: { para
                         <span className="min-w-0">
                           <span className="block text-[12.5px] font-semibold text-chalk">{section.sectionName || "Unnamed section"}</span>
                           <span className="mt-1 inline-flex"><Pill tone={section.status === "draft" ? "amber" : "mint"}>{section.status === "draft" ? "Draft — not public" : "Published"}</Pill></span>
-                          <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
+                          <span className="mt-0.5 block font-mono text-[11px] uppercase tracking-[0.12em] text-chalk-dim">
                             {section.documentTitle || "Unknown page"} · Assigned products · {section.sectionType || "unknown type"}{section.placements ? ` · ${section.placements} already` : ""}
                           </span>
                         </span>

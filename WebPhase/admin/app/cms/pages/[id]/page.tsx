@@ -85,7 +85,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
     <div className="grid min-w-0 gap-5">
       <PageHeader
         back={
-          <Link href="/cms" className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk">
+          <Link href="/cms" className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk">
             <ArrowLeft width={13} height={13} /> Content
           </Link>
         }
@@ -215,7 +215,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
           <ol className="grid gap-1.5">
             {page.publishedSections.map((section, index) => (
               <li key={section.id} className="flex items-center gap-2.5 text-[12.5px] text-chalk-dim">
-                <span className="w-4 shrink-0 text-right font-mono text-[10px]">{index + 1}</span>
+                <span className="w-4 shrink-0 text-right font-mono text-[11px]">{index + 1}</span>
                 <span className="min-w-0 truncate text-chalk">{section.name || section.type}</span>
                 {section.visible ? null : <Pill tone="neutral">hidden</Pill>}
               </li>

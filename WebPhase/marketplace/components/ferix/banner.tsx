@@ -198,7 +198,7 @@ function SlideCopy({ slide, active }: { slide: Banner; active: boolean }) {
           <div className={cn("flex flex-col", horizontal)} style={{ maxWidth: `${Math.max(18, Math.min(64, overlay.width))}ch` }}>
             {showText && slide.eyebrow ? (
               <span
-                className="inline-flex items-center gap-2 rounded-full border px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] backdrop-blur-sm sm:px-2.5 sm:py-1 sm:text-[10px]"
+                className="inline-flex items-center gap-2 rounded-full border px-2 py-0.5 font-mono text-[11px] uppercase tracking-[0.16em] backdrop-blur-sm sm:px-2.5 sm:py-1 sm:text-[11px]"
                 style={{
                   borderColor: safeColorWithAlpha(accentOf(slide), "77", 47),
                   background: safeColorWithAlpha(accentOf(slide), "26", 15),

@@ -41,7 +41,7 @@ export default async function PaymentsPage() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <Pill tone="neutral">Records only</Pill>
-              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+              <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
                 provider: {data.provider}
               </span>
             </div>
@@ -106,7 +106,7 @@ export default async function PaymentsPage() {
         </Panel>
       )}
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
         {num(data.transactions.length)} transaction{data.transactions.length === 1 ? "" : "s"} recorded
       </p>
     </div>

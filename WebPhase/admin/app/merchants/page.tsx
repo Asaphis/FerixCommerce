@@ -63,7 +63,7 @@ export default async function MerchantsPage({
               key={filter.id}
               href={filter.id === "all" ? "/merchants" : `/merchants?status=${filter.id}`}
               className={cn(
-                "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+                "inline-flex min-h-[44px] items-center rounded-[2px] border px-3 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors",
                 (status ?? "all") === filter.id
                   ? "border-signal/40 bg-signal/10 text-signal"
                   : "border-hairline text-chalk-dim hover:border-chalk-dim hover:text-chalk",
@@ -124,7 +124,7 @@ export default async function MerchantsPage({
                       >
                         {merchant.name}
                       </Link>
-                      <p className="truncate font-mono text-[10px] text-chalk-dim">{merchant.location}</p>
+                      <p className="truncate font-mono text-[11px] text-chalk-dim">{merchant.location}</p>
                     </div>
                   </div>
                 </TdLead>
@@ -143,7 +143,7 @@ export default async function MerchantsPage({
                 <Td className="font-mono text-[12.5px] tabular-nums text-chalk-dim">
                   <CellLabel>Products</CellLabel>
                   {merchant.productCount}
-                  <span className="ml-1 text-[10px] text-chalk-dim/70">({merchant.marketplaceListings} listed)</span>
+                  <span className="ml-1 text-[11px] text-chalk-dim/70">({merchant.marketplaceListings} listed)</span>
                 </Td>
                 <Td className="font-mono text-[12.5px] tabular-nums text-chalk-dim">
                   <CellLabel>Orders</CellLabel>
@@ -155,7 +155,7 @@ export default async function MerchantsPage({
                 </Td>
                 <Td className="w-full md:w-[140px]">
                   <Meter value={merchant.gmv} max={maxGmv} />
-                  <p className="mt-1 font-mono text-[10px] text-chalk-dim">
+                  <p className="mt-1 font-mono text-[11px] text-chalk-dim">
                     {Math.round((merchant.gmv / Math.max(1, totalGmv)) * 100)}% of platform
                   </p>
                 </Td>

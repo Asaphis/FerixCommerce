@@ -18,7 +18,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
         <div className="mt-7">
           <AuthForm mode="register" returnTo={returnTo} />
         </div>
-        <p className="mt-4 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+        <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
           By creating an account you agree to the buyer terms and the returns policy.
         </p>
       </div>

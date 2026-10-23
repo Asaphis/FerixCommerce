@@ -88,7 +88,7 @@ export default async function CheckoutPage({
               />
               <div className="mt-2 flex items-center gap-1.5">
                 <span
-                  className={`grid h-4 w-4 shrink-0 place-items-center rounded-full font-mono text-[9px] font-medium ${
+                  className={`grid h-4 w-4 shrink-0 place-items-center rounded-full font-mono text-[11px] font-medium ${
                     done
                       ? "bg-pine text-white"
                       : current
@@ -137,9 +137,9 @@ export default async function CheckoutPage({
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{address.label}</span>
+                      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{address.label}</span>
                       {address.isDefault ? (
-                        <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.14em] text-pine">
+                        <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-pine">
                           <CheckCircle2 width={11} height={11} /> Default
                         </span>
                       ) : null}
@@ -153,7 +153,7 @@ export default async function CheckoutPage({
                 ))}
                 <Link
                   href="/account/addresses"
-                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
+                  className="font-mono text-[11px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
                 >
                   Manage addresses
                 </Link>
@@ -166,7 +166,7 @@ export default async function CheckoutPage({
             <div className="mt-3">
               <ShippingPicker options={options} selected={shippingMethod} addressId={chosenAddress} />
             </div>
-            <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+            <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
               Free over {money(freeShippingOver, { cents: false })} per seller
             </p>
           </section>
@@ -186,7 +186,7 @@ export default async function CheckoutPage({
             <ul className="mt-4 space-y-3">
               {quote.cart.merchants.map((group) => (
                 <li key={group.merchant.id} className="border-b border-line-warm pb-3 last:border-0 last:pb-0">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{group.merchant.name}</p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{group.merchant.name}</p>
                   {group.items.map((line) => (
                     <p key={line.key} className="mt-1.5 flex justify-between gap-3 text-[12.5px] text-ink">
                       <span className="line-clamp-1">
@@ -222,7 +222,7 @@ export default async function CheckoutPage({
               </div>
             </dl>
 
-            <Link href="/cart" className="mt-4 block text-center font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
+            <Link href="/cart" className="mt-4 block text-center font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ember">
               Back to cart
             </Link>
           </div>

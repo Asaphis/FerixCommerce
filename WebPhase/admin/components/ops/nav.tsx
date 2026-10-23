@@ -51,7 +51,7 @@ function iconFor(link: NavItem): LucideIcon {
 
 function SoonTag() {
   return (
-    <span className="rounded-[2px] border border-hairline px-1 py-0.5 font-mono text-[8px] uppercase tracking-[0.12em] text-chalk-dim">
+    <span className="rounded-[2px] border border-hairline px-1 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-chalk-dim">
       Soon
     </span>
   );
@@ -68,7 +68,7 @@ export function OpsSidebar({ permissions }: { permissions?: string[] } = {}) {
     <nav aria-label="Platform console" className="flex flex-col gap-4 px-3 pb-4">
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="px-3 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#9aa8ae]/70">
+          <p className="px-3 pb-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-[#9aa8ae]/70">
             {group.label}
           </p>
           <div className="flex flex-col gap-0.5">
@@ -179,7 +179,7 @@ export function OpsBottomNav({ permissions }: { permissions?: string[] } = {}) {
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "relative flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors",
+                    "relative flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal",
                     active ? "text-signal" : "text-chalk-dim hover:text-chalk",
                   )}
@@ -203,7 +203,7 @@ export function OpsBottomNav({ permissions }: { permissions?: string[] } = {}) {
               aria-haspopup="dialog"
               aria-expanded={open}
               className={cn(
-                "relative flex min-h-[56px] w-full flex-col items-center justify-center gap-1 px-1 py-2 font-mono text-[9px] uppercase tracking-[0.1em] transition-colors",
+                "relative flex min-h-[56px] w-full flex-col items-center justify-center gap-1 px-1 py-2 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal",
                 moreActive ? "text-signal" : "text-chalk-dim hover:text-chalk",
               )}
@@ -256,7 +256,7 @@ function MoreDrawer({ onClose, permissions }: { onClose: () => void; permissions
         style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
       >
         <div className="mb-3 flex items-center justify-between">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">All destinations</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">All destinations</p>
           <button
             type="button"
             onClick={onClose}
@@ -272,7 +272,7 @@ function MoreDrawer({ onClose, permissions }: { onClose: () => void; permissions
         <div className="flex flex-col gap-4">
           {groups.map((group) => (
             <div key={group.label}>
-              <p className="px-1 pb-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-[#9aa8ae]/70">
+              <p className="px-1 pb-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-[#9aa8ae]/70">
                 {group.label}
               </p>
               <div className="flex flex-col gap-0.5">

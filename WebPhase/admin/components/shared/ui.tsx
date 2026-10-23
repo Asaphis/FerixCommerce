@@ -42,7 +42,7 @@ export function Pill({
 
 export function Eyebrow({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <span className={`font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-chalk-dim ${className}`}>
+    <span className={`font-sans text-[11px] font-bold uppercase tracking-[0.1em] text-chalk-dim ${className}`}>
       {children}
     </span>
   );
@@ -51,7 +51,7 @@ export function Eyebrow({ children, className = "" }: { children: ReactNode; cla
 /** Inline label for a value in a phone card, so a bare number still reads. */
 export function CellLabel({ children }: { children: ReactNode }) {
   return (
-    <span className="mr-1.5 font-sans text-[9px] font-semibold uppercase tracking-[0.08em] text-chalk-dim/80 md:hidden">
+    <span className="mr-1.5 font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-chalk-dim/80 md:hidden">
       {children}
     </span>
   );

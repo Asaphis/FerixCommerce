@@ -79,16 +79,16 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
                             </select>
                             <SubmitButton variant="outline" pendingLabel="Saving">Save role</SubmitButton>
                             <details className="basis-full rounded-[6px] border border-hairline p-2 md:basis-auto">
-                              <summary className="cursor-pointer font-mono text-[9px] uppercase tracking-[0.1em] text-chalk-dim">Permissions ({member.permissions.includes("*") ? "all" : member.permissions.length})</summary>
+                              <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.1em] text-chalk-dim">Permissions ({member.permissions.includes("*") ? "all" : member.permissions.length})</summary>
                               <div className="mt-2 grid max-h-48 gap-1.5 overflow-y-auto sm:grid-cols-2">
                                 {permissionOptions.map((permission) => (
-                                  <label key={permission} className="flex items-center gap-1.5 text-[10px] text-chalk-dim">
+                                  <label key={permission} className="flex items-center gap-1.5 text-[11px] text-chalk-dim">
                                     <input type="checkbox" name="permissions" value={permission} defaultChecked={member.permissions.includes(permission)} className="size-3 accent-[#c8ff3d]" />
                                     {permission === "*" ? "Full platform access (*)" : permission}
                                   </label>
                                 ))}
                               </div>
-                              <label className="mt-2 flex items-start gap-1.5 border-t border-hairline pt-2 text-[10px] text-chalk-dim">
+                              <label className="mt-2 flex items-start gap-1.5 border-t border-hairline pt-2 text-[11px] text-chalk-dim">
                                 <input type="checkbox" name="customPermissions" defaultChecked={customPermissionIds.has(member.id)} className="mt-0.5 size-3 accent-[#c8ff3d]" />
                                 Use this explicit permission set; otherwise the selected role's defaults are used.
                               </label>

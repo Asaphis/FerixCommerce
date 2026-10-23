@@ -161,7 +161,7 @@ export default function FaqPage() {
           <a
             key={group.id}
             href={`#${group.id}`}
-            className="rounded-[2px] border border-line-warm bg-white px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
+            className="rounded-[2px] border border-line-warm bg-white px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
           >
             {group.title}
           </a>
@@ -204,7 +204,7 @@ export default function FaqPage() {
         </div>
       </section>
 
-      <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+      <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
         Looking for a policy?{" "}
         <Link href="/shipping-policy" className="text-ink transition-colors hover:text-ember">
           Shipping

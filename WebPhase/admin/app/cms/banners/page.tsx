@@ -22,7 +22,7 @@ export default async function BannersPage() {
       <header>
         <Link
           href="/cms"
-          className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
+          className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
         >
           <ArrowLeft width={13} height={13} />
           Content
@@ -45,7 +45,7 @@ export default async function BannersPage() {
                     className="h-16 w-24 shrink-0 rounded-[2px] border border-hairline object-cover"
                   />
                   <div className="min-w-0">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
                       {banner.eyebrow || "—"}
                     </p>
                     <p className="mt-1 truncate font-display text-[14px] font-semibold text-chalk">{banner.headline}</p>
@@ -62,7 +62,7 @@ export default async function BannersPage() {
               </div>
 
               <details className="rounded-[2px] border border-hairline bg-panel-2">
-                <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+                <summary className="cursor-pointer px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
                   Edit banner
                 </summary>
                 <CmsActionForm action={saveBannerAction} className="grid gap-3 border-t border-hairline p-4">
@@ -213,7 +213,7 @@ export default async function BannersPage() {
         </CmsActionForm>
       </Panel>
 
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">
         {banners.length} banner{banners.length === 1 ? "" : "s"} · {banners.filter((b) => b.active).length} live
       </p>
     </div>

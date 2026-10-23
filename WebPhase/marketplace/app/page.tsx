@@ -11,6 +11,12 @@ import { TileSwiper } from "@/components/ferix/tile-swiper";
 import { SectionHead } from "@/components/ferix/marks";
 import { RenderSections, type HomePayload, type Section as CmsSection } from "@/components/ferix/render-sections";
 
+export const metadata = {
+  title: "Ferixas — one cart, many stores",
+  description: "Shop fashion, computing, gaming and phones from verified sellers. One cart, many stores, delivered across Nigeria.",
+};
+
+
 /**
  * The storefront homepage, built from the CMS.
  *
@@ -235,7 +241,7 @@ function HomeAdvert({ advert, label }: { advert: Advert; label: string }) {
           {advert.headline || advert.name || "Something worth a look"}
         </span>
         {advert.body ? <span className="text-[12px] leading-relaxed text-ink-soft">{advert.body}</span> : null}
-        <span className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/80">
+        <span className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/80">
           {advert.sponsor ? `Sponsored by ${advert.sponsor}` : "From Ferixas"}
         </span>
       </span>

@@ -42,7 +42,7 @@ export function MediaSlotsField({
           <Images width={14} height={14} />
           {label}
         </p>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+        <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
           {rows.filter((row) => row.url.trim()).length} in order
         </span>
       </div>
@@ -53,7 +53,7 @@ export function MediaSlotsField({
       {rows.map((row, index) => (
         <div key={row.key} className="grid gap-2 rounded-[3px] border border-hairline bg-panel p-2.5">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
               {index === 0 ? "Slide 1 · lead" : `Slide ${index + 1}`}
             </span>
             <button
@@ -81,7 +81,7 @@ export function MediaSlotsField({
       <button
         type="button"
         onClick={add}
-        className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-[2px] border border-dashed border-hairline px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim transition-colors hover:border-chalk-dim hover:text-chalk"
+        className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-[2px] border border-dashed border-hairline px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-chalk-dim transition-colors hover:border-chalk-dim hover:text-chalk"
       >
         <Plus width={12} height={12} />
         Add another slide

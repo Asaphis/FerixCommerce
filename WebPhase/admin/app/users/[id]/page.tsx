@@ -25,7 +25,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
       <div>
         <Link
           href="/users"
-          className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-chalk"
+          className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim transition-colors hover:text-chalk"
         >
           <ArrowLeft width={12} height={12} /> All accounts
         </Link>
@@ -166,7 +166,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           <KeyValue label="Followed stores" value={follows.length} />
           <KeyValue label="Password" value="salted hash" />
         </ul>
-        <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim/70">
+        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim/70">
           Session tokens are never visible to the console
         </p>
       </Panel>

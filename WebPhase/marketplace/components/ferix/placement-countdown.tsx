@@ -25,7 +25,7 @@ export function PlacementCountdown({ endsAt }: { endsAt?: string }) {
   }, [endsAt]);
   if (!endsAt || !label) return null;
   return (
-    <span className="inline-flex items-center rounded-[3px] bg-ink px-1.5 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-white" aria-label={`Offer ends in ${label}`}>
+    <span className="inline-flex items-center rounded-[3px] bg-ink px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-white" aria-label={`Offer ends in ${label}`}>
       <span aria-hidden="true">Ends in {label}</span>
       <span className="sr-only" aria-live="off">Offer ends in {label}</span>
     </span>

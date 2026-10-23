@@ -176,7 +176,7 @@ function HomeAdvert({ advert, label }: { advert: Advert; label: string }) {
           {advert.headline || advert.name || "Something worth a look"}
         </span>
         {advert.body ? <span className="text-[12px] leading-relaxed text-ink-soft">{advert.body}</span> : null}
-        <span className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/80">
+        <span className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/80">
           {advert.sponsor ? `Sponsored by ${advert.sponsor}` : "From Ferixas"}
         </span>
       </span>
@@ -304,9 +304,9 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               />
             )}
             <div className="mt-2.5 grid grid-cols-3 divide-line-warm rounded-[3px] border border-line-warm bg-white py-2.5 sm:divide-x max-lg:mt-0 max-lg:rounded-none max-lg:border-x-0 max-lg:py-0">
-              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[10px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><ShoppingBag width={14} height={14} className="shrink-0 text-ember" />One cart, many stores</div>
-              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[10px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><BadgeCheck width={14} height={14} className="shrink-0 text-ember" />Seller profiles</div>
-              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[10px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><StoreIcon width={14} height={14} className="shrink-0 text-ember" />{home.stats.merchants} stores</div>
+              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[11px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><ShoppingBag width={14} height={14} className="shrink-0 text-ember" />One cart, many stores</div>
+              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[11px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><BadgeCheck width={14} height={14} className="shrink-0 text-ember" />Seller profiles</div>
+              <div className="flex min-h-[46px] items-center justify-center gap-1.5 px-2 text-center text-[11px] leading-tight font-semibold text-ink-soft sm:min-h-0 sm:gap-2 sm:px-1 sm:text-[11px]"><StoreIcon width={14} height={14} className="shrink-0 text-ember" />{home.stats.merchants} stores</div>
             </div>
           </section>
         );

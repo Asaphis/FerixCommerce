@@ -37,7 +37,7 @@ export default async function OrdersPage({
             key={filter.id}
             href={filter.id === "all" ? "/account/orders" : `/account/orders?status=${filter.id}`}
             className={cn(
-              "shrink-0 rounded-[2px] border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] transition-colors",
+              "shrink-0 rounded-[2px] border px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors",
               active === filter.id
                 ? "border-ink bg-ink text-bone"
                 : "border-line-warm bg-white text-ink-soft hover:border-ink/30 hover:text-ink",
@@ -115,7 +115,7 @@ export default async function OrdersPage({
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line-warm pt-3">
                   <Link
                     href={`/account/orders/${order.id}`}
-                    className="inline-flex items-center gap-2 rounded-[2px] bg-ink px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
+                    className="inline-flex items-center gap-2 rounded-[2px] bg-ink px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
                   >
                     Track order <ArrowRight width={13} height={13} />
                   </Link>
@@ -123,7 +123,7 @@ export default async function OrdersPage({
                     <input type="hidden" name="orderId" value={order.id} />
                     <button
                       type="submit"
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] border border-line-warm px-3.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] border border-line-warm px-3.5 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
                     >
                       <Package width={13} height={13} /> Buy again
                     </button>

@@ -102,7 +102,7 @@ export default function ContactPage() {
             </div>
           ))}
         </div>
-        <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+        <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
           Messages about a parcel move faster with the order number in the subject
         </p>
       </section>

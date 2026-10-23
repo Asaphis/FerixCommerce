@@ -23,7 +23,7 @@ export default async function PublishingPage() {
         <div>
           <Link
             href="/cms"
-            className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
+            className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim transition-colors hover:text-chalk"
           >
             <ArrowLeft width={13} height={13} />
             Content

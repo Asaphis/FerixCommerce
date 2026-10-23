@@ -176,7 +176,7 @@ export async function CatalogListing({
   return (
     <div className="mx-auto max-w-[1240px] px-4 py-6 lg:px-6 lg:py-8">
       {crumbs?.length ? (
-        <nav className="no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto px-4 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft lg:mx-0 lg:px-0">
+        <nav className="no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto px-4 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft lg:mx-0 lg:px-0">
           {crumbs.map((crumb, index) => (
             <span key={`${crumb.label}-${index}`} className="flex shrink-0 items-center gap-2">
               {index > 0 ? <span>/</span> : null}
@@ -205,7 +205,7 @@ export async function CatalogListing({
           <h1 className="font-display text-[21px] font-semibold capitalize leading-tight text-ink lg:text-[28px]">
             {displayHeading}
           </h1>
-          <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+          <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
             {feed.total} product{feed.total === 1 ? "" : "s"}
             {chips.length ? ` · ${chips.length} filter${chips.length === 1 ? "" : "s"} on` : ""}
           </p>
@@ -271,7 +271,7 @@ export async function CatalogListing({
               <p className="mt-1.5 font-display text-[14px] font-semibold text-ink">{activeStore.name}</p>
               <Link
                 href={`/store/${activeStore.slug}`}
-                className="mt-2 inline-block font-mono text-[10px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
+                className="mt-2 inline-block font-mono text-[11px] uppercase tracking-[0.14em] text-ember underline decoration-2 underline-offset-4"
               >
                 Visit the store
               </Link>
@@ -286,7 +286,7 @@ export async function CatalogListing({
                 <Link
                   key={chip.label}
                   href={chip.href}
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-[2px] border border-ink/20 bg-white px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-ink transition-colors hover:border-ember/50 hover:text-ember"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-[2px] border border-ink/20 bg-white px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink transition-colors hover:border-ember/50 hover:text-ember"
                 >
                   {chip.label}
                   <X width={11} height={11} />
@@ -294,7 +294,7 @@ export async function CatalogListing({
               ))}
               <Link
                 href={basePath}
-                className="inline-flex shrink-0 items-center rounded-[2px] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft underline decoration-ember decoration-2 underline-offset-4"
+                className="inline-flex shrink-0 items-center rounded-[2px] px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft underline decoration-ember decoration-2 underline-offset-4"
               >
                 Clear all
               </Link>
@@ -349,7 +349,7 @@ export async function CatalogListing({
             </div>
           ) : null}
 
-          <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/70">
+          <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/70">
             Free delivery over {money(120, { cents: false })} · 30-day returns
           </p>
         </div>
@@ -488,7 +488,7 @@ function AdvertSlot({ advert, label }: { advert: Advert; label: string }) {
           {advert.headline || advert.name || "Something worth a look"}
         </span>
         {advert.body ? <span className="text-[12.5px] leading-relaxed text-ink-soft">{advert.body}</span> : null}
-        <span className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft/80">
+        <span className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/80">
           {advert.sponsor ? `Sponsored by ${advert.sponsor}` : "From Ferixas"}
         </span>
       </span>

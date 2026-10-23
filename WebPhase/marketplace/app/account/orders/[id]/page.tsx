@@ -51,7 +51,7 @@ export default async function OrderDetailPage({
         <>
           <Link
             href="/account/orders"
-            className="inline-flex items-center gap-2 rounded-[2px] border border-line-warm bg-white px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
+            className="inline-flex items-center gap-2 rounded-[2px] border border-line-warm bg-white px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
           >
             <ArrowLeft width={13} height={13} /> All orders
           </Link>
@@ -59,7 +59,7 @@ export default async function OrderDetailPage({
             <input type="hidden" name="orderId" value={order.id} />
             <button
               type="submit"
-              className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] bg-ink px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-[2px] bg-ink px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-bone transition-colors hover:bg-ember"
             >
               <RotateCcw width={13} height={13} /> Buy again
             </button>
@@ -86,7 +86,7 @@ export default async function OrderDetailPage({
           <div className="flex flex-wrap items-center gap-2.5">
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-[2px] px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em]",
+                "inline-flex items-center gap-1.5 rounded-[2px] px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-[0.12em]",
                 DARK_CHIP[statusTone(order.fulfillment)] ?? DARK_CHIP.neutral,
               )}
             >
@@ -94,7 +94,7 @@ export default async function OrderDetailPage({
               {statusLabel(order.fulfillment)}
             </span>
             {order.carrier && order.tracking ? (
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+              <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
                 {order.carrier} · {order.tracking}
               </span>
             ) : null}
@@ -130,7 +130,7 @@ export default async function OrderDetailPage({
                   >
                     {stage.label}
                   </p>
-                  <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-chalk-dim">
+                  <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-chalk-dim">
                     {stage.at ? dateLong(stage.at) : stage.state === "current" ? "In progress" : "Pending"}
                   </p>
                 </div>
@@ -181,7 +181,7 @@ export default async function OrderDetailPage({
                 </div>
                 <Link
                   href={`/store/${merchant.slug}`}
-                  className="ml-auto shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ember"
+                  className="ml-auto shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-ember"
                 >
                   Visit store
                 </Link>
@@ -206,7 +206,7 @@ export default async function OrderDetailPage({
           <div className="flex flex-wrap gap-2">
             <Link
               href="/browse"
-              className="inline-flex items-center gap-2 rounded-[2px] border border-ink/20 bg-white px-3.5 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink transition-colors hover:border-ink"
+              className="inline-flex items-center gap-2 rounded-[2px] border border-ink/20 bg-white px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink transition-colors hover:border-ink"
             >
               <Package width={13} height={13} /> Keep shopping
             </Link>

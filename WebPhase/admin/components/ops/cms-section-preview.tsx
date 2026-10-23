@@ -128,34 +128,34 @@ function ProductCardPreview({ product, section, now }: { product: CmsSectionPrev
           <div className="grid h-full place-items-center text-[#82909b]"><ImageIcon size={22} /></div>
         )}
         {showCountdown && product.placement.endsAt ? (
-          <span className="absolute left-2 bottom-2 rounded-[3px] bg-[#12263A] px-2 py-1 font-mono text-[9px] font-semibold text-white">
+          <span className="absolute left-2 bottom-2 rounded-[3px] bg-[#12263A] px-2 py-1 font-mono text-[11px] font-semibold text-white">
             Ends in {countdown(clockValue(product.placement.endsAt), now)}
           </span>
         ) : null}
         {showLabel && product.sectionLabel ? (
-          <span className="absolute left-2 top-2 rounded-[3px] px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wide"
+          <span className="absolute left-2 top-2 rounded-[3px] px-2 py-1 font-mono text-[11px] font-semibold uppercase tracking-wide"
             style={{ backgroundColor: color(product.sectionBadgeColor, color(section.accentColor, "#e4572e")), color: contrastInk(color(product.sectionBadgeColor, color(section.accentColor, "#e4572e"))) }}>
             {product.sectionLabel}
           </span>
         ) : null}
         {discount > 0 ? (
-          <span className="absolute right-2 top-2 rounded-[3px] bg-[#e4572e] px-2 py-1 font-mono text-[9px] font-semibold text-white">−{discount}%</span>
+          <span className="absolute right-2 top-2 rounded-[3px] bg-[#e4572e] px-2 py-1 font-mono text-[11px] font-semibold text-white">−{discount}%</span>
         ) : null}
         {showRemaining && Number(product.sectionRemaining) > 0 ? (
-          <span className="absolute bottom-2 right-2 rounded-[3px] bg-white/95 px-2 py-1 font-mono text-[9px] font-semibold text-[#324552]">
+          <span className="absolute bottom-2 right-2 rounded-[3px] bg-white/95 px-2 py-1 font-mono text-[11px] font-semibold text-[#324552]">
             Section limit: {product.sectionRemaining}
           </span>
         ) : null}
       </div>
       <div className="p-2.5">
-        <p className="truncate font-mono text-[9px] uppercase tracking-wide text-[#697782]">{product.merchantName || "Store"}</p>
+        <p className="truncate font-mono text-[11px] uppercase tracking-wide text-[#697782]">{product.merchantName || "Store"}</p>
         <p className="mt-1 line-clamp-2 min-h-[2.5em] text-[12px] font-semibold leading-snug">{product.title || "Untitled product"}</p>
         <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className="font-semibold text-[12px]">{money(displayPrice)}</span>
-          {compareAt > displayPrice ? <span className="text-[10px] text-[#7a8791] line-through">{money(compareAt)}</span> : null}
+          {compareAt > displayPrice ? <span className="text-[11px] text-[#7a8791] line-through">{money(compareAt)}</span> : null}
         </div>
         {!product.publicNow ? (
-          <p className="mt-2 rounded-md bg-[#fff0dc] px-2 py-1 text-[9px] font-medium text-[#744a08]">Preview only · {product.previewStatus}</p>
+          <p className="mt-2 rounded-md bg-[#fff0dc] px-2 py-1 text-[11px] font-medium text-[#744a08]">Preview only · {product.previewStatus}</p>
         ) : null}
       </div>
     </article>
@@ -261,7 +261,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
         {!mediaOnly ? <>
           <div className="absolute inset-0" style={{ background: tone === "light" ? `linear-gradient(90deg,rgba(255,255,255,${scrim}),rgba(255,255,255,0))` : `linear-gradient(90deg,rgba(7,20,35,${scrim}),rgba(7,20,35,0))` }} />
           <div className={`absolute inset-0 flex flex-col p-5 ${align === "center" ? "items-center text-center" : align === "right" ? "items-end text-right" : "items-start text-left"} ${vertical === "top" ? "justify-start" : vertical === "bottom" ? "justify-end" : "justify-center"}`} style={{ color: tone === "light" ? "#17232b" : "#ffffff" }}>
-            {eyebrow ? <p className="font-mono text-[9px] uppercase tracking-[.16em] opacity-80">{eyebrow}</p> : null}
+            {eyebrow ? <p className="font-mono text-[11px] uppercase tracking-[.16em] opacity-80">{eyebrow}</p> : null}
             <h3 className="mt-2 max-w-[28ch] font-display text-xl font-extrabold leading-tight">{heroTitle || "Your section title"}</h3>
             {subtitle ? <p className="mt-2 max-w-[38ch] text-xs leading-relaxed opacity-90">{subtitle}</p> : null}
             {ctaLabel || secondaryLabel ? <div className="mt-4 flex flex-wrap gap-2">
@@ -280,8 +280,8 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
           <div>
             {/* A campaign shows its eyebrow as a filled pill, exactly as the shop does. */}
             {section.eyebrow ? (campaign
-              ? <span className="mb-1 inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-[.16em]" style={{ backgroundColor: accent, color: contrastInk(accent) }}>{text(section.eyebrow)}</span>
-              : <p className="font-mono text-[9px] uppercase tracking-[.14em]" style={{ color: accent }}>{text(section.eyebrow)}</p>) : null}
+              ? <span className="mb-1 inline-flex items-center rounded-full px-2.5 py-1 font-mono text-[11px] font-semibold uppercase tracking-[.16em]" style={{ backgroundColor: accent, color: contrastInk(accent) }}>{text(section.eyebrow)}</span>
+              : <p className="font-mono text-[11px] uppercase tracking-[.14em]" style={{ color: accent }}>{text(section.eyebrow)}</p>) : null}
             <h3 className="font-display text-lg font-semibold" style={{ color: titleColor }}>{title}</h3>
             {section.subtitle ? <p className="mt-1 text-xs opacity-80">{text(section.subtitle)}</p> : null}
           </div>
@@ -297,7 +297,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
           <p className="mt-2 text-sm font-semibold">No assigned products to preview yet</p>
           <p className="mt-1 text-xs opacity-75">Assign a product in the catalogue. The private draft preview will show its real image, price, label and placement status here.</p>
         </div>}
-        <div className="mt-2 flex flex-wrap gap-2 text-[10px] opacity-70">
+        <div className="mt-2 flex flex-wrap gap-2 text-[11px] opacity-70">
           <span>{products.length} assigned</span><span>·</span><span>{products.filter((product) => product.publicNow).length} currently eligible for public display</span>
           {presentation !== "standard" && !campaign ? <span>· {presentation.replaceAll("_", " ")} presentation</span> : null}
         </div>
@@ -307,7 +307,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
     const iconName = text(section.icon).toLowerCase();
     const PromoIcon = iconName === "truck" ? Truck : iconName === "shield" ? ShieldCheck : iconName === "tag" ? Tag : null;
     preview = <div className="flex flex-wrap items-center justify-center gap-2 px-4 py-3 text-center text-xs font-semibold" style={{ ...safeBackgroundStyle(background), color: color(section.textColor, "#12263A"), borderColor: accent, borderTopWidth: 1, borderBottomWidth: 1 }}>
-      {PromoIcon ? <PromoIcon size={14} aria-hidden="true" /> : null}<span>{text(section.message, "Your message appears here")}</span>{section.ctaLabel ? <span style={{ color: accent }}>{text(section.ctaLabel)} →</span> : null}{isOn(section.dismissible, false) ? <span className="ml-auto grid h-6 w-6 place-items-center rounded-full border border-current/20 text-[10px]" aria-label="Dismissible"><X size={12} /></span> : null}
+      {PromoIcon ? <PromoIcon size={14} aria-hidden="true" /> : null}<span>{text(section.message, "Your message appears here")}</span>{section.ctaLabel ? <span style={{ color: accent }}>{text(section.ctaLabel)} →</span> : null}{isOn(section.dismissible, false) ? <span className="ml-auto grid h-6 w-6 place-items-center rounded-full border border-current/20 text-[11px]" aria-label="Dismissible"><X size={12} /></span> : null}
     </div>;
   } else if (type === "footer") {
     preview = <div className="px-5 py-6 text-center" style={{ ...safeBackgroundStyle(background), color: foreground }}>
@@ -324,7 +324,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
     const wrapped = ["wrap", "grid", "cards"].includes(recordLayout);
     const seeAllLabel = text(section.ctaLabel, type === "featured_stores" ? "All stores" : type === "brand_carousel" ? "See all brands" : "See all departments");
     preview = <div className="p-4" style={{ ...safeBackgroundStyle(background), color: foreground }}>
-      <div className="flex items-center justify-between gap-2"><div>{section.eyebrow ? <p className="font-mono text-[9px] uppercase tracking-wide" style={{ color: accent }}>{text(section.eyebrow)}</p> : null}<h3 className="font-display text-lg font-semibold">{title || nouns[type]}</h3>{section.subtitle ? <p className="mt-1 text-xs opacity-75">{text(section.subtitle)}</p> : null}</div>{isOn(section.seeAll, true) ? <span className="shrink-0 text-[11px] font-semibold" style={{ color: accent }}>{seeAllLabel} →</span> : null}</div>
+      <div className="flex items-center justify-between gap-2"><div>{section.eyebrow ? <p className="font-mono text-[11px] uppercase tracking-wide" style={{ color: accent }}>{text(section.eyebrow)}</p> : null}<h3 className="font-display text-lg font-semibold">{title || nouns[type]}</h3>{section.subtitle ? <p className="mt-1 text-xs opacity-75">{text(section.subtitle)}</p> : null}</div>{isOn(section.seeAll, true) ? <span className="shrink-0 text-[11px] font-semibold" style={{ color: accent }}>{seeAllLabel} →</span> : null}</div>
       {visibleRecords.length ? <div className={`mt-3 ${rows ? "grid grid-cols-1" : wrapped ? "grid gap-2" : "flex gap-2 overflow-x-auto"}`} style={wrapped && !rows ? { gridTemplateColumns: `repeat(${Math.max(1, Math.min(4, Number(section.across) || 2))}, minmax(0, 1fr))` } : undefined}>
         {visibleRecords.map((record, index) => {
           const name = recordText(record, "name", "title", "label") || `${nouns[type].replace(/s$/, "")} ${index + 1}`;
@@ -344,7 +344,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
         const sponsor = recordText(advert, "sponsor", "sponsorName", "advertiser", "brandName");
         const media = assetUrl(recordText(advert, "mediaUrl", "imageUrl", "image", "videoUrl"));
         const href = safeHref(recordText(advert, "href", "destination", "url"));
-        const card = <div className="overflow-hidden rounded-lg border border-current/15 bg-white/70 text-xs">{media ? <div className="relative h-24 bg-black/5">{/\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(media) ? <video src={media} muted playsInline controls className="h-full w-full object-cover" /> : <img src={media} alt="" className="h-full w-full object-cover" />}</div> : null}<div className="p-3"><p className="font-semibold">{headline}</p>{sponsor ? <p className="mt-1 text-[10px] opacity-70">Sponsored by {sponsor}</p> : null}{href ? <p className="mt-2 truncate text-[10px] font-medium" style={{ color: accent }}>{href}</p> : null}</div></div>;
+        const card = <div className="overflow-hidden rounded-lg border border-current/15 bg-white/70 text-xs">{media ? <div className="relative h-24 bg-black/5">{/\.(mp4|webm|mov|m4v)(?:$|\?)/i.test(media) ? <video src={media} muted playsInline controls className="h-full w-full object-cover" /> : <img src={media} alt="" className="h-full w-full object-cover" />}</div> : null}<div className="p-3"><p className="font-semibold">{headline}</p>{sponsor ? <p className="mt-1 text-[11px] opacity-70">Sponsored by {sponsor}</p> : null}{href ? <p className="mt-2 truncate text-[11px] font-medium" style={{ color: accent }}>{href}</p> : null}</div></div>;
         return href ? <a key={String(advert.id ?? index)} href={href} className="block">{card}</a> : <div key={String(advert.id ?? index)}>{card}</div>;
       })}</div> : <div className="mt-3 rounded-lg border border-dashed border-current/25 bg-white/50 px-4 py-6 text-center text-xs opacity-75">No advertisements are available to preview yet.</div>}
     </div>;
@@ -363,9 +363,9 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
       <div className="overflow-hidden rounded-[12px] border border-hairline bg-white">{preview}</div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Pill tone={windowLabel === "Live window" ? "mint" : windowLabel === "Scheduled" ? "amber" : "rose"}>{windowLabel}</Pill>
-        <span className="font-mono text-[10px] text-chalk-dim">Section: {formatClock(section.startsAt)} → {formatClock(section.endsAt)}</span>
+        <span className="font-mono text-[11px] text-chalk-dim">Section: {formatClock(section.startsAt)} → {formatClock(section.endsAt)}</span>
       </div>
-      {type === "product_carousel" || type === "product_grid" ? <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-chalk-dim">
+      {type === "product_carousel" || type === "product_grid" ? <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-chalk-dim">
         <span>Layout: {layout}</span><span>·</span><span>{Number(section.across) || 2} across</span><span>·</span><span>Campaign: {presentation.replaceAll("_", " ")}</span>
       </div> : null}
       {products.some((product) => !product.publicNow) ? <details className="mt-3 rounded-lg border border-hairline bg-panel-2 p-3 text-[11px]">

@@ -107,7 +107,7 @@ export function ColorInput({
       ) : (
         <div className="grid gap-2 rounded-lg border border-hairline bg-panel-2 p-3">
           <div className="grid gap-2 sm:grid-cols-2">
-            <label className="grid gap-1 text-[10px] text-chalk-dim">Gradient type
+            <label className="grid gap-1 text-[11px] text-chalk-dim">Gradient type
               <select disabled={disabled} value={kind} onChange={(event) => {
                 const next = event.currentTarget.value as GradientKind;
                 setKind(next);
@@ -118,7 +118,7 @@ export function ColorInput({
             </label>
             {kind === "radial" ? (
               <>
-                <label className="grid gap-1 text-[10px] text-chalk-dim">Shape
+                <label className="grid gap-1 text-[11px] text-chalk-dim">Shape
                   <select disabled={disabled} value={shape} onChange={(event) => {
                     const next = event.currentTarget.value as "circle" | "ellipse";
                     setShape(next);
@@ -127,7 +127,7 @@ export function ColorInput({
                     <option value="circle">Circle</option><option value="ellipse">Ellipse</option>
                   </select>
                 </label>
-                <label className="grid gap-1 text-[10px] text-chalk-dim">Origin
+                <label className="grid gap-1 text-[11px] text-chalk-dim">Origin
                   <select disabled={disabled} value={position} onChange={(event) => {
                     const next = event.currentTarget.value;
                     setPosition(next);
@@ -139,7 +139,7 @@ export function ColorInput({
               </>
             ) : null}
             {kind !== "radial" ? (
-              <label className="grid gap-1 text-[10px] text-chalk-dim">{kind === "conic" ? "Start angle" : "Angle"} · {angle}°
+              <label className="grid gap-1 text-[11px] text-chalk-dim">{kind === "conic" ? "Start angle" : "Angle"} · {angle}°
                 <input type="range" min={0} max={360} value={angle} disabled={disabled} onChange={(event) => {
                   const next = Number(event.currentTarget.value);
                   setAngle(next);
@@ -151,11 +151,11 @@ export function ColorInput({
           <div className="grid gap-2">
             {stops.map((stop, index) => (
               <div key={index} className="grid items-end gap-2 sm:grid-cols-[minmax(0,1fr)_96px_44px]">
-                <label className="grid gap-1 text-[10px] text-chalk-dim">Stop {index + 1} · color code
+                <label className="grid gap-1 text-[11px] text-chalk-dim">Stop {index + 1} · color code
                   <input type="text" disabled={disabled} value={stop.color} onChange={(event) => updateStop(index, { color: event.currentTarget.value })}
                     className="min-h-10 min-w-0 rounded border border-hairline bg-panel px-2.5 font-mono text-[11px] text-chalk" />
                 </label>
-                <label className="grid gap-1 text-[10px] text-chalk-dim">Position · {stop.position}%
+                <label className="grid gap-1 text-[11px] text-chalk-dim">Position · {stop.position}%
                   <input type="range" min={0} max={100} value={stop.position} disabled={disabled} onChange={(event) => updateStop(index, { position: Number(event.currentTarget.value) })}
                     className="min-h-10 accent-[#e4572e]" />
                 </label>
@@ -176,7 +176,7 @@ export function ColorInput({
               }} className="min-h-9 rounded border border-hairline px-3 text-[11px] text-chalk-dim">Remove last stop</button> : null}
             </div>
           </div>
-          <label className="grid gap-1 text-[10px] text-chalk-dim">CSS gradient code · editable
+          <label className="grid gap-1 text-[11px] text-chalk-dim">CSS gradient code · editable
             <input type="text" disabled={disabled} value={raw} onChange={(event) => {
               const next = event.currentTarget.value;
               const parsed = parseGradient(next);
@@ -188,9 +188,9 @@ export function ColorInput({
                 hiddenRef.current.value = next;
                 hiddenRef.current.dispatchEvent(new Event("input", { bubbles: true }));
               }
-            }} className="min-h-10 min-w-0 rounded border border-hairline bg-panel px-2.5 font-mono text-[10px] text-chalk" />
+            }} className="min-h-10 min-w-0 rounded border border-hairline bg-panel px-2.5 font-mono text-[11px] text-chalk" />
           </label>
-          <p className="text-[10px] leading-relaxed text-chalk-dim">Gradients are supported for background fields. You can also edit the CSS directly; only safe color-stop gradients are accepted.</p>
+          <p className="text-[11px] leading-relaxed text-chalk-dim">Gradients are supported for background fields. You can also edit the CSS directly; only safe color-stop gradients are accepted.</p>
         </div>
       )}
     </div>

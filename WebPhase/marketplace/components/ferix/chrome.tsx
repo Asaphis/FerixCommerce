@@ -26,8 +26,8 @@ export function FerixHeader({
     <header className="sticky top-0 z-40 border-b border-line-warm bg-white shadow-[0_2px_12px_rgba(16,45,67,0.06)]">
       <div className="hidden border-b border-white/10 bg-void lg:block">
         <div className="mx-auto flex max-w-[1320px] items-center gap-4 px-6 py-1.5">
-          <p className="text-[10px] font-medium text-white/75">Discover products from stores across Ferixas.</p>
-          <Link href="/stores" className="ml-auto text-[10px] font-semibold text-white/75 transition-colors hover:text-white">
+          <p className="text-[11px] font-medium text-white/75">Discover products from stores across Ferixas.</p>
+          <Link href="/stores" className="ml-auto text-[11px] font-semibold text-white/75 transition-colors hover:text-white">
             {user ? `Hi, ${user.name.split(" ")[0]}` : "Sell on Ferixas"}
           </Link>
         </div>
@@ -49,7 +49,7 @@ export function FerixHeader({
             <Link href={user ? "/account/wishlist" : "/login?return=/account/wishlist"} className="inline-flex min-h-10 items-center gap-1.5 px-2.5 text-[11px] font-semibold text-ink-soft transition-colors hover:text-ember"><Heart width={16} height={16} /> Saved</Link>
             <Link href={user ? "/account" : "/login"} className="inline-flex min-h-10 items-center gap-1.5 px-2.5 text-[11px] font-semibold text-ink-soft transition-colors hover:text-ember"><User2 width={16} height={16} /> {user ? user.name.split(" ")[0] : "Account"}</Link>
             <Link href="/cart" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? "" : "s"}`} className="ml-1 inline-flex h-10 items-center gap-2 rounded-[2px] rounded-tr-[10px] bg-ember px-3.5 text-[12px] font-bold text-white transition-colors hover:bg-[#dc481c]">
-              <ShoppingBag width={16} height={16} /> Cart <span className="grid h-5 min-w-5 place-items-center rounded-[2px] bg-white px-1 text-[10px] font-bold tabular-nums text-ember">{cartCount > 99 ? "99+" : cartCount}</span>
+              <ShoppingBag width={16} height={16} /> Cart <span className="grid h-5 min-w-5 place-items-center rounded-[2px] bg-white px-1 text-[11px] font-bold tabular-nums text-ember">{cartCount > 99 ? "99+" : cartCount}</span>
             </Link>
           </div>
         </div>
@@ -136,7 +136,7 @@ export function FerixFooter() {
           />
 
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">Your shopping</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/55">Your shopping</p>
             <ul className="mt-4 space-y-3">
               {[
                 { icon: ShoppingBag, title: "One cart", body: "Shop across multiple stores" },
@@ -162,7 +162,7 @@ export function FerixFooter() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/65 transition-colors hover:text-white"
+                  className="font-mono text-[11px] uppercase tracking-[0.14em] text-white/65 transition-colors hover:text-white"
                 >
                   {link.label}
                 </Link>
@@ -172,7 +172,7 @@ export function FerixFooter() {
         </div>
 
         <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-6">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/55">
+          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/55">
             © {new Date().getFullYear()} Ferixas Commerce
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -185,7 +185,7 @@ export function FerixFooter() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="font-mono text-[10px] uppercase tracking-[0.16em] text-white/65 transition-colors hover:text-white"
+                className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/65 transition-colors hover:text-white"
               >
                 {link.label}
               </Link>
@@ -200,7 +200,7 @@ export function FerixFooter() {
 function FooterColumn({ title, links }: { title: string; links: { label: string; href: string }[] }) {
   return (
     <div>
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-chalk-dim">{title}</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-chalk-dim">{title}</p>
       <ul className="mt-4 space-y-2.5">
         {links.map((link) => (
           <li key={link.href + link.label}>

@@ -54,12 +54,12 @@ export default function ShippingPolicyPage() {
                 <p className="font-display text-[15px] font-semibold text-ink">{option.title}</p>
                 <p className="font-mono text-[12.5px] font-semibold text-ink">{option.price}</p>
               </div>
-              <p className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">{option.eta}</p>
+              <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{option.eta}</p>
               <p className="mt-2 text-[12.5px] leading-relaxed text-ink-soft">{option.body}</p>
             </div>
           ))}
         </div>
-        <p className="mt-4 flex flex-wrap items-center gap-2 rounded-[2px] border border-line-warm bg-bone-soft px-3 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+        <p className="mt-4 flex flex-wrap items-center gap-2 rounded-[2px] border border-line-warm bg-bone-soft px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
           <Truck width={13} height={13} />
           One delivery fee per order · free above $120 · timelines run from dispatch, not checkout
         </p>
@@ -131,7 +131,7 @@ export default function ShippingPolicyPage() {
             Report a delivery problem
           </LinkButton>
         </div>
-        <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.14em] text-chalk-dim">
+        <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.14em] text-chalk-dim">
           Related:{" "}
           <Link href="/returns" className="text-chalk transition-colors hover:text-lime">
             Return policy

@@ -75,7 +75,7 @@ export default async function NotificationsPage() {
       actions={
         <Link
           href="/account/preferences"
-          className="inline-flex items-center gap-2 rounded-[2px] border border-line-warm bg-white px-3 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
+          className="inline-flex items-center gap-2 rounded-[2px] border border-line-warm bg-white px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
         >
           <Settings2 width={13} height={13} /> Choose what I receive
         </Link>
