@@ -539,8 +539,13 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
       }
     }
 
-    const sections = page.sections.map((section) => section.id === sectionId ? next as api.CmsSection : section);
-    await api.saveCmsPage(session, { id, sections });
+    // One section, saved on its own: the rest of the page is not rewritten, so
+    // two edits can no longer overwrite each other.
+    await api.updateCmsSection(session, {
+      documentId: id,
+      sectionId,
+      fields: next as Record<string, unknown>,
+    });
   } catch (error) {
     return { error: error instanceof api.ApiError ? error.message : "Those changes could not be saved." };
   }

@@ -997,6 +997,15 @@ export const saveCmsPage = (session: string | null, body: { id: string; title?: 
   call<{ page: CmsPage }>("PATCH", "admin/cms/page", { session, body });
 
 /** Save content fields for an information page. The section endpoint is separate. */
+export const updateCmsSection = (
+  session: string | null,
+  body: { documentId: string; sectionId: string; fields: Record<string, unknown> },
+) =>
+  call<{ section: CmsSection; documentId: string; savedTo: string }>("PATCH", "admin/cms/sections", {
+    session,
+    body: { document_id: body.documentId, section_id: body.sectionId, fields: body.fields },
+  });
+
 export const saveCmsPageContent = (session: string | null, body: { id: string; content: Record<string, unknown> }) =>
   call<{ ok: true; id: string }>("PATCH", "admin/cms/page/content", { session, body });
 
