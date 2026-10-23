@@ -219,8 +219,9 @@ def remove_media_blob(asset: "MediaAsset") -> str:
             if source.is_file():
                 source.unlink()
                 return "local"
-        except (OSError, ValueError):
-            pass
+        except (OSError, ValueError) as error:
+            # Swallowing this hid real failures: say what happened and carry on.
+            print(f"[ferixas] ignored {type(error).__name__}: {error}")
 
     cloudinary_url = os.getenv("CLOUDINARY_URL", "").strip()
     public_id = str(asset.public_id or "")
@@ -1236,8 +1237,9 @@ def paid_marketplace_product_units(db: Session, days: Optional[int] = None) -> d
             if raw_placed:
                 try:
                     placed = datetime.fromisoformat(str(raw_placed).replace("Z", "+00:00"))
-                except (TypeError, ValueError):
-                    pass
+                except (TypeError, ValueError) as error:
+                    # Swallowing this hid real failures: say what happened and carry on.
+                    print(f"[ferixas] ignored {type(error).__name__}: {error}")
             if aware(placed) < cutoff:
                 continue
         for item in data.get("items") or []:

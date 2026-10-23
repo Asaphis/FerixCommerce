@@ -704,8 +704,9 @@ def _seller_product_history(db, product: dict, merchant_id: str) -> list[dict]:
     try:
         created = datetime.fromisoformat(str(product.get("createdAt") or "").replace("Z", "+00:00"))
         cutoff = aware(created)
-    except (TypeError, ValueError):
-        pass
+    except (TypeError, ValueError) as error:
+        # Swallowing this hid real failures: say what happened and carry on.
+        print(f"[ferixas] ignored {type(error).__name__}: {error}")
 
     events: list[dict] = []
     audit_rows = db.scalars(
