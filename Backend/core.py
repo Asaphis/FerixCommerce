@@ -1113,7 +1113,10 @@ def visible_published_sections(document: Optional[ContentDocument]) -> list[dict
     if not document or document.status != "published":
         return []
     sections = (document.data or {}).get("sections") or []
-    return sorted([s for s in sections
+    # The editor saves colours as `background`, `accent` and `text`; the
+    # storefront reads `...Color`. Hand both spellings to every consumer so a
+    # saved gradient is never silently replaced by a default.
+    return sorted([section_colour_aliases(s) for s in sections
                    if isinstance(s, dict) and section_visible(s) and section_is_live(s)],
                   key=lambda s: s.get("position", 0))
 
@@ -1879,3 +1882,30 @@ def apply_section_update(data: dict, section_id: str, fields: dict) -> dict:
         rows[index] = merged
         return {"sections": rows, "section": merged, "found": True}
     return {"sections": rows, "section": None, "found": False}
+
+
+#: Colour fields the editor writes, and the name the storefront reads.
+COLOUR_ALIASES = {
+    "background": "backgroundColor",
+    "accent": "accentColor",
+    "text": "textColor",
+    "ink": "cardInk",
+    "timerBackground": "timerBackgroundColor",
+    "timerInk": "timerTextColor",
+    "cardBackground": "cardBackgroundColor",
+    "cardInk": "cardTextColor",
+}
+
+
+def section_colour_aliases(section: dict) -> dict:
+    """The same section with every colour also available under its ...Color name.
+
+    Additive only: the stored keys are kept exactly as they are, so the editor
+    and the resolver keep reading what they always read.
+    """
+    row = dict(section or {})
+    for key, alias in COLOUR_ALIASES.items():
+        value = row.get(key)
+        if isinstance(value, str) and value.strip() and not row.get(alias):
+            row[alias] = value
+    return row
