@@ -31,6 +31,8 @@ from core import (
 
 router = APIRouter(prefix="/merchant", tags=["merchant"])
 
+from cms_sections import is_safe_media_url
+
 CARRIERS = ["DHL", "FedEx", "UPS", "GIG Logistics", "Aramex", "Local courier", "Store pickup"]
 CATEGORY_LABELS = {
     "audio": "Audio", "electronics": "Electronics", "fashion": "Fashion", "home": "Home",
@@ -154,6 +156,18 @@ class PromotionIn(BaseModel):
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
+def _finite_nonnegative(value, label: str, *, integer: bool = False):
+    if value is None:
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        raise HTTPException(422, f"{label} must be a finite non-negative number")
+    if not math.isfinite(number) or number < 0 or (integer and not number.is_integer()):
+        raise HTTPException(422, f"{label} must be a finite non-negative number")
+    return int(number) if integer else number
+
+
 def _session(token: Optional[str]) -> str:
     if not token:
         raise HTTPException(401, "Please sign in as a merchant to continue")
@@ -183,7 +197,7 @@ def _catalog_products(db, merchant_id: str) -> list[dict]:
 
 def _product_options(db) -> dict:
     from core import is_assignable_product_section
-    from cms_sections import presentation_of, product_config_schema
+    from cms_sections import presentation_of, product_config_schema, is_safe_media_url
 
     categories = [c for c in all_categories(db) if c.get("visible", True)]
     brands = [b for b in rows_of(db, "brand") if b.get("visible", True)]
@@ -507,6 +521,7 @@ def me(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 def dashboard(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.analytics.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         owned = _own_products(db, merchant["id"])
         settings = _merchant_settings(db, merchant)
@@ -594,6 +609,7 @@ def products(
 ):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.products.manage")
         merchant = _merchant_or_404(db, staff.subject_id)
         sold30 = _merchant_product_units(db, merchant["id"], 30)
         items = [dict(p, sold30d=sold30.get(p["id"], 0)) for p in _catalog_products(db, merchant["id"])]
@@ -644,6 +660,7 @@ def products(
 def product_options(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.products.manage")
         _merchant_or_404(db, staff.subject_id)
         return _product_options(db)
 
@@ -656,6 +673,7 @@ def product(
 ):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.products.manage")
         merchant = _merchant_or_404(db, staff.subject_id)
         lookup = str(id or slug or "").strip()
         if not lookup:
@@ -785,6 +803,14 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         brand = next((b for b in options["brands"] if b.get("id") == payload.brandId or b.get("slug") == payload.brandId), None) if payload.brandId else None
         if payload.brandId and not brand:
             raise HTTPException(400, "Choose a brand managed by Ferixas, or leave it unassigned.")
+        price = _finite_nonnegative(payload.price, "Price") or 0.0
+        compare_at = _finite_nonnegative(payload.compareAt, "Compare-at price")
+        stock = _finite_nonnegative(payload.stock, "Stock", integer=True) or 0
+        low_stock = _finite_nonnegative(payload.lowStockAt, "Low-stock threshold", integer=True) if payload.lowStockAt is not None else 8
+        for value, label in ((payload.shipping_amount, "Shipping amount"), (payload.package_weight, "Package weight"), (payload.estimated_delivery_days, "Estimated delivery days")):
+            _finite_nonnegative(value, label, integer=label.startswith("Estimated"))
+        if compare_at is not None and compare_at < price:
+            raise HTTPException(422, "Compare-at price cannot be lower than price")
         allowed_sections = {section["value"] for section in options["sections"]}
         section_tags = list(dict.fromkeys(payload.section_tags or []))
         if any(section not in allowed_sections for section in section_tags):
@@ -795,7 +821,6 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         slug = _slugify(payload.title)
         if find_product(db, slug):
             slug = f"{slug}-{new_id('x', 4)}"
-        price = float(payload.price or 0)
         product = {
             "id": new_id("prd"), "slug": slug, "title": payload.title,
             "merchantId": merchant["id"], "merchantName": merchant["name"], "merchantSlug": merchant["slug"],
@@ -808,9 +833,9 @@ def create_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             "collections": payload.collections or [],
             "images": payload.images or [placeholder(f"{slug}-1"), placeholder(f"{slug}-2"), placeholder(f"{slug}-3")],
             "plates": [], "price": price,
-            "compareAt": payload.compareAt, "discount": None, "cost": round(price * 0.62, 2),
+            "compareAt": compare_at, "discount": None, "cost": round(price * 0.62, 2),
             "sku": payload.sku or f"{merchant['slug'][:3].upper()}-{new_id('', 5).upper()}",
-            "stock": int(payload.stock or 0), "lowStockAt": payload.lowStockAt or 8,
+            "stock": stock, "lowStockAt": low_stock,
             "rating": 0.0, "ratingBreakdown": {}, "reviewCount": 0,
             "variants": payload.variants or [], "status": "pending_review",
             "reviewStatus": "in_review", "reviewNote": "",
@@ -859,6 +884,16 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         allowed_sections = {section["value"] for section in options["sections"]}
         if payload.section_tags is not None and any(section not in allowed_sections for section in payload.section_tags):
             raise HTTPException(400, "Choose only active product sections from the Ferixas CMS.")
+        if payload.price is not None:
+            updated["price"] = _finite_nonnegative(payload.price, "Price")
+        if payload.compareAt is not None:
+            updated["compareAt"] = _finite_nonnegative(payload.compareAt, "Compare-at price")
+        elif "compareAt" in payload.model_fields_set:
+            updated["compareAt"] = None
+        if payload.stock is not None:
+            updated["stock"] = _finite_nonnegative(payload.stock, "Stock", integer=True)
+        for value, label in ((payload.shipping_amount, "Shipping amount"), (payload.package_weight, "Package weight"), (payload.estimated_delivery_days, "Estimated delivery days")):
+            _finite_nonnegative(value, label, integer=label.startswith("Estimated"))
         updated["status"] = "pending_review"
         updated["reviewStatus"] = "in_review"
         updated["reviewNote"] = ""
@@ -871,7 +906,7 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
                       "estimated_delivery_days", "package_weight", "package_dimensions",
                       "shipping_origin", "section_tags"):
             value = getattr(payload, field, None)
-            if value is not None:
+            if field in payload.model_fields_set:
                 updated[field] = value
         if payload.section_tags is not None:
             updated["placementRequests"] = list(dict.fromkeys(payload.section_tags))
@@ -883,10 +918,7 @@ def update_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             ))
             term_values = payload.section_terms if payload.section_terms is not None else target.get("placementTerms")
             updated["placementTerms"] = _validated_section_terms(requested_sections, term_values, options)
-        if payload.price is not None:
-            updated["price"] = float(payload.price)
-        if payload.stock is not None:
-            updated["stock"] = int(payload.stock)
+
         if payload.category is not None:
             updated["category"] = payload.category or ""
         if payload.brandId is not None:
@@ -1030,6 +1062,7 @@ def delete_product(session: Optional[str] = Header(None, alias="X-Ferix-Session"
 def inventory(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.inventory.manage")
         merchant = _merchant_or_404(db, staff.subject_id)
         low_at = _merchant_settings(db, merchant)["lowStockAt"]
         orders = _merchant_orders(db, merchant["id"])
@@ -1110,6 +1143,7 @@ def orders(
 ):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.orders.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         rows = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
         counts: dict[str, int] = {"all": len(rows)}
@@ -1135,6 +1169,7 @@ def orders(
 def order(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str = Query(...)):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.orders.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         for row in _merchant_orders(db, merchant["id"]):
             if row.id == id or (row.data or {}).get("number") == id:
@@ -1193,6 +1228,7 @@ def set_status(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
 def customers(session: Optional[str] = Header(None, alias="X-Ferix-Session"), search: Optional[str] = None, segment: Optional[str] = None):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.customers.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         orders = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
         orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
@@ -1226,6 +1262,7 @@ def customers(session: Optional[str] = Header(None, alias="X-Ferix-Session"), se
 def customer(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str = Query(...)):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.customers.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         orders = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
         orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
@@ -1247,6 +1284,7 @@ def customer(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
 def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), days: int = 30):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.analytics.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         owned = _own_products(db, merchant["id"])
         orders = [_merchant_order(db, r, merchant["id"]) for r in _merchant_orders(db, merchant["id"])]
@@ -1304,6 +1342,7 @@ def follower_activity(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
     """Show real follower totals and anonymous follow activity; never expose shopper identities."""
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.analytics.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         today = now().date()
         activity = merchant.get("followerActivity") if isinstance(merchant.get("followerActivity"), dict) else {}
@@ -1342,6 +1381,7 @@ def seller_reviews(session: Optional[str] = Header(None, alias="X-Ferix-Session"
     """Return actual reviews for this seller's products without exposing shopper PII."""
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.customers.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         owned = _own_products(db, merchant["id"])
         product_by_id = {str(product["id"]): product for product in owned}
@@ -1386,6 +1426,7 @@ def seller_reviews(session: Optional[str] = Header(None, alias="X-Ferix-Session"
 def payouts(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.payouts.view")
         merchant = _merchant_or_404(db, staff.subject_id)
         commission_pct = merchant.get("commissionPct", 10)
         stored = db.scalars(select(Payout).where(Payout.merchant_id == merchant["id"])).all()
@@ -1408,6 +1449,7 @@ def payouts(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 def settings(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.store.manage")
         merchant = _merchant_or_404(db, staff.subject_id)
         history = db.scalars(select(MerchantProfileRequest).where(MerchantProfileRequest.merchant_id == merchant["id"])
                              .order_by(MerchantProfileRequest.submitted_at.desc()).limit(25)).all()
@@ -1502,6 +1544,7 @@ def submit_profile_request(
 def media(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.store.manage")
         sync_pending_media(db)
         from core import media_for
         return {"assets": media_for(db, "merchant", staff.subject_id),
@@ -1515,6 +1558,8 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
         require_permission(staff, "merchant.store.manage")
         if payload.kind not in {"image", "video"}:
             raise HTTPException(422, "Media kind must be image or video")
+        if not is_safe_media_url(payload.url, allow_empty=False):
+            raise HTTPException(422, "Media URL must be a local path or HTTPS URL")
         asset = MediaAsset(id=new_id("med"), owner_type="merchant", owner_id=staff.subject_id,
                            kind=payload.kind, url=payload.url, alt=payload.alt, folder=payload.folder,
                            public_id=payload.publicId, width=payload.width, height=payload.height)
@@ -1614,6 +1659,7 @@ def _doc_json(doc: ContentDocument) -> dict:
 def storefront(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.store.manage")
         if os.getenv("FERIXAS_STUDIO_ENABLED", "0") != "1":
             return {"document": None, "designEngine": "coming_soon",
                     "message": "Studio — Coming Soon. Marketplace products are managed under Products; independent website design is not available yet."}
@@ -1673,6 +1719,7 @@ def publish_storefront(session: Optional[str] = Header(None, alias="X-Ferix-Sess
 def promotions(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
         staff = require_staff(db, session, "merchant")
+        require_permission(staff, "merchant.promotions.manage")
         merchant = _merchant_or_404(db, staff.subject_id)
         rows = db.scalars(select(FlashSale).where(FlashSale.owner_id == merchant["id"])).all()
         sales = []
@@ -1768,8 +1815,8 @@ def product_submit(session: Optional[str] = Header(None, alias="X-Ferix-Session"
         product["reviewNote"] = payload.note or ""
         product["submittedBy"] = staff.email
         product["submittedAt"] = now().isoformat()
-        put_row(db, "product", product["id"], product)
-        audit(db, "merchant", staff.email, "product.submit", product["id"], "in_review")
+        put_row(db, "product", product["slug"], product)
+        audit(db, "merchant", staff.email, "product.submit", product["slug"], "in_review")
         db.commit()
         return {"product": {"id": product["id"], "reviewStatus": product["reviewStatus"],
                             "submittedAt": product["submittedAt"]}}

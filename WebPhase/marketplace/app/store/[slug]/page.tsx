@@ -4,11 +4,11 @@ import { ArrowRight, Check, Mail, MapPin, Package, Phone, Star } from "lucide-re
 import { assetUrl, getStore, getHome, getCataloguePage, listAdverts, ApiError, checkFollowing } from "@/lib/api";
 import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
-import { Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
+import { EmptyState, Eyebrow, LinkButton, SectionHead } from "@/components/ferix/marks";
 import { compact, dateLong } from "@/lib/format";
 import { readCredentials } from "@/lib/session";
 import { StoreHeader } from "@/components/ferix/store-header"
-import { RenderSections, type HomePayload, type Section } from "@/components/ferix/render-sections";
+import { RenderSections, isSectionOn, type HomePayload, type Section } from "@/components/ferix/render-sections";
 
 export default async function StorePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -33,7 +33,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
   const record = store as unknown as { logo?: string; imageUrl?: string; image?: string };
   const storeArtwork = assetUrl(record.logo ?? record.imageUrl ?? record.image ?? null);
   const cmsSections = cmsPage.page
-    ? cmsPage.sections.filter((section) => section.visible !== false).sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    ? cmsPage.sections.filter((section) => isSectionOn(section.visible, true)).sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
     : [];
   const advertSection = cmsSections.find((section) => section.type === "promo_slots");
   const cmsAdverts = advertSection
@@ -146,7 +146,9 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
               </Link>
             }
           />
-          <ProductGrid products={products} savedIds={saved} />
+          {products.length ? <ProductGrid products={products} savedIds={saved} /> : (
+            <EmptyState title="This store has no products yet" body="The seller has not published any marketplace listings. Browse the wider catalogue for more to explore." action={<LinkButton href="/browse">Browse marketplace</LinkButton>} />
+          )}
         </div>
 
         <div className="mt-12 border-t border-line-warm pt-8">

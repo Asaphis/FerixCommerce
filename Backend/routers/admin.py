@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 import re
+import math
 import secrets
 from typing import Optional
 
@@ -30,9 +31,9 @@ from core import (
 
 # The section contract. The CMS writes sections through it, so a section saved
 # here means the same thing to the storefront and to the product forms.
-from cms_sections import (ALL_SOURCES, AUTOMATIC_SOURCES, FAMILY_PAGE_KINDS, FLASH_SALE_DEFAULTS,
+from cms_sections import (ALL_SOURCES, is_safe_media_url, AUTOMATIC_SOURCES, FAMILY_PAGE_KINDS, FLASH_SALE_DEFAULTS,
                           LEGACY_SOURCES, PALETTE, PRESENTATIONS, PRODUCT_CONFIG_PRESETS,
-                          SELECTION_MODES, family_of, normalize_section, palette_for,
+                          SELECTION_MODES, family_of, normalize_section, canonicalize_sections, palette_for,
                           is_safe_css_color, presentation_of, product_config_schema, validate_section)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -248,6 +249,7 @@ class DocumentIn(BaseModel):
     status: Optional[str] = None
     data: Optional[dict] = None
     note: Optional[str] = None
+    expectedVersion: Optional[int] = None
 
 
 class PromotionIn(BaseModel):
@@ -331,7 +333,7 @@ def _brand_fields(data: dict, existing: Optional[dict] = None) -> dict:
         raise HTTPException(422, "Brand slug must be lowercase kebab-case and at most 80 characters")
     if len(description) > 500:
         raise HTTPException(422, "Brand description must be at most 500 characters")
-    if len(image_url) > 2048 or (image_url and not (image_url.startswith("/") or re.match(r"^https?://", image_url, re.I))):
+    if len(image_url) > 2048 or not is_safe_media_url(image_url):
         raise HTTPException(422, "Brand imageUrl must be a relative path or http(s) URL under 2048 characters")
     position = data.get("position", current.get("position", 0))
     if not isinstance(position, int) or position < 0 or position > 100000:
@@ -584,7 +586,8 @@ def me(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
 @router.get("/overview")
 def overview(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "analytics.view")
         merchants = [_merchant_row(db, m) for m in all_merchants(db)]
         orders = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()
                   if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
@@ -990,7 +993,8 @@ def pending_merchant_profile_requests(session: Optional[str] = Header(None, alia
 @router.get("/users")
 def users(session: Optional[str] = Header(None, alias="X-Ferix-Session"), search: Optional[str] = None, segment: Optional[str] = None):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "customer.view")
         rows = [_user_row(db, u) for u in db.scalars(select(User)).all()]
         rows.sort(key=lambda r: -r["spent"])
         counts: dict[str, int] = {"all": len(rows)}
@@ -1010,7 +1014,8 @@ def users(session: Optional[str] = Header(None, alias="X-Ferix-Session"), search
 @router.get("/user")
 def user(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id: str = Query(...)):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "customer.view")
         found = db.get(User, id)
         if not found:
             raise HTTPException(404, "Customer not found")
@@ -1052,7 +1057,8 @@ def orders(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
            search: Optional[str] = None, status: Optional[str] = None, channel: Optional[str] = None,
            merchant: Optional[str] = None):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "orders.view")
         rows = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()
                 if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
         counts: dict[str, int] = {"all": len(rows)}
@@ -1085,7 +1091,8 @@ def orders(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
 @router.get("/analytics")
 def analytics(session: Optional[str] = Header(None, alias="X-Ferix-Session"), days: int = 30):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "analytics.view")
         merchants = [_merchant_row(db, m) for m in all_merchants(db)]
         orders = [_order_row(db, r) for r in db.scalars(select(Order)).all()
                   if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
@@ -1208,7 +1215,8 @@ def catalog_products(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                      search: Optional[str] = None, category: Optional[str] = None,
                      status: Optional[str] = None, owner: Optional[str] = None):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
         scope = (owner or "official").strip().lower()
         if scope != "official":
             raise HTTPException(400, "The platform catalogue contains Ferixas Official products only. Use seller review or merchant records for seller-owned listings.")
@@ -1282,6 +1290,15 @@ def catalog_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"
             raise HTTPException(400, "Check the product price, stock and shipping values")
         if price < 0 or (compare_at is not None and compare_at < 0) or (shipping_amount is not None and shipping_amount < 0) or (package_weight is not None and package_weight < 0) or (estimated_delivery_days is not None and estimated_delivery_days < 0):
             raise HTTPException(400, "Price, stock and shipping values cannot be negative")
+        category_key = str(payload.get("category") or "").strip()
+        # Keep accepting legacy category slugs on operator-created records: older
+        # imports and the existing admin contract may create the taxonomy row in a
+        # later operation. Public/category editors still source choices from the
+        # managed taxonomy, and collection/brand references remain strict.
+        collection_values = payload.get("collections") or []
+        known_collections = {str(c.get("slug")) for c in all_collections(db)} | {str(c.get("id")) for c in all_collections(db)}
+        if any(str(value) not in known_collections for value in collection_values):
+            raise HTTPException(400, "Choose collections from the managed collection list")
         brand_key = str(payload.get("brand") or "").strip()
         brand = next((b for b in all_brands(db) if brand_key and brand_key in {str(b.get("id") or ""), str(b.get("slug") or "")}), None)
         if brand_key and not brand:
@@ -1628,7 +1645,8 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
 @router.get("/catalog/categories")
 def catalog_categories(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
         rows = all_categories(db)
         products = all_products(db)
         return {"categories": sorted([{**c, "count": sum(p.get("category") == c["slug"] for p in products)} for c in rows],
@@ -1683,7 +1701,8 @@ def catalog_category_delete(session: Optional[str] = Header(None, alias="X-Ferix
 @router.get("/catalog/collections")
 def catalog_collections(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "catalog.manage")
         products = all_products(db)
         return {"collections": sorted([{**c, "count": sum(c["slug"] in (p.get("collections") or []) for p in products)}
                                        for c in all_collections(db)], key=lambda c: c.get("position", 0))}
@@ -1718,6 +1737,8 @@ def catalog_collection_delete(session: Optional[str] = Header(None, alias="X-Fer
         staff = require_staff(db, session, "admin")
         require_permission(staff, "catalog.manage")
         slug = str(payload.get("slug") or "")
+        if any(slug in (product.get("collections") or []) for product in all_products(db)):
+            raise HTTPException(409, "This collection is assigned to products. Reassign those products or hide the collection instead of deleting it.")
         if not drop_row(db, "collection", slug):
             raise HTTPException(404, "Collection not found")
         audit(db, "admin", staff.email, "collection.delete", slug, "")
@@ -1730,7 +1751,8 @@ def catalog_collection_delete(session: Optional[str] = Header(None, alias="X-Fer
 @router.get("/cms/banners")
 def cms_banners(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "cms.manage")
         rows = rows_of(db, "banner")
         return {"banners": sorted(rows, key=lambda b: b.get("position", 0))}
 
@@ -1742,13 +1764,19 @@ def cms_banner(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
         require_permission(staff, "cms.manage")
         banner_id = payload.id or new_id("bnr")
         existing = next((b for b in rows_of(db, "banner") if b.get("id") == banner_id), {})
-        media = payload.mediaUrl or payload.image or payload.videoUrl or existing.get("mediaUrl") or ""
+        kind = payload.kind or existing.get("kind", "image")
+        media = payload.mediaUrl if payload.mediaUrl is not None else (payload.videoUrl if kind == "video" and payload.videoUrl is not None else (payload.image if kind == "image" and payload.image is not None else existing.get("mediaUrl") or ""))
+        if not is_safe_media_url(media):
+            raise HTTPException(422, "Banner media must be a local path or HTTPS URL")
+        for href in (payload.ctaHref, payload.secondaryHref):
+            if href is not None and href and not (str(href).startswith("/") or is_safe_media_url(href, allow_empty=False)):
+                raise HTTPException(422, "Banner links must be same-site paths or HTTPS URLs")
         accent = payload.accent if payload.accent is not None else existing.get("accent", "#c8ff3d")
         if accent and not is_safe_css_color(accent):
             raise HTTPException(422, "Choose a valid accent colour code, such as #C8FF3D.")
         row = {
             **existing, "id": banner_id,
-            "kind": payload.kind or existing.get("kind", "image"),
+            "kind": kind,
             "eyebrow": payload.eyebrow if payload.eyebrow is not None else existing.get("eyebrow", ""),
             "headline": payload.headline if payload.headline is not None else existing.get("headline", ""),
             "body": payload.body if payload.body is not None else existing.get("body", ""),
@@ -1756,8 +1784,8 @@ def cms_banner(session: Optional[str] = Header(None, alias="X-Ferix-Session"), p
             "ctaHref": payload.ctaHref if payload.ctaHref is not None else existing.get("ctaHref", "/browse"),
             "secondaryLabel": payload.secondaryLabel if payload.secondaryLabel is not None else existing.get("secondaryLabel"),
             "secondaryHref": payload.secondaryHref if payload.secondaryHref is not None else existing.get("secondaryHref"),
-            "mediaUrl": media, "image": media, "imageUrl": media,
-            "videoUrl": payload.videoUrl if payload.videoUrl is not None else (media if (payload.kind == "video") else existing.get("videoUrl")),
+            "mediaUrl": media, "image": media if kind == "image" else "", "imageUrl": media,
+            "videoUrl": media if kind == "video" else None,
             "showText": payload.showText if payload.showText is not None else existing.get("showText", True),
             "accent": accent,
             "audience": payload.audience if payload.audience is not None else existing.get("audience", "everyone"),
@@ -1875,6 +1903,19 @@ def _cms_draft(db, document_id: str):
     ).order_by(ContentVersion.version.desc()))
 
 
+def _assert_cms_revision(draft, expected: Optional[int]) -> None:
+    """Reject stale CMS writes instead of silently overwriting another edit."""
+    if expected is None:
+        return
+    actual = int(draft.version) if draft is not None else 0
+    if int(expected) != actual:
+        raise HTTPException(409, f"This CMS item changed since you opened it (expected revision {expected}, current {actual}). Reload before saving.")
+
+
+def _draft_title(document, draft) -> str:
+    return str(((draft.data if draft is not None else {}) or {}).get("__title") or document.title)
+
+
 def _merge_cms_data(previous: dict, incoming: dict) -> dict:
     """Merge section payloads by ID so controls hidden by an editor survive saves."""
     result = dict(previous or {})
@@ -1968,6 +2009,7 @@ def cms_document(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
         draft = _cms_draft(db, doc.id)
         if draft is not None:
             document_data["data"] = draft.data or {}
+            document_data["title"] = _draft_title(doc, draft)
             document_data["draftStatus"] = "draft"
         db.commit()
         return {"document": document_data,
@@ -1982,8 +2024,11 @@ def cms_save_document(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         require_permission(staff, "cms.manage")
         doc = _ensure_document(db, payload.id)
         draft = _cms_draft(db, doc.id)
+        _assert_cms_revision(draft, payload.expectedVersion)
         base_data = (draft.data if draft is not None else doc.data) or {}
         draft_data = _merge_cms_data(base_data, payload.data or {})
+        if payload.title is not None:
+            draft_data["__title"] = payload.title.strip()[:200]
         for previous_draft in db.scalars(select(ContentVersion).where(
             ContentVersion.document_id == doc.id, ContentVersion.status == "draft",
         )).all():
@@ -1998,6 +2043,7 @@ def cms_save_document(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         db.commit()
         document_data = _document_json(doc)
         document_data["data"] = draft_data
+        document_data["title"] = str(draft_data.get("__title") or doc.title)
         document_data["draftStatus"] = "draft"
         return {"document": document_data}
 
@@ -2078,7 +2124,8 @@ def media(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
     from core import media_usage
 
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "media.manage")
         sync_pending_media(db)
         rows = db.scalars(select(MediaAsset).where(MediaAsset.owner_type == "platform")
                           .order_by(MediaAsset.created_at.desc())).all()
@@ -2118,6 +2165,8 @@ def add_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"), pa
         require_permission(staff, "media.manage")
         if payload.kind not in {"image", "video"}:
             raise HTTPException(422, "Media kind must be image or video")
+        if not is_safe_media_url(payload.url, allow_empty=False):
+            raise HTTPException(422, "Media URL must be a local path or HTTPS URL")
         from core import find_media_by_hash, url_hash
         digest = url_hash(payload.url)
         already = find_media_by_hash(db, digest)
@@ -2215,7 +2264,8 @@ def remove_media(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
 @router.get("/promotions")
 def promotions(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "promotions.manage")
         rows = db.scalars(select(FlashSale).order_by(FlashSale.starts_at.desc())).all()
         return {"sales": [_sale_json(db, s) for s in rows],
                 "products": [{"id": p["id"], "title": p["title"], "price": p["price"],
@@ -2280,7 +2330,8 @@ def delete_promotion(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
 @router.get("/payments")
 def payments(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "payments.view")
         orders = [_order_row(db, r) for r in db.scalars(select(Order).order_by(Order.placed_at.desc())).all()
                   if str((r.data or {}).get("channel") or "").lower() == "marketplace"]
         paid_orders = [o for o in orders if o.get("payment") in PAID_PAYMENT_STATES
@@ -2428,7 +2479,8 @@ def staff_delete(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
 @router.get("/audit")
 def audit_log(session: Optional[str] = Header(None, alias="X-Ferix-Session"), limit: int = 100):
     with SessionLocal() as db:
-        require_staff(db, session, "admin")
+        staff = require_staff(db, session, "admin")
+        require_permission(staff, "settings.manage")
         rows = db.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(max(1, min(500, limit)))).all()
         return {"events": [{"id": r.id, "actorType": r.actor_type, "actorId": r.actor_id,
                             "action": r.action, "target": r.target, "detail": r.detail,
@@ -2445,6 +2497,7 @@ class CmsPageIn(BaseModel):
     id: str
     title: Optional[str] = None
     sections: Optional[list] = None
+    expectedVersion: Optional[int] = None
 
 
 class PageCreate(BaseModel):
@@ -2904,6 +2957,8 @@ def cms_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
                                     key=lambda section: section.get("position", 0))
         sections = sorted(source.get("sections") or [], key=lambda section: section.get("position", 0))
         summary.update({
+            "title": str(source.get("__title") or document.title),
+            "data": source,
             "sections": sections,
             "hasDraft": draft is not None,
             "draftStatus": "draft" if draft is not None else None,
@@ -3016,6 +3071,7 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
             raise HTTPException(404, "That page does not exist")
 
         current_draft = _cms_draft(db, document.id)
+        _assert_cms_revision(current_draft, payload.expectedVersion)
         data = dict((current_draft.data if current_draft is not None else document.data) or {})
         if payload.sections is not None:
             cleaned = []
@@ -3064,9 +3120,9 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
                 row["position"] = index + 1
                 row.setdefault("visible", True)
                 cleaned.append(row)
-            data = _merge_cms_data(data, {"sections": cleaned})
-        if payload.title:
-            document.title = payload.title
+            data = _merge_cms_data(data, {"sections": canonicalize_sections(cleaned)})
+        if payload.title is not None:
+            data["__title"] = payload.title.strip()[:200]
         # The draft goes to a version and NOT onto the document. The document is what the
         # storefront reads, and only a published one at that: writing the draft into it and
         # marking it a draft took the whole page off the shop the moment anyone pressed Save,
@@ -3119,8 +3175,11 @@ def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
             .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
             .order_by(ContentVersion.version.desc())
         )
+        _assert_cms_revision(draft, payload.expectedVersion)
         if draft is not None and (draft.data or {}).get("sections") is not None:
             document.data = draft.data
+        if draft is not None and (draft.data or {}).get("__title"):
+            document.title = str(draft.data["__title"])[:200]
         for previous_draft in db.scalars(select(ContentVersion).where(
             ContentVersion.document_id == document.id, ContentVersion.status == "draft",
         )).all():
@@ -3143,6 +3202,7 @@ def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
             "publishedSections": sections,
             "publishedSectionCount": len(sections),
             "publishedVisibleCount": summary["visibleCount"],
+            "revision": len(existing) + 1,
         })
         return {"page": summary}
 
@@ -3302,6 +3362,32 @@ def _placement_json(row) -> dict:
     }
 
 
+def _validate_placement_values(product: dict, section: dict, item: dict) -> dict:
+    """Validate one placement payload for both single and bulk writes."""
+    for key in ("price", "compareAt"):
+        if item.get(key) is not None and not 0 <= float(item[key]) <= 1_000_000_000:
+            raise HTTPException(422, f"Placement {key} must be between 0 and 1,000,000,000.")
+    if item.get("quantity") is not None and int(item["quantity"]) < 0:
+        raise HTTPException(422, "Placement quantity cannot be negative.")
+    if item.get("quantity") is not None and int(product.get("stock") or 0) > 0 and int(item["quantity"]) > int(product["stock"]):
+        raise HTTPException(422, "Placement quantity cannot exceed product stock.")
+    if item.get("position") is not None and int(item["position"]) < 1:
+        raise HTTPException(422, "Placement position must be at least 1.")
+    starts, ends = item.get("startsAt"), item.get("endsAt")
+    if starts and ends and parse(ends, None) <= parse(starts, None):
+        raise HTTPException(422, "A placement cannot end before it starts.")
+    schema = {str(field.get("key")): field for field in product_config_schema(section) if isinstance(field, dict)}
+    config = item.get("config")
+    if config is not None:
+        if not isinstance(config, dict):
+            raise HTTPException(422, "Placement config must be an object.")
+        for key, value in config.items():
+            field = schema.get(str(key))
+            if field and field.get("kind") == "color" and value not in (None, "") and not is_safe_css_color(value, allow_gradient=bool(field.get("allowGradient"))):
+                raise HTTPException(422, f"Choose a valid colour for {field.get('label') or key}.")
+    return item
+
+
 @router.get("/product/sections")
 def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
                      slug: str = Query("")):
@@ -3377,6 +3463,7 @@ def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Se
                         if p.get("id") == payload.productId or p.get("slug") == payload.slug), None)
         if not product:
             raise HTTPException(404, "That product does not exist")
+        _validate_placement_values(product, section, payload.model_dump())
 
         existing = db.scalar(select(SectionPlacement).where(
             SectionPlacement.product_id == product["id"],
@@ -3398,16 +3485,16 @@ def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Se
             raise HTTPException(422, "Placement quantity cannot exceed product stock.")
         if payload.startsAt and payload.endsAt and parse(payload.endsAt, None) <= parse(payload.startsAt, None):
             raise HTTPException(422, "A placement cannot end before it starts.")
+        fields = payload.model_fields_set
         # A placement with no price of its own inherits the product's price, so a
         # section only holds a different price when someone deliberately set one.
         row.price = float(payload.price if payload.price is not None else product.get("price") or 0.0)
-        if payload.compareAt is not None:
-            row.compare_at = float(payload.compareAt)
+        if "compareAt" in fields:
+            row.compare_at = float(payload.compareAt or 0)
         elif existing is None:
             row.compare_at = float(product.get("compareAt") or 0.0)
         row.quantity = int(payload.quantity if payload.quantity is not None else product.get("stock") or 0)
         row.position = int(payload.position or row.position or 1)
-        fields = payload.model_fields_set
         if "startsAt" in fields:
             row.starts_at = parse(payload.startsAt, None)
         if "endsAt" in fields:
@@ -3473,6 +3560,24 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
                             and is_assignable_product_section(document, value)), None)
             if not section:
                 raise HTTPException(400, "Choose only active product sections")
+            _validate_placement_values(product, section, item)
+            for field_name, label, integer in (("price", "Placement price", False), ("compareAt", "Compare-at price", False), ("quantity", "Placement quantity", True), ("position", "Placement position", True)):
+                if field_name not in item or item.get(field_name) is None:
+                    continue
+                try:
+                    number = float(item[field_name])
+                except (TypeError, ValueError):
+                    raise HTTPException(422, f"{label} must be finite and non-negative")
+                if not math.isfinite(number) or number < 0 or (integer and not number.is_integer()):
+                    raise HTTPException(422, f"{label} must be finite and non-negative")
+            starts = parse(item.get("startsAt"), None) if "startsAt" in item and item.get("startsAt") else None
+            ends = parse(item.get("endsAt"), None) if "endsAt" in item and item.get("endsAt") else None
+            if "startsAt" in item and item.get("startsAt") and starts is None or "endsAt" in item and item.get("endsAt") and ends is None:
+                raise HTTPException(422, "Placement dates must be valid ISO timestamps")
+            if starts and ends and ends <= starts:
+                raise HTTPException(422, "A placement cannot end before it starts")
+            if item.get("quantity") is not None and int(item["quantity"]) > int(product.get("stock") or 0):
+                raise HTTPException(422, "Placement quantity cannot exceed product stock")
             seen.add(key)
             requested.append((document_id, section_id, section, item))
         old_rows = {(row.document_id, row.section_id): row for row in db.scalars(select(SectionPlacement).where(SectionPlacement.product_id == product["id"])).all()}
@@ -3672,10 +3777,19 @@ def cms_page_content_patch(session: Optional[str] = Header(None, alias="X-Ferix-
         doc = db.get(ContentDocument, page_id)
         if not doc or doc.owner_type != "platform":
             raise HTTPException(404, "That page does not exist")
-        data = dict(doc.data or {})
+        draft = _cms_draft(db, doc.id)
+        _assert_cms_revision(draft, payload.get("expectedVersion"))
+        data = dict((draft.data if draft is not None else doc.data) or {})
         data["content"] = content
-        doc.data = data
-        db.flush()
+        if draft is None:
+            latest = db.scalar(select(ContentVersion.version).where(
+                ContentVersion.document_id == doc.id).order_by(ContentVersion.version.desc()))
+            draft = ContentVersion(id=new_id("ver"), document_id=doc.id, version=int(latest or 0) + 1,
+                                   status="draft", data=data, note="Information page content saved",
+                                   created_by=staff.email)
+            db.add(draft)
+        else:
+            draft.data = data
         audit(db, "admin", staff.email, "cms.page.content", page_id, "content fields")
         db.commit()
-        return {"ok": True, "id": page_id, "content": content}
+        return {"ok": True, "id": page_id, "content": content, "savedTo": "draft", "version": int(draft.version)}

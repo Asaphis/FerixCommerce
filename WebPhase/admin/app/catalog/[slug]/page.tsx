@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Store } from "lucide-react";
 import { requireAdmin } from "@/lib/data";
-import { listCatalog, listMedia, listBrands, getProductSections, type SectionOption } from "@/lib/api";
+import { listCatalog, listMedia, listBrands, listCategories, getProductSections, type SectionOption } from "@/lib/api";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { PlacementTerms } from "@/components/ops/placement-terms";
 import { Field, SubmitButton } from "@/components/ops/controls";
@@ -21,7 +21,11 @@ export default async function ProductEditorPage({ params, searchParams }: { para
     return { url: row.url, label: row.label ?? row.alt ?? row.name ?? row.url };
   });
   const { available: sections, placements } = await getProductSections(session, slug).catch(() => ({ available: [], placements: [] }));
-  const [data, { brands }] = await Promise.all([listCatalog(session, {}), listBrands(session).catch(() => ({ brands: [] }))]);
+  const [data, { brands }, { categories }] = await Promise.all([
+    listCatalog(session, {}),
+    listBrands(session).catch(() => ({ brands: [] })),
+    listCategories(session).catch(() => ({ categories: [] })),
+  ]);
   const product = data.products.find((row) => row.slug === slug);
   if (!product) notFound();
   const sectionGroups = sections.reduce<Record<string, SectionOption[]>>((groups, section) => {
@@ -80,11 +84,15 @@ export default async function ProductEditorPage({ params, searchParams }: { para
             </Field>
             <Field title="Category">
               <select name="category" defaultValue={product.category} className={selectClass}>
-                {data.categories.map((option) => (
+                {(() => {
+                  const managed = categories.map((option) => option.slug);
+                  const values = product.category && !managed.includes(product.category) ? [product.category, ...managed] : managed;
+                  return values.map((option) => (
                   <option key={option} value={option}>
-                    {titleCase(option)}
+                    {titleCase(option)}{option === product.category && !managed.includes(option) ? " (orphaned current value)" : ""}
                   </option>
-                ))}
+                  ));
+                })()}
               </select>
             </Field>
             <Field title="Brand">

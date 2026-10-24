@@ -11,6 +11,7 @@ import { ProductGrid, RatingBars, ReviewList } from "@/components/ferix/cards";
 import { ProductGallery } from "@/components/ferix/product-gallery";
 import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { Eyebrow, Pill, Price, SectionHead, Stars, StockNote } from "@/components/ferix/marks";
+import { isSectionOn } from "@/components/ferix/render-sections";
 import { compact, dateShort, money } from "@/lib/format";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -42,12 +43,12 @@ export default async function ProductPage({ params, searchParams }: { params: Pr
     savedIds(),
     getCataloguePage("marketplace_product").catch(() => ({ page: null, sections: [], placements: {} })),
   ]);
-  const sectionVisible = (type: string) => Boolean(cmsPage.page && cmsPage.sections.some((section) => section.type === type && section.visible !== false));
-  const sectionPosition = (type: string) => Number(cmsPage.sections.find((section) => section.type === type && section.visible !== false)?.position ?? 0);
+  const sectionVisible = (type: string) => Boolean(cmsPage.page && cmsPage.sections.some((section) => section.type === type && isSectionOn(section.visible, true)));
+  const sectionPosition = (type: string) => Number(cmsPage.sections.find((section) => section.type === type && isSectionOn(section.visible, true))?.position ?? 0);
   const relatedSection = cmsPage.sections.find(
     (section) => section.type === "product_carousel"
       && (section.source === "related" || section.id === "sec_related")
-      && section.visible !== false,
+      && isSectionOn(section.visible, true),
   );
   const relatedLimit = Number(relatedSection?.limit) || 0;
   const relatedProducts = relatedLimit > 0 ? related.slice(0, relatedLimit) : related;

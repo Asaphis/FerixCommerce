@@ -653,6 +653,7 @@ export type ContentDocument = {
   updatedAt: string;
   updatedBy: string;
   draftStatus?: string;
+  revision?: number;
 };
 
 export type ContentVersion = {
@@ -985,6 +986,7 @@ export type CmsPage = {
   publishedVisibleCount?: number;
   kind?: "managed" | "information";
   data?: { content?: Record<string, unknown>; sections?: unknown[]; kind?: string };
+  revision?: number;
 };
 
 export const listCmsPages = (session: string | null) =>
@@ -993,20 +995,20 @@ export const listCmsPages = (session: string | null) =>
 export const getCmsPage = (session: string | null, id: string) =>
   call<{ page: CmsPage }>("GET", "admin/cms/page", { session, params: { id } });
 
-export const saveCmsPage = (session: string | null, body: { id: string; title?: string; sections?: CmsSection[] }) =>
+export const saveCmsPage = (session: string | null, body: { id: string; title?: string; sections?: CmsSection[]; expectedVersion?: number }) =>
   call<{ page: CmsPage }>("PATCH", "admin/cms/page", { session, body });
 
 /** Save content fields for an information page. The section endpoint is separate. */
 export const updateCmsSection = (
   session: string | null,
-  body: { documentId: string; sectionId: string; fields: Record<string, unknown> },
+  body: { documentId: string; sectionId: string; fields: Record<string, unknown>; expectedVersion?: number },
 ) =>
   call<{ section: CmsSection; documentId: string; savedTo: string }>("PATCH", "admin/cms/sections", {
     session,
-    body: { document_id: body.documentId, section_id: body.sectionId, fields: body.fields },
+    body: { document_id: body.documentId, section_id: body.sectionId, fields: body.fields, expectedVersion: body.expectedVersion },
   });
 
-export const saveCmsPageContent = (session: string | null, body: { id: string; content: Record<string, unknown> }) =>
+export const saveCmsPageContent = (session: string | null, body: { id: string; content: Record<string, unknown>; expectedVersion?: number }) =>
   call<{ ok: true; id: string }>("PATCH", "admin/cms/page/content", { session, body });
 
 export const publishCmsPage = (session: string | null, id: string) =>

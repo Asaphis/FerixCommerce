@@ -9,7 +9,7 @@ import { CategoryTile, ProductGrid, StoreCard } from "@/components/ferix/cards";
 import { HorizontalRail, SetSwiper } from "@/components/ferix/set-swiper";
 import { TileSwiper } from "@/components/ferix/tile-swiper";
 import { SectionHead } from "@/components/ferix/marks";
-import { RenderSections, type HomePayload, type Section as CmsSection } from "@/components/ferix/render-sections";
+import { RenderSections, isSectionOn, type HomePayload, type Section as CmsSection } from "@/components/ferix/render-sections";
 
 export const metadata = {
   title: "Ferixas — one cart, many stores",
@@ -185,13 +185,13 @@ export default async function HomePage() {
   // them, so a homepage without one costs nothing.
   const document = (home.content ?? {}) as { sections?: Section[] };
   const wantsSlots = (document.sections ?? []).some(
-    (section) => section?.type === "promo_slots" && section.visible !== false,
+    (section) => section?.type === "promo_slots" && isSectionOn(section.visible, true),
   );
   const homeAdverts = wantsSlots
     ? (await listAdverts("home").catch(() => ({ adverts: [] as Advert[] }))).adverts
     : [];
   const stored = (document.sections ?? [])
-    .filter((section) => section && typeof section.type === "string" && section.visible !== false)
+    .filter((section) => section && typeof section.type === "string" && isSectionOn(section.visible, true))
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const sections = stored;
 

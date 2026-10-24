@@ -30,6 +30,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 from typing import Optional
+from urllib.parse import urlparse
 
 SELECTION_AUTOMATIC = "automatic"
 SELECTION_MANUAL = "manual"
@@ -516,9 +517,22 @@ def section_is_live(section: dict, moment: Optional[datetime] = None) -> bool:
     ends = moment_of((section or {}).get("endsAt"))
     if starts and moment < starts:
         return False
-    if ends and moment > ends:
+    if ends and moment >= ends:
         return False
     return True
+
+
+def is_safe_media_url(value: object, *, allow_empty: bool = True) -> bool:
+    """Allow local asset paths or HTTPS media URLs, never active URL schemes."""
+    raw = str(value or "").strip()
+    if not raw:
+        return allow_empty
+    if any(ord(char) < 32 for char in raw) or raw.startswith(("//", "\\")):
+        return False
+    parsed = urlparse(raw)
+    if parsed.scheme:
+        return parsed.scheme.lower() == "https" and bool(parsed.netloc)
+    return raw.startswith("/") and not raw.startswith("//")
 
 
 def placement_is_active(row) -> bool:
@@ -547,7 +561,7 @@ def placement_is_live(row, moment: Optional[datetime] = None) -> bool:
     ends = moment_of(getattr(row, "ends_at", None))
     if starts and moment < starts:
         return False
-    if ends and moment > ends:
+    if ends and moment >= ends:
         return False
     return True
 
@@ -784,6 +798,23 @@ def normalize_section(section: dict) -> dict:
         if key in row and not str(row.get(key) or "").strip():
             row.pop(key)
     return row
+
+
+def canonicalize_sections(sections) -> list[dict]:
+    """Normalize a page's sections and make their order authoritative.
+
+    Position is derived from array order, never trusted from stale client values.
+    This keeps moves, deletes and bulk saves from leaving gaps or duplicate sort
+    keys while preserving every other section field.
+    """
+    result: list[dict] = []
+    for raw in sections or []:
+        if not isinstance(raw, dict):
+            continue
+        row = normalize_section(raw)
+        row["position"] = len(result) + 1
+        result.append(row)
+    return result
 
 
 def validate_section(section: dict) -> None:

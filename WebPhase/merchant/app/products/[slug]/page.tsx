@@ -25,7 +25,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   }
   let data;
   try {
-    data = await getProduct(session, slug);
+    data = await getProduct(session, slug, slug);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       const catalogue = await listProducts(session).catch(() => null);

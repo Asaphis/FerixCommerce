@@ -150,7 +150,11 @@ export function ProductForm({
                 <span className="grid h-11 w-11 place-items-center rounded-[12px] border border-hairline bg-panel text-ember"><ImagePlus width={20} height={20} /></span>
                 <span className="text-[13px] font-medium text-chalk">Drop an image here, or choose from your device</span>
                 <span className="text-[11px] text-chalk-dim">JPG, PNG, WEBP or GIF · up to 20 MB each</span>
-                <input name="mediaFiles" type="file" accept="image/*" multiple className="sr-only" onChange={(event) => setFiles(Array.from(event.target.files ?? []))} />
+                <input name="mediaFiles" type="file" accept="image/*" multiple className="sr-only" onChange={(event) => {
+                  const next = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith("image/") && file.size <= 20 * 1024 * 1024);
+                  setFiles((current) => [...current, ...next]);
+                  event.currentTarget.value = "";
+                }} />
               </label>
               {library.length > 0 ? (
         <div className="grid gap-2 border-t border-hairline pt-4">
@@ -263,7 +267,7 @@ export function ProductForm({
                 </span>
               </label>
             </div>
-            <input type="hidden" name="marketplace" value="on" />
+            <input type="hidden" name="marketplace" value={product ? (product.channels?.marketplace ? "on" : "off") : "on"} />
           </Panel>
 
           <Panel>

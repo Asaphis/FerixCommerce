@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.request
+from html import escape
 
 
 def send_email(*, to: str, subject: str, html: str) -> bool:
@@ -33,13 +34,13 @@ def send_email(*, to: str, subject: str, html: str) -> bool:
 
 def welcome(*, to: str, name: str) -> None:
     app_url = os.getenv("PUBLIC_APP_URL", "").rstrip("/")
-    send_email(to=to, subject="Welcome to Ferixas", html=f"<h1>Welcome, {name}</h1><p>Your Ferixas account is ready.</p><p><a href=\"{app_url}\">Start shopping</a></p>")
+    send_email(to=to, subject="Welcome to Ferixas", html=f"<h1>Welcome, {escape(name)}</h1><p>Your Ferixas account is ready.</p><p><a href=\"{escape(app_url, quote=True)}\">Start shopping</a></p>")
 
 
 def order_confirmation(*, to: str, name: str, number: str, total: float) -> None:
     app_url = os.getenv("PUBLIC_APP_URL", "").rstrip("/")
-    send_email(to=to, subject=f"Ferixas order {number} confirmed", html=f"<h1>Thanks for your order, {name}</h1><p>Order <strong>{number}</strong> has been received. Total: <strong>${total:.2f}</strong>.</p><p><a href=\"{app_url}/account/orders\">View your orders</a></p>")
+    send_email(to=to, subject=f"Ferixas order {number} confirmed", html=f"<h1>Thanks for your order, {escape(name)}</h1><p>Order <strong>{escape(number)}</strong> has been received. Total: <strong>${total:.2f}</strong>.</p><p><a href=\"{escape(app_url, quote=True)}/account/orders\">View your orders</a></p>")
 
 
 def order_status(*, to: str, name: str, number: str, status: str) -> None:
-    send_email(to=to, subject=f"Ferixas order {number}: {status}", html=f"<h1>Order update</h1><p>Hi {name}, order <strong>{number}</strong> is now <strong>{status}</strong>.</p>")
+    send_email(to=to, subject=f"Ferixas order {number}: {status}", html=f"<h1>Order update</h1><p>Hi {escape(name)}, order <strong>{escape(number)}</strong> is now <strong>{escape(status)}</strong>.</p>")

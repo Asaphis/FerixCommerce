@@ -121,14 +121,31 @@ async function syncProductSections(session: string, form: FormData, slug: string
       sectionType: section.sectionType,
       title,
       ...(placementPrice || price ? { price: Number(placementPrice || price) } : {}),
-      ...(placementCompareAt ? { compareAt: Number(placementCompareAt) } : {}),
-      ...(quantity ? { quantity: Number(quantity) } : {}),
-      ...(position ? { position: Number(position) } : {}),
-      ...(startsAt ? { startsAt } : {}),
-      ...(endsAt ? { endsAt } : {}),
-      ...(Object.keys(config).length ? { config } : {}),
+      compareAt: placementCompareAt ? Number(placementCompareAt) : null,
+      quantity: quantity ? Number(quantity) : null,
+      position: position ? Number(position) : null,
+      startsAt: startsAt || null,
+      endsAt: endsAt || null,
+      config,
     };
   });
+  const visibleKeys = new Set(sections.map((row) => `${row.documentId}__${row.sectionId}`));
+  for (const row of current.placements) {
+    const key = `${row.documentId}__${row.sectionId}`;
+    if (!visibleKeys.has(key)) sections.push({
+      documentId: row.documentId,
+      sectionId: row.sectionId,
+      sectionType: row.sectionType,
+      title,
+      price: row.price ?? null,
+      compareAt: row.compareAt ?? null,
+      quantity: row.quantity ?? null,
+      position: row.position ?? null,
+      config: (row.config ?? {}) as Record<string, string | number>,
+      startsAt: row.startsAt ?? null,
+      endsAt: row.endsAt ?? null,
+    });
+  }
   await api.replaceProductSections(session, { slug, sections });
 }
 

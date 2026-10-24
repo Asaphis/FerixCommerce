@@ -192,6 +192,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
   const price = Number(formData.get("price") ?? 0);
   if (!Number.isFinite(price) || price <= 0) return { error: "Enter a price greater than zero." };
   const files = formData.getAll("mediaFiles").filter((value): value is File => value instanceof File && value.size > 0);
+  if (files.some((file) => !file.type.startsWith("image/") || file.size > 20 * 1024 * 1024)) return { error: "Each product image must be an image no larger than 20 MB." };
   if (!readImageUrls(formData).length && !files.length) return { error: "Add at least one product image." };
   const compareRaw = String(formData.get("compareAt") ?? "").trim();
   try {
@@ -220,7 +221,7 @@ export async function saveProductAction(_prev: FormState, formData: FormData): P
       stock: Number(formData.get("stock") ?? 0),
       status: "pending_review",
       store: formData.get("store") === "on",
-      marketplace: true,
+      marketplace: formData.get("marketplace") === "on",
       description: String(formData.get("description") ?? "").trim(),
       images,
     });

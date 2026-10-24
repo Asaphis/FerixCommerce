@@ -164,7 +164,7 @@ export default async function ProductsPage({
                     <Thumb seed={product.slug} className="h-10 w-10 shrink-0" />
                     <div className="min-w-0">
                       <Link
-                        href={`/products/${product.id}`}
+                        href={`/products/${product.slug}`}
                         className="block truncate text-[13px] font-medium text-chalk hover:text-lime md:max-w-[260px]"
                       >
                         {product.title}

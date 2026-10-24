@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { Trash2, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
+import { ConfirmAction } from "@/components/studio/confirm-action";
 import { SubmitButton } from "@/components/studio/controls";
 import { Field, Notice, inputClass, selectClass } from "@/components/studio/forms";
 import { Panel, PanelHead } from "@/components/studio/bits";
@@ -55,14 +56,9 @@ export function MediaForm() {
 export function MediaDelete({ id, alt }: { id: string; alt: string }) {
   const [state, action] = useActionState<FormState, FormData>(removeMediaAction, {});
   return (
-    <form action={action} aria-label={`Delete ${alt || "asset"}`} className="grid gap-2">
-      <input type="hidden" name="id" value={id} />
-      <SubmitButton variant="danger" pendingLabel="Removing" className="py-1.5">
-        <Trash2 width={12} height={12} /> Delete
-      </SubmitButton>
-      <span className="block text-[11px]">
-        <Notice state={state} />
-      </span>
-    </form>
+    <div className="grid gap-2">
+      <ConfirmAction action={action} fields={{ id }} label="Delete" confirmLabel={`Delete ${alt || "asset"}?`} tone="danger" />
+      <span className="block text-[11px]"><Notice state={state} /></span>
+    </div>
   );
 }

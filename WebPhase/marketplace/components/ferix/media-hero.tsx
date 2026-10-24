@@ -18,6 +18,9 @@ type Props = {
   vertical?: "top" | "middle" | "bottom" | string;
   tone?: "light" | "dark" | string;
   scrim?: number | string;
+  showText?: boolean;
+  showButtons?: boolean;
+  textWidth?: number;
   heightClassName?: string;
   className?: string;
 };
@@ -45,6 +48,9 @@ export function MediaHero({
   vertical = "middle",
   tone = "dark",
   scrim = 55,
+  showText = true,
+  showButtons = true,
+  textWidth = 36,
   heightClassName = "aspect-[16/8] min-h-[150px] sm:aspect-[16/6] lg:aspect-[16/5]",
   className,
 }: Props) {
@@ -86,16 +92,16 @@ export function MediaHero({
         <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(108deg, #e85022 0%, #f17446 54%, #ffd6bd 100%)" }} />
       )}
 
-      {!only ? (
+      {!only && showText ? (
         <>
           {media ? <div aria-hidden className="absolute inset-0" style={{ background: gradient }} /> : null}
           <div className={cn("absolute inset-0 z-10 flex px-4 sm:px-8", verticalPosition)}>
             <div className={cn("mx-auto flex w-full max-w-[1240px]", align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start")}>
-              <div className={cn("flex max-w-[36ch] flex-col", horizontal)}>
+              <div className={cn("flex flex-col", horizontal)} style={{ maxWidth: `${Math.max(18, Math.min(64, Number(textWidth) || 36))}ch` }}>
                 {eyebrow ? <span className={cn("font-mono text-[11px] uppercase tracking-[0.18em] sm:text-[11px]", tone === "light" ? "text-ink/70" : "text-white/80")}>{eyebrow}</span> : null}
                 {title ? <h2 className={cn("mt-1.5 font-display text-[20px] font-extrabold leading-tight tracking-[-0.02em] sm:text-[28px] lg:text-[34px]", foreground)}>{title}</h2> : null}
                 {description ? <p className={cn("mt-1.5 line-clamp-2 max-w-[52ch] text-[11.5px] leading-relaxed sm:mt-2 sm:text-[13px]", tone === "light" ? "text-ink/80" : "text-white/85")}>{description}</p> : null}
-                {ctaLabel || secondaryLabel ? (
+                {showButtons && (ctaLabel || secondaryLabel) ? (
                   <div className="mt-3 flex flex-wrap gap-2 sm:mt-5">
                     {ctaLabel ? (
                       <Link href={ctaHref || "/browse"} className="inline-flex min-h-10 w-fit items-center gap-2 bg-white px-4 py-2 text-[12px] font-bold text-[#bd421e] transition-colors hover:bg-[#fff3ed] sm:min-h-11 sm:px-5 sm:text-[13px]">

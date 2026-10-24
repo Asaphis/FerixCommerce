@@ -104,6 +104,8 @@ export function FlashSaleBand({
     ? [["Days", remaining.days], ["Hours", remaining.hours], ["Mins", remaining.minutes], ["Secs", remaining.seconds]]
     : [["Days", 0], ["Hours", 0], ["Mins", 0], ["Secs", 0]];
 
+  const railLayout = ["horizontal", "rail", "carousel"].includes(String(layout).trim().toLowerCase());
+
   return (
     <section className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-9">
       <div className="overflow-hidden rounded-[2px] rounded-tr-[18px] p-4 sm:p-6" style={{ ...safeBackgroundStyle(background), color: ink }}>
@@ -142,7 +144,7 @@ export function FlashSaleBand({
           </div>
         </div>
 
-        <div className={layout === "horizontal" ? "flex gap-3 overflow-x-auto" : "grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5"}>
+        <div className={railLayout ? "flex gap-3 overflow-x-auto" : "grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-5"}>
           {products.map((product) => (
             <ProductCard
               key={product.id}

@@ -86,9 +86,10 @@ export function safeSectionHref(value: unknown, fallback: string): string {
   }
 }
 
-function isSectionOn(value: unknown, fallback: boolean): boolean {
+export function isSectionOn(value: unknown, fallback: boolean): boolean {
   if (value === undefined || value === null || value === "") return fallback;
-  return value === true || ["true", "1", "yes", "on"].includes(String(value).toLowerCase());
+  if (typeof value === "number") return value !== 0;
+  return value === true || ["true", "1", "yes", "on"].includes(String(value).trim().toLowerCase());
 }
 
 
@@ -227,7 +228,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
     switch (section.type) {
       /* ── The campaign ───────────────────────────────────────────── */
       case "hero_banner": {
-        const mediaOnly = section.mediaOnly === true || String(section.mediaOnly) === "true" || section.showText === false || String(section.showText) === "false";
+        const mediaOnly = isSectionOn(section.mediaOnly, false) || !isSectionOn(section.showText, true);
         const usableBanners = home.banners.filter((banner) => (banner as Banner & { active?: boolean }).active !== false);
         // The section's own slides come first: a hero holds its own list, and
         // the banner library is only the fallback for a section that has none.
@@ -246,7 +247,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               mediaUrl: String(slot.url ?? ""),
               accent: section.accent ?? "#e4572e",
               showText: section.showText !== false && section.showText !== "false",
-              showButtons: true,
+              showButtons: isSectionOn(section.showButtons, true),
               ctaLabel: section.ctaLabel ?? "",
               ctaHref: safeSectionHref(section.ctaHref, "/browse"),
               secondaryLabel: section.secondaryLabel ?? "",
@@ -261,10 +262,10 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
                 tone: section.tone === "light" ? "light" : "dark",
                 align: section.align === "center" ? "center" : section.align === "right" ? "right" : "left",
                 vertical: section.vertical === "top" ? "top" : section.vertical === "bottom" ? "bottom" : "middle",
-                width: 28,
+                width: Number(section.textWidth ?? section.width ?? 28),
                 scrim: Number(section.scrim ?? 55),
-                showText: section.showText !== false && section.showText !== "false",
-                showButtons: true,
+                showText: isSectionOn(section.showText, true),
+                showButtons: isSectionOn(section.showButtons, true),
               },
             } as unknown as (typeof usableBanners)[number]))
           : (section.bannerId
@@ -292,6 +293,9 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
                 vertical={section.vertical}
                 tone={section.tone}
                 scrim={scrimPercent(section.scrim)}
+                showText={isSectionOn(section.showText, true)}
+                showButtons={isSectionOn(section.showButtons, true)}
+                textWidth={Number(section.textWidth ?? section.width ?? 36)}
                 heightClassName="h-[250px] sm:h-[340px] lg:h-[420px]"
                 className="rounded-[3px] rounded-tr-[18px] shadow-[0_10px_28px_rgba(16,45,67,0.10)] max-lg:rounded-none max-lg:shadow-none"
               />
@@ -325,6 +329,9 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               mediaUrl={useSectionMedia ? section.mediaUrl : reusableBanner?.mediaUrl}
               kind={useSectionMedia ? section.kind : reusableBanner?.kind}
               mediaOnly={mediaOnly || reusableBanner?.showText === false}
+              showText={useSectionMedia ? isSectionOn(section.showText, true) : reusableBanner?.showText !== false}
+              showButtons={useSectionMedia ? isSectionOn(section.showButtons, true) : reusableBanner?.showButtons !== false}
+              textWidth={Number(section.textWidth ?? section.width ?? reusableBanner?.overlay?.width ?? 28)}
               eyebrow={useSectionMedia ? section.eyebrow : reusableBanner?.eyebrow ?? section.eyebrow}
               title={useSectionMedia ? (section.title ?? section.name ?? "") : (reusableBanner?.headline ?? section.title ?? section.name ?? "This week on Ferixas")}
               description={useSectionMedia ? section.subtitle : reusableBanner?.body ?? section.subtitle}
@@ -513,8 +520,8 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
               endsAt={String(section.endsAt ?? "") || undefined}
               countdownLabel={section.countdownLabel as string | undefined}
               // No end time, no countdown: "Ends in No end time set" is not a sentence.
-              showCountdown={String(section.showCountdown ?? "true") !== "false" && Boolean(String(section.endsAt ?? "").trim())}
-              showDiscountBadges={String(section.showDiscountBadges ?? "true") !== "false"}
+              showCountdown={isSectionOn(section.showCountdown, true) && Boolean(String(section.endsAt ?? "").trim())}
+              showDiscountBadges={isSectionOn(section.showDiscountBadges, true)}
               showViewAll={isSectionOn(section.showViewAll, isSectionOn(section.seeAll, true))}
               href={safeSectionHref(sectionHref, "/browse?sort=discount")}
               // The editor stores `background` and `accent`; older sections used the
@@ -635,7 +642,7 @@ export function RenderSections({ sections, home, adverts = [], saved, mode = "pa
   return (
     <>
       {sections
-        .filter((section) => section && typeof section.type === "string" && section.visible !== false)
+        .filter((section) => section && typeof section.type === "string" && isSectionOn(section.visible, true))
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .map((section, index) => (section.id ? block(section, index) : null))}
     </>

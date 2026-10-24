@@ -1,5 +1,6 @@
 import { getHome } from "@/lib/api";
 import { CatalogListing } from "@/components/ferix/catalog-listing";
+import { EmptyState, LinkButton } from "@/components/ferix/marks";
 
 /**
  * A brand's own page.
@@ -18,7 +19,14 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
   const home = await getHome().catch(() => null);
   const brands = home?.brands ?? [];
   const brand = brands.find((item) => item.slug === slug);
-  const name = brand?.name ?? slug;
+  if (!brand) {
+    return (
+      <div className="mx-auto max-w-[620px] px-4 py-20">
+        <EmptyState title="Brand not found" body="That brand is not listed on Ferixas, or its page has moved." action={<LinkButton href="/brands">Browse all brands</LinkButton>} />
+      </div>
+    );
+  }
+  const name = brand.name;
 
   return (
     <CatalogListing

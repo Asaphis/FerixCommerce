@@ -1,6 +1,6 @@
 import { getCataloguePage, getHome, listAdverts } from "@/lib/api";
 import { savedIds } from "@/lib/data";
-import { RenderSections, type HomePayload, type Section } from "@/components/ferix/render-sections";
+import { RenderSections, isSectionOn, type HomePayload, type Section } from "@/components/ferix/render-sections";
 
 /**
  * Information-page CMS policy: render CMS blocks only when the information
@@ -15,7 +15,7 @@ export async function CmsInfoSections({ pageType }: { pageType: string }) {
   ]);
   if (!page?.page || !home) return null;
   const sections = page.sections
-    .filter((section) => section && section.visible !== false)
+    .filter((section) => section && isSectionOn(section.visible, true))
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   if (!sections.length) return null;
   const advertSection = sections.find((section) => section.type === "promo_slots");

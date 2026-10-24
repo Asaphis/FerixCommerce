@@ -5,7 +5,7 @@ import { savedIds } from "@/lib/data";
 import { ProductGrid } from "@/components/ferix/cards";
 import { AutoForm } from "@/components/ferix/add-to-cart";
 import { EmptyState, Eyebrow, LinkButton } from "@/components/ferix/marks";
-import { RenderSections, safeSectionHref, type HomePayload, type Section as CmsSection } from "@/components/ferix/render-sections";
+import { RenderSections, isSectionOn, safeSectionHref, type HomePayload, type Section as CmsSection } from "@/components/ferix/render-sections";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -113,7 +113,7 @@ export async function CatalogListing({
     placements: {} as Record<string, Product[]>,
   }));
   const slotSection = page.sections.find(
-    (section) => section.type === "promo_slots" && section.visible !== false,
+    (section) => section.type === "promo_slots" && isSectionOn(section.visible, true),
   );
   const slotEvery = Math.max(1, Number(slotSection?.adEvery) || 6);
   const slotLimit = Math.max(0, Number(slotSection?.limit) || 3);
@@ -138,14 +138,14 @@ export async function CatalogListing({
   // Promo slots weave through the catalogue results below; the main catalogue
   // grid marker controls the listing itself; footer furniture belongs at the end.
   const sectionsForRenderer = page.sections.filter((section) =>
-    section.visible !== false
+    isSectionOn(section.visible, true)
       && section.type !== "promo_slots"
       && section.type !== "footer"
       && !(section.type === "product_grid" && section.perPage !== undefined),
   );
-  const footerSections = page.sections.filter((section) => section.type === "footer" && section.visible !== false);
+  const footerSections = page.sections.filter((section) => section.type === "footer" && isSectionOn(section.visible, true));
   const gridSection = page.sections.find(
-    (section) => section.type === "product_grid" && section.perPage !== undefined && section.visible !== false,
+    (section) => section.type === "product_grid" && section.perPage !== undefined && isSectionOn(section.visible, true),
   );
   const activeStore = feed.facets.stores.find((item) => item.slug === filters.store);
   const activeCategory = feed.facets.categories.find((item) => item.slug === filters.category);

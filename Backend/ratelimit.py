@@ -39,11 +39,16 @@ def bucket_for(method: str, path: str):
 
 
 def client_key(request) -> str:
-    forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
-    if forwarded:
-        return forwarded
+    # Forwarded headers are user-controlled unless the immediate peer is a
+    # configured trusted proxy. Never let clients spoof a limiter identity.
+    trusted = {item.strip() for item in os.getenv("FERIXAS_TRUSTED_PROXIES", "").split(",") if item.strip()}
     client = getattr(request, "client", None)
-    return str(getattr(client, "host", "") or "unknown")
+    peer = str(getattr(client, "host", "") or "unknown")
+    if peer in trusted:
+        forwarded = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+        if forwarded:
+            return forwarded
+    return peer
 
 
 def check(bucket: str, identity: str):
