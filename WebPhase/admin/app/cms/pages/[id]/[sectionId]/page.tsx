@@ -540,6 +540,40 @@ export default async function CmsSectionEditor({
                       }))}
                     />
                   ) : null}
+                  {isHeroSection && !mediaOnly ? (
+                    <div className="grid gap-4 border-t border-hairline pt-4 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <h3 className="font-display text-[14px] font-semibold text-chalk">Hero layout</h3>
+                        <p className="mt-1 text-[11px] leading-relaxed text-chalk-dim">These settings are saved together with the hero content, media and buttons.</p>
+                      </div>
+                      <Field title="Text across">
+                        <select name="field_align" defaultValue={String(section.align ?? "left")} className={selectClass}>
+                          <option value="left">Left</option>
+                          <option value="center">Centre</option>
+                          <option value="right">Right</option>
+                        </select>
+                      </Field>
+                      <Field title="Text height">
+                        <select name="field_vertical" defaultValue={String(section.vertical ?? "middle")} className={selectClass}>
+                          <option value="top">Top</option>
+                          <option value="middle">Middle</option>
+                          <option value="bottom">Bottom</option>
+                        </select>
+                      </Field>
+                      <Field title="Overlay tone">
+                        <select name="field_tone" defaultValue={String(section.tone ?? "dark")} className={selectClass}>
+                          <option value="dark">Dark behind light text</option>
+                          <option value="light">Light behind dark text</option>
+                        </select>
+                      </Field>
+                      <Field title="Overlay strength">
+                        <input name="field_scrim" type="number" min={0} max={100} defaultValue={String(section.scrim ?? 55)} className={inputClass} />
+                      </Field>
+                      <Field title="Text width (characters)">
+                        <input name="field_width" type="number" min={18} max={64} defaultValue={String(section.width ?? 44)} className={inputClass} />
+                      </Field>
+                    </div>
+                  ) : null}
                   <div className="flex flex-wrap items-center gap-2">
                     <SubmitButton pendingLabel="Saving">Save draft</SubmitButton>
                   </div>
@@ -607,42 +641,6 @@ export default async function CmsSectionEditor({
 
 
 
-            {isHeroSection && !mediaOnly ? (
-              <Panel>
-                <PanelHead title="Placement" hint="Where text sits over the media and how its overlay reads." />
-                <CmsActionForm action={saveCmsSectionAction} className="grid gap-4 sm:grid-cols-2">
-                  <input type="hidden" name="id" value={id} />
-                  <input type="hidden" name="sectionId" value={section.id} />
-                  <Field title="Text across">
-                    <select name="field_align" defaultValue={String(section.align ?? "left")} className={selectClass}>
-                      <option value="left">Left</option>
-                      <option value="center">Centre</option>
-                      <option value="right">Right</option>
-                    </select>
-                  </Field>
-                  <Field title="Text height">
-                    <select name="field_vertical" defaultValue={String(section.vertical ?? "middle")} className={selectClass}>
-                      <option value="top">Top</option>
-                      <option value="middle">Middle</option>
-                      <option value="bottom">Bottom</option>
-                    </select>
-                  </Field>
-                  <Field title="Overlay tone">
-                    <select name="field_tone" defaultValue={String(section.tone ?? "dark")} className={selectClass}>
-                      <option value="dark">Dark behind light text</option>
-                      <option value="light">Light behind dark text</option>
-                    </select>
-                  </Field>
-                  <Field title="Overlay strength">
-                    <input name="field_scrim" type="number" min={0} max={100} defaultValue={String(section.scrim ?? 55)} className={inputClass} />
-                  </Field>
-                  <Field title="Text width (characters)">
-                    <input name="field_width" type="number" min={18} max={64} defaultValue={String(section.width ?? 44)} className={inputClass} />
-                  </Field>
-                  <div className="sm:col-span-2"><SubmitButton pendingLabel="Saving">Save placement</SubmitButton></div>
-                </CmsActionForm>
-              </Panel>
-            ) : null}
           </div>
 
           <aside className="grid gap-5 xl:sticky xl:top-4">
