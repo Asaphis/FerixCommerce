@@ -417,10 +417,10 @@ export async function saveHomepageAction(_previous: FormState, form: FormData): 
   try {
     await api.saveDocument(session, { id: documentId, data: { sections }, note: "Homepage saved" });
   } catch (error) {
-    return actionError(error, "We could not save the homepage draft.");
+    return actionError(error, "We could not save the homepage.");
   }
   refresh("/cms/homepage");
-  return { message: "Homepage draft saved." };
+  return { message: "Homepage saved. The storefront is updated." };
 }
 
 /**

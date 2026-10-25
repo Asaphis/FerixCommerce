@@ -8,7 +8,7 @@ import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader, inputClass, selectClass } from "@/components/ops/table";
 import { Field, SubmitButton } from "@/components/ops/controls";
-import { deleteCmsSectionAction, publishCmsPageNowAction, saveCmsSectionAction } from "@/lib/actions";
+import { deleteCmsSectionAction, saveCmsSectionAction } from "@/lib/actions";
 import { MediaUploadField } from "@/components/ops/media-upload-field";
 import { MediaSlotsField } from "@/components/ops/media-slots-field";
 import { CmsSectionPreview } from "@/components/ops/cms-section-preview";
@@ -430,7 +430,7 @@ export default async function CmsSectionEditor({
         <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] xl:items-start">
           <div className="grid min-w-0 gap-5">
             <Panel>
-              <PanelHead title="Content" hint="Saved as a draft. Nothing reaches a shopper until you publish." />
+              <PanelHead title="Content" hint="Changes are saved directly to the storefront." />
               {String(section.type) === "hero_banner" && !sectionMediaUrl ? (
                 <p className="mb-4 rounded-[10px] border border-hairline bg-panel-2 px-3.5 py-3 text-[12px] leading-relaxed text-chalk-dim">The carousel's headline and button are set on each banner. Upload direct media here to add section-level title and description controls.</p>
               ) : null}
@@ -439,13 +439,6 @@ export default async function CmsSectionEditor({
               ) : null}
               {fields.length ? (
                 <>
-                <form action={publishCmsPageNowAction} className="flex flex-wrap items-center gap-2 rounded-[10px] border border-hairline bg-panel-2 px-3 py-2">
-                  <input type="hidden" name="id" value={id} />
-                  <span className="text-[11.5px] leading-relaxed text-chalk-dim">
-                    Saving keeps a draft. Publish to put this page live without leaving it.
-                  </span>
-                  <SubmitButton pendingLabel="Publishing">Publish page</SubmitButton>
-                </form>
                 <CmsActionForm action={saveCmsSectionAction} className="grid gap-4">
                   <input type="hidden" name="id" value={id} />
                   <input type="hidden" name="sectionId" value={section.id} />
@@ -575,7 +568,7 @@ export default async function CmsSectionEditor({
                     </div>
                   ) : null}
                   <div className="flex flex-wrap items-center gap-2">
-                    <SubmitButton pendingLabel="Saving">Save draft</SubmitButton>
+                    <SubmitButton pendingLabel="Saving">Save</SubmitButton>
                   </div>
                 </CmsActionForm>
                 <form action={deleteCmsSectionAction} className="mt-4 border-t border-hairline pt-4">
@@ -654,7 +647,7 @@ export default async function CmsSectionEditor({
               adverts={previewData?.adverts ?? []}
               banners={reusableBanners}
               hasDraft={previewData?.hasDraft ?? page?.hasDraft ?? false}
-              documentStatus={previewData?.documentStatus ?? page?.status ?? "draft"}
+              documentStatus={previewData?.documentStatus ?? page?.status ?? "published"}
               error={previewError}
             />
 
@@ -684,9 +677,6 @@ export default async function CmsSectionEditor({
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link href={`/cms/pages/${id}`} className="rounded-[9px] border border-hairline px-3 py-1.5 text-[11px] font-semibold text-chalk transition-colors hover:bg-panel-2">
                   All sections
-                </Link>
-                <Link href={`/cms/pages/${id}`} className="rounded-[9px] bg-signal px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#e4572e]">
-                  Publish from the page
                 </Link>
               </div>
             </Panel>

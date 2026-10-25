@@ -9,7 +9,7 @@ import { FALLBACK_SECTION_TYPES, SectionPalette } from "@/components/ops/section
 import { Empty, Panel, PanelHead, Pill } from "@/components/ops/bits";
 import { PageHeader } from "@/components/ops/table";
 import { SubmitButton } from "@/components/ops/controls";
-import { moveCmsSectionAction, publishCmsPageAction, removeCmsSectionAction, toggleCmsSectionAction } from "@/lib/actions";
+import { moveCmsSectionAction, removeCmsSectionAction, toggleCmsSectionAction } from "@/lib/actions";
 
 /** Section types in plain words. A type with no entry falls back to its own name. */
 const SECTION_LABELS: Record<string, string> = {
@@ -94,12 +94,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
         action={
           page ? (
             <>
-              {page.hasDraft ? <Pill tone="amber">Draft waiting</Pill> : null}
-              <Pill tone={page.status === "published" ? "mint" : "amber"}>{page.status}</Pill>
-              <CmsActionForm action={publishCmsPageAction} className="inline-flex items-center gap-2">
-                <input type="hidden" name="id" value={page.id} />
-                <SubmitButton pendingLabel="Publishing">Publish changes</SubmitButton>
-              </CmsActionForm>
+              <Pill tone="mint">Live changes</Pill>
             </>
           ) : null
         }
@@ -132,7 +127,7 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
       {page?.sections?.length ? (
         <Panel flush>
           <div className="p-4 pb-3 sm:p-5 sm:pb-3">
-            <PanelHead title="Sections" hint="In the order they appear on the page." />
+          <PanelHead title="Sections" hint="Changes save directly to the storefront." />
           </div>
           <ul className="grid gap-2 px-4 pb-4 sm:px-5 sm:pb-5">
             {page.sections.map((section, index) => (
@@ -209,20 +204,6 @@ export default async function CmsPageSections({ params }: { params: Promise<{ id
         <Empty title="No sections on this page" body="Add a section above." />
       )}
 
-      {page?.publishedSections?.length ? (
-        <Panel>
-          <PanelHead title="On the storefront now" hint="What shoppers see until you publish" />
-          <ol className="grid gap-1.5">
-            {page.publishedSections.map((section, index) => (
-              <li key={section.id} className="flex items-center gap-2.5 text-[12.5px] text-chalk-dim">
-                <span className="w-4 shrink-0 text-right font-mono text-[11px]">{index + 1}</span>
-                <span className="min-w-0 truncate text-chalk">{section.name || section.type}</span>
-                {section.visible ? null : <Pill tone="neutral">hidden</Pill>}
-              </li>
-            ))}
-          </ol>
-        </Panel>
-      ) : null}
     </div>
   );
 }

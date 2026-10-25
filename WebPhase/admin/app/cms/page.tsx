@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Layers, Megaphone, UploadCloud } from "lucide-react";
+import { ArrowRight, Layers, Megaphone } from "lucide-react";
 import { requireAdmin, explain } from "@/lib/data";
 import { listCmsPages, type CmsPage } from "@/lib/api";
 import { Empty, Eyebrow, Panel, PanelHead, Pill } from "@/components/ops/bits";
@@ -12,7 +12,6 @@ import { PageHeader } from "@/components/ops/table";
 // competing content managers.
 const AREAS = [
   { href: "/promotions", label: "Campaigns", detail: "Flash Sale timing, prices, and quantity rules", Icon: Megaphone },
-  { href: "/cms/publishing", label: "Publishing", detail: "Version history and restore", Icon: UploadCloud },
 ];
 
 /** What a page is, in the words an operator uses - never the internal type. */
@@ -91,10 +90,6 @@ export default async function CmsPage() {
                       </span>
                       {page.sectionCount} sections · {page.visibleCount} live
                     </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-2">
-                    {page.hasDraft ? <Pill tone="amber">Draft</Pill> : null}
-                    <Pill tone={page.status === "published" ? "mint" : "amber"}>{page.status}</Pill>
                   </span>
                   <ArrowRight
                     width={15}

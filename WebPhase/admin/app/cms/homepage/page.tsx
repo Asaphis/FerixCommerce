@@ -7,7 +7,7 @@ import { inputClass, selectClass } from "@/components/ops/table";
 import { Empty, Eyebrow, Panel, Pill } from "@/components/ops/bits";
 import { CmsActionForm } from "@/components/ops/cms-action-form";
 import { addCmsSectionAction } from "@/lib/actions";
-import { deleteHomepageSectionAction, publishHomepageAction, restoreVersionAction, saveHomepageAction } from "@/lib/ops-actions";
+import { deleteHomepageSectionAction, saveHomepageAction } from "@/lib/ops-actions";
 import { titleCase } from "@/lib/format";
 
 const DOCUMENT_ID = "doc_marketplace_home";
@@ -44,7 +44,7 @@ const SECTION_DESTINATIONS: Record<string, { href: string; label: string }> = {
 
 export default async function HomepageCmsPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   const [{ section: requestedSection }, { session }] = await Promise.all([searchParams, requireAdmin()]);
-  const { document, versions } = await getDocument(session, DOCUMENT_ID);
+  const { document } = await getDocument(session, DOCUMENT_ID);
   const sections = [...(document.data.sections ?? [])].sort((a, b) => a.position - b.position);
   const selected = sections.find((section) => section.id === requestedSection) ?? sections[0];
   const selectedIndex = selected ? sections.findIndex((section) => section.id === selected.id) : -1;
@@ -58,7 +58,7 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
           <h1 className="mt-2 font-display text-[23px] font-bold text-chalk sm:text-[27px]">Homepage sections</h1>
           
         </div>
-        <div className="flex flex-wrap items-center gap-2"><Pill tone={document.draftStatus === "draft" ? "amber" : "neutral"}>{document.draftStatus === "draft" ? "Pending draft" : "No pending draft"}</Pill><Pill tone={document.status === "published" ? "mint" : "neutral"}>{document.status === "published" ? "Published live" : "Not published"}</Pill><form action={publishHomepageAction}><input type="hidden" name="documentId" value={DOCUMENT_ID} /><SubmitButton pendingLabel="Publishing">Publish changes</SubmitButton></form></div>
+        <div className="flex flex-wrap items-center gap-2"><Pill tone="mint">Live changes</Pill></div>
       </header>
 
       <div className="grid min-w-0 gap-3 lg:grid-cols-[270px_minmax(0,1fr)]">
@@ -68,7 +68,7 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
           {sections.length ? <nav aria-label="Homepage sections" className="grid gap-1">{sections.map((section, index) => {
             const active = section.id === selected?.id;
             return <Link key={section.id} href={`/cms/homepage?section=${encodeURIComponent(section.id)}`} className={`flex min-h-[44px] items-center gap-2 rounded-[2px] border px-2.5 py-2 transition-colors ${active ? "border-signal/40 bg-[#fff0e9]" : "border-transparent hover:border-hairline hover:bg-white"}`}><GripVertical width={13} height={13} className="shrink-0 text-chalk-dim/60" /><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-[2px] text-[11px] font-bold ${active ? "bg-signal text-white" : "bg-panel-2 text-chalk-dim"}`}>{index + 1}</span><span className="min-w-0 flex-1"><span className={`block truncate text-[11px] font-semibold ${active ? "text-signal" : "text-chalk"}`}>{section.title || titleCase(section.type)}</span><span className="block truncate text-[11px] text-chalk-dim">{titleCase(section.type)}</span></span>{section.visible ? <Eye width={13} height={13} className="shrink-0 text-[#2d875a]" /> : <EyeOff width={13} height={13} className="shrink-0 text-chalk-dim" />}</Link>;
-          })}</nav> : <Empty title="No sections on this page" body="Add one below. Until something is published the homepage says it is empty rather than inventing a layout." />}
+          })}</nav> : <Empty title="No sections on this page" body="Add one below. Changes appear on the storefront as soon as you save." />}
           <div className="mt-3 border-t border-hairline pt-3">
             <Eyebrow>Add a section</Eyebrow>
             <CmsActionForm action={addCmsSectionAction} className="mt-2 grid gap-2">
@@ -104,7 +104,7 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
                 <Field title="Action link"><input name={`ctaHref_${selected.id}`} defaultValue={selected.ctaHref ?? ""} placeholder="/browse" className={inputClass} /></Field>
               </div>
               <label className="flex min-h-10 items-center gap-2 rounded-[2px] border border-hairline bg-white px-3 text-[11px] font-medium text-chalk"><input type="checkbox" name={`visible_${selected.id}`} defaultChecked={selected.visible} className="size-4 accent-signal" /> Show this section on the live homepage</label>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-3"><SubmitButton pendingLabel="Saving draft">Save draft</SubmitButton></div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline pt-3"><SubmitButton pendingLabel="Saving">Save</SubmitButton></div>
             </CmsActionForm>
             <form action={deleteHomepageSectionAction} className="border-t border-hairline pt-3">
               <input type="hidden" name="documentId" value={DOCUMENT_ID} />
@@ -117,10 +117,6 @@ export default async function HomepageCmsPage({ searchParams }: { searchParams: 
         </div> : <Panel className="p-5"><Empty title="Choose a section" body="Select a homepage section to manage its content and placement." /></Panel>}
       </div>
 
-      <details className="rounded-[3px] border border-hairline bg-panel p-3.5 sm:p-4">
-        <summary className="cursor-pointer text-[12px] font-semibold text-chalk">Version history</summary>
-        <div className="mt-3 grid gap-2">{versions.length ? versions.map((version) => <div key={version.id} className="flex flex-wrap items-center justify-between gap-3 rounded-[2px] border border-hairline bg-white px-3 py-2.5"><div><p className="font-mono text-[11px] text-chalk">Version {version.version}</p><p className="mt-0.5 text-[11px] text-chalk-dim">{version.note} · {version.createdBy} · {version.status}</p></div><form action={restoreVersionAction}><input type="hidden" name="versionId" value={version.id} /><SubmitButton variant="outline" pendingLabel="Restoring">Restore</SubmitButton></form></div>) : <p className="text-[11px] text-chalk-dim">No versions saved yet.</p>}</div>
-      </details>
     </div>
   );
 }

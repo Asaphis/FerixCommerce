@@ -457,7 +457,7 @@ class SectionContractTest(unittest.TestCase):
         scoped_line = next(line for line in updated_cart.json()["lines"] if line.get("sectionId") == section_id)
         self.assertEqual(scoped_line["unitPrice"], effective_base_price)
 
-    def test_private_section_preview_reads_draft_and_real_placements_without_publishing(self):
+    def test_section_preview_reads_live_saved_content_and_real_placements(self):
         headers = {"X-Ferix-Session": self.admin}
         document_id, section_id = "doc_marketplace_home", "sec_flash"
         with SessionLocal() as db:
@@ -483,15 +483,14 @@ class SectionContractTest(unittest.TestCase):
         saved = self.client.patch("/admin/cms/page", headers=headers,
                                   json={"id": document_id, "sections": sections})
         self.assertEqual(saved.status_code, 200, saved.text)
-        self.assertTrue(saved.json()["page"]["hasDraft"])
-        self.assertEqual(saved.json()["page"]["publishedSectionCount"], len(page["sections"]))
+        self.assertFalse(saved.json()["page"]["hasDraft"])
 
-        # The public API still serves the old, published page while the preview
-        # privately reads the draft and its real assigned product.
+        # The public API immediately serves the saved page, while the preview
+        # still includes its real assigned product.
         public_after_save = self.client.get("/catalog/home").json()
         public_title = next(section["title"] for section in public_after_save["content"]["sections"]
                             if section["id"] == section_id)
-        self.assertEqual(public_title, original_title)
+        self.assertEqual(public_title, "A draft title, not public yet")
         no_auth = self.client.get("/admin/cms/page/section-preview",
                                   params={"id": document_id, "section_id": section_id})
         self.assertEqual(no_auth.status_code, 401)
@@ -499,7 +498,7 @@ class SectionContractTest(unittest.TestCase):
                                   params={"id": document_id, "section_id": section_id})
         self.assertEqual(preview.status_code, 200, preview.text)
         body = preview.json()
-        self.assertTrue(body["hasDraft"])
+        self.assertFalse(body["hasDraft"])
         self.assertEqual(body["section"]["title"], "A draft title, not public yet")
         self.assertEqual(body["assignedCount"], 1)
         product = body["products"][0]
@@ -510,9 +509,6 @@ class SectionContractTest(unittest.TestCase):
         for private_key in ("sku", "cost", "reservedStock", "sellerEmail"):
             self.assertNotIn(private_key, product)
 
-        published = self.client.post("/admin/cms/page/publish", headers=headers, json={"id": document_id})
-        self.assertEqual(published.status_code, 200, published.text)
-        self.assertFalse(published.json()["page"]["hasDraft"])
         live = self.client.get("/catalog/home").json()
         live_section = next(section for section in live["content"]["sections"] if section["id"] == section_id)
         self.assertEqual(live_section["title"], "A draft title, not public yet")

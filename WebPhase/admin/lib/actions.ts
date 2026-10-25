@@ -154,7 +154,7 @@ export async function deleteBrandAction(_prev: FormState, formData: FormData): P
 
 // ── CMS pages ──────────────────────────────────────────────────────────
 
-/** Save a page's sections as a draft. The live storefront is untouched. */
+/** Save a page's sections immediately to the live storefront. */
 export async function saveCmsPageAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
@@ -169,11 +169,11 @@ export async function saveCmsPageAction(_prev: FormState, formData: FormData): P
   try {
     await api.saveCmsPage(session, { id, sections });
   } catch (error) {
-    return { error: error instanceof api.ApiError ? error.message : "The draft could not be saved." };
+    return { error: error instanceof api.ApiError ? error.message : "The page could not be saved." };
   }
   refresh(`/cms/pages/${id}`);
   refresh("/cms");
-  return { message: "Draft saved. The storefront is unchanged until you publish." };
+  return { message: "Saved. The storefront is updated." };
 }
 export async function savePageContentAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
@@ -550,7 +550,7 @@ export async function saveCmsSectionAction(_prev: FormState, formData: FormData)
     return { error: error instanceof api.ApiError ? error.message : "Those changes could not be saved." };
   }
   refresh(`/cms/pages/${id}`);
-  return { message: "Saved as a draft. Publish to put it on the storefront." };
+  return { message: "Saved. The storefront is updated." };
 }
 
 /**

@@ -256,7 +256,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
           <video key={mediaUrl} src={assetUrl(mediaUrl)} muted playsInline controls className="absolute inset-0 h-full w-full object-cover" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={assetUrl(mediaUrl)} alt="Current draft hero" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={assetUrl(mediaUrl)} alt="Current hero" className="absolute inset-0 h-full w-full object-cover" />
         ) : <div className="absolute inset-0 grid place-items-center text-white/80"><ImageIcon size={26} /><span className="ml-2 text-xs">No hero media selected</span></div>}
         {!mediaOnly ? <>
           <div className="absolute inset-0" style={{ background: tone === "light" ? `linear-gradient(90deg,rgba(255,255,255,${scrim}),rgba(255,255,255,0))` : `linear-gradient(90deg,rgba(7,20,35,${scrim}),rgba(7,20,35,0))` }} />
@@ -295,7 +295,7 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
         </div> : <div className="mt-3 rounded-lg border border-dashed border-current/25 bg-white/60 px-4 py-7 text-center">
           <ShoppingBag size={20} className="mx-auto opacity-60" />
           <p className="mt-2 text-sm font-semibold">No assigned products to preview yet</p>
-          <p className="mt-1 text-xs opacity-75">Assign a product in the catalogue. The private draft preview will show its real image, price, label and placement status here.</p>
+          <p className="mt-1 text-xs opacity-75">Assign a product in the catalogue. The live preview will show its real image, price, label and placement status here.</p>
         </div>}
         <div className="mt-2 flex flex-wrap gap-2 text-[11px] opacity-70">
           <span>{products.length} assigned</span><span>·</span><span>{products.filter((product) => product.publicNow).length} currently eligible for public display</span>
@@ -353,12 +353,12 @@ export function CmsSectionPreview({ section: initialSection, products, categorie
   }
 
   const windowLabel = isScheduled ? "Scheduled" : isClosed ? "Closed" : statusFor(section, now);
-  const draftLabel = isDirty ? "Unsaved private preview" : hasDraft ? "Saved draft preview" : documentStatus === "published" ? "Published version · private preview" : "Private page preview";
+  const previewLabel = isDirty ? "Unsaved changes" : "Current saved version";
 
   return (
     <Panel>
-      <PanelHead title="Live preview" action={<Pill tone="amber">{draftLabel}</Pill>} />
-      <p className="mb-3 text-[11px] leading-relaxed text-chalk-dim">{isDirty ? "Showing unsaved form changes. Save draft to preserve them; publish separately to show shoppers." : hasDraft ? "Showing the saved draft. Shoppers continue to see the published version until you publish." : "Private preview only. Save as a draft, then publish to show shoppers."}</p>
+      <PanelHead title="Live preview" action={<Pill tone={isDirty ? "amber" : "mint"}>{previewLabel}</Pill>} />
+      <p className="mb-3 text-[11px] leading-relaxed text-chalk-dim">{isDirty ? "Showing your unsaved changes. Save to update the storefront." : "Showing the current saved section as shoppers receive it."}</p>
       {error ? <p role="status" className="mb-3 rounded-lg border border-[#e4572e]/35 bg-[#e4572e]/10 p-3 text-xs text-chalk">Assigned-product preview could not load: {error}</p> : null}
       <div className="overflow-hidden rounded-[12px] border border-hairline bg-white">{preview}</div>
       <div className="mt-3 flex flex-wrap items-center gap-2">

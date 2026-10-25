@@ -875,7 +875,7 @@ class ProductLifecycleTest(unittest.TestCase):
                     drop_row(db, "product", slug)
                 db.commit()
 
-    def test_cms_draft_preserves_hidden_section_fields_and_live_content_until_publish(self):
+    def test_cms_save_preserves_hidden_section_fields_and_updates_live_content(self):
         document_id = "cms-lossless-contract"
         with SessionLocal() as db:
             db.add(ContentDocument(
@@ -916,12 +916,9 @@ class ProductLifecycleTest(unittest.TestCase):
             self.assertEqual(len(latest["sections"]), 2)
             with SessionLocal() as db:
                 live = db.get(ContentDocument, document_id)
-                self.assertEqual(live.data["sections"][0]["title"], "Old title")
-                self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="draft").count(), 1)
-                self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="superseded").count(), 1)
-            published = self.client.post("/admin/cms/document/publish", headers={"X-Ferix-Session": self.admin}, json={"id": document_id})
-            self.assertEqual(published.status_code, 200, published.text)
-            self.assertEqual(published.json()["document"]["data"]["sections"][0]["title"], "New title")
+                self.assertEqual(live.data["sections"][0]["title"], "New title")
+                self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="draft").count(), 0)
+                self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="published").count(), 2)
             with SessionLocal() as db:
                 self.assertEqual(db.query(ContentVersion).filter_by(document_id=document_id, status="draft").count(), 0)
         finally:

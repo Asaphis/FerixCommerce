@@ -2026,25 +2026,27 @@ def cms_save_document(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         draft = _cms_draft(db, doc.id)
         _assert_cms_revision(draft, payload.expectedVersion)
         base_data = (draft.data if draft is not None else doc.data) or {}
-        draft_data = _merge_cms_data(base_data, payload.data or {})
+        saved_data = _merge_cms_data(base_data, payload.data or {})
         if payload.title is not None:
-            draft_data["__title"] = payload.title.strip()[:200]
+            saved_data["__title"] = payload.title.strip()[:200]
+            doc.title = payload.title.strip()[:200]
         for previous_draft in db.scalars(select(ContentVersion).where(
             ContentVersion.document_id == doc.id, ContentVersion.status == "draft",
         )).all():
             previous_draft.status = "superseded"
+        doc.data = saved_data
+        doc.status = "published"
         doc.updated_at = now()
         doc.updated_by = staff.email
         version = len(db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)).all()) + 1
         db.add(ContentVersion(id=new_id("ver"), document_id=doc.id, version=version,
-                              status="draft", data=draft_data, note=payload.note or "Saved as draft",
+                              status="published", data=saved_data, note=payload.note or "Saved",
                               created_by=staff.email))
-        audit(db, "admin", staff.email, "cms.save", doc.id, "draft")
+        audit(db, "admin", staff.email, "cms.save", doc.id, "live")
         db.commit()
         document_data = _document_json(doc)
-        document_data["data"] = draft_data
-        document_data["title"] = str(draft_data.get("__title") or doc.title)
-        document_data["draftStatus"] = "draft"
+        document_data["data"] = saved_data
+        document_data["title"] = str(saved_data.get("__title") or doc.title)
         return {"document": document_data}
 
 
@@ -2736,11 +2738,10 @@ def cms_integrity_prune(session: Optional[str] = Header(None, alias="X-Ferix-Ses
 @router.patch("/cms/sections")
 def cms_section_update(payload: dict,
                        session: Optional[str] = Header(None, alias="X-Ferix-Session")):
-    """Save one section, and nothing else.
+    """Save one section immediately, and nothing else.
 
-    The page editor sends the whole array back on every save, so two edits can
-    overwrite each other. This takes a section id and its fields and merges them
-    into the draft (or the published document when there is no draft).
+    The page editor sends only one section's fields, so unrelated sections cannot
+    overwrite each other. Version rows remain history, not a publish gate.
     """
     from cms_sections import validate_section
     from core import (ContentDocument, apply_section_update, audit,
@@ -2760,11 +2761,6 @@ def cms_section_update(payload: dict,
         if not document:
             raise HTTPException(404, "That page does not exist")
 
-        # Always write to a draft. Saving straight into the published document
-        # made the same button do two different things depending on whether a
-        # draft happened to exist, which is what made a save look like it had
-        # been ignored: the editor reads the draft first, the shop reads the
-        # document.
         from core import ContentVersion, new_id
 
         draft = _cms_draft(db, document.id)
@@ -2779,24 +2775,27 @@ def cms_section_update(payload: dict,
             raise HTTPException(422, str(error))
 
         base["sections"] = result["sections"]
-        if draft is None:
-            latest = db.scalar(select(ContentVersion.version).where(
-                ContentVersion.document_id == document.id).order_by(ContentVersion.version.desc()))
-            draft = ContentVersion(id=new_id("cv"), document_id=document.id,
-                                   version=int(latest or 0) + 1, status="draft", data=base,
-                                   note="Section saved",
-                                   created_by=str(getattr(staff, "email", "") or ""))
-            db.add(draft)
-        else:
-            draft.data = base
+        for previous_draft in db.scalars(select(ContentVersion).where(
+            ContentVersion.document_id == document.id, ContentVersion.status == "draft",
+        )).all():
+            previous_draft.status = "superseded"
+        document.data = base
+        document.status = "published"
+        latest = db.scalar(select(ContentVersion.version).where(
+            ContentVersion.document_id == document.id).order_by(ContentVersion.version.desc()))
+        saved_version = ContentVersion(id=new_id("ver"), document_id=document.id,
+                                       version=int(latest or 0) + 1, status="published", data=base,
+                                       note="Section saved",
+                                       created_by=str(getattr(staff, "email", "") or ""))
+        db.add(saved_version)
         db.flush()
         sync_document_sections(db, document)
         audit(db, "staff", str(getattr(staff, "email", "") or ""), "cms.section.update",
-              target=f"{document.id}:{section_id}", detail="draft")
+              target=f"{document.id}:{section_id}", detail="live")
         db.commit()
         return {"section": result["section"], "documentId": document.id,
-                "savedTo": "draft", "version": int(draft.version or 0),
-                "published": False}
+                "savedTo": "live", "version": int(saved_version.version or 0),
+                "published": True}
 
 
 @router.get("/cms/section-types")
@@ -3060,7 +3059,7 @@ def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Feri
 
 @router.patch("/cms/page")
 def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: CmsPageIn = Body(...)):
-    """Save a page as a draft. Nothing reaches a shopper until it is published."""
+    """Save a page immediately. Version rows are history, not a publish gate."""
     from core import ContentDocument, ContentVersion
 
     with SessionLocal() as db:
@@ -3123,11 +3122,6 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
             data = _merge_cms_data(data, {"sections": canonicalize_sections(cleaned)})
         if payload.title is not None:
             data["__title"] = payload.title.strip()[:200]
-        # The draft goes to a version and NOT onto the document. The document is what the
-        # storefront reads, and only a published one at that: writing the draft into it and
-        # marking it a draft took the whole page off the shop the moment anyone pressed Save,
-        # which is what emptied banners and promotions out of a live storefront.
-
         existing = db.scalars(
             select(ContentVersion.id).where(ContentVersion.document_id == document.id)
         ).all()
@@ -3135,23 +3129,18 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
             ContentVersion.document_id == document.id, ContentVersion.status == "draft",
         )).all():
             previous_draft.status = "superseded"
+        document.data = data
+        document.status = "published"
         db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
-                              status="draft", data=data, note="Edited in the CMS",
+                              status="published", data=data, note="Saved in the CMS",
                               created_by=staff.email))
-        audit(db, "admin", staff.email, "cms.page.save", document.id, staff.role)
+        audit(db, "admin", staff.email, "cms.page.save", document.id, "live")
         db.commit()
         summary = _page_summary(document)
-        published_sections = sorted((document.data or {}).get("sections") or [], key=lambda section: section.get("position", 0))
-        draft_sections = sorted(data.get("sections") or [], key=lambda section: section.get("position", 0))
         summary.update({
-            "sections": draft_sections,
-            "hasDraft": True,
-            "draftStatus": "draft",
-            "publishedSections": published_sections,
-            "publishedSectionCount": len(published_sections),
-            "publishedVisibleCount": sum(1 for section in published_sections if section.get("visible", True)),
-            "sectionCount": len(draft_sections),
-            "visibleCount": sum(1 for section in draft_sections if section.get("visible", True)),
+            "sections": sorted(data.get("sections") or [], key=lambda section: section.get("position", 0)),
+            "hasDraft": False,
+            "draftStatus": None,
         })
         return {"page": summary}
 
