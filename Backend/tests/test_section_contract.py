@@ -483,7 +483,6 @@ class SectionContractTest(unittest.TestCase):
         saved = self.client.patch("/admin/cms/page", headers=headers,
                                   json={"id": document_id, "sections": sections})
         self.assertEqual(saved.status_code, 200, saved.text)
-        self.assertFalse(saved.json()["page"]["hasDraft"])
 
         # The public API immediately serves the saved page, while the preview
         # still includes its real assigned product.
@@ -498,7 +497,6 @@ class SectionContractTest(unittest.TestCase):
                                   params={"id": document_id, "section_id": section_id})
         self.assertEqual(preview.status_code, 200, preview.text)
         body = preview.json()
-        self.assertFalse(body["hasDraft"])
         self.assertEqual(body["section"]["title"], "A draft title, not public yet")
         self.assertEqual(body["assignedCount"], 1)
         product = body["products"][0]

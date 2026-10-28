@@ -211,41 +211,7 @@ export async function savePageContentAction(_prev: FormState, formData: FormData
   return { message: "Content saved." };
 }
 
-/** Publish the draft. This is the moment the storefront changes. */
-/** Publish the page you are looking at, and stay on it. */
-export async function publishCmsPageNowAction(form: FormData): Promise<void> {
-  const session = await readSession();
-  if (!session) redirect("/login");
-  const id = String(form.get("id") ?? "").trim();
-  if (!id) return;
-  try {
-    await api.publishCmsPage(session, id);
-  } catch {
-    // Back to the same page, which offers Publish again.
-    redirect(`/cms/pages/${id}?publish=failed`);
-  }
-  refresh(`/cms/pages/${id}`);
-  refresh("/cms");
-  refresh("/");
-}
-
-export async function publishCmsPageAction(_prev: FormState, formData: FormData): Promise<FormState> {
-  const session = await readSession();
-  if (!session) redirect("/login");
-  const id = String(formData.get("id") ?? "").trim();
-  if (!id) return { error: "That page is missing." };
-  try {
-    await api.publishCmsPage(session, id);
-  } catch (error) {
-    return { error: error instanceof api.ApiError ? error.message : "The page could not be published." };
-  }
-  refresh(`/cms/pages/${id}`);
-  refresh("/cms");
-  refresh("/");
-  return { message: "Published. The storefront now serves this version." };
-}
-
-/** Create a new page as a draft with an empty section list. */
+/** Create a new page with an empty live section list. */
 export async function createPageAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
@@ -256,7 +222,7 @@ export async function createPageAction(_prev: FormState, formData: FormData): Pr
   try {
     await api.createCmsPage(session, { title, document_type });
     revalidatePath("/cms");
-    return { message: "Page created as a draft. Open it to add sections." };
+    return { message: "Page created. Open it to add sections." };
   } catch (error) {
     return { error: error instanceof api.ApiError ? error.message : "Failed to create page." };
   }
@@ -313,10 +279,10 @@ export async function moveCmsSectionAction(_prev: FormState, formData: FormData)
     return { error: error instanceof api.ApiError ? error.message : "That section could not be moved." };
   }
   refresh(`/cms/pages/${id}`);
-  return { message: "Order changed. Publish to put it on the storefront." };
+  return { message: "Order saved. The storefront is updated." };
 }
 
-/** Add a section to a page. It lands at the bottom, empty, as a draft. */
+/** Add a section to a page. It lands at the bottom, empty, and live. */
 export async function addCmsSectionAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const session = await readSession();
   if (!session) redirect("/login");
@@ -363,8 +329,8 @@ export async function addCmsSectionAction(_prev: FormState, formData: FormData):
     return { error: error instanceof api.ApiError ? error.message : "That section could not be added." };
   }
   refresh(`/cms/pages/${id}`);
-  if (id === "doc_marketplace_home") refresh("/cms/homepage");
-  return { message: "Added at the bottom of the draft. Open it to fill it in." };
+  if (id === "doc_marketplace_home") refresh(`/cms/pages/${id}`);
+  return { message: "Added at the bottom. Open it to configure it." };
 }
 
 /** Take a section off a page for good. */
@@ -383,8 +349,8 @@ export async function removeCmsSectionAction(_prev: FormState, formData: FormDat
     return { error: error instanceof api.ApiError ? error.message : "That section could not be removed." };
   }
   refresh(`/cms/pages/${id}`);
-  if (id === "doc_marketplace_home") refresh("/cms/homepage");
-  return { message: "Removed. Publish to take it off the storefront." };
+  if (id === "doc_marketplace_home") refresh(`/cms/pages/${id}`);
+  return { message: "Removed. The storefront is updated." };
 }
 
 /** Save the fields of one section. */

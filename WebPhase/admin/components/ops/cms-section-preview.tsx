@@ -33,8 +33,6 @@ type Props = {
   stores?: Record<string, unknown>[];
   adverts?: Record<string, unknown>[];
   banners?: PreviewBanner[];
-  hasDraft: boolean;
-  documentStatus: string;
   error?: string | null;
 };
 
@@ -162,7 +160,7 @@ function ProductCardPreview({ product, section, now }: { product: CmsSectionPrev
   );
 }
 
-export function CmsSectionPreview({ section: initialSection, products, categories = [], brands = [], stores = [], adverts = [], banners = [], hasDraft, documentStatus, error }: Props) {
+export function CmsSectionPreview({ section: initialSection, products, categories = [], brands = [], stores = [], adverts = [], banners = [], error }: Props) {
   const [section, setSection] = useState<CmsSection>(initialSection);
   const [now, setNow] = useState(Date.now());
   const [isDirty, setIsDirty] = useState(false);

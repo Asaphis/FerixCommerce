@@ -1571,12 +1571,7 @@ def review_decision(session: Optional[str] = Header(None, alias="X-Ferix-Session
                 document = db.get(ContentDocument, document_id)
                 if not document or document.owner_type != "platform":
                     continue
-                draft = db.scalar(
-                    select(ContentVersion)
-                    .where(ContentVersion.document_id == document_id, ContentVersion.status == "draft")
-                    .order_by(ContentVersion.version.desc())
-                )
-                source = (draft.data if draft is not None else document.data) or {}
+                source = dict(document.data or {})
                 section = next((item for item in source.get("sections", [])
                                 if item.get("id") == section_id
                                 and is_assignable_product_section(document, item)), None)
@@ -1898,9 +1893,9 @@ def _document_json(doc: ContentDocument) -> dict:
 
 
 def _cms_draft(db, document_id: str):
-    return db.scalar(select(ContentVersion).where(
-        ContentVersion.document_id == document_id, ContentVersion.status == "draft",
-    ).order_by(ContentVersion.version.desc()))
+    # Platform CMS pages are live-on-save. Legacy draft rows are promoted during
+    # startup migration and must never become an alternate read source again.
+    return None
 
 
 def _assert_cms_revision(draft, expected: Optional[int]) -> None:
@@ -1938,7 +1933,7 @@ def _ensure_document(db, document_id: str) -> ContentDocument:
         return doc
     doc = ContentDocument(id=document_id, owner_type="platform", owner_id="platform",
                           document_type=document_id, title=document_id.replace("doc_", "").replace("_", " ").title(),
-                          status="draft", data={"sections": []})
+                          status="published", data={"sections": []})
     db.add(doc)
     db.flush()
     return doc
@@ -1975,7 +1970,7 @@ def _ensure_platform_pages(db):
                 owner_id="platform",
                 document_type=doc_type,
                 title=title,
-                status="draft",
+                status="published",
                 data={"sections": [], "kind": kind},
             ))
             db.flush()
@@ -2006,11 +2001,6 @@ def cms_document(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
         versions = db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)
                               .order_by(ContentVersion.version.desc()).limit(20)).all()
         document_data = _document_json(doc)
-        draft = _cms_draft(db, doc.id)
-        if draft is not None:
-            document_data["data"] = draft.data or {}
-            document_data["title"] = _draft_title(doc, draft)
-            document_data["draftStatus"] = "draft"
         db.commit()
         return {"document": document_data,
                 "versions": [{"id": v.id, "version": v.version, "status": v.status, "note": v.note,
@@ -2049,74 +2039,6 @@ def cms_save_document(session: Optional[str] = Header(None, alias="X-Ferix-Sessi
         document_data["title"] = str(saved_data.get("__title") or doc.title)
         return {"document": document_data}
 
-
-@router.post("/cms/document/publish")
-def cms_publish(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
-    from core import SectionPlacement
-
-    with SessionLocal() as db:
-        staff = require_staff(db, session, "admin")
-        require_permission(staff, "cms.manage")
-        doc = _ensure_document(db, str(payload.get("id")))
-        draft = _cms_draft(db, doc.id)
-        if draft is not None:
-            doc.data = draft.data or {}
-        for previous_draft in db.scalars(select(ContentVersion).where(
-            ContentVersion.document_id == doc.id, ContentVersion.status == "draft",
-        )).all():
-            previous_draft.status = "published" if previous_draft is draft else "superseded"
-        doc.status = "published"
-        # A section that is no longer on the page must not leave its placements behind:
-        # otherwise re-adding a section with the same id would silently bring products back
-        # that nobody assigned to it.
-        section_ids = {
-            str(section.get("id")) for section in (doc.data or {}).get("sections") or []
-            if isinstance(section, dict) and section.get("id") is not None
-        }
-        for placement in db.scalars(
-            select(SectionPlacement).where(SectionPlacement.document_id == doc.id)
-        ).all():
-            if placement.section_id not in section_ids:
-                db.delete(placement)
-        doc.updated_at = now()
-        doc.updated_by = staff.email
-        version = len(db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)).all()) + 1
-        db.add(ContentVersion(id=new_id("ver"), document_id=doc.id, version=version,
-                              status="published", data=doc.data, note="Published", created_by=staff.email))
-        audit(db, "admin", staff.email, "cms.publish", doc.id, "Published")
-        db.commit()
-        return {"document": _document_json(doc)}
-
-
-@router.post("/cms/document/restore")
-def cms_restore(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: dict = Body(...)):
-    with SessionLocal() as db:
-        staff = require_staff(db, session, "admin")
-        require_permission(staff, "cms.manage")
-        version = db.get(ContentVersion, str(payload.get("versionId")))
-        if not version:
-            raise HTTPException(404, "Version not found")
-        doc = _ensure_document(db, version.document_id)
-        restored_data = version.data or {}
-        doc.updated_at = now()
-        doc.updated_by = staff.email
-        for previous_draft in db.scalars(select(ContentVersion).where(
-            ContentVersion.document_id == doc.id, ContentVersion.status == "draft",
-        )).all():
-            previous_draft.status = "superseded"
-        db.add(ContentVersion(id=new_id("ver"), document_id=doc.id,
-                              version=len(db.scalars(select(ContentVersion).where(ContentVersion.document_id == doc.id)).all()) + 1,
-                              status="draft", data=restored_data,
-                              note=f"Restored v{version.version}", created_by=staff.email))
-        audit(db, "admin", staff.email, "cms.restore", doc.id, f"v{version.version}")
-        db.commit()
-        document_data = _document_json(doc)
-        document_data["data"] = restored_data
-        document_data["draftStatus"] = "draft"
-        return {"document": document_data}
-
-
-# ── Media library ──────────────────────────────────────────────────────────
 
 @router.get("/media")
 def media(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
@@ -2491,8 +2413,7 @@ def audit_log(session: Optional[str] = Header(None, alias="X-Ferix-Session"), li
 # ── CMS: pages of sections ─────────────────────────────────────────────────
 # The storefront is a document per page, and each document holds an ordered list
 # of sections. These four endpoints are what the CMS reads and writes: the pages
-# list, one page with its sections, a save that only ever writes a draft, and a
-# publish that is the single moment a shopper can see a change.
+# list, one page with its sections, and immediate live saves.
 
 
 class CmsPageIn(BaseModel):
@@ -2537,7 +2458,6 @@ def _page_summary(document) -> dict:
         "documentType": document.document_type,
         "kind": kind,
         "status": document.status,
-        "hasDraft": False,
         "sectionCount": len(sections),
         "visibleCount": sum(1 for s in sections if s.get("visible", True)),
         "sections": [_section_summary(s, i) for i, s in enumerate(sections)],
@@ -2597,7 +2517,7 @@ def cms_sections(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
 @router.post("/cms/sections")
 def cms_section_create(payload: dict,
                        session: Optional[str] = Header(None, alias="X-Ferix-Session")):
-    """Add a section to a page draft, then re-index it."""
+    """Add a section to a live page, then re-index it."""
     from cms_sections import normalize_section, validate_section
     from core import ContentDocument, ContentVersion, audit, new_id, sync_document_sections
 
@@ -2610,8 +2530,7 @@ def cms_section_create(payload: dict,
         if not document:
             raise HTTPException(404, "That page does not exist")
 
-        draft = _cms_draft(db, document.id)
-        data = dict((draft.data if draft is not None else document.data) or {})
+        data = dict(document.data or {})
         sections = [dict(row) for row in (data.get("sections") or []) if isinstance(row, dict)]
 
         raw = dict((payload or {}).get("settings") or {})
@@ -2635,19 +2554,19 @@ def cms_section_create(payload: dict,
 
         sections.append(section)
         data["sections"] = sections
-        if draft is None:
-            draft = ContentVersion(id=new_id("cv"), document_id=document.id, version=1,
-                                   status="draft", data=data, note="Section added",
-                                   created_by=str(getattr(staff, "email", "") or getattr(staff, "id", "")))
-            db.add(draft)
-        else:
-            draft.data = data
+        document.data = data
+        document.status = "published"
+        latest = db.scalar(select(ContentVersion.version).where(
+            ContentVersion.document_id == document.id).order_by(ContentVersion.version.desc()))
+        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=int(latest or 0) + 1,
+                              status="published", data=data, note="Section added",
+                              created_by=str(getattr(staff, "email", "") or getattr(staff, "id", ""))))
         db.flush()
         sync_document_sections(db, document)
         audit(db, "staff", str(getattr(staff, "email", "") or ""), "cms.section.create",
               target=f"{document.id}:{section.get('id')}", detail=section_type)
         db.commit()
-        return {"section": section, "documentId": document.id, "hasDraft": True}
+        return {"section": section, "documentId": document.id, "savedTo": "live"}
 
 
 @router.delete("/cms/sections")
@@ -2655,7 +2574,7 @@ def cms_section_remove(session: Optional[str] = Header(None, alias="X-Ferix-Sess
                        document_id: str = Query(...), section_id: str = Query(...),
                        purge_placements: bool = Query(True)):
     """Remove a section from the page and from its index, with its placements."""
-    from core import ContentDocument, SectionPlacement, audit, sync_document_sections
+    from core import ContentDocument, ContentVersion, SectionPlacement, audit, new_id, sync_document_sections
 
     def without(data):
         kept = [row for row in ((data or {}).get("sections") or [])
@@ -2681,9 +2600,12 @@ def cms_section_remove(session: Optional[str] = Header(None, alias="X-Ferix-Sess
         for row in placements:
             db.delete(row)
         document.data = without(document.data)
-        draft = _cms_draft(db, document.id)
-        if draft is not None:
-            draft.data = without(draft.data)
+        document.status = "published"
+        latest = db.scalar(select(ContentVersion.version).where(
+            ContentVersion.document_id == document.id).order_by(ContentVersion.version.desc()))
+        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=int(latest or 0) + 1,
+                              status="published", data=document.data, note="Section removed",
+                              created_by=str(getattr(staff, "email", "") or "")))
         db.flush()
         sync_document_sections(db, document)
         audit(db, "staff", str(getattr(staff, "email", "") or ""), "cms.section.remove",
@@ -2850,9 +2772,6 @@ def cms_pages(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
         pages = []
         for document in rows:
             summary = _page_summary(document)
-            summary["hasDraft"] = db.scalar(select(ContentVersion.id).where(
-                ContentVersion.document_id == document.id, ContentVersion.status == "draft"
-            ).limit(1)) is not None
             pages.append(summary)
         pages.sort(key=lambda p: (p["documentType"] != "marketplace_home", p["title"] or ""))
         return {"pages": pages}
@@ -2891,7 +2810,7 @@ def _ensure_platform_pages(db):
                 owner_id="platform",
                 document_type=doc_type,
                 title=title,
-                status="draft",
+                status="published",
                 data={"sections": [], "kind": kind},
             ))
             db.flush()
@@ -2905,7 +2824,7 @@ def _ensure_platform_pages(db):
 
 @router.post("/cms/page")
 def cms_page_create(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: PageCreate = Body(...)):
-    """Create a new storefront page as a draft with an empty section list."""
+    """Create a new storefront page live with an empty section list."""
     from core import ContentDocument
 
     with SessionLocal() as db:
@@ -2923,12 +2842,12 @@ def cms_page_create(session: Optional[str] = Header(None, alias="X-Ferix-Session
             owner_id="platform",
             document_type=doc_type,
             title=payload.title.strip()[:200],
-            status="draft",
+            status="published",
             data={"sections": []},
         )
         db.add(doc)
         db.commit()
-        audit(db, "admin", staff.email, "cms.page.create", document_id, "draft")
+        audit(db, "admin", staff.email, "cms.page.create", document_id, "live")
         return {"page": _page_summary(doc)}
 
 
@@ -2944,26 +2863,12 @@ def cms_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
         if not document:
             raise HTTPException(404, "That page does not exist")
         summary = _page_summary(document)
-        # The editor shows the draft if there is one, because that is what the operator is
-        # working on. The document is what the shop is reading meanwhile.
-        draft = db.scalar(
-            select(ContentVersion)
-            .where(ContentVersion.document_id == id, ContentVersion.status == "draft")
-            .order_by(ContentVersion.version.desc())
-        )
-        source = (draft.data if draft is not None else document.data) or {}
-        published_sections = sorted((document.data or {}).get("sections") or [],
-                                    key=lambda section: section.get("position", 0))
+        source = dict(document.data or {})
         sections = sorted(source.get("sections") or [], key=lambda section: section.get("position", 0))
         summary.update({
             "title": str(source.get("__title") or document.title),
             "data": source,
             "sections": sections,
-            "hasDraft": draft is not None,
-            "draftStatus": "draft" if draft is not None else None,
-            "publishedSections": published_sections,
-            "publishedSectionCount": len(published_sections),
-            "publishedVisibleCount": sum(1 for section in published_sections if section.get("visible", True)),
             "sectionCount": len(sections),
             "visibleCount": sum(1 for section in sections if section.get("visible", True)),
         })
@@ -2973,12 +2878,7 @@ def cms_page(session: Optional[str] = Header(None, alias="X-Ferix-Session"), id:
 @router.get("/cms/page/section-preview")
 def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Ferix-Session"),
                              id: str = Query(...), section_id: str = Query(...)):
-    """Private Admin preview data for a section, including its real placements.
-
-    This deliberately reads the latest draft section even though public catalog
-    routes continue to read only published data. Products are projected through
-    the shopper-safe serializer before placement terms are applied.
-    """
+    """Live Admin preview data for a section, including its real placements."""
     from core import SectionPlacement, decorate, public_product_fields, public_products, approved_products, categories, collections, brands, merchants, store_card, is_public_store
     from cms_sections import apply_placement_overrides, placement_is_live, section_is_live, selection_mode_of, source_of
 
@@ -2988,14 +2888,11 @@ def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Feri
         document = db.get(ContentDocument, id)
         if not document or document.owner_type != "platform":
             raise HTTPException(404, "That CMS page does not exist")
-        draft = db.scalar(select(ContentVersion).where(
-            ContentVersion.document_id == id, ContentVersion.status == "draft"
-        ).order_by(ContentVersion.version.desc()))
-        source = (draft.data if draft is not None else document.data) or {}
+        source = dict(document.data or {})
         section = next((row for row in source.get("sections", [])
                         if isinstance(row, dict) and str(row.get("id") or "") == section_id), None)
         if not section:
-            raise HTTPException(404, "That section does not exist in the current draft or published page")
+            raise HTTPException(404, "That section does not exist on this page")
 
         products_by_id = {str(product.get("id")): product for product in all_products(db)}
         rows = db.scalars(select(SectionPlacement).where(
@@ -3031,7 +2928,7 @@ def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Feri
             elif not marketplace_product_available(db, product):
                 status = "Not approved or unavailable"
             elif section_id not in published_ids or document.status != "published":
-                status = "Draft page — private until publish"
+                status = "Not currently live"
             elif not section_is_live(section, current):
                 status = "Section is scheduled or closed"
             else:
@@ -3049,8 +2946,6 @@ def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Feri
             preview_products.append(safe)
         return {
             "section": section,
-            "documentStatus": document.status,
-            "hasDraft": draft is not None,
             "products": preview_products,
             "assignedCount": len(preview_products),
             "publicNowCount": sum(1 for product in preview_products if product.get("publicNow")),
@@ -3060,7 +2955,7 @@ def cms_page_section_preview(session: Optional[str] = Header(None, alias="X-Feri
 @router.patch("/cms/page")
 def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: CmsPageIn = Body(...)):
     """Save a page immediately. Version rows are history, not a publish gate."""
-    from core import ContentDocument, ContentVersion
+    from core import ContentDocument, ContentVersion, SectionPlacement
 
     with SessionLocal() as db:
         staff = require_staff(db, session, "admin")
@@ -3125,12 +3020,18 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
         existing = db.scalars(
             select(ContentVersion.id).where(ContentVersion.document_id == document.id)
         ).all()
-        for previous_draft in db.scalars(select(ContentVersion).where(
-            ContentVersion.document_id == document.id, ContentVersion.status == "draft",
-        )).all():
-            previous_draft.status = "superseded"
         document.data = data
         document.status = "published"
+        if payload.sections is not None:
+            active_section_ids = {
+                str(section.get("id")) for section in data.get("sections", [])
+                if isinstance(section, dict) and section.get("id") is not None
+            }
+            for placement in db.scalars(select(SectionPlacement).where(
+                SectionPlacement.document_id == document.id
+            )).all():
+                if placement.section_id not in active_section_ids:
+                    db.delete(placement)
         db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
                               status="published", data=data, note="Saved in the CMS",
                               created_by=staff.email))
@@ -3139,61 +3040,9 @@ def cms_page_save(session: Optional[str] = Header(None, alias="X-Ferix-Session")
         summary = _page_summary(document)
         summary.update({
             "sections": sorted(data.get("sections") or [], key=lambda section: section.get("position", 0)),
-            "hasDraft": False,
-            "draftStatus": None,
         })
         return {"page": summary}
 
-
-@router.post("/cms/page/publish")
-def cms_page_publish(session: Optional[str] = Header(None, alias="X-Ferix-Session"), payload: CmsPageIn = Body(...)):
-    """Publish the page the storefront reads, and record the version."""
-    from core import ContentDocument, ContentVersion
-
-    with SessionLocal() as db:
-        staff = require_staff(db, session, "admin")
-        require_permission(staff, "cms.manage")
-        document = db.get(ContentDocument, payload.id)
-        if not document:
-            raise HTTPException(404, "That page does not exist")
-
-        # Publishing is the moment the draft becomes the page. Until this runs the shop
-        # keeps reading whatever the document already held.
-        draft = db.scalar(
-            select(ContentVersion)
-            .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
-            .order_by(ContentVersion.version.desc())
-        )
-        _assert_cms_revision(draft, payload.expectedVersion)
-        if draft is not None and (draft.data or {}).get("sections") is not None:
-            document.data = draft.data
-        if draft is not None and (draft.data or {}).get("__title"):
-            document.title = str(draft.data["__title"])[:200]
-        for previous_draft in db.scalars(select(ContentVersion).where(
-            ContentVersion.document_id == document.id, ContentVersion.status == "draft",
-        )).all():
-            previous_draft.status = "published" if previous_draft is draft else "superseded"
-        document.status = "published"
-
-        existing = db.scalars(
-            select(ContentVersion.id).where(ContentVersion.document_id == document.id)
-        ).all()
-        db.add(ContentVersion(id=new_id("ver"), document_id=document.id, version=len(existing) + 1,
-                              status="published", data=document.data, note="Published",
-                              created_by=staff.email))
-        audit(db, "admin", staff.email, "cms.page.publish", document.id, staff.role)
-        db.commit()
-        summary = _page_summary(document)
-        sections = summary["sections"]
-        summary.update({
-            "hasDraft": False,
-            "draftStatus": None,
-            "publishedSections": sections,
-            "publishedSectionCount": len(sections),
-            "publishedVisibleCount": summary["visibleCount"],
-            "revision": len(existing) + 1,
-        })
-        return {"page": summary}
 
 @router.post("/auth/refresh")
 def auth_refresh(session: Optional[str] = Header(None, alias="X-Ferix-Session")):
@@ -3398,12 +3247,7 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
 
         available = []
         for document in db.scalars(select(ContentDocument)).all():
-            draft = db.scalar(
-                select(ContentVersion)
-                .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
-                .order_by(ContentVersion.version.desc())
-            )
-            source_data = (draft.data if draft is not None else document.data) or {}
+            source_data = dict(document.data or {})
             for section in source_data.get("sections", []):
                 if not is_assignable_product_section(document, section):
                     continue
@@ -3422,7 +3266,7 @@ def product_sections(session: Optional[str] = Header(None, alias="X-Ferix-Sessio
                     "productConfigSchema": product_config_schema(section),
                     "startsAt": section.get("startsAt"),
                     "endsAt": section.get("endsAt"),
-                    "status": "draft" if draft is not None or document.status != "published" else "published",
+                    "status": "published" if document.status == "published" else "unavailable",
                     "placements": len(used),
                 })
         return {"placements": placements, "available": available}
@@ -3439,12 +3283,7 @@ def product_section_save(session: Optional[str] = Header(None, alias="X-Ferix-Se
         document = db.get(ContentDocument, payload.documentId)
         if not document or document.owner_type != "platform":
             raise HTTPException(404, "That CMS page does not exist")
-        draft = db.scalar(
-            select(ContentVersion)
-            .where(ContentVersion.document_id == document.id, ContentVersion.status == "draft")
-            .order_by(ContentVersion.version.desc())
-        )
-        source_data = (draft.data if draft is not None else document.data) or {}
+        source_data = dict(document.data or {})
         section = next((item for item in source_data.get("sections", []) if item.get("id") == payload.sectionId), None)
         if not section or not is_assignable_product_section(document, section):
             raise HTTPException(400, "Products can only be assigned to CMS product sections")
@@ -3540,10 +3379,7 @@ def product_sections_replace(session: Optional[str] = Header(None, alias="X-Feri
             document = db.get(ContentDocument, document_id)
             if not document or document.owner_type != "platform":
                 raise HTTPException(400, "Choose only platform CMS sections")
-            draft = db.scalar(select(ContentVersion).where(
-                ContentVersion.document_id == document_id, ContentVersion.status == "draft"
-            ).order_by(ContentVersion.version.desc()))
-            source = (draft.data if draft is not None else document.data) or {}
+            source = dict(document.data or {})
             section = next((value for value in source.get("sections", [])
                             if value.get("id") == section_id
                             and is_assignable_product_section(document, value)), None)
@@ -3766,19 +3602,16 @@ def cms_page_content_patch(session: Optional[str] = Header(None, alias="X-Ferix-
         doc = db.get(ContentDocument, page_id)
         if not doc or doc.owner_type != "platform":
             raise HTTPException(404, "That page does not exist")
-        draft = _cms_draft(db, doc.id)
-        _assert_cms_revision(draft, payload.get("expectedVersion"))
-        data = dict((draft.data if draft is not None else doc.data) or {})
+        data = dict(doc.data or {})
         data["content"] = content
-        if draft is None:
-            latest = db.scalar(select(ContentVersion.version).where(
-                ContentVersion.document_id == doc.id).order_by(ContentVersion.version.desc()))
-            draft = ContentVersion(id=new_id("ver"), document_id=doc.id, version=int(latest or 0) + 1,
-                                   status="draft", data=data, note="Information page content saved",
-                                   created_by=staff.email)
-            db.add(draft)
-        else:
-            draft.data = data
+        doc.data = data
+        doc.status = "published"
+        latest = db.scalar(select(ContentVersion.version).where(
+            ContentVersion.document_id == doc.id).order_by(ContentVersion.version.desc()))
+        version = int(latest or 0) + 1
+        db.add(ContentVersion(id=new_id("ver"), document_id=doc.id, version=version,
+                              status="published", data=data, note="Information page content saved",
+                              created_by=staff.email))
         audit(db, "admin", staff.email, "cms.page.content", page_id, "content fields")
         db.commit()
-        return {"ok": True, "id": page_id, "content": content, "savedTo": "draft", "version": int(draft.version)}
+        return {"ok": True, "id": page_id, "content": content, "savedTo": "live", "version": version}

@@ -418,8 +418,8 @@ export const deleteMerchant = (session: string | null, id: string) =>
 export type SectionOption = {
   documentId: string; documentTitle: string; sectionId: string;
   sectionName?: string; sectionType?: string; source?: string; placements?: number;
-  /** Draft destinations accept staged products but are not visible on the public site yet. */
-  status?: "draft" | "published";
+  /** Whether the live CMS page can currently receive product placements. */
+  status?: "published" | "unavailable";
   /** Everything here is filled by hand: an automatic feed is never listed. */
   selectionMode?: string;
   presentation?: string;
@@ -652,7 +652,6 @@ export type ContentDocument = {
   data: { sections?: ContentSection[]; [key: string]: unknown };
   updatedAt: string;
   updatedBy: string;
-  draftStatus?: string;
   revision?: number;
 };
 
@@ -676,12 +675,6 @@ export const getDocument = (session: string | null, id: string) =>
 
 export const saveDocument = (session: string | null, body: Record<string, unknown>) =>
   call<{ document: ContentDocument }>("PATCH", "admin/cms/document", { body, session });
-
-export const publishDocument = (session: string | null, id: string) =>
-  call<{ document: ContentDocument }>("POST", "admin/cms/document/publish", { body: { id }, session });
-
-export const restoreDocumentVersion = (session: string | null, versionId: string) =>
-  call<{ document: ContentDocument }>("POST", "admin/cms/document/restore", { body: { versionId }, session });
 
 // ── Brands CMS ---------------------------------------------------------
 export type AdminBrand = {
@@ -976,14 +969,9 @@ export type CmsPage = {
   title: string;
   documentType: string;
   status: string;
-  hasDraft: boolean;
-  draftStatus?: string | null;
   sectionCount: number;
   visibleCount: number;
   sections: CmsSection[];
-  publishedSections?: CmsSection[];
-  publishedSectionCount?: number;
-  publishedVisibleCount?: number;
   kind?: "managed" | "information";
   data?: { content?: Record<string, unknown>; sections?: unknown[]; kind?: string };
   revision?: number;
@@ -1010,10 +998,6 @@ export const updateCmsSection = (
 
 export const saveCmsPageContent = (session: string | null, body: { id: string; content: Record<string, unknown>; expectedVersion?: number }) =>
   call<{ ok: true; id: string }>("PATCH", "admin/cms/page/content", { session, body });
-
-export const publishCmsPage = (session: string | null, id: string) =>
-  call<{ page: CmsPage }>("POST", "admin/cms/page/publish", { session, body: { id } });
-
 
 export const createCmsPage = (session: string | null, data: { title: string; document_type: string }) =>
   call<{ page: CmsPage }>("POST", "admin/cms/page", { session, body: data });
@@ -1128,8 +1112,6 @@ export type CmsSectionPreviewProduct = {
 
 export type CmsSectionPreviewData = {
   section: CmsSection;
-  documentStatus: string;
-  hasDraft: boolean;
   products: CmsSectionPreviewProduct[];
   assignedCount: number;
   publicNowCount: number;

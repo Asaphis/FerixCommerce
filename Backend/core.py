@@ -1629,6 +1629,37 @@ def migrate() -> None:
                for table, columns in required.items() if table in present for name in columns):
         raise RuntimeError("Required schema columns are missing after migration")
 
+    # CMS pages are now live-on-save. Promote any legacy platform-page draft once,
+    # keep its data as the current document, and leave only published/superseded
+    # history behind. Merchant storefront documents and review workflows keep their
+    # own status model and are intentionally not touched here.
+    with SessionLocal() as db:
+        platform_ids = [row.id for row in db.scalars(select(ContentDocument).where(
+            ContentDocument.owner_type == "platform"
+        )).all()]
+        for document_id in platform_ids:
+            drafts = db.scalars(select(ContentVersion).where(
+                ContentVersion.document_id == document_id,
+                ContentVersion.status == "draft",
+            ).order_by(ContentVersion.version.desc())).all()
+            if not drafts:
+                document = db.get(ContentDocument, document_id)
+                if document is not None:
+                    document.status = "published"
+                continue
+            latest = drafts[0]
+            document = db.get(ContentDocument, document_id)
+            if document is None:
+                continue
+            document.data = latest.data or document.data or {}
+            document.status = "published"
+            if isinstance(latest.data, dict) and latest.data.get("__title"):
+                document.title = str(latest.data["__title"])[:200]
+            latest.status = "published"
+            for older in drafts[1:]:
+                older.status = "superseded"
+        db.commit()
+
 def schema_ready() -> bool:
     try:
         row = SessionLocal().scalar(select(SchemaVersion).where(SchemaVersion.id == "current"))

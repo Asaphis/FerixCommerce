@@ -646,8 +646,6 @@ export default async function CmsSectionEditor({
               stores={previewData?.stores ?? []}
               adverts={previewData?.adverts ?? []}
               banners={reusableBanners}
-              hasDraft={previewData?.hasDraft ?? page?.hasDraft ?? false}
-              documentStatus={previewData?.documentStatus ?? page?.status ?? "published"}
               error={previewError}
             />
 

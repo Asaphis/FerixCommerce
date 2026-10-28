@@ -92,7 +92,7 @@ class ProductLifecycleTest(unittest.TestCase):
         self.assertEqual(saved["seoTitle"], "Updated SEO")
         self.assertIsNone(saved["shipping_amount"])
 
-    def test_catalogue_section_choices_mark_unpublished_page_as_draft(self):
+    def test_catalogue_section_choices_mark_unavailable_page_as_unavailable(self):
         with SessionLocal() as db:
             document = db.get(ContentDocument, "doc_marketplace_home")
             self.assertIsNotNone(document)
@@ -103,7 +103,7 @@ class ProductLifecycleTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         home_sections = [row for row in response.json()["available"] if row["documentId"] == "doc_marketplace_home"]
         self.assertTrue(home_sections)
-        self.assertTrue(all(row["status"] == "draft" for row in home_sections))
+        self.assertTrue(all(row["status"] == "unavailable" for row in home_sections))
 
     def test_admin_team_role_updates_preserve_permissions_and_block_self_lockout(self):
         created = self.client.post("/admin/staff", headers={"X-Ferix-Session": self.admin}, json={
@@ -241,16 +241,12 @@ class ProductLifecycleTest(unittest.TestCase):
         stored = before["sections"]
         removed_row = next(row for row in stored if row["id"] == section_id)
 
-        # Take the section off the page and publish: the storefront has nothing to draw there.
+        # Take the section off the page: the live storefront has nothing to draw there.
         remaining = [row for row in stored if row["id"] != section_id]
         saved = self.client.patch("/admin/cms/page", headers={"X-Ferix-Session": self.admin}, json={
             "id": document_id, "sections": remaining,
         })
         self.assertEqual(saved.status_code, 200, saved.text)
-        published = self.client.post("/admin/cms/document/publish", headers={"X-Ferix-Session": self.admin}, json={
-            "id": document_id,
-        })
-        self.assertEqual(published.status_code, 200, published.text)
         after = self.client.get("/catalog/page", params={"id": document_id}).json()
         self.assertNotIn(section_id, {row["id"] for row in after["sections"]})
         self.assertEqual(after["placements"].get(section_id, []), [])
@@ -260,7 +256,6 @@ class ProductLifecycleTest(unittest.TestCase):
             "id": document_id, "sections": remaining + [removed_row],
         })
         self.assertEqual(readded.status_code, 200, readded.text)
-        self.client.post("/admin/cms/document/publish", headers={"X-Ferix-Session": self.admin}, json={"id": document_id})
         final = self.client.get("/catalog/page", params={"id": document_id}).json()
         self.assertEqual(final["placements"].get(section_id, []), [])
 
